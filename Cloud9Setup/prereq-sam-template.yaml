@@ -1,0 +1,498 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Create Cloud9 IDE, create state machine to intall pre-req on cloud9, API Gateway cloudwatch Role
+
+Parameters:
+  # Optional parameters passed by the Event Engine to the stack.
+  # EEEventId:
+  #   Description: "Unique ID of this Event"
+  #   Type: String
+  # EETeamId:
+  #   Description: "Unique ID of this Team"
+  #   Type: String
+  # EEModuleId:
+  #   Description: "Unique ID of this module"
+  #   Type: String
+  # EEModuleVersion:
+  #   Description: "Version of this module"
+  #   Type: String
+  EEAssetsBucket:
+    Description: "Region-specific assets S3 bucket name (e.g. ee-assets-prod-us-east-1)"
+    Type: String
+    Default: "aws-sam-cli-managed-default-samclisourcebucket-8tf6bmi4rdcx"
+  EEAssetsKeyPrefix:
+    Description: "S3 key prefix where this modules assets are stored. (e.g. modules/my_module/v1/)"
+    Type: String
+    Default: "serverless-saas/"
+  # EEMasterAccountId:
+  #   Description: "AWS Account Id of the Master account"
+  #   Type: String
+  # EETeamRoleArn:
+  #   Description: "ARN of the Team Role"
+  #   Type: String
+  # EEKeyPair:
+  #   Description: "Name of the EC2 KeyPair generated for the Team"
+  #   Type: AWS::EC2::KeyPair::KeyName
+  # Your own parameters for the stack. NOTE: All these parameters need to have a default value.
+  EBSVolumeSize:
+    Description: "Size of EBS Volume (in GB)"
+    Type: Number
+    Default: 50
+  UserDataScript:
+    Description: "File name for user-data script"
+    Type: String
+    Default: "pre-requisites.sh"
+  EC2InstanceType:
+    Default: t3.large
+    Description: EC2 instance type on which IDE runs
+    Type: String
+  AutoHibernateTimeout:
+    Default: 120
+    Description: How many minutes idle before shutting down the IDE
+    Type: Number
+  OwnerRoleName:
+    Default: "ServerlessSaaS/shaanubh-Isengard"
+    Description: Use this if you are accessing your AWS Account using a cross account role (as is the case with event engine)
+    Type: String    
+
+Conditions:
+  AddUserData: !Not [!Equals [ !Ref UserDataScript, "NONE" ]]
+  UseRole: !Not [!Equals [ !Ref OwnerRoleName, ""]]
+
+Resources:
+  ApiGatewayCloudWatchPublishRole:
+    Type: AWS::IAM::Role     
+    Properties:
+      Path: '/'
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - apigateway.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns: 
+        - arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs        
+  
+  AttachCloudWatchRoleToApiGateway:
+    Type: AWS::ApiGateway::Account
+    Properties: 
+      CloudWatchRoleArn: !GetAtt ApiGatewayCloudWatchPublishRole.Arn
+    
+  EC2SSMExecutionRole:
+    Type: AWS::IAM::Role     
+    Properties:
+      RoleName: ec2-ssm-role
+      Path: '/'
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns: 
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore 
+      Policies:
+      - PolicyName: ec2-ssm-policy
+        PolicyDocument:
+          Version: 2012-10-17
+          Statement:        
+          - Effect: Allow
+            Action:
+              - "ec2:ModifyVolume"
+              - "ec2:DescribeInstances"
+              - "ec2:DescribeVolumesModifications"
+              - "logs:*"              
+            Resource: "*"        
+
+  WaitForEC2ToInitialize:
+    Type: AWS::Serverless::Function
+    Properties:
+      InlineCode: |
+        import boto3
+        import time
+        ec2_client = boto3.client('ec2')
+        
+        def lambda_handler(event, context):
+          instance_id = event['resources'][0].split("/")[1]
+          instance_statuses = ec2_client.describe_instance_status(InstanceIds=[instance_id])
+          try:
+            state = instance_statuses['InstanceStatuses'][0]['InstanceState']['Name']
+            instance_status = instance_statuses['InstanceStatuses'][0]['InstanceStatus']['Details'][0]['Status']
+            system_status = instance_statuses['InstanceStatuses'][0]['SystemStatus']['Details'][0]['Status']
+          except Exception as _:
+            state = 'UNKNOWN'
+
+          while (instance_status != 'passed' or system_status != 'passed' or state != 'running'):
+            print("waiting for system to be ready")
+            time.sleep(30)
+            instance_statuses = ec2_client.describe_instance_status(InstanceIds=[instance_id])
+            print (instance_statuses)
+            try:
+              state = instance_statuses['InstanceStatuses'][0]['InstanceState']['Name']
+              instance_status = instance_statuses['InstanceStatuses'][0]['InstanceStatus']['Details'][0]['Status']
+              system_status = instance_statuses['InstanceStatuses'][0]['SystemStatus']['Details'][0]['Status']
+            except Exception as e:
+                print(e)
+                state = 'UNKNOWN'
+
+          environment_info = {
+            "instance_id": instance_id            
+          }
+          return environment_info
+        
+      Handler: index.lambda_handler
+      Runtime: python3.8
+      Timeout: 900
+      Policies:
+      - Statement:        
+        - Sid: EC2
+          Effect: Allow
+          Action:
+            - "ec2:DescribeInstanceStatus"            
+          Resource: "*"
+          
+  AttachSSMRoleToEC2:
+    Type: AWS::Serverless::Function
+    Properties:
+      InlineCode: |
+        import boto3
+        import json
+        import os
+        from time import sleep
+        iam_client= boto3.client('iam')
+        ec2_client = boto3.client('ec2')
+        
+        def lambda_handler(event, context):
+            print(event)
+            instance_id = event["instance_id"]
+            instance_profile_name = 'cloud9-' + instance_id
+
+            response = ec2_client.describe_iam_instance_profile_associations(Filters=[{'Name': 'instance-id','Values': [instance_id]},{'Name': 'state','Values': ['associated']}])
+            if (len(response['IamInstanceProfileAssociations']) < 1):
+              try:
+                  create_instance_profile_response = iam_client.create_instance_profile(InstanceProfileName=instance_profile_name)
+                  print(create_instance_profile_response)
+                  sleep(30)
+              except iam_client.exceptions.EntityAlreadyExistsException as _:
+                  pass
+              
+              try:
+                  response = iam_client.add_role_to_instance_profile(
+                      InstanceProfileName=instance_profile_name,
+                      RoleName='ec2-ssm-role'
+                  )
+                  print(response)
+
+                  response = ec2_client.associate_iam_instance_profile(
+                      IamInstanceProfile={'Name': instance_profile_name},
+                      InstanceId=instance_id
+                  )
+                  print(response)
+              except iam_client.exceptions.LimitExceededException as e:
+                  print(e)
+              
+              response = ec2_client.describe_iam_instance_profile_associations(Filters=[{'Name': 'instance-id','Values': [instance_id]},{'Name': 'state','Values': ['associated']}])
+              print(response)
+              
+              while len(response['IamInstanceProfileAssociations']) < 1:
+                  print("waiting for association to finish")
+                  sleep(30)
+                  response = ec2_client.describe_iam_instance_profile_associations(Filters=[{'Name': 'instance-id','Values': [instance_id]},{'Name': 'state','Values': ['associated']}])
+
+            environment_info = {
+                "instance_id": instance_id,                                
+                "instance_profile_name": instance_profile_name
+            }
+            return environment_info
+        
+      Handler: index.lambda_handler
+      Runtime: python3.8
+      Timeout: 900
+      Policies:
+      - Statement:
+        - Sid: ResizePolicy
+          Effect: Allow
+          Action:
+            - "ec2:DescribeIamInstanceProfileAssociations"
+            - "ec2:AssociateIamInstanceProfile"
+            - "iam:CreateInstanceProfile"
+            - "iam:AddRoleToInstanceProfile"       
+            - "iam:PassRole"     
+          Resource: "*"
+
+  SendSSMCommandtoEC2:
+    Type: AWS::Serverless::Function
+    Properties:
+      InlineCode: |
+        import boto3
+        import json
+        import os
+        from io import BytesIO
+        s3_resource = boto3.resource('s3')
+        ssm_client = boto3.client('ssm')
+        import time
+
+        def get_preamble():
+            return f"""
+        REGION=$(curl http://169.254.169.254/latest/meta-data/placement/region)
+        aws configure set profile.default.region $REGION
+
+        SIZE={int(os.environ.get('VolumeSize', '25'))}
+
+        # Get the ID of the environment host Amazon EC2 instance.
+        INSTANCEID=$(curl http://169.254.169.254/latest/meta-data//instance-id)
+
+        # Get the ID of the Amazon EBS volume associated with the instance.
+        VOLUMEID=$(aws ec2 describe-instances \
+          --instance-id $INSTANCEID \
+          --query "Reservations[0].Instances[0].BlockDeviceMappings[0].Ebs.VolumeId" \
+          --output text)
+
+        # Resize the EBS volume.
+        aws ec2 modify-volume --volume-id $VOLUMEID --size $SIZE
+
+        # Wait for the resize to finish.
+        while [ \
+          "$(aws ec2 describe-volumes-modifications \
+            --volume-id $VOLUMEID \
+            --filters Name=modification-state,Values="optimizing","completed" \
+            --query "length(VolumesModifications)"\
+            --output text)" != "1" ]; do
+          sleep 1
+        done
+        
+        # Rewrite the partition table so that the partition takes up all the space that it can.
+        sudo growpart /dev/xvda 1
+
+        # Expand the size of the file system.
+        sudo xfs_growfs -d /
+        """
+
+        def ssm_ready(ssm_client, instance_id):
+          try:
+            response = ssm_client.describe_instance_information(Filters=[{'Key': 'InstanceIds', 'Values': [instance_id]}])
+            return len(response['InstanceInformationList'])>=1
+          except ssm_client.exceptions.InvalidInstanceId:
+            return False
+
+        def lambda_handler(event, context):
+          print(event)
+          instance_id = event["instance_id"]
+          
+          while not ssm_ready(ssm_client, instance_id):
+            print("SSM not ready yet")
+            time.sleep(30)
+            
+          try:
+            print(os.environ["S3Bucket"])
+            print(os.environ["S3Object"])
+            bucket = s3_resource.Bucket(os.environ["S3Bucket"])
+            obj = bucket.Object(os.environ["S3Object"])
+            output = BytesIO()
+            obj.download_fileobj(output)
+            commands = get_preamble() + '\n' + output.getvalue().decode('utf-8') + '\n'
+          except Exception as e:
+            print(e)
+            commands = get_preamble()
+
+          print (instance_id)
+          
+          send_command_response = ssm_client.send_command(
+            InstanceIds=[instance_id],
+            DocumentName='AWS-RunShellScript',
+            Parameters={'commands': commands.split('\n')},
+            CloudWatchOutputConfig={
+                'CloudWatchLogGroupName': f'ssm-output-{instance_id}',
+                'CloudWatchOutputEnabled': True
+            }
+          )
+
+          environment_info = {
+            "instance_id": instance_id,
+            "command_id": send_command_response['Command']['CommandId']
+          }
+          return environment_info
+
+      Handler: index.lambda_handler
+      Runtime: python3.8
+      Timeout: 900
+      Environment:
+        Variables:
+          VolumeSize: !Ref EBSVolumeSize
+          S3Bucket: !If
+            - AddUserData
+            - !Ref EEAssetsBucket
+            - !Ref "AWS::NoValue"
+          S3Object: !If
+            - AddUserData
+            - !Sub "${EEAssetsKeyPrefix}${UserDataScript}"
+            - !Ref "AWS::NoValue"
+      Policies:
+      - Statement:
+        - Sid: ResizePolicy
+          Effect: Allow
+          Action:
+            - "s3:*"
+            - "ssm:*"
+            - "cloudwatch:*"
+          Resource: "*"
+
+  WaitForSSMCommandToComplete:
+    Type: AWS::Serverless::Function
+    Properties:
+      InlineCode: |
+        import boto3
+        import time
+
+        def lambda_handler(event, context):
+          command_id = event["command_id"]
+          instance_id = event["instance_id"]
+          ssm_client = boto3.client('ssm')
+          response = ssm_client.get_command_invocation(CommandId=command_id, InstanceId=instance_id)
+          while (response['Status'] in ['Pending', 'InProgress', 'Delayed']):
+            time.sleep(30)
+            print("Command in Progress")
+            response = ssm_client.get_command_invocation(CommandId=command_id, InstanceId=instance_id)
+          
+      Handler: index.lambda_handler
+      Runtime: python3.8
+      Timeout: 900
+      Policies:
+      - Statement:
+        - Sid: ResizePolicy
+          Effect: Allow
+          Action:
+            - "ssm:GetCommandInvocation"
+          Resource: "*"
+            
+  BootStrapC9StateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      Definition:
+        StartAt: Environment Health Check
+        States:
+          Environment Health Check:
+            Type: Task
+            Resource: ${WaitForEC2ToInitializeArn}
+            Retry:
+            - ErrorEquals:
+              - States.TaskFailed
+              IntervalSeconds: 30
+              MaxAttempts: 2
+              BackoffRate: 1.5
+            Next: Attach SSM Role To EC2
+          Attach SSM Role To EC2:
+            Type: Task
+            Resource: ${AttachSSMRoleToEC2Arn}
+            Retry:
+            - ErrorEquals:
+              - States.TaskFailed
+              IntervalSeconds: 30
+              MaxAttempts: 2
+              BackoffRate: 1.5
+            Next: Send Command
+          Send Command:
+            Type: Task
+            Resource: ${SendSSMCommandtoEC2Arn}
+            Retry:
+            - ErrorEquals:
+              - States.TaskFailed
+              IntervalSeconds: 30
+              MaxAttempts: 2
+              BackoffRate: 1.5
+            Next: Wait To Stabilize
+          Wait To Stabilize:
+            Type: Task
+            Resource: ${WaitForSSMCommandToCompleteArn}
+            Retry:
+            - ErrorEquals:
+              - States.TaskFailed
+              IntervalSeconds: 30
+              MaxAttempts: 2
+              BackoffRate: 1.5
+            End: true
+      DefinitionSubstitutions:
+        WaitForEC2ToInitializeArn: !GetAtt WaitForEC2ToInitialize.Arn
+        AttachSSMRoleToEC2Arn: !GetAtt AttachSSMRoleToEC2.Arn
+        SendSSMCommandtoEC2Arn: !GetAtt SendSSMCommandtoEC2.Arn
+        WaitForSSMCommandToCompleteArn: !GetAtt WaitForSSMCommandToComplete.Arn                
+      Policies:
+      - LambdaInvokePolicy:
+          FunctionName: !Ref WaitForEC2ToInitialize
+      - LambdaInvokePolicy:
+          FunctionName: !Ref AttachSSMRoleToEC2
+      - LambdaInvokePolicy:
+          FunctionName: !Ref SendSSMCommandtoEC2
+      - LambdaInvokePolicy:
+          FunctionName: !Ref WaitForSSMCommandToComplete
+  
+  EventBridgeRole:
+    Type: AWS::IAM::Role     
+    Properties:
+      Path: '/'
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - events.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:      
+        - PolicyName: serverless-saas-eventbridge-stepfunction-policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - states:StartExecution                      
+                Resource:
+                  - !GetAtt BootStrapC9StateMachine.Arn              
+
+  NewCloud9Event:
+    Type: AWS::Events::Rule
+    Properties:
+      EventPattern:
+        source:
+        - aws.ec2
+        detail-type:
+        - EC2 Instance State-change Notification
+        detail:
+          state:
+          - running      
+      Targets:
+        - Arn : !GetAtt BootStrapC9StateMachine.Arn
+          Id: "BootStrapC9StateMachineTarget"
+          RoleArn: !GetAtt EventBridgeRole.Arn
+
+  Cloud9IDE:
+    Type: AWS::Cloud9::EnvironmentEC2
+    DependsOn: NewCloud9Event
+    Properties:
+      Repositories:
+      - RepositoryUrl: https://github.com/aws-samples/aws-serverless-saas-layers.git
+        PathComponent: /serverless-saas-layers
+      Description: Cloud9 IDE
+      Tags:
+        - Key: stack-name
+          Value: ServerlessSaaS
+      AutomaticStopTimeMinutes:
+        Ref: AutoHibernateTimeout      
+      ImageId: amazonlinux-2-x86_64
+      InstanceType:
+        Ref: EC2InstanceType
+      Name: Serverless-SaaS
+      OwnerArn: !If [UseRole, !Join [ "", [!Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/", !Ref OwnerRoleName]] , !Ref "AWS::NoValue"]
+  
+Outputs:
+  BootStrapC9StateMachineArn:
+    Description: "State machine ARN"
+    Value: !Ref BootStrapC9StateMachine

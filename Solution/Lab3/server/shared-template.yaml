@@ -1,0 +1,146 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Template to Bootstrap the Common Resources
+Parameters:
+  AdminEmailParameter:
+    Type: String
+    Default: "test@test.com"
+    Description: "Enter system admin email address"
+  SystemAdminRoleNameParameter:
+    Type: String
+    Default: "SystemAdmin"
+    Description: "Enter the role name for system admin"
+  StageName:
+    Type: String
+    Default: "prod"
+    Description: "Stage Name for the api"  
+Resources:
+  DynamoDBTables:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: nested_templates/tables.yaml
+
+  #Create cloudfront and s3 for UI Cde
+  UserInterface:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: nested_templates/userinterface.yaml
+      
+  Cognito:
+    Type: AWS::Serverless::Application
+    DependsOn: UserInterface
+    Properties:
+      Location: nested_templates/cognito.yaml
+      Parameters:
+        AdminEmailParameter: !Ref AdminEmailParameter
+        SystemAdminRoleNameParameter: !Ref SystemAdminRoleNameParameter
+        AdminUserPoolCallbackURLParameter: !GetAtt UserInterface.Outputs.AdminAppSite
+        TenantUserPoolCallbackURLParameter: !GetAtt UserInterface.Outputs.ApplicationSite
+        
+  LambdaFunctions:
+    Type: AWS::Serverless::Application
+    DependsOn: UserInterface
+    Properties:
+      Location: nested_templates/lambdafunctions.yaml
+      Parameters:
+        CognitoUserPoolId: !GetAtt Cognito.Outputs.CognitoUserPoolId
+        CognitoUserPoolClientId: !GetAtt Cognito.Outputs.CognitoUserPoolClientId                
+        CognitoOperationUsersUserPoolId: !GetAtt Cognito.Outputs.CognitoOperationUsersUserPoolId
+        CognitoOperationUsersUserPoolClientId: !GetAtt Cognito.Outputs.CognitoOperationUsersUserPoolClientId
+        TenantDetailsTableArn: !GetAtt DynamoDBTables.Outputs.TenantDetailsTableArn
+        TenantUserMappingTableArn: !GetAtt DynamoDBTables.Outputs.TenantUserMappingTableArn
+        
+  APIs:
+    Type: AWS::Serverless::Application
+    DependsOn: LambdaFunctions
+    Properties:
+      Location: nested_templates/apigateway.yaml
+      Parameters:
+        StageName: !Ref StageName
+        RegisterTenantLambdaExecutionRoleArn: !GetAtt LambdaFunctions.Outputs.RegisterTenantLambdaExecutionRoleArn          
+        TenantManagementLambdaExecutionRoleArn: !GetAtt LambdaFunctions.Outputs.TenantManagementLambdaExecutionRoleArn          
+        RegisterTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.RegisterTenantFunctionArn
+        ActivateTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.ActivateTenantFunctionArn
+        GetTenantsFunctionArn: !GetAtt LambdaFunctions.Outputs.GetTenantsFunctionArn
+        CreateTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.CreateTenantFunctionArn
+        GetTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.GetTenantFunctionArn          
+        DeactivateTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.DeactivateTenantFunctionArn          
+        UpdateTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.UpdateTenantFunctionArn          
+        GetUsersFunctionArn: !GetAtt LambdaFunctions.Outputs.GetUsersFunctionArn 
+        GetUserFunctionArn: !GetAtt LambdaFunctions.Outputs.GetUserFunctionArn          
+        UpdateUserFunctionArn: !GetAtt LambdaFunctions.Outputs.UpdateUserFunctionArn          
+        DisableUserFunctionArn: !GetAtt LambdaFunctions.Outputs.DisableUserFunctionArn
+        CreateTenantAdminUserFunctionArn: !GetAtt LambdaFunctions.Outputs.CreateTenantAdminUserFunctionArn
+        CreateUserFunctionArn: !GetAtt LambdaFunctions.Outputs.CreateUserFunctionArn
+        DisableUsersByTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.DisableUsersByTenantFunctionArn
+        EnableUsersByTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.EnableUsersByTenantFunctionArn                  
+        AuthorizerFunctionArn: !GetAtt LambdaFunctions.Outputs.SharedServicesAuthorizerFunctionArn  
+        
+  APIGatewayLambdaPermissions:
+    Type: AWS::Serverless::Application
+    DependsOn: LambdaFunctions
+    Properties:
+      Location: nested_templates/apigateway_lambdapermissions.yaml
+      Parameters:
+        RegisterTenantLambdaExecutionRoleArn: !GetAtt LambdaFunctions.Outputs.RegisterTenantLambdaExecutionRoleArn          
+        TenantManagementLambdaExecutionRoleArn: !GetAtt LambdaFunctions.Outputs.TenantManagementLambdaExecutionRoleArn          
+        RegisterTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.RegisterTenantFunctionArn
+        ActivateTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.ActivateTenantFunctionArn
+        GetTenantsFunctionArn: !GetAtt LambdaFunctions.Outputs.GetTenantsFunctionArn
+        CreateTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.CreateTenantFunctionArn
+        GetTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.GetTenantFunctionArn          
+        DeactivateTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.DeactivateTenantFunctionArn          
+        UpdateTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.UpdateTenantFunctionArn          
+        GetUsersFunctionArn: !GetAtt LambdaFunctions.Outputs.GetUsersFunctionArn 
+        GetUserFunctionArn: !GetAtt LambdaFunctions.Outputs.GetUserFunctionArn          
+        UpdateUserFunctionArn: !GetAtt LambdaFunctions.Outputs.UpdateUserFunctionArn          
+        DisableUserFunctionArn: !GetAtt LambdaFunctions.Outputs.DisableUserFunctionArn
+        CreateTenantAdminUserFunctionArn: !GetAtt LambdaFunctions.Outputs.CreateTenantAdminUserFunctionArn
+        CreateUserFunctionArn: !GetAtt LambdaFunctions.Outputs.CreateUserFunctionArn
+        DisableUsersByTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.DisableUsersByTenantFunctionArn
+        EnableUsersByTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.EnableUsersByTenantFunctionArn          
+        AuthorizerFunctionArn: !GetAtt LambdaFunctions.Outputs.SharedServicesAuthorizerFunctionArn         
+        AdminApiGatewayApi: !GetAtt APIs.Outputs.AdminApiGatewayApi
+
+Outputs:
+  AdminApi:
+    Description: "API Gateway endpoint URL for Admin API"
+    Value: !Join ["", ["https://", !GetAtt APIs.Outputs.AdminApiGatewayApi, ".execute-api.", !Ref "AWS::Region", ".amazonaws.com/", !Ref StageName, "/"]]
+  AdminSiteBucket:
+    Description: The S3 Bucket that will contain the static assets for the tenant administration application
+    Value: !GetAtt UserInterface.Outputs.AdminBucket
+  AdminAppSite:
+    Description: The name of the cloudfornt url for Admin Management site
+    Value: !GetAtt UserInterface.Outputs.AdminAppSite
+  LandingApplicationSiteBucket:
+    Description: The S3 Bucket that will contain the static assets for the landing application
+    Value: !GetAtt UserInterface.Outputs.LandingAppBucket
+  LandingApplicationSite:
+    Description: The name of the cloudfornt url for Landing site
+    Value: !GetAtt UserInterface.Outputs.LandingApplicationSite
+  ApplicationSiteBucket:
+    Description: The S3 Bucket that will contain the static assets for the tenant application
+    Value: !GetAtt UserInterface.Outputs.AppBucket
+  ApplicationSite:
+    Description: The name of the cloudfornt url for Tenant Management site
+    Value: !GetAtt UserInterface.Outputs.ApplicationSite
+  CognitoOperationUsersUserPoolProviderURL:
+    Description: The Admin Management userpool provider url
+    Value: !GetAtt Cognito.Outputs.CognitoOperationUsersUserPoolProviderURL
+  CognitoOperationUsersUserPoolClientId:
+    Description: The Admin Management userpool client id
+    Value: !GetAtt Cognito.Outputs.CognitoOperationUsersUserPoolClientId
+  CognitoTenantUserPoolId:
+    Description: The user pool id for tenant user pool
+    Value: !GetAtt Cognito.Outputs.CognitoUserPoolId
+    Export:
+      Name: "Serverless-SaaS-CognitoTenantUserPoolId"  
+  CognitoTenantAppClientId:
+    Description: The app client id for tenant user pool
+    Value: !GetAtt Cognito.Outputs.CognitoUserPoolClientId
+    Export:
+      Name: "Serverless-SaaS-CognitoTenantAppClientId"  

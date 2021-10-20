@@ -1,0 +1,955 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Serverless SaaS Reference Architecture 
+
+Globals:
+  Function:
+    Timeout: 29
+    Layers:
+      - !Sub "arn:aws:lambda:${AWS::Region}:580247275435:layer:LambdaInsightsExtension:14"
+    Environment:
+        Variables:
+          LOG_LEVEL: DEBUG         
+          POWERTOOLS_METRICS_NAMESPACE: "ServerlessSaaS"
+          
+Parameters:
+  TenantIdParameter:
+    Type: String
+    Default: pooled
+    Description: Tenant ID for the stack
+  StageName:
+    Type: String
+    Default: "prod"
+    Description: "Stage Name for the api"
+Conditions:
+  IsPooledDeploy: !Equals [ !Ref TenantIdParameter, pooled]    
+Resources: 
+  ServerlessSaaSLayers:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: !Join ['-', [serverless-saas-dependencies, !Ref TenantIdParameter]]
+      Description: Utilities for project
+      ContentUri: layers/
+      CompatibleRuntimes:
+        - python3.8          
+      LicenseInfo: 'MIT'
+      RetentionPolicy: Retain      
+    Metadata:
+      BuildMethod: python3.8   
+  
+  ProductTable:
+    Type: AWS::DynamoDB::Table
+    Properties: 
+      AttributeDefinitions:
+        - AttributeName: shardId
+          AttributeType: S          
+        - AttributeName: productId
+          AttributeType: S          
+      KeySchema:
+        - AttributeName: shardId
+          KeyType: HASH  
+        - AttributeName: productId
+          KeyType: RANGE  
+      ProvisionedThroughput: 
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      TableName: !Join ['-', [Product, !Ref TenantIdParameter]]
+
+  OrderTable:
+    Type: AWS::DynamoDB::Table
+    Properties: 
+      AttributeDefinitions:
+        - AttributeName: shardId
+          AttributeType: S 
+        - AttributeName: orderId
+          AttributeType: S          
+      KeySchema:
+        - AttributeName: shardId
+          KeyType: HASH 
+        - AttributeName: orderId
+          KeyType: RANGE  
+      ProvisionedThroughput: 
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      TableName: !Join ['-', [Order, !Ref TenantIdParameter]]
+
+  ProductFunctionExecutionRole:
+    Type: AWS::IAM::Role     
+    Properties:
+      RoleName: !Join ['-', [!Ref TenantIdParameter, product-function-execution-role]]
+      Path: '/'
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns: 
+        - arn:aws:iam::aws:policy/CloudWatchLambdaInsightsExecutionRolePolicy    
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
+      Policies:
+        - PolicyName: !Join ['-', [!Ref TenantIdParameter, product-function-policy]]
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:              
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:PutItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                Resource:
+                  - !GetAtt ProductTable.Arn
+             
+  GetProductFunction:
+    Type: AWS::Serverless::Function 
+    DependsOn: ProductFunctionExecutionRole 
+    Properties:
+      CodeUri: ProductService/
+      Handler: product_service.get_product
+      Runtime: python3.8  
+      Tracing: Active
+      Role: !GetAtt ProductFunctionExecutionRole.Arn
+      Layers: 
+        - !Ref ServerlessSaaSLayers
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: "ProductService"
+          IS_POOLED_DEPLOY: !If [IsPooledDeploy, true, false]
+          PRODUCT_TABLE_NAME: !Ref ProductTable      
+  
+  GetProductsFunction:
+    Type: AWS::Serverless::Function 
+    DependsOn: ProductFunctionExecutionRole 
+    Properties:
+      CodeUri: ProductService/
+      Handler: product_service.get_products
+      Runtime: python3.8  
+      Tracing: Active
+      Role: !GetAtt ProductFunctionExecutionRole.Arn
+      Layers: 
+        - !Ref ServerlessSaaSLayers
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: "ProductService"
+          IS_POOLED_DEPLOY: !If [IsPooledDeploy, true, false]
+          PRODUCT_TABLE_NAME: !Ref ProductTable
+      
+  CreateProductFunction:
+    Type: AWS::Serverless::Function
+    DependsOn: ProductFunctionExecutionRole 
+    Properties:
+      CodeUri: ProductService/
+      Handler: product_service.create_product
+      Runtime: python3.8  
+      Tracing: Active 
+      Role: !GetAtt ProductFunctionExecutionRole.Arn 
+      Layers: 
+        - !Ref ServerlessSaaSLayers
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: "ProductService"
+          IS_POOLED_DEPLOY: !If [IsPooledDeploy, true, false]
+          PRODUCT_TABLE_NAME: !Ref ProductTable
+
+  UpdateProductFunction:
+    Type: AWS::Serverless::Function
+    DependsOn: ProductFunctionExecutionRole 
+    Properties:
+      CodeUri: ProductService/
+      Handler: product_service.update_product
+      Runtime: python3.8 
+      Tracing: Active
+      Role: !GetAtt ProductFunctionExecutionRole.Arn 
+      Layers: 
+        - !Ref ServerlessSaaSLayers
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: "ProductService"
+          IS_POOLED_DEPLOY: !If [IsPooledDeploy, true, false]
+          PRODUCT_TABLE_NAME: !Ref ProductTable
+
+  DeleteProductFunction:
+    Type: AWS::Serverless::Function
+    DependsOn: ProductFunctionExecutionRole 
+    Properties:
+      CodeUri: ProductService/
+      Handler: product_service.delete_product
+      Runtime: python3.8 
+      Tracing: Active
+      Role: !GetAtt ProductFunctionExecutionRole.Arn 
+      Layers: 
+        - !Ref ServerlessSaaSLayers
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: "ProductService"
+          IS_POOLED_DEPLOY: !If [IsPooledDeploy, true, false]
+          PRODUCT_TABLE_NAME: !Ref ProductTable
+
+  OrderFunctionExecutionRole:
+    Type: AWS::IAM::Role     
+    Properties:
+      RoleName: !Join ['-', [!Ref TenantIdParameter, order-function-execution-role]]
+      Path: '/'
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns: 
+        - arn:aws:iam::aws:policy/CloudWatchLambdaInsightsExecutionRolePolicy    
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
+      Policies:
+        - PolicyName: !Join ['-', [!Ref TenantIdParameter, order-function-policy]]
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:              
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:PutItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                Resource:
+                  - !GetAtt OrderTable.Arn
+                
+  GetOrdersFunction:
+    Type: AWS::Serverless::Function 
+    DependsOn: OrderFunctionExecutionRole 
+    Properties:
+      CodeUri: OrderService/
+      Handler: order_service.get_orders
+      Runtime: python3.8  
+      Tracing: Active
+      Role: !GetAtt OrderFunctionExecutionRole.Arn
+      Layers: 
+        - !Ref ServerlessSaaSLayers
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: "OrderService"
+          IS_POOLED_DEPLOY: !If [IsPooledDeploy, true, false]
+          ORDER_TABLE_NAME: !Ref OrderTable
+      
+  GetOrderFunction:
+    Type: AWS::Serverless::Function 
+    DependsOn: OrderFunctionExecutionRole 
+    Properties:
+      CodeUri: OrderService/
+      Handler: order_service.get_order
+      Runtime: python3.8  
+      Tracing: Active
+      Role: !GetAtt OrderFunctionExecutionRole.Arn
+      Layers: 
+        - !Ref ServerlessSaaSLayers
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: "OrderService"
+          IS_POOLED_DEPLOY: !If [IsPooledDeploy, true, false]
+          ORDER_TABLE_NAME: !Ref OrderTable
+      
+  CreateOrderFunction:
+    Type: AWS::Serverless::Function
+    DependsOn: OrderFunctionExecutionRole 
+    Properties:
+      CodeUri: OrderService/
+      Handler: order_service.create_order
+      Runtime: python3.8  
+      Tracing: Active 
+      Role: !GetAtt OrderFunctionExecutionRole.Arn 
+      Layers: 
+        - !Ref ServerlessSaaSLayers
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: "OrderService"
+          IS_POOLED_DEPLOY: !If [IsPooledDeploy, true, false]
+          ORDER_TABLE_NAME: !Ref OrderTable
+  
+  UpdateOrderFunction:
+    Type: AWS::Serverless::Function
+    DependsOn: OrderFunctionExecutionRole 
+    Properties:
+      CodeUri: OrderService/
+      Handler: order_service.update_order
+      Runtime: python3.8 
+      Tracing: Active
+      Role: !GetAtt OrderFunctionExecutionRole.Arn 
+      Layers: 
+        - !Ref ServerlessSaaSLayers
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: "OrderService"
+          IS_POOLED_DEPLOY: !If [IsPooledDeploy, true, false]
+          ORDER_TABLE_NAME: !Ref OrderTable
+  
+  DeleteOrderFunction:
+    Type: AWS::Serverless::Function
+    DependsOn: OrderFunctionExecutionRole 
+    Properties:
+      CodeUri: OrderService/
+      Handler: order_service.delete_order
+      Runtime: python3.8 
+      Tracing: Active
+      Role: !GetAtt OrderFunctionExecutionRole.Arn 
+      Layers: 
+        - !Ref ServerlessSaaSLayers
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: "OrderService"
+          IS_POOLED_DEPLOY: !If [IsPooledDeploy, true, false]
+          ORDER_TABLE_NAME: !Ref OrderTable
+  
+  BusinessServicesAuthorizerFunction:
+    Type: AWS::Serverless::Function 
+    Properties:
+      CodeUri: Resources/
+      Handler: tenant_authorizer.lambda_handler
+      Runtime: python3.8
+      Role: !ImportValue Serverless-SaaS-AuthorizerExecutionRoleArn
+      MemorySize: 256
+      Tracing: Active
+      Layers: 
+        - !Ref ServerlessSaaSLayers
+      Environment:
+        Variables:
+          OPERATION_USERS_USER_POOL: !ImportValue Serverless-SaaS-CognitoOperationUsersUserPoolId
+          OPERATION_USERS_APP_CLIENT: !ImportValue Serverless-SaaS-CognitoOperationUsersUserPoolClientId
+          
+  ApiGatewayAccessLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Join ['-', [/aws/api-gateway/access-logs-serverless-saas-tenant-api-, !Ref TenantIdParameter]]
+      RetentionInDays: 30
+  ApiGatewayTenantApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      MethodSettings:
+        - DataTraceEnabled: False
+          LoggingLevel: INFO
+          MetricsEnabled: True
+          ResourcePath: '/*' 
+          HttpMethod: '*' 
+      AccessLogSetting:
+        DestinationArn: !GetAtt ApiGatewayAccessLogs.Arn
+        Format: '{ "requestId":"$context.requestId", "ip": "$context.identity.sourceIp", "caller":"$context.identity.caller", "user":"$context.identity.user","requestTime":"$context.requestTime", "httpMethod":"$context.httpMethod","resourcePath":"$context.resourcePath", "status":"$context.status","protocol":"$context.protocol", "responseLength":"$context.responseLength" }'
+      TracingEnabled: True
+      DefinitionBody:
+        openapi: 3.0.1
+        info:
+          title: !Join ['-', [!Ref TenantIdParameter, 'serverless-saas-tenant-api']]
+        basePath: !Join ['', ['/', !Ref StageName]]
+        x-amazon-apigateway-api-key-source : "AUTHORIZER"
+        schemes:
+          - https
+        paths:
+          /order/{id}:
+            get:
+              summary: Returns a order
+              description: Return a order by a order id.
+              produces:
+                - application/json
+              parameters:
+                - name: id
+                  in: path
+                  required: true
+                  type: string
+              responses: {}
+              security:        
+                - Authorizer: []
+              x-amazon-apigateway-integration:
+                uri: !Join
+                  - ''
+                  - - !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/
+                    -  !GetAtt GetOrderFunction.Arn
+                    - /invocations
+                httpMethod: POST
+                type: aws_proxy 
+            put:              
+              produces:
+                - application/json
+              responses: {}
+              security:      
+                - Authorizer: []
+              x-amazon-apigateway-integration:
+                uri: !Join
+                  - ''
+                  - - !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/
+                    -  !GetAtt UpdateOrderFunction.Arn
+                    - /invocations
+                httpMethod: POST
+                type: aws_proxy     
+            delete:
+              summary: Deletes a order
+              description: Deletes a order by a order id.
+              produces:
+                - application/json
+              parameters:
+                - name: id
+                  in: path
+                  required: true
+                  type: string
+              responses: {}
+              security:       
+                - Authorizer: []
+              x-amazon-apigateway-integration:
+                uri: !Join
+                  - ''
+                  - - !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/
+                    -  !GetAtt DeleteOrderFunction.Arn
+                    - /invocations
+                httpMethod: POST
+                type: aws_proxy
+            options:
+              consumes:
+                - application/json
+              produces:
+                - application/json
+              responses:
+                '200':
+                  description: 200 response
+                  schema:
+                    $ref: "#/definitions/Empty"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                    Access-Control-Allow-Headers:
+                      type: string
+              x-amazon-apigateway-integration:
+                responses:
+                  default:
+                    statusCode: 200
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+                      method.response.header.Access-Control-Allow-Origin:  "'*'"
+                passthroughBehavior: when_no_match
+                requestTemplates:
+                  application/json: "{\"statusCode\": 200}"
+                type: mock      
+          /orders:
+            get:
+              summary: Returns all orders
+              description: Returns all orders.
+              produces:
+                - application/json
+              responses: {}
+              security:     
+                - Authorizer: []
+              x-amazon-apigateway-integration:
+                uri: !Join
+                  - ''
+                  - - !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/
+                    -  !GetAtt GetOrdersFunction.Arn
+                    - /invocations
+                httpMethod: POST
+                type: aws_proxy
+            options:
+              consumes:
+                - application/json
+              produces:
+                - application/json
+              responses:
+                '200':
+                  description: 200 response
+                  schema:
+                    $ref: "#/definitions/Empty"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                    Access-Control-Allow-Headers:
+                      type: string
+              x-amazon-apigateway-integration:
+                responses:
+                  default:
+                    statusCode: 200
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+                      method.response.header.Access-Control-Allow-Origin:  "'*'"
+                passthroughBehavior: when_no_match
+                requestTemplates:
+                  application/json: "{\"statusCode\": 200}"
+                type: mock                              
+          /order:
+            post:              
+              produces:
+                - application/json
+              responses: {}
+              security:         
+                - Authorizer: []
+              x-amazon-apigateway-integration:
+                uri: !Join
+                  - ''
+                  - - !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/
+                    -  !GetAtt CreateOrderFunction.Arn
+                    - /invocations
+                httpMethod: POST
+                type: aws_proxy
+            options:
+              consumes:
+                - application/json
+              produces:
+                - application/json
+              responses:
+                '200':
+                  description: 200 response
+                  schema:
+                    $ref: "#/definitions/Empty"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                    Access-Control-Allow-Headers:
+                      type: string
+              x-amazon-apigateway-integration:
+                responses:
+                  default:
+                    statusCode: 200
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+                      method.response.header.Access-Control-Allow-Origin:  "'*'"
+                passthroughBehavior: when_no_match
+                requestTemplates:
+                  application/json: "{\"statusCode\": 200}"
+                type: mock     
+          /product/{id}:
+            get:
+              summary: Returns a product
+              description: Return a product by a product id.
+              produces:
+                - application/json
+              parameters:
+                - name: id
+                  in: path
+                  required: true
+                  type: string
+              responses: {}
+              security:  
+                - Authorizer: []
+              x-amazon-apigateway-integration:
+                uri: !Join
+                  - ''
+                  - - !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/
+                    -  !GetAtt GetProductFunction.Arn
+                    - /invocations
+                httpMethod: POST
+                type: aws_proxy 
+            put:              
+              produces:
+                - application/json
+              responses: {}
+              security: 
+                - Authorizer: []
+              x-amazon-apigateway-integration:
+                uri: !Join
+                  - ''
+                  - - !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/
+                    -  !GetAtt UpdateProductFunction.Arn
+                    - /invocations
+                httpMethod: POST
+                type: aws_proxy     
+            delete:
+              summary: Deletes a product
+              description: Deletes a product by a product id.
+              produces:
+                - application/json
+              parameters:
+                - name: id
+                  in: path
+                  required: true
+                  type: string
+              responses: {}
+              security:     
+                - Authorizer: []
+              x-amazon-apigateway-integration:
+                uri: !Join
+                  - ''
+                  - - !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/
+                    -  !GetAtt DeleteProductFunction.Arn
+                    - /invocations
+                httpMethod: POST
+                type: aws_proxy 
+            options:
+              consumes:
+                - application/json
+              produces:
+                - application/json
+              responses:
+                '200':
+                  description: 200 response
+                  schema:
+                    $ref: "#/definitions/Empty"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                    Access-Control-Allow-Headers:
+                      type: string
+              x-amazon-apigateway-integration:
+                responses:
+                  default:
+                    statusCode: 200
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+                      method.response.header.Access-Control-Allow-Origin:  "'*'"
+                passthroughBehavior: when_no_match
+                requestTemplates:
+                  application/json: "{\"statusCode\": 200}"
+                type: mock      
+          /products:
+            get:
+              summary: Returns all products
+              description: Returns all products.
+              produces:
+                - application/json
+              responses: {}
+              security: 
+                - Authorizer: []
+              x-amazon-apigateway-integration:
+                uri: !Join
+                  - ''
+                  - - !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/
+                    -  !GetAtt GetProductsFunction.Arn
+                    - /invocations
+                httpMethod: POST
+                type: aws_proxy  
+            options:
+              consumes:
+                - application/json
+              produces:
+                - application/json
+              responses:
+                '200':
+                  description: 200 response
+                  schema:
+                    $ref: "#/definitions/Empty"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                    Access-Control-Allow-Headers:
+                      type: string
+              x-amazon-apigateway-integration:
+                responses:
+                  default:
+                    statusCode: 200
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+                      method.response.header.Access-Control-Allow-Origin:  "'*'"
+                passthroughBehavior: when_no_match
+                requestTemplates:
+                  application/json: "{\"statusCode\": 200}"
+                type: mock                           
+          /product:
+            post:              
+              produces:
+                - application/json
+              responses: {}
+              security:   
+                - Authorizer: []
+              x-amazon-apigateway-integration:
+                uri: !Join
+                  - ''
+                  - - !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/
+                    -  !GetAtt CreateProductFunction.Arn
+                    - /invocations
+                httpMethod: POST
+                type: aws_proxy   
+            options:
+              consumes:
+                - application/json
+              produces:
+                - application/json
+              responses:
+                '200':
+                  description: 200 response
+                  schema:
+                    $ref: "#/definitions/Empty"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      type: string
+                    Access-Control-Allow-Methods:
+                      type: string
+                    Access-Control-Allow-Headers:
+                      type: string
+              x-amazon-apigateway-integration:
+                responses:
+                  default:
+                    statusCode: 200
+                    responseParameters:
+                      method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+                      method.response.header.Access-Control-Allow-Origin:  "'*'"
+                passthroughBehavior: when_no_match
+                requestTemplates:
+                  application/json: "{\"statusCode\": 200}"
+                type: mock                                    
+        components:
+          securitySchemes:                    
+            Authorizer:
+              type: "apiKey"
+              name: "Authorization"
+              in: "header"
+              x-amazon-apigateway-authtype: "custom"
+              x-amazon-apigateway-authorizer:
+                authorizerUri: !Join
+                  - ''
+                  - - !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/
+                    - !GetAtt BusinessServicesAuthorizerFunction.Arn                      
+                    - /invocations
+                authorizerResultTtlInSeconds: 30
+                type: "token"
+      StageName: !Ref StageName
+  
+  GetProductsLambdaApiGatewayExecutionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt GetProductsFunction.Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join [
+        "", [
+          "arn:aws:execute-api:", 
+          {"Ref": "AWS::Region"}, ":", 
+          {"Ref": "AWS::AccountId"}, ":", 
+          !Ref ApiGatewayTenantApi, "/*/*/*"
+          ]
+        ] 
+      
+  GetProductLambdaApiGatewayExecutionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt 
+        - GetProductFunction
+        - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join [
+        "", [
+          "arn:aws:execute-api:", 
+          {"Ref": "AWS::Region"}, ":", 
+          {"Ref": "AWS::AccountId"}, ":", 
+          !Ref ApiGatewayTenantApi, "/*/*/*"
+          ]
+        ]  
+  CreateProductLambdaApiGatewayExecutionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt 
+        - CreateProductFunction
+        - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join [
+        "", [
+          "arn:aws:execute-api:", 
+          {"Ref": "AWS::Region"}, ":", 
+          {"Ref": "AWS::AccountId"}, ":", 
+          !Ref ApiGatewayTenantApi, "/*/*/*"
+          ]
+        ]    
+  UpdateProductLambdaApiGatewayExecutionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt 
+        - UpdateProductFunction
+        - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join [
+        "", [
+          "arn:aws:execute-api:", 
+          {"Ref": "AWS::Region"}, ":", 
+          {"Ref": "AWS::AccountId"}, ":", 
+          !Ref ApiGatewayTenantApi, "/*/*/*"
+          ]
+        ]         
+  DeleteProductLambdaApiGatewayExecutionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt 
+        - DeleteProductFunction
+        - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join [
+        "", [
+          "arn:aws:execute-api:", 
+          {"Ref": "AWS::Region"}, ":", 
+          {"Ref": "AWS::AccountId"}, ":", 
+          !Ref ApiGatewayTenantApi, "/*/*/*"
+          ]
+        ]  
+  
+  GetOrdersLambdaApiGatewayExecutionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt 
+        - GetOrdersFunction
+        - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join [
+        "", [
+          "arn:aws:execute-api:", 
+          {"Ref": "AWS::Region"}, ":", 
+          {"Ref": "AWS::AccountId"}, ":", 
+          !Ref ApiGatewayTenantApi, "/*/*/*"
+          ]
+        ]      
+
+  GetOrderLambdaApiGatewayExecutionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt 
+        - GetOrderFunction
+        - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join [
+        "", [
+          "arn:aws:execute-api:", 
+          {"Ref": "AWS::Region"}, ":", 
+          {"Ref": "AWS::AccountId"}, ":", 
+          !Ref ApiGatewayTenantApi, "/*/*/*"
+          ]
+        ]  
+  CreateOrderLambdaApiGatewayExecutionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt 
+        - CreateOrderFunction
+        - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join [
+        "", [
+          "arn:aws:execute-api:", 
+          {"Ref": "AWS::Region"}, ":", 
+          {"Ref": "AWS::AccountId"}, ":", 
+          !Ref ApiGatewayTenantApi, "/*/*/*"
+          ]
+        ]    
+  UpdateOrderLambdaApiGatewayExecutionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt 
+        - UpdateOrderFunction
+        - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join [
+        "", [
+          "arn:aws:execute-api:", 
+          {"Ref": "AWS::Region"}, ":", 
+          {"Ref": "AWS::AccountId"}, ":", 
+          !Ref ApiGatewayTenantApi, "/*/*/*"
+          ]
+        ]         
+  DeleteOrderLambdaApiGatewayExecutionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt 
+        - DeleteOrderFunction
+        - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join [
+        "", [
+          "arn:aws:execute-api:", 
+          {"Ref": "AWS::Region"}, ":", 
+          {"Ref": "AWS::AccountId"}, ":", 
+          !Ref ApiGatewayTenantApi, "/*/*/*"
+          ]
+        ]            
+
+  AuthorizerLambdaApiGatewayExecutionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt BusinessServicesAuthorizerFunction.Arn     
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join ["", ["arn:aws:execute-api:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":", !Ref ApiGatewayTenantApi, "/*/*" ]]
+  UpdateTenantApiGatewayUrlLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    DependsOn: ApiGatewayTenantApi
+    Properties:
+      RoleName: !Join ['-', [!Ref TenantIdParameter, apigwurl-lambda-exec-role]]
+      Path: "/"
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/CloudWatchLambdaInsightsExecutionRolePolicy
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
+      Policies:
+        - PolicyName: !Join ['-', [!Ref TenantIdParameter, apigwurl-lambda-exe-policy ]]
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                Resource: !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/ServerlessSaaS-Settings 
+              - Effect: Allow
+                Action:
+                  - dynamodb:UpdateItem
+                Resource: !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/ServerlessSaaS-TenantDetails    
+  UpdateTenantApiGatewayUrlFunction:
+    Type: AWS::Serverless::Function
+    DependsOn: UpdateTenantApiGatewayUrlLambdaExecutionRole
+    Properties:
+      CodeUri: custom_resources/
+      Handler: update_tenant_apigatewayurl.handler
+      Runtime: python3.8
+      Role: !GetAtt UpdateTenantApiGatewayUrlLambdaExecutionRole.Arn
+      Layers: 
+          - !Ref ServerlessSaaSLayers
+  UpdateTenantApiGatewayUrl:
+    Type: Custom::UpdateTenantApiGatewayUrl
+    DependsOn: UpdateTenantApiGatewayUrlFunction
+    Properties:
+      ServiceToken: !GetAtt UpdateTenantApiGatewayUrlFunction.Arn
+      TenantDetailsTableName: ServerlessSaaS-TenantDetails
+      SettingsTableName: ServerlessSaaS-Settings  
+      TenantId: !Ref TenantIdParameter  
+      TenantApiGatewayUrl: !Sub "https://${ApiGatewayTenantApi}.execute-api.${AWS::Region}.amazonaws.com/prod/"    
+  
+Outputs:
+  TenantApiGatewayId:
+    Description: Id for Tenant API Gateway
+    Value: !Ref ApiGatewayTenantApi
+  TenantAPI:
+    Description: "API Gateway endpoint URL for Tenant API"
+    Value: !Join ['', [!Sub "https://${ApiGatewayTenantApi}.execute-api.${AWS::Region}.amazonaws.com/", !Ref StageName, "/"]]
