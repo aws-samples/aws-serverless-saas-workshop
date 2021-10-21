@@ -8,3 +8,5 @@ s3_prefix = "serverless-saas-lab1"
 region = "us-west-2"
 confirm_changeset = false
 capabilities = "CAPABILITY_NAMED_IAM"
+cached="true"
+parallel="true"
