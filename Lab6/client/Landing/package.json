@@ -3,7 +3,7 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-    "build": "ng build",
+    "build": "ng build --prod --aot --build-optimizer=false --common-chunk --vendor-chunk --optimization=false  --source-map=false --progress",
     "test": "ng test",
     "lint": "ng lint",
     "e2e": "ng e2e"
