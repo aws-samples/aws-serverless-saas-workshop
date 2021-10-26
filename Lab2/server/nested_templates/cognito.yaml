@@ -108,10 +108,6 @@ Resources:
           Name: userRole
           Required: False
           Mutable: True
-        - AttributeDataType: "String"
-          Name: apiKey
-          Required: False
-          Mutable: True  
   CognitoOperationUsersUserPoolClient:
     Type: "AWS::Cognito::UserPoolClient"
     Properties:
