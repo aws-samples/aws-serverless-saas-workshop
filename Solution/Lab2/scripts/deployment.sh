@@ -109,7 +109,7 @@ EoF
   };
 EoF
 
-  echo no | npm install && npm run build
+  echo no | npm install --legacy-peer-deps && npm run build
 
   echo "aws s3 sync --delete --cache-control no-store dist s3://$ADMIN_SITE_BUCKET"
   aws s3 sync --delete --cache-control no-store dist s3://$ADMIN_SITE_BUCKET 
@@ -148,7 +148,7 @@ EoF
   };
 EoF
 
-  echo no | npm install && npm run build
+  echo no | npm install --legacy-peer-deps && npm run build
 
   echo "aws s3 sync --delete --cache-control no-store dist s3://$LANDING_APP_SITE_BUCKET"
   aws s3 sync --delete --cache-control no-store dist s3://$LANDING_APP_SITE_BUCKET
