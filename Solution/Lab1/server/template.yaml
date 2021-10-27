@@ -879,7 +879,7 @@ Outputs:
     Description: "API Gateway endpoint URL for API"
     Value: !Join ['', [!Sub "https://${ApiGatewayApi}.execute-api.${AWS::Region}.amazonaws.com/", !Ref StageName, "/"]]
   ApplicationSite:
-    Description: The name of the cloudfornt url for Tenant Management site
+    Description: The name of the CloudFront url for Tenant Management site
     Value: !GetAtt ApplicationSite.DomainName  
   AppBucket:
     Description: The name of the bucket for uploading the Tenant Management site to

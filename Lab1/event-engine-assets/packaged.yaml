@@ -1019,7 +1019,7 @@ Outputs:
         - Ref: StageName
         - /
   ApplicationSite:
-    Description: The name of the cloudfornt url for Tenant Management site
+    Description: The name of the CloudFront url for Tenant Management site
     Value:
       Fn::GetAtt:
       - ApplicationSite

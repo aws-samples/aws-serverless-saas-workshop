@@ -199,19 +199,19 @@ Outputs:
     Description: The name of the bucket for uploading the Admin Management site to
     Value: !Ref AdminAppBucket
   AdminAppSite:
-    Description: The name of the cloudfornt url for Admin Management site
+    Description: The name of the CloudFront url for Admin Management site
     Value: !GetAtt AdminAppSite.DomainName
   AppBucket:
     Description: The name of the bucket for uploading the Tenant Management site to
     Value: !Ref AppBucket
   ApplicationSite:
-    Description: The name of the cloudfornt url for Tenant Management site
+    Description: The name of the CloudFront url for Tenant Management site
     Value: !GetAtt ApplicationSite.DomainName    
   LandingAppBucket:
     Description: The name of the bucket for uploading the Landing site to
     Value: !Ref LandingAppBucket
   LandingApplicationSite:
-    Description: The name of the cloudfornt url for Landing site
+    Description: The name of the CloudFront url for Landing site
     Value: !GetAtt LandingApplicationSite.DomainName   
 
          

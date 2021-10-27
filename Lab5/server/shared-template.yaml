@@ -140,19 +140,19 @@ Outputs:
     Description: The S3 Bucket that will contain the static assets for the tenant administration application
     Value: !GetAtt UserInterface.Outputs.AdminBucket
   AdminAppSite:
-    Description: The name of the cloudfornt url for Admin Management site
+    Description: The name of the CloudFront url for Admin Management site
     Value: !GetAtt UserInterface.Outputs.AdminAppSite
   LandingApplicationSiteBucket:
     Description: The S3 Bucket that will contain the static assets for the landing application
     Value: !GetAtt UserInterface.Outputs.LandingAppBucket
   LandingApplicationSite:
-    Description: The name of the cloudfornt url for Landing site
+    Description: The name of the CloudFront url for Landing site
     Value: !GetAtt UserInterface.Outputs.LandingApplicationSite
   ApplicationSiteBucket:
     Description: The S3 Bucket that will contain the static assets for the tenant application
     Value: !GetAtt UserInterface.Outputs.AppBucket
   ApplicationSite:
-    Description: The name of the cloudfornt url for Tenant Management site
+    Description: The name of the CloudFront url for Tenant Management site
     Value: !GetAtt UserInterface.Outputs.ApplicationSite
   CognitoOperationUsersUserPoolId:
     Description: The user pool id of Admin Management userpool 
