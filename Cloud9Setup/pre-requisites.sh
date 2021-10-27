@@ -31,7 +31,10 @@ wget https://github.com/aws/aws-sam-cli/releases/download/v1.33.0/aws-sam-cli-li
 unzip aws-sam-cli-linux-x86_64.zip -d sam-installation
 sudo ./sam-installation/install
 if [ $? -ne 0 ]; then
-	echo "Sam cli is already present, so upgrading to latest version"
+	echo "Sam cli is already present, so deleting existing version"
+	sudo rm /usr/local/bin/sam
+	sudo rm -rf /usr/local/aws-sam-cli
+	echp "Now installing sam cli version 1.33.0"
 	sudo ./sam-installation/install --update    
 fi
 rm aws-sam-cli-linux-x86_64.zip
@@ -50,8 +53,8 @@ echo "Installing node v14.18.1"
 nvm deactivate
 nvm uninstall node
 nvm install v14.18.1
-nvm use node
-nvm alias default node
+nvm use v14.18.1
+nvm alias default v14.18.1
 
 
 # Install cdk cli version 1.129.0
