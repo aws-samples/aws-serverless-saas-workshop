@@ -15,19 +15,19 @@ rm Python-3.8.11.tgz
 sudo alternatives --install /usr/bin/python3 python3 /usr/local/bin/python3.8
 sudo alternatives --set python3 /usr/local/bin/python3.8
 
-# Uninstall aws cli v1 and Install latest aws cli version2
+# Uninstall aws cli v1 and Install aws cli version-2.3.0
 sudo pip2 uninstall awscli -y
 
-echo "Installing latest aws cli version2"
-curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+echo "Installing aws cli version-2.3.0"
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.3.0.zip" -o "awscliv2.zip"
 unzip awscliv2.zip
 sudo ./aws/install
 rm awscliv2.zip
 rm -rf aws 
 
-# Install latest sam cli
-echo "Installing latest sam cli"
-wget https://github.com/aws/aws-sam-cli/releases/latest/download/aws-sam-cli-linux-x86_64.zip
+# Install sam cli version 1.33.0
+echo "Installing sam cli version 1.33.0"
+wget https://github.com/aws/aws-sam-cli/releases/download/v1.33.0/aws-sam-cli-linux-x86_64.zip
 unzip aws-sam-cli-linux-x86_64.zip -d sam-installation
 sudo ./sam-installation/install
 if [ $? -ne 0 ]; then
@@ -37,31 +37,31 @@ fi
 rm aws-sam-cli-linux-x86_64.zip
 rm -rf sam-installation
 
-# Install git-remote-codecommit 
-echo "Installing git-remote-codecommit"
+# Install git-remote-codecommit version 1.15.1
+echo "Installing git-remote-codecommit version 1.15.1"
 curl -O https://bootstrap.pypa.io/get-pip.py
 python3 get-pip.py --user
 rm get-pip.py
 
-pip install git-remote-codecommit
+pip install git-remote-codecommit==1.15.1
 
-# Install latest node
-echo "Installing latest node"
+# Install node v14.18.1
+echo "Installing node v14.18.1"
 nvm deactivate
 nvm uninstall node
-nvm install --lts
+nvm install v14.18.1
 nvm use node
 nvm alias default node
 
 
-# Install latest cdk cli
-echo "Installing latest cdk cli"
+# Install cdk cli version 1.129.0
+echo "Installing cdk cli version 1.129.0"
 sudo npm uninstall -g aws-cdk
-sudo npm install -g aws-cdk
+sudo npm install -g aws-cdk@1.129.0
 
-# Install latest angular 
-echo "Installing latest angular"
+# Install angular version 12.1.1
+echo "Installing angular version 12.1.1"
 sudo npm install -g @angular/cli@12.1.1
 
-#Install jq
-sudo yum -y install jq  
+#Install jq version 1.5
+sudo yum -y install jq-1.5
