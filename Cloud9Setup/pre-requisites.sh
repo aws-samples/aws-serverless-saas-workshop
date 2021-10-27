@@ -35,7 +35,7 @@ if [ $? -ne 0 ]; then
 	sudo rm /usr/local/bin/sam
 	sudo rm -rf /usr/local/aws-sam-cli
 	echp "Now installing sam cli version 1.33.0"
-	sudo ./sam-installation/install --update    
+	sudo ./sam-installation/install    
 fi
 rm aws-sam-cli-linux-x86_64.zip
 rm -rf sam-installation
