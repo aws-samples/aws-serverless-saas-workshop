@@ -53,6 +53,9 @@ if [[ $server -eq 1 ]]; then
   cd ../scripts
 fi  
 
+ADMIN_SITE_URL=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='AdminAppSite'].OutputValue" --output text)
+LANDING_APP_SITE_URL=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='LandingApplicationSite'].OutputValue" --output text)
+
 if [[ $client -eq 1 ]]; then
   if [[ -z "$email" ]]; then
     echo "Please provide email address to setup an admin user" 
@@ -61,9 +64,7 @@ if [[ $client -eq 1 ]]; then
   fi
   echo "Client code is getting deployed"
   ADMIN_SITE_BUCKET=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='AdminSiteBucket'].OutputValue" --output text)
-  ADMIN_SITE_URL=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='AdminAppSite'].OutputValue" --output text)
   LANDING_APP_SITE_BUCKET=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='LandingApplicationSiteBucket'].OutputValue" --output text)
-  LANDING_APP_SITE_URL=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='LandingApplicationSite'].OutputValue" --output text)
 
   ADMIN_APIGATEWAYURL=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='AdminApi'].OutputValue" --output text)
   ADMIN_APPCLIENTID=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='CognitoOperationUsersUserPoolClientId'].OutputValue" --output text)
@@ -159,9 +160,8 @@ EoF
 
 
   echo "Completed configuring environment for Landing Client"
-
-  echo "Admin site URL: https://$ADMIN_SITE_URL"
-  echo "Landing site URL: https://$LANDING_APP_SITE_URL"
   echo "Successfully completed deploying Admin UI and Landing UI"
 
 fi  
+echo "Admin site URL: https://$ADMIN_SITE_URL"
+echo "Landing site URL: https://$LANDING_APP_SITE_URL"
