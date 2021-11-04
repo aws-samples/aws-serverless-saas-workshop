@@ -60,14 +60,14 @@ if [[ $server -eq 1 ]] || [[ $bootstrap -eq 1 ]]; then
 
 fi
 
+ADMIN_SITE_URL=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='AdminAppSite'].OutputValue" --output text)
+LANDING_APP_SITE_URL=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='LandingApplicationSite'].OutputValue" --output text)
+APP_SITE_URL=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='ApplicationSite'].OutputValue" --output text)  
+
 if [[ $client -eq 1 ]]; then
   echo "Client code is getting deployed"
-  ADMIN_SITE_URL=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='AdminAppSite'].OutputValue" --output text)
-  LANDING_APP_SITE_URL=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='LandingApplicationSite'].OutputValue" --output text)
   APP_SITE_BUCKET=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='ApplicationSiteBucket'].OutputValue" --output text)
-  APP_SITE_URL=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='ApplicationSite'].OutputValue" --output text)
-
-
+  
   ADMIN_APIGATEWAYURL=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='AdminApi'].OutputValue" --output text)
   
   # Admin UI and Landing UI are configured in Lab2 
@@ -109,10 +109,11 @@ EoF
   fi
 
   echo "Completed configuring environment for App Client"
-
-  echo "Admin site URL: https://$ADMIN_SITE_URL"
-  echo "Landing site URL: https://$LANDING_APP_SITE_URL"
-  echo "App site URL: https://$APP_SITE_URL"
   echo "Successfully completed redeploying Application UI"
 
 fi
+
+echo "Admin site URL: https://$ADMIN_SITE_URL"
+echo "Landing site URL: https://$LANDING_APP_SITE_URL"
+echo "App site URL: https://$APP_SITE_URL"
+  
