@@ -27,6 +27,19 @@ def create_success_response(message):
         }),
     }
 
+def create_unauthorized_response():
+    return {
+        "statusCode": StatusCodes.UN_AUTHORIZED.value,
+        "headers": {
+            "Access-Control-Allow-Headers" : "Content-Type",
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "OPTIONS,POST,GET,PUT"
+        },
+        "body": json.dumps({
+            "message": "User not authorized to perform this action"
+        }),
+    }
+
 def generate_response(inputObject):
     return {
         "statusCode": 200,

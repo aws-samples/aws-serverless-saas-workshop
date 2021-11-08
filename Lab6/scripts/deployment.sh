@@ -3,6 +3,14 @@
 echo "server code is getting deployed"
 cd ../server
 REGION=$(aws configure get region)
+
+echo "Validating server code using pylint"
+python3 -m pylint -E -d E0401 $(find . -iname "*.py")
+if [[ $? -ne 0 ]]; then
+  echo "****ERROR: Please fix above code errors and then rerun script!!****"
+  exit 1
+fi
+
 sam build -t shared-template.yaml --use-container
 sam deploy --config-file shared-samconfig.toml --region=$REGION
 

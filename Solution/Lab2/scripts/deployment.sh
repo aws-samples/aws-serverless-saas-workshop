@@ -48,6 +48,14 @@ if [[ $server -eq 1 ]]; then
       ex -sc '%s/s3_bucket = .*/s3_bucket = \"'$SAM_S3_BUCKET'\"/|x' ../../Lab6/server/shared-samconfig.toml
       ex -sc '%s/s3_bucket = .*/s3_bucket = \"'$SAM_S3_BUCKET'\"/|x' ../../Lab6/server/tenant-samconfig.toml
   fi
+
+  echo "Validating server code using pylint"
+  python3 -m pylint -E -d E0401 $(find . -iname "*.py")
+  if [[ $? -ne 0 ]]; then
+    echo "****ERROR: Please fix above code errors and then rerun script!!****"
+    exit 1
+  fi
+
   sam build -t template.yaml --use-container
   sam deploy --config-file samconfig.toml --region=$REGION
   cd ../scripts
@@ -55,7 +63,6 @@ fi
 
 ADMIN_SITE_URL=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='AdminAppSite'].OutputValue" --output text)
 LANDING_APP_SITE_URL=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='LandingApplicationSite'].OutputValue" --output text)
-
 
 if [[ $client -eq 1 ]]; then
   if [[ -z "$email" ]]; then
@@ -66,7 +73,7 @@ if [[ $client -eq 1 ]]; then
   echo "Client code is getting deployed"
   ADMIN_SITE_BUCKET=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='AdminSiteBucket'].OutputValue" --output text)
   LANDING_APP_SITE_BUCKET=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='LandingApplicationSiteBucket'].OutputValue" --output text)
-  
+
   ADMIN_APIGATEWAYURL=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='AdminApi'].OutputValue" --output text)
   ADMIN_APPCLIENTID=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='CognitoOperationUsersUserPoolClientId'].OutputValue" --output text)
   ADMIN_AUTHSERVERURL=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='CognitoOperationUsersUserPoolProviderURL'].OutputValue" --output text)
@@ -164,7 +171,5 @@ EoF
   echo "Successfully completed deploying Admin UI and Landing UI"
 
 fi  
-
 echo "Admin site URL: https://$ADMIN_SITE_URL"
 echo "Landing site URL: https://$LANDING_APP_SITE_URL"
-  

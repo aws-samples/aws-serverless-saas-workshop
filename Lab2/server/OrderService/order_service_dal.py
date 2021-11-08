@@ -87,7 +87,7 @@ def get_orders(event):
                 order = Order(item['orderId'], item['orderName'], item['orderProducts'])
                 orders.append(order)
     except ClientError as e:
-        logger.error()
+        logger.error("Error getting all orders")
         raise Exception('Error getting all orders', e) 
     else:
         logger.info("Get orders succeeded")

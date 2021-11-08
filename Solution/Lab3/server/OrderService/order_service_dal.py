@@ -104,7 +104,7 @@ def get_orders(event, tenantId):
     try:
         __query_all_partitions(tenantId,get_all_products_response, table)
     except ClientError as e:
-        logger.error()
+        logger.error("Error getting all orders")
         raise Exception('Error getting all orders', e) 
     else:
         logger.info("Get orders succeeded")

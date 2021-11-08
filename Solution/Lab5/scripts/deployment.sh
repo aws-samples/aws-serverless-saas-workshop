@@ -3,7 +3,9 @@
 if [[ "$#" -eq 0 ]]; then
   echo "Invalid parameters"
   echo "Command to deploy client code: deployment.sh -c"
-  echo "Command to deploy server code: deployment.sh -s" 
+  echo "Command to deploy bootstrap server code: deployment.sh -b"
+  echo "Command to deploy CI/CD pipeline code: deployment.sh -p"
+  echo "Command to deploy CI/CD pipeline, bootstrap & tenant server code: deployment.sh -s" 
   echo "Command to deploy server & client code: deployment.sh -s -c"
   exit 1      
 fi
@@ -11,6 +13,8 @@ fi
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         -s) server=1 ;;
+        -b) bootstrap=1 ;;        
+        -p) pipeline=1 ;;
         -c) client=1 ;;
         *) echo "Unknown parameter passed: $1"; exit 1 ;;
     esac
@@ -18,15 +22,16 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 
-if [[ $server -eq 1 ]]; then
-  echo "Server code is getting deployed"
+if [[ $server -eq 1 ]] || [[ $pipeline -eq 1 ]]; then
+  echo "CI/CD pipeline code is getting deployed"
   #Create CodeCommit repo
   REGION=$(aws configure get region)
-  REPO=$(aws codecommit get-repository --repository-name aws-saas-factory-ref-serverless-saas)
+  REPO=$(aws codecommit get-repository --repository-name aws-serverless-saas-workshop)
   if [[ $? -ne 0 ]]; then
-       echo "aws-saas-factory-ref-serverless-saas codecommit repo is not present, will create one now"
-       aws codecommit create-repository --repository-name aws-saas-factory-ref-serverless-saas --repository-description "Serverless saas reference architecture repository"
-      REPO_URL="codecommit::${REGION}://aws-saas-factory-ref-serverless-saas"
+      echo "aws-serverless-saas-workshop codecommit repo is not present, will create one now"
+      CREATE_REPO=$(aws codecommit create-repository --repository-name aws-serverless-saas-workshop --repository-description "Serverless SaaS workshop repository")
+      echo $CREATE_REPO
+      REPO_URL="codecommit::${REGION}://aws-serverless-saas-workshop"
       git remote add cc $REPO_URL
       if [[ $? -ne 0 ]]; then
            echo "Setting url to remote cc"
@@ -43,13 +48,21 @@ if [[ $server -eq 1 ]]; then
 
   cd ../../scripts
 
+fi
+
+if [[ $server -eq 1 ]] || [[ $bootstrap -eq 1 ]]; then
+  echo "Bootstrap server code is getting deployed"
   cd ../server
+  REGION=$(aws configure get region)
+  
+  python3 -m pylint -E -d E0401 $(find . -iname "*.py")
+  if [[ $? -ne 0 ]]; then
+    echo "****ERROR: Please fix above code errors and then rerun script!!****"
+    exit 1
+  fi
+
   sam build -t shared-template.yaml --use-container
   sam deploy --config-file shared-samconfig.toml --region=$REGION
-
-
-  # Start CI/CD pipepline which loads tenant stack
-  aws codepipeline start-pipeline-execution --name serverless-saas-pipeline 
 
   cd ../scripts
 
@@ -57,14 +70,12 @@ fi
 
 ADMIN_SITE_URL=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='AdminAppSite'].OutputValue" --output text)
 LANDING_APP_SITE_URL=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='LandingApplicationSite'].OutputValue" --output text)
-APP_SITE_URL=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='ApplicationSite'].OutputValue" --output text)
-  
+APP_SITE_URL=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='ApplicationSite'].OutputValue" --output text)  
 
 if [[ $client -eq 1 ]]; then
   echo "Client code is getting deployed"
   APP_SITE_BUCKET=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='ApplicationSiteBucket'].OutputValue" --output text)
   
-
   ADMIN_APIGATEWAYURL=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='AdminApi'].OutputValue" --output text)
   
   # Admin UI and Landing UI are configured in Lab2 
@@ -79,7 +90,7 @@ if [[ $client -eq 1 ]]; then
       exit 1
   fi
 
-  cd ../Application
+  cd ../client/Application
 
   echo "Configuring environment for App Client"
 

@@ -71,9 +71,6 @@ def get_users(event, context):
             users.append(user_info)                    
     
         return utils.generate_response(users)
-    else:
-        logger.log_with_tenant_context(event, "Request completed as unauthorized.")        
-        return utils.create_unauthorized_response()
    
 
 def get_user(event, context):

@@ -48,6 +48,14 @@ if [[ $server -eq 1 ]]; then
       ex -sc '%s/s3_bucket = .*/s3_bucket = \"'$SAM_S3_BUCKET'\"/|x' ../../Lab6/server/shared-samconfig.toml
       ex -sc '%s/s3_bucket = .*/s3_bucket = \"'$SAM_S3_BUCKET'\"/|x' ../../Lab6/server/tenant-samconfig.toml
   fi
+
+  echo "Validating server code using pylint"
+  python3 -m pylint -E -d E0401 $(find . -iname "*.py")
+  if [[ $? -ne 0 ]]; then
+    echo "****ERROR: Please fix above code errors and then rerun script!!****"
+    exit 1
+  fi
+
   sam build -t template.yaml --use-container
   sam deploy --config-file samconfig.toml --region=$REGION
   cd ../scripts
