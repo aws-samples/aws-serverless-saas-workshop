@@ -24,7 +24,7 @@ done
 if [[ $server -eq 1 ]] || [[ $bootstrap -eq 1 ]] || [[ $tenant -eq 1 ]]; then
   echo "Validating server code using pylint"
   cd ../server
-  python3 -m pylint -E -d E0401,E1111 $(find . -iname "*.py")
+  python3 -m pylint -E -d E0401,E1111 $(find . -iname "*.py" -not -path "./.aws-sam/*")
   if [[ $? -ne 0 ]]; then
     echo "****ERROR: Please fix above code errors and then rerun script!!****"
     exit 1

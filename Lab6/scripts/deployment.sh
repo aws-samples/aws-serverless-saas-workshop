@@ -5,7 +5,7 @@ cd ../server
 REGION=$(aws configure get region)
 
 echo "Validating server code using pylint"
-python3 -m pylint -E -d E0401 $(find . -iname "*.py")
+python3 -m pylint -E -d E0401 $(find . -iname "*.py" -not -path "./.aws-sam/*" -not -path "./TenantPipeline/node_modules/*")
 if [[ $? -ne 0 ]]; then
   echo "****ERROR: Please fix above code errors and then rerun script!!****"
   exit 1

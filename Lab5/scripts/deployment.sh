@@ -54,8 +54,8 @@ if [[ $server -eq 1 ]] || [[ $bootstrap -eq 1 ]]; then
   echo "Bootstrap server code is getting deployed"
   cd ../server
   REGION=$(aws configure get region)
-  
-  python3 -m pylint -E -d E0401 $(find . -iname "*.py")
+  echo "Validating server code using pylint"
+  python3 -m pylint -E -d E0401 $(find . -iname "*.py" -not -path "./.aws-sam/*" -not -path "./TenantPipeline/node_modules/*")
   if [[ $? -ne 0 ]]; then
     echo "****ERROR: Please fix above code errors and then rerun script!!****"
     exit 1
