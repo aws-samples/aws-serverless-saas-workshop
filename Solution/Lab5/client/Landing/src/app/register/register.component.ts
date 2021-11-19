@@ -44,7 +44,6 @@ export class RegisterComponent implements OnInit {
   }
 
   onSubmit() {
-    this.form.value.tenantName = this.form.value.tenantName.replace(/\s/g, "").toLowerCase();
 
     const API_URL = `${environment.apiGatewayUrl}`+'registration';
 
