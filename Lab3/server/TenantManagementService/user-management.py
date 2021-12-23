@@ -100,7 +100,7 @@ def get_users(event, context):
     
     tracer.put_annotation(key="TenantId", value=tenant_id)
     
-    logger.log_with_tenant_context(event, "Request received to get user")
+    logger.log_with_tenant_context(event, "Request received to get users")
 
     if (auth_manager.isTenantAdmin(user_role) or auth_manager.isSystemAdmin(user_role)):
         response = client.list_users(
@@ -164,7 +164,7 @@ def update_user(event, context):
 
     tracer.put_annotation(key="TenantId", value=tenant_id)
     
-    logger.log_with_tenant_context(event, "Request received to get user")
+    logger.log_with_tenant_context(event, "Request received to update user")
 
     
     if (auth_manager.isTenantUser(user_role) and user_name != requesting_user_name):                
@@ -188,7 +188,7 @@ def update_user(event, context):
         )
         logger.log_with_tenant_context(event, response)
 
-        logger.log_with_tenant_context(event, "Request completed to update user ")
+        logger.log_with_tenant_context(event, "Request completed to update user")
         
         return utils.create_success_response("user updated")    
 @tracer.capture_lambda_handler
@@ -210,7 +210,7 @@ def disable_user(event, context):
         )
         
         logger.log_with_tenant_context(event, response)
-        logger.log_with_tenant_context(event, "Request completed to disable new user ")
+        logger.log_with_tenant_context(event, "Request completed to disable new user")
         return utils.create_success_response("User disabled")
     else:
         logger.log_with_tenant_context(event, "Request completed as unauthorized. Only tenant admin or system admin can disable user!")        
