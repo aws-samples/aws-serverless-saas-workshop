@@ -61,6 +61,9 @@ def get_users(event, context):
                 if(attr["Name"] == "custom:tenantId"):
                     user_info.tenant_id = attr["Value"]
 
+                if(attr["Name"] == "custom:userRole"):
+                    user_info.user_role = attr["Value"]    
+
                 if(attr["Name"] == "email"):
                     user_info.email = attr["Value"] 
             user_info.enabled = user["Enabled"]

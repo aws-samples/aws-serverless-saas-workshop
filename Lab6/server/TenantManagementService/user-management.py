@@ -64,11 +64,10 @@ def create_user(event, context):
     tenant_id = event['requestContext']['authorizer']['tenantId']    
     user_pool_id = event['requestContext']['authorizer']['userPoolId']    
     user_role = event['requestContext']['authorizer']['userRole']
-
+    
     user_details = json.loads(event['body'])
 
     tracer.put_annotation(key="TenantId", value=tenant_id)
-    
     logger.log_with_tenant_context(event, "Request received to create new user")
     
     if (auth_manager.isSystemAdmin(user_role)):
@@ -107,6 +106,7 @@ def create_user(event, context):
         
         logger.log_with_tenant_context(event, response)
         user_mgmt = UserManagement()
+        user_mgmt.add_user_to_group(user_pool_id, user_details['userName'], user_tenant_id)
         response_mapping = user_mgmt.create_user_tenant_mapping(user_details['userName'], user_tenant_id)
 
         logger.log_with_tenant_context(event, "Request completed to create new user ")
@@ -141,6 +141,10 @@ def get_users(event, context):
                 for attr in user["Attributes"]:
                     if(attr["Name"] == "custom:tenantId" and attr["Value"] == tenant_id):
                         is_same_tenant_user = True
+                        user_info.tenant_id = attr["Value"]
+
+                    if(attr["Name"] == "custom:userRole"):
+                        user_info.user_role = attr["Value"]
 
                     if(attr["Name"] == "email"):
                         user_info.email = attr["Value"] 

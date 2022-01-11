@@ -71,6 +71,7 @@ def create_user(event, context):
     
     logger.info(response)
     user_mgmt = UserManagement()
+    user_mgmt.add_user_to_group(user_pool_id, user_details['userName'], tenant_id)
     response_mapping = user_mgmt.create_user_tenant_mapping(user_details['userName'], tenant_id)
 
     logger.info("Request completed to create new user ")
@@ -92,6 +93,9 @@ def get_users(event, context):
             for attr in user["Attributes"]:
                 if(attr["Name"] == "custom:tenantId"):
                     user_info.tenant_id = attr["Value"]
+
+                if(attr["Name"] == "custom:userRole"):
+                    user_info.user_role = attr["Value"]
 
                 if(attr["Name"] == "email"):
                     user_info.email = attr["Value"] 

@@ -78,6 +78,7 @@ if [[ $client -eq 1 ]]; then
   ADMIN_APPCLIENTID=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='CognitoOperationUsersUserPoolClientId'].OutputValue" --output text)
   ADMIN_AUTHSERVERURL=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='CognitoOperationUsersUserPoolProviderURL'].OutputValue" --output text)
   ADMIN_USERPOOL_ID=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='CognitoOperationUsersUserPoolId'].OutputValue" --output text)
+  ADMIN_USER_GROUP_NAME=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='CognitoAdminUserGroupName'].OutputValue" --output text)
 
   # Create admin-user in OperationUsers userpool with given input email address
   CREATE_ADMIN_USER=$(aws cognito-idp admin-create-user \
@@ -87,6 +88,14 @@ if [[ $client -eq 1 ]]; then
   --desired-delivery-mediums EMAIL)
   
   echo "$CREATE_ADMIN_USER"
+
+  # Add admin-user to admin user group
+  ADD_ADMIN_USER_TO_GROUP=$(aws cognito-idp admin-add-user-to-group \
+  --user-pool-id $ADMIN_USERPOOL_ID \
+  --username admin-user \
+  --group-name $ADMIN_USER_GROUP_NAME)
+
+  echo "$ADD_ADMIN_USER_TO_GROUP"
 
   # Configuring admin UI 
 

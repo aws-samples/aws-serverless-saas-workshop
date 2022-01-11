@@ -129,5 +129,8 @@ Outputs:
     Value: !GetAtt Cognito.Outputs.CognitoOperationUsersUserPoolClientId
   CognitoOperationUsersUserPoolId:
     Description: The user pool id of Admin Management userpool 
-    Value: !GetAtt Cognito.Outputs.CognitoOperationUsersUserPoolId  
+    Value: !GetAtt Cognito.Outputs.CognitoOperationUsersUserPoolId
+  CognitoAdminUserGroupName:
+    Description: The Admin Management userpool admin user group name
+    Value: !GetAtt Cognito.Outputs.CognitoAdminUserGroupName    
     
