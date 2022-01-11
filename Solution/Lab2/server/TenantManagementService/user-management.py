@@ -79,7 +79,7 @@ def create_user(event, context):
     
 def get_users(event, context):
     users = []  
-    logger.info("Request received to get user")
+    logger.info("Request received to get users")
     logger.info(event) 
     
     response = client.list_users(
@@ -123,7 +123,7 @@ def update_user(event, context):
     user_details = json.loads(event['body'])
     user_name = event['pathParameters']['username']    
 
-    logger.info("Request received to get user")
+    logger.info("Request received to update user")
 
     response = client.admin_update_user_attributes(
         Username=user_name,
@@ -141,7 +141,7 @@ def update_user(event, context):
     )
     logger.info(response)
 
-    logger.info("Request completed to update user ")
+    logger.info("Request completed to update user")
         
     return utils.create_success_response("user updated")    
 
@@ -156,7 +156,7 @@ def disable_user(event, context):
     )
         
     logger.info(response)
-    logger.info("Request completed to disable new user ")
+    logger.info("Request completed to disable new user")
     return utils.create_success_response("User disabled")
     
 #This method uses IAM Authorization and protected using a resource policy. This method is also invoked async
