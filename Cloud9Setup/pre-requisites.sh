@@ -2,18 +2,11 @@
 . /home/ec2-user/.nvm/nvm.sh
 
 #Install python3.8
-echo "Installing python3.8"
-wget https://www.python.org/ftp/python/3.8.11/Python-3.8.11.tgz
-tar xzvf Python-3.8.11.tgz
-cd Python-3.8.11
-./configure --with-ssl
-make
-sudo make install
-cd ..
-sudo rm -rf Python-3.8.11
-rm Python-3.8.11.tgz
-sudo alternatives --install /usr/bin/python3 python3 /usr/local/bin/python3.8
-sudo alternatives --set python3 /usr/local/bin/python3.8
+sudo yum install -y amazon-linux-extras
+sudo amazon-linux-extras enable python3.8
+sudo yum install -y python3.8
+sudo alternatives --install /usr/bin/python3 python3 /usr/bin/python3.8 1
+sudo alternatives --set python3 /usr/bin/python3.8
 
 # Uninstall aws cli v1 and Install aws cli version-2.3.0
 sudo pip2 uninstall awscli -y
@@ -50,8 +43,6 @@ pip install git-remote-codecommit==1.15.1
 
 # Install node v14.18.1
 echo "Installing node v14.18.1"
-nvm deactivate
-nvm uninstall node
 nvm install v14.18.1
 nvm use v14.18.1
 nvm alias default v14.18.1
@@ -59,12 +50,13 @@ nvm alias default v14.18.1
 
 # Install cdk cli version 1.129.0
 echo "Installing cdk cli version 1.129.0"
-sudo npm uninstall -g aws-cdk
-sudo npm install -g aws-cdk@1.129.0
+npm uninstall -g aws-cdk
+npm install -g aws-cdk@1.129.0
 
 # Install angular version 12.1.1
 echo "Installing angular version 12.1.1"
-sudo npm install -g @angular/cli@12.1.1
+export NG_CLI_ANALYTICS=ci
+npm install -g @angular/cli@12.1.1
 
 #Install jq version 1.5
 sudo yum -y install jq-1.5
