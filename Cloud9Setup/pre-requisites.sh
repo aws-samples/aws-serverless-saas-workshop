@@ -43,6 +43,8 @@ pip install git-remote-codecommit==1.15.1
 
 # Install node v14.18.1
 echo "Installing node v14.18.1"
+nvm deactivate
+nvm uninstall node
 nvm install v14.18.1
 nvm use v14.18.1
 nvm alias default v14.18.1
