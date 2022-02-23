@@ -24,7 +24,7 @@ while [ \
     --filters Name=modification-state,Values="optimizing","completed" \
     --query "length(VolumesModifications)"\
     --output text)" != "1" ]; do
-sleep 1
+    sleep 1
 done
 
 #Check if we're on an NVMe filesystem
