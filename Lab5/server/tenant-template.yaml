@@ -26,7 +26,8 @@ Parameters:
     Default: "prod"
     Description: "Stage Name for the api"
 Conditions:
-  IsPooledDeploy: !Equals [ !Ref TenantIdParameter, pooled]    
+  IsPooledDeploy: !Equals [ !Ref TenantIdParameter, pooled]
+  IsSiloDeploy: !Not [!Equals [ !Ref TenantIdParameter, pooled]]    
 Resources: 
   ServerlessSaaSLayers:
     Type: AWS::Serverless::LayerVersion
@@ -58,6 +59,9 @@ Resources:
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
       TableName: !Join ['-', [Product, !Ref TenantIdParameter]]
+      Tags:
+        - Key: "TenantId"
+          Value: !Ref TenantIdParameter
 
   OrderTable:
     Type: AWS::DynamoDB::Table
@@ -76,6 +80,29 @@ Resources:
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
       TableName: !Join ['-', [Order, !Ref TenantIdParameter]]
+      Tags:
+        - Key: "TenantId"
+          Value: !Ref TenantIdParameter
+
+  ProductFunctionExecutionRolePolicy:
+    Condition: IsSiloDeploy
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Join ['-', [!Ref TenantIdParameter, product-function-policy]]
+      Roles: 
+        - !Ref ProductFunctionExecutionRole
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:              
+          - Effect: Allow
+            Action:
+              - dynamodb:GetItem
+              - dynamodb:UpdateItem
+              - dynamodb:PutItem
+              - dynamodb:DeleteItem
+              - dynamodb:Query
+            Resource:
+              - !GetAtt ProductTable.Arn
 
   ProductFunctionExecutionRole:
     Type: AWS::IAM::Role     
@@ -95,20 +122,6 @@ Resources:
         - arn:aws:iam::aws:policy/CloudWatchLambdaInsightsExecutionRolePolicy    
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
         - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
-      Policies:
-        - PolicyName: !Join ['-', [!Ref TenantIdParameter, product-function-policy]]
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:              
-              - Effect: Allow
-                Action:
-                  - dynamodb:GetItem
-                  - dynamodb:UpdateItem
-                  - dynamodb:PutItem
-                  - dynamodb:DeleteItem
-                  - dynamodb:Query
-                Resource:
-                  - !GetAtt ProductTable.Arn
              
   GetProductFunction:
     Type: AWS::Serverless::Function 
@@ -126,7 +139,9 @@ Resources:
           POWERTOOLS_SERVICE_NAME: "ProductService"
           IS_POOLED_DEPLOY: !If [IsPooledDeploy, true, false]
           PRODUCT_TABLE_NAME: !Ref ProductTable      
-  
+      Tags:
+        TenantId: !Ref TenantIdParameter
+
   GetProductsFunction:
     Type: AWS::Serverless::Function 
     DependsOn: ProductFunctionExecutionRole 
@@ -143,7 +158,9 @@ Resources:
           POWERTOOLS_SERVICE_NAME: "ProductService"
           IS_POOLED_DEPLOY: !If [IsPooledDeploy, true, false]
           PRODUCT_TABLE_NAME: !Ref ProductTable
-      
+      Tags:
+        TenantId: !Ref TenantIdParameter
+
   CreateProductFunction:
     Type: AWS::Serverless::Function
     DependsOn: ProductFunctionExecutionRole 
@@ -160,6 +177,8 @@ Resources:
           POWERTOOLS_SERVICE_NAME: "ProductService"
           IS_POOLED_DEPLOY: !If [IsPooledDeploy, true, false]
           PRODUCT_TABLE_NAME: !Ref ProductTable
+      Tags:
+        TenantId: !Ref TenantIdParameter
 
   UpdateProductFunction:
     Type: AWS::Serverless::Function
@@ -177,6 +196,8 @@ Resources:
           POWERTOOLS_SERVICE_NAME: "ProductService"
           IS_POOLED_DEPLOY: !If [IsPooledDeploy, true, false]
           PRODUCT_TABLE_NAME: !Ref ProductTable
+      Tags:
+        TenantId: !Ref TenantIdParameter
 
   DeleteProductFunction:
     Type: AWS::Serverless::Function
@@ -194,6 +215,28 @@ Resources:
           POWERTOOLS_SERVICE_NAME: "ProductService"
           IS_POOLED_DEPLOY: !If [IsPooledDeploy, true, false]
           PRODUCT_TABLE_NAME: !Ref ProductTable
+      Tags:
+        TenantId: !Ref TenantIdParameter
+
+  OrderFunctionExecutionRolePolicy:
+    Condition: IsSiloDeploy
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Join ['-', [!Ref TenantIdParameter, order-function-policy]]
+      Roles: 
+        - !Ref OrderFunctionExecutionRole
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:              
+          - Effect: Allow
+            Action:
+              - dynamodb:GetItem
+              - dynamodb:UpdateItem
+              - dynamodb:PutItem
+              - dynamodb:DeleteItem
+              - dynamodb:Query
+            Resource:
+              - !GetAtt OrderTable.Arn
 
   OrderFunctionExecutionRole:
     Type: AWS::IAM::Role     
@@ -213,20 +256,6 @@ Resources:
         - arn:aws:iam::aws:policy/CloudWatchLambdaInsightsExecutionRolePolicy    
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
         - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
-      Policies:
-        - PolicyName: !Join ['-', [!Ref TenantIdParameter, order-function-policy]]
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:              
-              - Effect: Allow
-                Action:
-                  - dynamodb:GetItem
-                  - dynamodb:UpdateItem
-                  - dynamodb:PutItem
-                  - dynamodb:DeleteItem
-                  - dynamodb:Query
-                Resource:
-                  - !GetAtt OrderTable.Arn
                 
   GetOrdersFunction:
     Type: AWS::Serverless::Function 
@@ -244,7 +273,9 @@ Resources:
           POWERTOOLS_SERVICE_NAME: "OrderService"
           IS_POOLED_DEPLOY: !If [IsPooledDeploy, true, false]
           ORDER_TABLE_NAME: !Ref OrderTable
-      
+      Tags:
+        TenantId: !Ref TenantIdParameter
+
   GetOrderFunction:
     Type: AWS::Serverless::Function 
     DependsOn: OrderFunctionExecutionRole 
@@ -261,7 +292,9 @@ Resources:
           POWERTOOLS_SERVICE_NAME: "OrderService"
           IS_POOLED_DEPLOY: !If [IsPooledDeploy, true, false]
           ORDER_TABLE_NAME: !Ref OrderTable
-      
+      Tags:
+        TenantId: !Ref TenantIdParameter
+
   CreateOrderFunction:
     Type: AWS::Serverless::Function
     DependsOn: OrderFunctionExecutionRole 
@@ -278,7 +311,9 @@ Resources:
           POWERTOOLS_SERVICE_NAME: "OrderService"
           IS_POOLED_DEPLOY: !If [IsPooledDeploy, true, false]
           ORDER_TABLE_NAME: !Ref OrderTable
-  
+      Tags:
+        TenantId: !Ref TenantIdParameter
+
   UpdateOrderFunction:
     Type: AWS::Serverless::Function
     DependsOn: OrderFunctionExecutionRole 
@@ -295,7 +330,9 @@ Resources:
           POWERTOOLS_SERVICE_NAME: "OrderService"
           IS_POOLED_DEPLOY: !If [IsPooledDeploy, true, false]
           ORDER_TABLE_NAME: !Ref OrderTable
-  
+      Tags:
+        TenantId: !Ref TenantIdParameter
+
   DeleteOrderFunction:
     Type: AWS::Serverless::Function
     DependsOn: OrderFunctionExecutionRole 
@@ -312,7 +349,9 @@ Resources:
           POWERTOOLS_SERVICE_NAME: "OrderService"
           IS_POOLED_DEPLOY: !If [IsPooledDeploy, true, false]
           ORDER_TABLE_NAME: !Ref OrderTable
-  
+      Tags:
+        TenantId: !Ref TenantIdParameter
+        
   BusinessServicesAuthorizerFunction:
     Type: AWS::Serverless::Function 
     Properties:

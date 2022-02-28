@@ -191,7 +191,7 @@ def get_user(event, context):
         return utils.create_unauthorized_response()
     else:
         user_info = get_user_info(event, user_pool_id, user_name)
-        if(user_info.tenant_id!=tenant_id):
+        if(not auth_manager.isSystemAdmin(user_role) and user_info.tenant_id!=tenant_id):
             logger.log_with_tenant_context(event, "Request completed as unauthorized. Users in other tenants cannot be accessed")
             return utils.create_unauthorized_response()
         else:
@@ -223,12 +223,12 @@ def update_user(event, context):
         logger.info(tenant_details)
         user_pool_id = tenant_details['Item']['userPoolId']        
     
-    if (auth_manager.isTenantUser(user_role) and user_name != requesting_user_name):                
-        logger.log_with_tenant_context(event, "Request completed as unauthorized. User can only update itself!")        
+    if (auth_manager.isTenantUser(user_role)):                
+        logger.log_with_tenant_context(event, "Request completed as unauthorized. Only tenant admin or system admin can update user!")         
         return utils.create_unauthorized_response()
     else:
         user_info = get_user_info(event, user_pool_id, user_name)
-        if(user_info.tenant_id!=tenant_id):
+        if(not auth_manager.isSystemAdmin(user_role) and user_info.tenant_id!=tenant_id):
             logger.log_with_tenant_context(event, "Request completed as unauthorized. Users in other tenants cannot be accessed")
             return utils.create_unauthorized_response()
         else:
@@ -274,7 +274,7 @@ def disable_user(event, context):
     
     if (auth_manager.isTenantAdmin(user_role) or auth_manager.isSystemAdmin(user_role)):
         user_info = get_user_info(event, user_pool_id, user_name)
-        if(user_info.tenant_id!=tenant_id):
+        if(not auth_manager.isSystemAdmin(user_role) and user_info.tenant_id!=tenant_id):
             logger.log_with_tenant_context(event, "Request completed as unauthorized. Users in other tenants cannot be accessed")
             return utils.create_unauthorized_response()
         else:
