@@ -172,8 +172,8 @@ def update_user(event, context):
     logger.log_with_tenant_context(event, "Request received to update user")
 
     
-    if (auth_manager.isTenantUser(user_role) and user_name != requesting_user_name):                
-        logger.log_with_tenant_context(event, "Request completed as unauthorized. User can only update itself!")        
+    if (auth_manager.isTenantUser(user_role)):                
+        logger.log_with_tenant_context(event, "Request completed as unauthorized. Only tenant admin or system admin can update user!")        
         return utils.create_unauthorized_response()
     else:
         metrics_manager.record_metric(event, "UserUpdated", "Count", 1)            
