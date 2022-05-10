@@ -5,7 +5,7 @@
 sudo yum install -y amazon-linux-extras
 sudo amazon-linux-extras enable python3.8
 sudo yum install -y python3.8
-sudo alternatives --install /usr/bin/python3 python3 /usr/bin/python3.8
+sudo alternatives --install /usr/bin/python3 python3 /usr/bin/python3.8 1
 sudo alternatives --set python3 /usr/bin/python3.8
 
 # Uninstall aws cli v1 and Install aws cli version-2.3.0
@@ -39,7 +39,7 @@ curl -O https://bootstrap.pypa.io/get-pip.py
 python3 get-pip.py --user
 rm get-pip.py
 
-pip install git-remote-codecommit==1.15.1
+python3 -m pip install git-remote-codecommit==1.15.1
 
 # Install node v14.18.1
 echo "Installing node v14.18.1"

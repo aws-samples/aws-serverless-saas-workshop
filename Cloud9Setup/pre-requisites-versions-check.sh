@@ -80,7 +80,7 @@ fi
 echo ""
 
 echo "Checking git-remote-codecommit version"
-pip show git-remote-codecommit
+python3 -m pip show git-remote-codecommit
 if [[ $? -ne 0 ]]; then
     echo "ACTION REQUIRED: git-remote-codecommit is missing, please install"
     SUMMARY+="* ACTION REQUIRED: git-remote-codecommit is missing, please install !!"$'\n'
