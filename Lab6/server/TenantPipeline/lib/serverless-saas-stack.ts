@@ -49,7 +49,7 @@ export class ServerlessSaaSStack extends cdk.Stack {
     const codeRepo = codecommit.Repository.fromRepositoryName(
       this,
       'AppRepository', 
-      'aws-saas-factory-ref-serverless-saas' 
+      'aws-serverless-saas-workshop'
     );
 
     // Declare source code as an artifact
