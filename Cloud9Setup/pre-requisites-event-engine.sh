@@ -27,7 +27,7 @@ if [ $? -ne 0 ]; then
 	echo "Sam cli is already present, so deleting existing version"
 	sudo rm /usr/local/bin/sam
 	sudo rm -rf /usr/local/aws-sam-cli
-	echp "Now installing sam cli version 1.33.0"
+	echo "Now installing sam cli version 1.33.0"
 	sudo ./sam-installation/install    
 fi
 rm aws-sam-cli-linux-x86_64.zip
@@ -51,10 +51,10 @@ nvm alias default v14.18.1
 
 npm set unsafe-perm true
 
-# Install cdk cli version 1.129.0
-echo "Installing cdk cli version 1.129.0"
+# Install cdk cli version 2.27.0
+echo "Installing cdk cli version 2.27.0"
 npm uninstall -g aws-cdk
-npm install -g aws-cdk@1.129.0
+npm install -g aws-cdk@2.27.0
 
 # Install angular version 12.1.1
 echo "Installing angular version 12.1.1"
