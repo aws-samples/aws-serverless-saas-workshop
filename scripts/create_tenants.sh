@@ -3,9 +3,9 @@
 ## This script is to help create different kinds of tenants quickly.
 ##
 
-SAAS_ADMIN_URL="TODO" # ex. https://m6slpkzugb.execute-api.us-west-2.amazonaws.com
-EMAIL_ALIAS="TODO" # ex. test
-EMAIL_DOMAIN="TODO" # ex. test.com
+SAAS_ADMIN_URL="" # ex. https://m6slpkzugb.execute-api.us-west-2.amazonaws.com
+EMAIL_ALIAS="" # ex. test
+EMAIL_DOMAIN="" # ex. test.com
 
 echo "Creating a Standard tenant..."
 curl --location --request POST "${SAAS_ADMIN_URL}/prod/registration" \
@@ -17,7 +17,7 @@ curl --location --request POST "${SAAS_ADMIN_URL}/prod/registration" \
     \"tenantPhone\": \"1234567890\",
     \"tenantTier\": \"Standard\"
 }"
-echo "Done a Standard tenant!"
+echo "Done creating a Standard tenant!"
 
 echo "Creating a Platinum tenant..."
 curl --location --request POST "${SAAS_ADMIN_URL}/prod/registration" \
@@ -29,7 +29,7 @@ curl --location --request POST "${SAAS_ADMIN_URL}/prod/registration" \
     \"tenantPhone\": \"1234567890\",
     \"tenantTier\": \"Platinum\"
 }"
-echo "Done a Platinum tenant!"
+echo "Done creating a Platinum tenant!"
 
 echo "Creating a Premium tenant..."
 curl --location --request POST "${SAAS_ADMIN_URL}/prod/registration" \
@@ -41,4 +41,4 @@ curl --location --request POST "${SAAS_ADMIN_URL}/prod/registration" \
     \"tenantPhone\": \"1234567890\",
     \"tenantTier\": \"Premium\"
 }"
-echo "Done a Premium tenant!"
+echo "Done creating a Premium tenant!"
