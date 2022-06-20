@@ -106,7 +106,7 @@ echo ""
 echo "Checking cdk version"
 cdk --version
 CDK_VERSION=$(cdk --version | cut -d'(' -f 1| xargs)
-CDK_MIN_VERSION=1.118.0
+CDK_MIN_VERSION=2.27.0
 check_version $CDK_MIN_VERSION $CDK_VERSION
 if [[ $? -eq 1 ]]; then
     echo "ACTION REQUIRED: Need to have CDK version greater than or equal to $CDK_MIN_VERSION"
