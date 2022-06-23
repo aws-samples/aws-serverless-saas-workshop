@@ -12,8 +12,6 @@ cd ../Cloud9Setup/
 cd ../scripts/
 echo "################ Done running pre-req script... ################"
 
-# echo "################ Running labs... ################"
-
 # #### Note that deploying lab1 is not a requirement ####
 # #######################################################
 
@@ -21,8 +19,11 @@ echo "################ Running lab2... ################"
 
 cd ../Lab2/scripts
 ./deployment.sh -s -c --email syeduh+serverlesslab@amazon.com
+cd ../../scripts/
 
 python3 lab2_updates.py
+
+cd ../Lab2/scripts
 ./deployment.sh -s
 cd ../../scripts/
 
@@ -35,8 +36,11 @@ echo "################ Running lab3... ################"
 
 cd ../Lab3/scripts
 ./deployment.sh -s -c
+cd ../../scripts/
 
 python3 lab3_updates.py
+
+cd ../Lab3/scripts
 ./deployment.sh -s
 cd ../../scripts/
 
@@ -47,8 +51,8 @@ sleep 60
 
 echo "################ Running lab4... ################"
 
-cd ../Lab4/scripts
 python3 lab4_updates.py
+cd ../Lab4/scripts
 ./deployment.sh -s
 cd ../../scripts/
 
@@ -61,8 +65,11 @@ echo "################ Running lab5... ################"
 
 cd ../Lab5/scripts/
 ./deployment.sh -s -c
+cd ../../scripts/
 
 python3 lab5_updates.py
+
+cd ../Lab5/scripts/
 ./deployment.sh -s
 cd ../../scripts/
 
@@ -73,9 +80,8 @@ sleep 60
 
 echo "################ Running lab6... ################"
 
-cd ../Lab6/scripts/
 python3 lab6_updates.py
-
+cd ../Lab6/scripts/
 ./deployment.sh
 cd ../../scripts/
 
