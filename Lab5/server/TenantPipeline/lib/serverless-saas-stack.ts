@@ -19,6 +19,10 @@ export class ServerlessSaaSStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
+    const serverSideEncryptionByDefaultProperty: s3.CfnBucket.ServerSideEncryptionByDefaultProperty = {
+      sseAlgorithm: 'AES256',
+    };
+
     const artifactsBucket = new s3.Bucket(this, "ArtifactsBucket");
 
     //Since this lambda is invoking cloudformation which is inturn deploying AWS resources, we are giving overly permissive permissions to this lambda. 
