@@ -14,10 +14,10 @@ next_token=""
 while true; do
     if [[ "${next_token}" == "" ]]; then
         echo "$(date) making api call to search for saas admin API GWs..."
-        response=$(aws apigateway get-rest-apis --max-items 1)
+        response=$(aws apigateway get-rest-apis)
     else
         echo "$(date) making api call to search for saas admin API GWs..."
-        response=$(aws apigateway get-rest-apis --max-items 1 --starting-token "$next_token")
+        response=$(aws apigateway get-rest-apis --starting-token "$next_token")
     fi
 
     api_gw_id=$(echo "$response" | jq -r '.items[] | select (.name | match("serverless-saas-admin-api")) | .id')
@@ -46,7 +46,7 @@ echo "SAAS_ADMIN_URL=${SAAS_ADMIN_URL}"
 read -p "press any key to confirm above parameters and continue..."
 
 echo "$(date) Creating a Standard tenant..."
-curl --location --request POST "${SAAS_ADMIN_URL}/prod/registration" \
+curl --location --request POST "${SAAS_ADMIN_URL}/registration" \
     --header 'Content-Type: application/json' \
     --data-raw "{
     \"tenantName\": \"tenantstandardB\",
@@ -58,7 +58,7 @@ curl --location --request POST "${SAAS_ADMIN_URL}/prod/registration" \
 echo "$(date) Done creating a Standard tenant!"
 
 echo "$(date) Creating a Platinum tenant..."
-curl --location --request POST "${SAAS_ADMIN_URL}/prod/registration" \
+curl --location --request POST "${SAAS_ADMIN_URL}/registration" \
     --header 'Content-Type: application/json' \
     --data-raw "{
     \"tenantName\": \"tenantplatinumB\",
@@ -70,7 +70,7 @@ curl --location --request POST "${SAAS_ADMIN_URL}/prod/registration" \
 echo "$(date) Done creating a Platinum tenant!"
 
 echo "$(date) Creating a Premium tenant..."
-curl --location --request POST "${SAAS_ADMIN_URL}/prod/registration" \
+curl --location --request POST "${SAAS_ADMIN_URL}/registration" \
     --header 'Content-Type: application/json' \
     --data-raw "{
     \"tenantName\": \"tenantpremiumB\",
