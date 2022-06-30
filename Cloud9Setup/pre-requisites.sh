@@ -50,10 +50,10 @@ nvm use v14.18.1
 nvm alias default v14.18.1
 
 
-# Install cdk cli version 1.129.0
-echo "Installing cdk cli version 1.129.0"
+# Install cdk cli version 2.27.0
+echo "Installing cdk cli version 2.27.0"
 npm uninstall -g aws-cdk
-npm install -g aws-cdk@1.129.0
+npm install -g aws-cdk@2.27.0
 
 # Install angular version 12.1.1
 echo "Installing angular version 12.1.1"
