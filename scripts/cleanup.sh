@@ -5,6 +5,11 @@
 ## provided here: 
 ## https://catalog.us-east-1.prod.workshops.aws/workshops/b0c6ad36-0a4b-45d8-856b-8a64f0ac76bb/en-US/cleanup
 ##
+## Note that this script can also be used to clean up resources for the
+## Serverless SaaS Reference Solution as outlined here:
+## https://github.com/aws-samples/aws-saas-factory-ref-solution-serverless-saas#steps-to-clean-up
+##
+##
 
 # helper function
 delete_stack_after_confirming() {
@@ -35,24 +40,23 @@ delete_stack_after_confirming() {
 }
 
 # helper function
-delete_bucket_after_confirming() {
-    if [[ -z "${1}" ]]; then
-        echo "$(date) bucket name missing..."
-        return
-    fi
+delete_codecommit_repo_after_confirming() {
+    REPO_NAME="$1"
+    repo=$(aws codecommit get-repository --repository-name "$REPO_NAME")
+    if [[ -n "${repo}" ]]; then
 
-    if [[ -z "${skip_flag}" ]]; then
-        read -p "Delete stack with name $1 [Y/n] " -n 1 -r
-    fi
+        if [[ -z "${skip_flag}" ]]; then
+            read -p "Delete codecommit repo with name \"$REPO_NAME\" [Y/n] " -n 1 -r
+        fi
 
-    if [[ $REPLY =~ ^[n]$ ]]; then
-        echo "$(date) NOT deleting bucket $1."
+        if [[ $REPLY =~ ^[n]$ ]]; then
+            echo "$(date) NOT deleting $REPO_NAME."
+        else
+            echo "$(date) deleting codecommit repo \"$REPO_NAME\"..."
+            aws codecommit delete-repository --repository-name "$REPO_NAME"
+        fi
     else
-        echo "$(date) emptying out s3 bucket with name $1..."
-        aws s3 rm --recursive "$1"
-        
-        echo "$(date) deleting s3 bucket with name $1..."
-        aws s3 rb "$1"
+        echo "$(date) repo \"$REPO_NAME\" does not exist..."
     fi
 }
 
@@ -64,7 +68,7 @@ while getopts 's' flag; do
   esac
 done
 
-echo "$(date) Cleaning up serverless workshop resources..."
+echo "$(date) Cleaning up resources..."
 if [[ -n "${skip_flag}" ]]; then
     echo "skip_flag enabled. Script will not pause for confirmation before deleting resources!"
 else
@@ -74,16 +78,16 @@ fi
 delete_stack_after_confirming "serverless-saas-workshop-lab1"
 delete_stack_after_confirming "stack-pooled"
 
-echo "$(date) finding platinum tenants..."
+echo "$(date) cleaning up platinum tenants..."
 next_token=""
 STACK_STATUS_FILTER="CREATE_COMPLETE ROLLBACK_COMPLETE UPDATE_COMPLETE UPDATE_ROLLBACK_COMPLETE IMPORT_COMPLETE IMPORT_ROLLBACK_COMPLETE"
 while true; do
     if [[ "${next_token}" == "" ]]; then
         echo "$(date) making api call to search for platinum tenants..."
-        response=$(aws cloudformation list-stacks --stack-status-filter $STACK_STATUS_FILTER)
+        response=$(aws cloudformation list-stacks --stack-status-filter "$STACK_STATUS_FILTER")
     else
         echo "$(date) making api call to search for platinum tenants..."
-        response=$(aws cloudformation list-stacks --stack-status-filter $STACK_STATUS_FILTER --starting-token "$next_token")
+        response=$(aws cloudformation list-stacks --stack-status-filter "$STACK_STATUS_FILTER" --starting-token "$next_token")
     fi
 
     tenant_stacks=$(echo "$response" | jq -r '.StackSummaries[].StackName | select(. | test("^stack-*"))')
@@ -102,24 +106,10 @@ done
 delete_stack_after_confirming "serverless-saas"
 delete_stack_after_confirming "serverless-saas-pipeline"
 
-repo=$(aws codecommit get-repository --repository-name "aws-serverless-saas-workshop")
-if [[ -n "${repo}" ]]; then
+delete_codecommit_repo_after_confirming "aws-saas-factory-ref-serverless-saas"
+delete_codecommit_repo_after_confirming "aws-serverless-saas-workshop"
 
-    if [[ -z "${skip_flag}" ]]; then
-        read -p "Delete codecommit repo with name \"aws-serverless-saas-workshop\" [Y/n] " -n 1 -r
-    fi
-
-    if [[ $REPLY =~ ^[n]$ ]]; then
-        echo "$(date) NOT deleting aws-serverless-saas-workshop."
-    else
-        echo "$(date) deleting codecommit repo \"aws-serverless-saas-workshop\"..."
-        aws codecommit delete-repository --repository-name "aws-serverless-saas-workshop"
-    fi
-else
-    echo "$(date) repo \"aws-serverless-saas-workshop\" does not exist..."
-fi
-
-echo "deleting workshop buckets..."
+echo "$(date) cleaning up buckets..."
 for i in $(aws s3 ls | awk '{print $3}' | grep -E "^serverless-saas-*|^sam-bootstrap-*"); do
 
     if [[ -z "${skip_flag}" ]]; then
@@ -137,7 +127,7 @@ for i in $(aws s3 ls | awk '{print $3}' | grep -E "^serverless-saas-*|^sam-boots
     fi
 done
 
-echo "$(date) finding workshop log groups..."
+echo "$(date) cleaning up log groups..."
 next_token=""
 while true; do
     if [[ "${next_token}" == "" ]]; then
@@ -167,8 +157,7 @@ while true; do
     fi
 done
 
-
-echo "$(date) finding user pools..."
+echo "$(date) cleaning up user pools..."
 next_token=""
 while true; do
     if [[ "${next_token}" == "" ]]; then
@@ -193,7 +182,7 @@ while true; do
             echo "deleting pool domain $pool_domain..."
             aws cognito-idp delete-user-pool-domain \
                 --user-pool-id "$i" \
-                --domain $pool_domain
+                --domain "$pool_domain"
 
             echo "deleting pool $i..."
             aws cognito-idp delete-user-pool --user-pool-id "$i"
@@ -207,4 +196,4 @@ while true; do
     fi
 done
 
-echo "$(date) Done cleaning up serverless workshop resources!"
+echo "$(date) Done cleaning up resources!"
