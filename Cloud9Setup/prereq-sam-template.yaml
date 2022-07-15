@@ -277,7 +277,7 @@ Resources:
           # Expand the size of the file system.
           # Check if we're on AL2
           STR=$(cat /etc/os-release)
-          SUB="VERSION_ID=\"2\""
+          SUB='VERSION_ID="2"'
           if [[ "$STR" == *"$SUB"* ]]
           then
             sudo xfs_growfs -d /
@@ -292,7 +292,7 @@ Resources:
           # Expand the size of the file system.
           # Check if we're on AL2
           STR=$(cat /etc/os-release)
-          SUB="VERSION_ID=\"2\""
+          SUB='VERSION_ID="2"'
           if [[ "$STR" == *"$SUB"* ]]
           then
             sudo xfs_growfs -d /
