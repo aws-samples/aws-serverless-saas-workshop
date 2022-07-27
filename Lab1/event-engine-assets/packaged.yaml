@@ -26,6 +26,27 @@ Globals:
         LOG_LEVEL: DEBUG
   
 Resources:
+  ApiGatewayCloudWatchPublishRole:
+    Type: AWS::IAM::Role     
+    Properties:
+      Path: '/'
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - apigateway.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns: 
+        - arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs        
+  
+  AttachCloudWatchRoleToApiGateway:
+    Type: AWS::ApiGateway::Account
+    Properties: 
+      CloudWatchRoleArn: !GetAtt ApiGatewayCloudWatchPublishRole.Arn
+
   ServerlessSaaSLayers:
     Type: AWS::Serverless::LayerVersion
     Properties:

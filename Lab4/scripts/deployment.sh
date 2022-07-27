@@ -21,6 +21,17 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
+# Check if workshop is running through EventEngine or not
+IS_RUNNING_IN_EVENT_ENGINE=false 
+PREPROVISIONED_ADMIN_SITE=$(aws cloudformation list-exports --query "Exports[?Name=='Serverless-SaaS-AdminAppSite'].Value" --output text)
+if [ ! -z "$PREPROVISIONED_ADMIN_SITE" ]; then
+  echo "Workshop is running in EventEngine"
+  IS_RUNNING_IN_EVENT_ENGINE=true
+  ADMIN_SITE_URL=$(aws cloudformation list-exports --query "Exports[?Name=='Serverless-SaaS-AdminAppSite'].Value" --output text)
+  LANDING_APP_SITE_URL=$(aws cloudformation list-exports --query "Exports[?Name=='Serverless-SaaS-LandingApplicationSite'].Value" --output text)
+  APP_SITE_URL=$(aws cloudformation list-exports --query "Exports[?Name=='Serverless-SaaS-ApplicationSite'].Value" --output text)
+fi
+
 if [[ $server -eq 1 ]] || [[ $bootstrap -eq 1 ]] || [[ $tenant -eq 1 ]]; then
   echo "Validating server code using pylint"
   cd ../server
@@ -37,7 +48,13 @@ if [[ $server -eq 1 ]] || [[ $bootstrap -eq 1 ]]; then
   cd ../server
   REGION=$(aws configure get region)
   sam build -t shared-template.yaml --use-container
-  sam deploy --config-file shared-samconfig.toml --region=$REGION
+  
+  if [ "$IS_RUNNING_IN_EVENT_ENGINE" = true ]; then
+    sam deploy --config-file shared-samconfig.toml --region=$REGION --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE AdminUserPoolCallbackURLParameter=$ADMIN_SITE_URL TenantUserPoolCallbackURLParameter=$APP_SITE_URL
+  else
+    sam deploy --config-file shared-samconfig.toml --region=$REGION --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE
+  fi
+    
   cd ../scripts
 fi  
 
@@ -55,9 +72,12 @@ if [[ $client -eq 1 ]]; then
   # App UI is configured in Lab3
   echo "Admin UI and Landing UI are configured in Lab2. App UI is configured in Lab3.
   So, no UI code is built in this Lab4"
-  ADMIN_SITE_URL=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='AdminAppSite'].OutputValue" --output text)
-  LANDING_APP_SITE_URL=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='LandingApplicationSite'].OutputValue" --output text)
-  APP_SITE_URL=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='ApplicationSite'].OutputValue" --output text)
+  if [ "$IS_RUNNING_IN_EVENT_ENGINE" = false ]; then
+    ADMIN_SITE_URL=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='AdminAppSite'].OutputValue" --output text)
+    LANDING_APP_SITE_URL=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='LandingApplicationSite'].OutputValue" --output text)
+    APP_SITE_URL=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='ApplicationSite'].OutputValue" --output text)
+  fi
+  
 
 
   echo "Admin site URL: https://$ADMIN_SITE_URL"
