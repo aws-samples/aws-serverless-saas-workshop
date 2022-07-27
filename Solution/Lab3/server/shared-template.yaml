@@ -18,6 +18,20 @@ Parameters:
     Type: String
     Default: "prod"
     Description: "Stage Name for the api"  
+  EventEngineParameter:
+    Type: String
+    Default: false    
+    Description: "Tells if this workshop is running as a part of AWS Event through AWS EventEngine or not"
+  AdminUserPoolCallbackURLParameter: 
+    Type: String
+    Default: "http://example.com"
+    Description: "Enter Admin Management userpool call back url"  
+  TenantUserPoolCallbackURLParameter:
+    Type: String
+    Default: "http://example.com"
+    Description: "Enter Tenant Management userpool call back url"   
+Conditions:
+  IsNotRunningInEventEngine: !Not [ !Equals [ !Ref EventEngineParameter, true] ]    
 Resources:
   DynamoDBTables:
     Type: AWS::Serverless::Application
@@ -29,6 +43,8 @@ Resources:
     Type: AWS::Serverless::Application
     Properties:
       Location: nested_templates/userinterface.yaml
+      Parameters:
+        EventEngineParameter: !Ref EventEngineParameter
       
   Cognito:
     Type: AWS::Serverless::Application
@@ -38,8 +54,8 @@ Resources:
       Parameters:
         AdminEmailParameter: !Ref AdminEmailParameter
         SystemAdminRoleNameParameter: !Ref SystemAdminRoleNameParameter
-        AdminUserPoolCallbackURLParameter: !GetAtt UserInterface.Outputs.AdminAppSite
-        TenantUserPoolCallbackURLParameter: !GetAtt UserInterface.Outputs.ApplicationSite
+        AdminUserPoolCallbackURLParameter: !If [IsNotRunningInEventEngine, !GetAtt UserInterface.Outputs.AdminAppSite, !Ref AdminUserPoolCallbackURLParameter]
+        TenantUserPoolCallbackURLParameter: !If [IsNotRunningInEventEngine, !GetAtt UserInterface.Outputs.ApplicationSite, !Ref TenantUserPoolCallbackURLParameter]
         
   LambdaFunctions:
     Type: AWS::Serverless::Application
@@ -113,21 +129,27 @@ Outputs:
   AdminSiteBucket:
     Description: The S3 Bucket that will contain the static assets for the tenant administration application
     Value: !GetAtt UserInterface.Outputs.AdminBucket
+    Condition: IsNotRunningInEventEngine
   AdminAppSite:
     Description: The name of the CloudFront url for Admin Management site
     Value: !GetAtt UserInterface.Outputs.AdminAppSite
+    Condition: IsNotRunningInEventEngine
   LandingApplicationSiteBucket:
     Description: The S3 Bucket that will contain the static assets for the landing application
     Value: !GetAtt UserInterface.Outputs.LandingAppBucket
+    Condition: IsNotRunningInEventEngine
   LandingApplicationSite:
     Description: The name of the CloudFront url for Landing site
     Value: !GetAtt UserInterface.Outputs.LandingApplicationSite
+    Condition: IsNotRunningInEventEngine
   ApplicationSiteBucket:
     Description: The S3 Bucket that will contain the static assets for the tenant application
     Value: !GetAtt UserInterface.Outputs.AppBucket
+    Condition: IsNotRunningInEventEngine
   ApplicationSite:
     Description: The name of the CloudFront url for Tenant Management site
     Value: !GetAtt UserInterface.Outputs.ApplicationSite
+    Condition: IsNotRunningInEventEngine
   CognitoOperationUsersUserPoolProviderURL:
     Description: The Admin Management userpool provider url
     Value: !GetAtt Cognito.Outputs.CognitoOperationUsersUserPoolProviderURL
