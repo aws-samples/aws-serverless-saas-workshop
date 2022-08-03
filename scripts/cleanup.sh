@@ -2,7 +2,7 @@
 ##
 ## This script aims to clean up resources created for the
 ## SaaS Serverless Workshop. This script is based on the guidance
-## provided here: 
+## provided here:
 ## https://catalog.us-east-1.prod.workshops.aws/workshops/b0c6ad36-0a4b-45d8-856b-8a64f0ac76bb/en-US/cleanup
 ##
 ## Note that this script can also be used to clean up resources for the
@@ -62,11 +62,22 @@ delete_codecommit_repo_after_confirming() {
 
 skip_flag=''
 while getopts 's' flag; do
-  case "${flag}" in
+    case "${flag}" in
     s) skip_flag='true' ;;
     *) error "Unexpected option ${flag}!" && exit 1 ;;
-  esac
+    esac
 done
+
+echo "$(date) Checking for prerequisites..."
+jq --version || {
+    echo "jq missing! Please install before using this script."
+    exit 1
+}
+aws --version || {
+    echo "ÅWS cli missing! Please install before using this script."
+    exit 1
+}
+echo "$(date) Done checking for prerequisites."
 
 echo "$(date) Cleaning up resources..."
 if [[ -n "${skip_flag}" ]]; then
@@ -125,7 +136,7 @@ for i in $(aws s3 ls | awk '{print $3}' | grep -E "^serverless-saas-*|^sam-boots
     else
         echo "$(date) emptying out s3 bucket with name s3://${i}..."
         aws s3 rm --recursive "s3://${i}"
-        
+
         echo "$(date) deleting s3 bucket with name s3://${i}..."
         aws s3 rb "s3://${i}"
     fi
@@ -165,9 +176,9 @@ echo "$(date) cleaning up user pools..."
 next_token=""
 while true; do
     if [[ "${next_token}" == "" ]]; then
-        response=$( aws cognito-idp list-user-pools --max-results 1)
+        response=$(aws cognito-idp list-user-pools --max-results 1)
     else
-        response=$( aws cognito-idp list-user-pools --max-results 1 --starting-token "$next_token")
+        response=$(aws cognito-idp list-user-pools --max-results 1 --starting-token "$next_token")
     fi
 
     pool_ids=$(echo "$response" | jq -r '.UserPools[] | select(.Name | test("^.*-ServerlessSaaSUserPool$")) |.Id')
