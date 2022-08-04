@@ -6,12 +6,13 @@ Transform: AWS::Serverless-2016-10-31
 Description: >
   Template to deploy cloudfront and s3 bucket for UI code
 Parameters:
-  EventEngineParameter:
+  IsCloudFrontAndS3PreProvisioned:
     Type: String
     Default: false    
-    Description: "Tells if this workshop is running as a part of AWS Event through AWS EventEngine or not"
+    Description: "Tells if cloudfront and s3 buckets are pre-provisioned or not. 
+    They get pre-provisioned when the workshop is running as a part of AWS Event through AWS event engine tool."
 Conditions:
-  IsNotRunningInEventEngine: !Not [ !Equals [ !Ref EventEngineParameter, true] ]     
+  IsNotRunningInEventEngine: !Not [ !Equals [ !Ref IsCloudFrontAndS3PreProvisioned, true] ]     
 Resources:
   CloudFrontOriginAccessIdentity:
     Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
