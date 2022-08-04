@@ -19,7 +19,12 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
-# Check if workshop is running through EventEngine or not
+# During AWS hosted events using event engine tool 
+# we pre-provision cloudfront and s3 buckets which hosts UI code. 
+# So that it improves this labs total execution time. 
+# Below code checks if cloudfront and s3 buckets are 
+# pre-provisioned or not and then concludes if the workshop 
+# is running in AWS hosted event through event engine tool or not.
 IS_RUNNING_IN_EVENT_ENGINE=false
 PREPROVISIONED_ADMIN_SITE=$(aws cloudformation list-exports --query "Exports[?Name=='Serverless-SaaS-AdminAppSite'].Value" --output text)
 if [ ! -z "$PREPROVISIONED_ADMIN_SITE" ]; then

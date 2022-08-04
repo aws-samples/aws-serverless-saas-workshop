@@ -4,7 +4,11 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 Description: >
-  Template to deploy cloudfront and s3 bucket for UI code
+  Template to deploy cloudfront and s3 bucket for UI code. 
+  This template will be used to pre-provision cloudfront and 
+  s3 buckets for UI code using event engine module during 
+  AWS hosted events. So that we don't need to provision them 
+  in individual labs and it improves individual labs execution time.
 Resources:
   CloudFrontOriginAccessIdentity:
     Type: AWS::CloudFront::CloudFrontOriginAccessIdentity

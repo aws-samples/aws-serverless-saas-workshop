@@ -64,7 +64,7 @@ Resources:
     Properties:
       Location: nested_templates/userinterface.yaml
       Parameters:
-        EventEngineParameter: !Ref EventEngineParameter
+        IsCloudFrontAndS3PreProvisioned: !Ref EventEngineParameter
       
   Cognito:
     Type: AWS::Serverless::Application
