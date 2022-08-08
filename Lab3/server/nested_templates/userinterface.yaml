@@ -5,14 +5,24 @@ AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 Description: >
   Template to deploy cloudfront and s3 bucket for UI code
+Parameters:
+  IsCloudFrontAndS3PreProvisioned:
+    Type: String
+    Default: false    
+    Description: "Tells if cloudfront and s3 buckets are pre-provisioned or not. 
+    They get pre-provisioned when the workshop is running as a part of AWS Event through AWS event engine tool."
+Conditions:
+  IsNotRunningInEventEngine: !Not [ !Equals [ !Ref IsCloudFrontAndS3PreProvisioned, true] ]  
 Resources:
   CloudFrontOriginAccessIdentity:
     Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Condition: IsNotRunningInEventEngine
     Properties:
       CloudFrontOriginAccessIdentityConfig:
         Comment: "Origin Access Identity for CloudFront Distributions"
   AdminAppBucket:  
     Type: AWS::S3::Bucket
+    Condition: IsNotRunningInEventEngine
     DeletionPolicy : Retain
     Properties:
       BucketEncryption:
@@ -26,6 +36,7 @@ Resources:
         RestrictPublicBuckets: True
   AdminAppSiteReadPolicy:
     Type: AWS::S3::BucketPolicy
+    Condition: IsNotRunningInEventEngine
     Properties:
       Bucket: !Ref AdminAppBucket
       PolicyDocument:
@@ -37,6 +48,7 @@ Resources:
             CanonicalUser: !GetAtt CloudFrontOriginAccessIdentity.S3CanonicalUserId
   AdminAppSite:
     Type: AWS::CloudFront::Distribution
+    Condition: IsNotRunningInEventEngine
     Properties:
       DistributionConfig:
         #Aliases: 
@@ -79,6 +91,7 @@ Resources:
         PriceClass: 'PriceClass_All'  
   LandingAppBucket:
     Type: AWS::S3::Bucket
+    Condition: IsNotRunningInEventEngine
     DeletionPolicy : Retain
     Properties:
       BucketEncryption:
@@ -93,6 +106,7 @@ Resources:
   
   LandingAppSiteReadPolicy:
     Type: AWS::S3::BucketPolicy
+    Condition: IsNotRunningInEventEngine
     Properties:
       Bucket: !Ref LandingAppBucket
       PolicyDocument:
@@ -104,6 +118,7 @@ Resources:
             CanonicalUser: !GetAtt CloudFrontOriginAccessIdentity.S3CanonicalUserId
   LandingApplicationSite:
     Type: AWS::CloudFront::Distribution
+    Condition: IsNotRunningInEventEngine
     Properties:
       DistributionConfig:
         CustomErrorResponses:
@@ -144,6 +159,7 @@ Resources:
         PriceClass: 'PriceClass_All' 
   AppBucket:
     Type: AWS::S3::Bucket
+    Condition: IsNotRunningInEventEngine
     DeletionPolicy : Retain
     Properties:
       BucketEncryption:
@@ -157,6 +173,7 @@ Resources:
         RestrictPublicBuckets: True
   AppSiteReadPolicy:
     Type: AWS::S3::BucketPolicy
+    Condition: IsNotRunningInEventEngine
     Properties:
       Bucket: !Ref AppBucket
       PolicyDocument:
@@ -168,6 +185,7 @@ Resources:
             CanonicalUser: !GetAtt CloudFrontOriginAccessIdentity.S3CanonicalUserId
   ApplicationSite:
     Type: AWS::CloudFront::Distribution
+    Condition: IsNotRunningInEventEngine
     Properties:
       DistributionConfig:
         CustomErrorResponses:
@@ -210,18 +228,24 @@ Outputs:
   AdminBucket:
     Description: The name of the bucket for uploading the Admin Management site to
     Value: !Ref AdminAppBucket
+    Condition: IsNotRunningInEventEngine
   AdminAppSite:
     Description: The name of the CloudFront url for Admin Management site
-    Value: !GetAtt AdminAppSite.DomainName  
+    Value: !GetAtt AdminAppSite.DomainName
+    Condition: IsNotRunningInEventEngine
   LandingAppBucket:
     Description: The name of the bucket for uploading the Landing site to
     Value: !Ref LandingAppBucket
+    Condition: IsNotRunningInEventEngine
   LandingApplicationSite:
     Description: The name of the CloudFront url for Landing site
-    Value: !GetAtt LandingApplicationSite.DomainName  
+    Value: !GetAtt LandingApplicationSite.DomainName
+    Condition: IsNotRunningInEventEngine
   AppBucket:
     Description: The name of the bucket for uploading the Tenant Management site to
     Value: !Ref AppBucket
+    Condition: IsNotRunningInEventEngine
   ApplicationSite:
     Description: The name of the CloudFront url for Tenant Management site
-    Value: !GetAtt ApplicationSite.DomainName     
+    Value: !GetAtt ApplicationSite.DomainName
+    Condition: IsNotRunningInEventEngine
