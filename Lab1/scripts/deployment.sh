@@ -58,8 +58,7 @@ if [[ $server -eq 1 ]]; then
   echo "Validating server code using pylint"
   python3 -m pylint -E -d E0401 "$(find . -iname "*.py" -not -path "./.aws-sam/*")"
   if [[ $? -ne 0 ]]; then
-    echo "****ERROR: Please fix above code errors and then rerun script!!****"
-    exit 1
+    echo "****WARNING: Please fix code errors found in above files.****"
   fi
 
   sam build -t template.yaml --use-container
