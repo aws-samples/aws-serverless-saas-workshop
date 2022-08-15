@@ -6,7 +6,7 @@
 ## bash create_tenants.sh myemail mydomain.com
 ##
 
-EMAIL_ALIAS="$1" # ex. test
+EMAIL_ALIAS="$1"  # ex. test
 EMAIL_DOMAIN="$2" # ex. test.com
 
 echo "$(date) finding saas admin API GW url..."
@@ -36,14 +36,15 @@ while true; do
 done
 
 SAAS_ADMIN_URL_STAGE="prod"
-CURRENT_REGION=$(aws configure get region)
+CURRENT_REGION=$(aws configure get region || echo "$AWS_DEFAULT_REGION")
 SAAS_ADMIN_URL="https://${api_gw_id}.execute-api.${CURRENT_REGION}.amazonaws.com/${SAAS_ADMIN_URL_STAGE}" # ex. https://m6slpkzugb.execute-api.us-west-2.amazonaws.com
 
 echo "EMAIL_ALIAS=${EMAIL_ALIAS}"
 echo "EMAIL_DOMAIN=${EMAIL_DOMAIN}"
 echo "SAAS_ADMIN_URL=${SAAS_ADMIN_URL}"
+echo "REGION=${CURRENT_REGION}"
 
-read -p "press any key to confirm above parameters and continue..."
+read -rp "press any key to confirm above parameters and continue..."
 
 echo "$(date) Creating a Standard tenant..."
 curl --location --request POST "${SAAS_ADMIN_URL}/registration" \
