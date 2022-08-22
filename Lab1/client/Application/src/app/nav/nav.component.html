@@ -1,0 +1,37 @@
+<mat-sidenav-container fullscreen>
+  <mat-sidenav
+    [mode]="'side'"
+    #drawer
+    class="sidenav"
+    fixedInViewport
+    [attr.role]="(isHandset$ | async) ? 'dialog' : 'navigation'"
+    [mode]="(isHandset$ | async) ? 'over' : 'side'"
+    [opened]="(isHandset$ | async) === false"
+  >
+    <div class="sidebar-icon-container">
+      <mat-icon svgIcon="saas-commerce" class="logo"></mat-icon>
+    </div>
+    <mat-divider></mat-divider>
+    <mat-nav-list>
+      <mat-list-item *ngFor="let navItem of navItems">
+        <mat-icon mat-list-icon class="nav-icon material-symbols-outlined">{{
+          navItem.icon
+        }}</mat-icon>
+        <a mat-list-item routerLink="{{ navItem.url }}">{{ navItem.name }}</a>
+      </mat-list-item>
+    </mat-nav-list>
+  </mat-sidenav>
+  <div class="content" #main>
+    <router-outlet></router-outlet>
+  </div>
+  <div class="footer" #footer>
+    <div class="footer-text">
+      <span>Serverless SaaS Workshop &copy; 2022 AWS</span>
+      <span class="spacer"></span>
+      <span>
+        Powered by <a href="https://aws.amazon.com">SaaS Factory</a>
+      </span>
+    </div>
+  </div>
+</mat-sidenav-container>
+
