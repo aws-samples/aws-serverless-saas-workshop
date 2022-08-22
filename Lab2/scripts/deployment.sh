@@ -113,10 +113,10 @@ if [[ $client -eq 1 ]]; then
 
   # Create admin-user in OperationUsers userpool with given input email address
   CREATE_ADMIN_USER=$(aws cognito-idp admin-create-user \
-    --user-pool-id "$ADMIN_USERPOOLID" \
-    --username admin-user \
-    --user-attributes Name=email,Value="$email" Name=phone_number,Value="+11234567890" Name="custom:userRole",Value="SystemAdmin" Name="custom:tenantId",Value="system_admins" \
-    --desired-delivery-mediums EMAIL)
+  --user-pool-id $ADMIN_USERPOOL_ID \
+  --username admin-user \
+  --user-attributes Name=email,Value=$email Name=email_verified,Value="True" Name=phone_number,Value="+11234567890" Name="custom:userRole",Value="SystemAdmin" Name="custom:tenantId",Value="system_admins" \
+  --desired-delivery-mediums EMAIL)
 
   echo "$CREATE_ADMIN_USER"
 
