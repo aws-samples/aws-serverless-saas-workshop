@@ -108,21 +108,21 @@ if [[ $client -eq 1 ]]; then
 
   ADMIN_APIGATEWAYURL=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='AdminApi'].OutputValue" --output text)
   ADMIN_APPCLIENTID=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='CognitoOperationUsersUserPoolClientId'].OutputValue" --output text)
-  ADMIN_USERPOOLID=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='CognitoOperationUsersUserPoolId'].OutputValue" --output text)
+  ADMIN_USERPOOL_ID=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='CognitoOperationUsersUserPoolId'].OutputValue" --output text)
   ADMIN_USER_GROUP_NAME=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='CognitoAdminUserGroupName'].OutputValue" --output text)
 
   # Create admin-user in OperationUsers userpool with given input email address
   CREATE_ADMIN_USER=$(aws cognito-idp admin-create-user \
-  --user-pool-id $ADMIN_USERPOOL_ID \
+  --user-pool-id "$ADMIN_USERPOOL_ID" \
   --username admin-user \
-  --user-attributes Name=email,Value=$email Name=email_verified,Value="True" Name=phone_number,Value="+11234567890" Name="custom:userRole",Value="SystemAdmin" Name="custom:tenantId",Value="system_admins" \
+  --user-attributes Name=email,Value="$email" Name=email_verified,Value="True" Name=phone_number,Value="+11234567890" Name="custom:userRole",Value="SystemAdmin" Name="custom:tenantId",Value="system_admins" \
   --desired-delivery-mediums EMAIL)
 
   echo "$CREATE_ADMIN_USER"
 
   # Add admin-user to admin user group
   ADD_ADMIN_USER_TO_GROUP=$(aws cognito-idp admin-add-user-to-group \
-    --user-pool-id "$ADMIN_USERPOOLID" \
+    --user-pool-id "$ADMIN_USERPOOL_ID" \
     --username admin-user \
     --group-name "$ADMIN_USER_GROUP_NAME")
 
@@ -157,7 +157,7 @@ EoF
 const awsmobile = {
     "aws_project_region": "$REGION",
     "aws_cognito_region": "$REGION",
-    "aws_user_pools_id": "$ADMIN_USERPOOLID",
+    "aws_user_pools_id": "$ADMIN_USERPOOL_ID",
     "aws_user_pools_web_client_id": "$ADMIN_APPCLIENTID",
 };
 
