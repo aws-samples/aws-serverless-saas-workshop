@@ -49,16 +49,10 @@ nvm install v14.18.1
 nvm use v14.18.1
 nvm alias default v14.18.1
 
-
 # Install cdk cli version 2.27.0
 echo "Installing cdk cli version 2.27.0"
 npm uninstall -g aws-cdk
 npm install -g aws-cdk@2.27.0
-
-# Install angular version 12.1.1
-echo "Installing angular version 12.1.1"
-export NG_CLI_ANALYTICS=ci
-npm install -g @angular/cli@12.1.1
 
 #Install jq version 1.5
 sudo yum -y install jq-1.5
