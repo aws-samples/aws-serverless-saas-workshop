@@ -8,6 +8,7 @@ from botocore.exceptions import ClientError
 import uuid
 import json
 import logger
+import metrics_manager
 import random
 import threading
 
@@ -31,9 +32,11 @@ def get_product(event, key):
         productId = key.split(":")[1] 
         logger.log_with_tenant_context(event, shardId)
         logger.log_with_tenant_context(event, productId)
-        response = table.get_item(Key={'shardId': shardId, 'productId': productId})
+        response = table.get_item(Key={'shardId': shardId, 'productId': productId}, ReturnConsumedCapacity='TOTAL')
         item = response['Item']
         product = Product(item['shardId'], item['productId'], item['sku'], item['name'], item['price'], item['category'])
+
+        metrics_manager.record_metric(event, "ReadCapacityUnits", "Count", response['ConsumedCapacity']['CapacityUnits'])
     except ClientError as e:
         logger.error(e.response['Error']['Message'])
         raise Exception('Error getting a product', e)
@@ -47,7 +50,9 @@ def delete_product(event, key):
     try:
         shardId = key.split(":")[0]
         productId = key.split(":")[1] 
-        response = table.delete_item(Key={'shardId':shardId, 'productId': productId})
+        response = table.delete_item(Key={'shardId':shardId, 'productId': productId}, ReturnConsumedCapacity='TOTAL')
+
+        metrics_manager.record_metric(event, "WriteCapacityUnits", "Count", response['ConsumedCapacity']['CapacityUnits'])
     except ClientError as e:
         logger.error(e.response['Error']['Message'])
         raise Exception('Error deleting a product', e)
@@ -76,8 +81,11 @@ def create_product(event, payload):
                     'name': product.name,
                     'price': product.price,
                     'category': product.category
-                }
+                }, 
+                ReturnConsumedCapacity='TOTAL'
         )
+
+        metrics_manager.record_metric(event, "WriteCapacityUnits", "Count", response['ConsumedCapacity']['CapacityUnits'])
     except ClientError as e:
         logger.error(e.response['Error']['Message'])
         raise Exception('Error adding a product', e)
@@ -105,7 +113,10 @@ def update_product(event, payload, key):
             ':price': product.price,
             ':category': product.category
         },
-        ReturnValues="UPDATED_NEW")
+        ReturnValues="UPDATED_NEW", 
+        ReturnConsumedCapacity='TOTAL')
+
+        metrics_manager.record_metric(event, "WriteCapacityUnits", "Count", response['ConsumedCapacity']['CapacityUnits'])
     except ClientError as e:
         logger.error(e.response['Error']['Message'])
         raise Exception('Error updating a product', e)
@@ -117,7 +128,7 @@ def get_products(event, tenantId):
     table = __get_dynamodb_table(event, dynamodb)
     get_all_products_response =[]
     try:
-        __query_all_partitions(tenantId,get_all_products_response, table)
+        __query_all_partitions(tenantId,get_all_products_response, table, event)
     except ClientError as e:
         logger.error(e.response['Error']['Message'])
         raise Exception('Error getting all products', e)
@@ -125,13 +136,13 @@ def get_products(event, tenantId):
         logger.info("Get products succeeded")
         return get_all_products_response
 
-def __query_all_partitions(tenantId,get_all_products_response, table):
+def __query_all_partitions(tenantId,get_all_products_response, table, event):
     threads = []    
     
     for suffix in range(suffix_start, suffix_end):
         partition_id = tenantId+'-'+str(suffix)
         
-        thread = threading.Thread(target=__get_tenant_data, args=[partition_id, get_all_products_response, table])
+        thread = threading.Thread(target=__get_tenant_data, args=[partition_id, get_all_products_response, table, event])
         threads.append(thread)
         
     # Start threads
@@ -141,13 +152,15 @@ def __query_all_partitions(tenantId,get_all_products_response, table):
     for thread in threads:
         thread.join()
            
-def __get_tenant_data(partition_id, get_all_products_response, table):    
+def __get_tenant_data(partition_id, get_all_products_response, table, event):    
     logger.info(partition_id)
-    response = table.query(KeyConditionExpression=Key('shardId').eq(partition_id))    
+    response = table.query(KeyConditionExpression=Key('shardId').eq(partition_id), ReturnConsumedCapacity='TOTAL')    
     if (len(response['Items']) > 0):
         for item in response['Items']:
             product = Product(item['shardId'], item['productId'], item['sku'], item['name'], item['price'], item['category'])
             get_all_products_response.append(product)
+
+    metrics_manager.record_metric(event, "ReadCapacityUnits", "Count", response['ConsumedCapacity']['CapacityUnits'])        
 
 def __get_dynamodb_table(event, dynamodb):    
     if (is_pooled_deploy=='true'):

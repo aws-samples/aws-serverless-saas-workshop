@@ -81,7 +81,7 @@ def create_product(event, payload):
                     'name': product.name,
                     'price': product.price,
                     'category': product.category
-                }, ReturnConsumedCapacity='TOTAL'
+                } , ReturnConsumedCapacity='TOTAL'
         )
 
         metrics_manager.record_metric(event, "WriteCapacityUnits", "Count", response['ConsumedCapacity']['CapacityUnits'])
@@ -112,7 +112,8 @@ def update_product(event, payload, key):
             ':price': product.price,
             ':category': product.category
         },
-        ReturnValues="UPDATED_NEW", ReturnConsumedCapacity='TOTAL')
+        ReturnValues="UPDATED_NEW", 
+        ReturnConsumedCapacity='TOTAL')
 
         metrics_manager.record_metric(event, "WriteCapacityUnits", "Count", response['ConsumedCapacity']['CapacityUnits'])
     except ClientError as e:
