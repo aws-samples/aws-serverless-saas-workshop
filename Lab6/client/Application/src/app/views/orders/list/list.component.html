@@ -7,7 +7,12 @@
         <ng-container matColumnDef="name">
           <th mat-header-cell *matHeaderCellDef>Name</th>
           <td mat-cell *matCellDef="let element">
-            <a class="link" routerLink="/orders/detail/{{ element.orderId }}">
+            <a
+              class="link"
+              routerLink="/orders/detail/{{ element.shardId }}:{{
+                element.orderId
+              }}"
+            >
               {{ element.orderName }}
             </a>
           </td>
@@ -30,7 +35,10 @@
         <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
         <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
       </table>
-      <mat-card *ngIf="isLoading" style="display: flex; justify-content: center; align-items: center">
+      <mat-card
+        *ngIf="isLoading"
+        style="display: flex; justify-content: center; align-items: center"
+      >
         <mat-progress-spinner
           color="primary"
           mode="indeterminate"

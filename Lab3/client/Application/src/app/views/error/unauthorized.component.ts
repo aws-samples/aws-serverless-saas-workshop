@@ -32,7 +32,7 @@ export class UnauthorizedComponent implements OnInit {
   params$: Observable<void>;
   error = false;
   errorMessage: string;
-  tenantNameRequired: boolean = false;
+  tenantNameRequired: boolean = true;
 
   constructor(
     private fb: FormBuilder,
@@ -41,18 +41,18 @@ export class UnauthorizedComponent implements OnInit {
     private router: Router
   ) {
     if (
-      environment.userPoolId &&
-      environment.appClientId &&
-      environment.apiGatewayUrl
+      'userPoolId' in environment &&
+      'appClientId' in environment &&
+      'apiGatewayUrl' in environment
     ) {
       // If a tenant's cognito configuration is provided in the
       // "environment" object, then we take that instead of asking
       // the visitor to provide the name of their tenant in order
       // to do a look-up for that tenant's cognito configuration.
       localStorage.setItem('tenantName', 'PooledTenants');
-      localStorage.setItem('userPoolId', environment.userPoolId);
-      localStorage.setItem('appClientId', environment.appClientId);
-      localStorage.setItem('apiGatewayUrl', environment.apiGatewayUrl);
+      localStorage.setItem('userPoolId', (environment as any).userPoolId);
+      localStorage.setItem('appClientId', (environment as any).appClientId);
+      localStorage.setItem('apiGatewayUrl', (environment as any).apiGatewayUrl);
       this.tenantNameRequired = false;
     }
   }

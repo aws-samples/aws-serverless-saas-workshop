@@ -20,6 +20,7 @@ import { AuthConfigurationService } from './../auth/auth-configuration.service';
 import { Observable } from 'rxjs';
 import { Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { environment } from 'src/environments/environment';
 
 @Component({
   selector: 'app-unauthorized',
@@ -31,22 +32,35 @@ export class UnauthorizedComponent implements OnInit {
   params$: Observable<void>;
   error = false;
   errorMessage: string;
+  tenantNameRequired: boolean = true;
 
   constructor(
     private fb: FormBuilder,
     private authConfigService: AuthConfigurationService,
     private _snackBar: MatSnackBar,
     private router: Router
-  ) {}
+  ) {
+    if (
+      'userPoolId' in environment &&
+      'appClientId' in environment &&
+      'apiGatewayUrl' in environment
+    ) {
+      // If a tenant's cognito configuration is provided in the
+      // "environment" object, then we take that instead of asking
+      // the visitor to provide the name of their tenant in order
+      // to do a look-up for that tenant's cognito configuration.
+      localStorage.setItem('tenantName', 'PooledTenants');
+      localStorage.setItem('userPoolId', (environment as any).userPoolId);
+      localStorage.setItem('appClientId', (environment as any).appClientId);
+      localStorage.setItem('apiGatewayUrl', (environment as any).apiGatewayUrl);
+      this.tenantNameRequired = false;
+    }
+  }
 
   ngOnInit(): void {
     this.tenantForm = this.fb.group({
       tenantName: [null, [Validators.required]],
     });
-
-    if (localStorage.getItem('tenantName')) {
-      this.router.navigate(['/dashboard']);
-    }
   }
 
   isFieldInvalid(field: string) {
@@ -73,6 +87,11 @@ export class UnauthorizedComponent implements OnInit {
   }
 
   login() {
+    if (!this.tenantNameRequired) {
+      this.router.navigate(['/dashboard']);
+      return true;
+    }
+
     let tenantName = this.tenantForm.value.tenantName;
     if (!tenantName) {
       this.errorMessage = 'No tenant name provided.';
