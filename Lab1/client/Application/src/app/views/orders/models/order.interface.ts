@@ -6,7 +6,6 @@ import { OrderProduct } from './orderproduct.interface';
 
 export interface Order {
   key: string;
-  shardId: string;
   orderId: string;
   orderName: string;
   orderProducts: OrderProduct[];
