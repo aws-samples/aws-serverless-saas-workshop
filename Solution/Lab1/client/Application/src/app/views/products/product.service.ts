@@ -29,7 +29,7 @@ export class ProductService {
     return this.http.delete<Product>(url);
   }
 
-  patch(product: Product) {
+  put(product: Product) {
     const url = `${this.baseUrl}/product/${product.productId}`;
     return this.http.patch<Product>(url, product);
   }

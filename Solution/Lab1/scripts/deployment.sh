@@ -99,7 +99,7 @@ export const environment = {
 };
 EoF
 
-  echo no | yarn install && yarn build
+  npm install && npm run build
 
   echo "aws s3 sync --delete --cache-control no-store dist s3://${APP_SITE_BUCKET}"
   if ! aws s3 sync --delete --cache-control no-store dist "s3://${APP_SITE_BUCKET}"; then

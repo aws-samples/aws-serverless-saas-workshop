@@ -34,7 +34,6 @@ import { MatInputModule } from '@angular/material/input';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTableModule } from '@angular/material/table';
-import { environment } from 'src/environments/environment';
 
 @NgModule({
   declarations: [

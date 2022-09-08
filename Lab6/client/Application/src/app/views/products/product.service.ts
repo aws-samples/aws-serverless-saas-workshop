@@ -24,15 +24,14 @@ export class ProductService {
   }
 
   delete(product: Product) {
-    const url = `${this.baseUrl}/product/${product.productId}`;
+    const url = `${this.baseUrl}/product/${product.shardId}:${product.productId}`;
     return this.http.delete<Product>(url);
   }
 
-  patch(product: Product) {
-    const url = `${this.baseUrl}/product/${product.productId}`;
-    return this.http.patch<Product>(url, product);
+  put(product: Product) {
+    const url = `${this.baseUrl}/product/${product.shardId}:${product.productId}`;
+    return this.http.put<Product>(url, product);
   }
-
   post(product: Product) {
     return this.http.post<Product>(`${this.baseUrl}/product`, product);
   }

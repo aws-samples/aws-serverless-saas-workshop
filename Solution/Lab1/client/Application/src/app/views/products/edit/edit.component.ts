@@ -57,7 +57,7 @@ export class EditComponent implements OnInit {
   }
 
   submit() {
-    this.productSvc.patch(this.productForm?.value).subscribe({
+    this.productSvc.put(this.productForm?.value).subscribe({
       next: () => this.router.navigate(['products']),
       error: (err) => console.error(err),
     });
