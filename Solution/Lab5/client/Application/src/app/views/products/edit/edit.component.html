@@ -4,18 +4,10 @@
       <mat-card-title>Edit Product</mat-card-title>
       <mat-card-content>
         <mat-form-field>
-          <mat-label>Product Id</mat-label>
+          <mat-label>Product ID</mat-label>
           <input
             matInput
-            formControlName="productId"
-            [readonly]="true"
-          />
-        </mat-form-field>
-        <mat-form-field>
-          <mat-label>Shard Id</mat-label>
-          <input
-            matInput
-            formControlName="shardId"
+            value="{{ productId$ | async }}"
             [readonly]="true"
           />
         </mat-form-field>
