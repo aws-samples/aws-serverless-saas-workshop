@@ -31,7 +31,7 @@ export class ProductService {
 
   put(product: Product) {
     const url = `${this.baseUrl}/product/${product.productId}`;
-    return this.http.patch<Product>(url, product);
+    return this.http.put<Product>(url, product);
   }
 
   post(product: Product) {
