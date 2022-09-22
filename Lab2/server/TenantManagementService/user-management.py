@@ -207,6 +207,10 @@ class UserManagement:
                     'Value': user_details['tenantEmail']
                 },
                 {
+                    'Name': 'email_verified',
+                    'Value': 'true'
+                },
+                {
                     'Name': 'custom:userRole',
                     'Value': 'TenantAdmin' 
                 },            

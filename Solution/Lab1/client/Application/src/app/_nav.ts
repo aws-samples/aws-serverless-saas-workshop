@@ -1,18 +1,18 @@
-import { INavData } from '@coreui/angular';
+/*
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: MIT-0
+ */
+import { INavData } from './models';
 
 export const navItems: INavData[] = [
   {
-    title: true,
-    name: 'SaaS Commerce'
-  },
-  {
     name: 'Products',
     url: '/products',
-    icon: 'icon-tag',
+    icon: 'sell',
   },
   {
     name: 'Orders',
     url: '/orders',
-    icon: 'icon-basket',
+    icon: 'shopping_cart',
   },
 ];

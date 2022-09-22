@@ -92,7 +92,7 @@ echo ""
 echo "Checking node version"
 node --version
 NODE_VERSION=$(node --version | cut -d'v' -f 2)
-NODE_MIN_VERSION=12.0.0
+NODE_MIN_VERSION=14.0.0
 check_version $NODE_MIN_VERSION $NODE_VERSION 
 if [[ $? -eq 1 ]]; then
     echo "ACTION REQUIRED: Need to have Node version greater than or equal to $NODE_MIN_VERSION"
@@ -106,7 +106,7 @@ echo ""
 echo "Checking cdk version"
 cdk --version
 CDK_VERSION=$(cdk --version | cut -d'(' -f 1| xargs)
-CDK_MIN_VERSION=2.27.0
+CDK_MIN_VERSION=2.40.0
 check_version $CDK_MIN_VERSION $CDK_VERSION
 if [[ $? -eq 1 ]]; then
     echo "ACTION REQUIRED: Need to have CDK version greater than or equal to $CDK_MIN_VERSION"
@@ -116,22 +116,6 @@ else
 fi
 echo ""
 
-
-echo "Checking angular version"
-ng --version
-NG_VERSION=$(ng --version | grep -i 'Angular CLI:' | cut -d':' -f 2 | cut -d'.' -f 1 | xargs)
-NG_MIN_VERSION=11.0.0
-check_version $NG_MIN_VERSION $NG_VERSION
-if [[ $? -eq 1 ]]; then
-    echo "ACTION REQUIRED: Need to have Angular version greater than or equal to $NG_MIN_VERSION"
-    SUMMARY+="* ACTION REQUIRED: Need to have Angular version greater than or equal to $NG_MIN_VERSION"$'\n'
-else 
-    SUMMARY+="* PASS : Angular version $NG_VERSION installed. The minimum required version $NG_MIN_VERSION"$'\n'
-fi
-echo ""
-
 echo "***************SUMMARY****************"
 echo "$SUMMARY"
 echo "***************END OF SUMMARY*********"
-
-
