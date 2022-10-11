@@ -1,5 +1,0 @@
-requests
-pytest-mock
-aws-lambda-powertools
-jsonpickle
-aws_requests_auth
