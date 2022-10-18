@@ -24,22 +24,27 @@ def calculate_daily_dynamodb_attribution_by_tenant(event, context):
     end_date_time =  int((datetime.now(tz=time_zone) + timedelta(days=1)).date().strftime('%s')) #next day epoch
     
     #Get total dynamodb cost for the given duration
-    #TODO: Get total cost of DynamoDB for the current date
-    total_dynamodb_cost = 0
+    total_dynamodb_cost = __get_total_service_cost('AmazonDynamoDB', start_date_time, end_date_time)
 
     log_group_names = __get_list_of_log_group_names()
     print( log_group_names)
-        
-    #TODO: Write the query to get the DynamoDB WCU and RCUs consumption grouped by TenantId
-    usage_by_tenant_by_day_query = 'query placeholder'
+
+    usage_by_tenant_by_day_query = 'filter @message like /ReadCapacityUnits|WriteCapacityUnits/ \
+    | fields tenant_id as TenantId, ReadCapacityUnits.0 as RCapacityUnits, WriteCapacityUnits.0 as WCapacityUnits \
+    | stats sum(RCapacityUnits) as ReadCapacityUnits, sum(WCapacityUnits) as WriteCapacityUnits by TenantId, dateceil(@timestamp, 1d) as timestamp'
+
+    usage_by_tenant_by_day = __query_cloudwatch_logs(logs,  log_group_names, 
+    usage_by_tenant_by_day_query, start_date_time, end_date_time)
+
+    print(usage_by_tenant_by_day)    
     
-    usage_by_tenant_by_day = __query_cloudwatch_logs(logs, log_group_names, usage_by_tenant_by_day_query, start_date_time, end_date_time)
-    print(usage_by_tenant_by_day)        
+    total_usage_by_day_query = 'filter @message like /ReadCapacityUnits|WriteCapacityUnits/ \
+    | fields ReadCapacityUnits.0 as RCapacityUnits, WriteCapacityUnits.0 as WCapacityUnits \
+    | stats sum(RCapacityUnits) as ReadCapacityUnits, sum(WCapacityUnits) as WriteCapacityUnits by dateceil(@timestamp, 1d) as timestamp'
     
-    #TODO: Write the query to get the Total DynamoDB WCU and RCUs consumption across all tenants
-    total_usage_by_day_query = 'query placeholder'
-    
-    total_usage_by_day = __query_cloudwatch_logs(logs, log_group_names, total_usage_by_day_query, start_date_time, end_date_time)
+    total_usage_by_day = __query_cloudwatch_logs(logs,  log_group_names, 
+    total_usage_by_day_query, start_date_time, end_date_time)
+
     print(total_usage_by_day)  
     
     total_RCU = 0 
@@ -71,8 +76,21 @@ def calculate_daily_dynamodb_attribution_by_tenant(event, context):
             tenant_dynamodb_cost = tenant_attribution_percentage * total_dynamodb_cost
             
             try:
-                #TODO: Save the tenant attribution data inside a dynamodb table
-                pass
+                response = attribution_table.put_item(
+                    Item=
+                        {
+                            "Date": start_date_time,
+                            "ServiceName": "DynamoDB",
+                            "TenantId": tenant_id, 
+                            "TotalRCU": total_RCU, 
+                            "TenantTotalRCU": total_RCU_By_Tenant, 
+                            "TotalWCU": total_WCU,
+                            "TenantTotalWCU": total_WCU_By_Tenant, 
+                            "TenantAttributionPercentage": tenant_attribution_percentage,
+                            "TenantServiceCost": tenant_dynamodb_cost,
+                            "TotalServiceCost": total_dynamodb_cost
+                        }
+                )
             except ClientError as e:
                 print(e.response['Error']['Message'])
                 raise Exception('Error adding a product', e)
@@ -100,16 +118,21 @@ def calculate_daily_lambda_attribution_by_tenant(event, context):
 
     log_group_names = __get_list_of_log_group_names()
     
-    #TODO: Write the below query to get the total lambda invocations grouped by tenants
-    usage_by_tenant_by_day_query='query placeholder'
-
+    usage_by_tenant_by_day_query='fields @timestamp, @message \
+        | filter @message like /Request completed/ \
+        | fields tenant_id as TenantId , CountLambdaInvocations.0 As LambdaInvocations, timestamp\
+        | stats count (tenant_id) as CountLambdaInvocations by TenantId, dateceil(@timestamp, 1d) as timestamp'
     usage_by_tenant_by_day = __query_cloudwatch_logs(logs, log_group_names, usage_by_tenant_by_day_query, start_date_time, end_date_time)
+
     print(usage_by_tenant_by_day) 
 
-    #TODO: Write the below query to get the total lambda invocations across all tenants
-    total_usage_by_day_query = 'query placeholder'
+    total_usage_by_day_query = 'filter @message like /Request completed/ \
+        | fields CountLambdaInvocations.0 As LambdaInvocations, timestamp\
+        | stats count (tenant_id) as CountLambdaInvocations by dateceil(@timestamp, 1d) as timestamp'
     
-    total_usage_by_day = __query_cloudwatch_logs(logs,  log_group_names, total_usage_by_day_query, start_date_time, end_date_time)
+    total_usage_by_day = __query_cloudwatch_logs(logs,  log_group_names, 
+    total_usage_by_day_query, start_date_time, end_date_time)
+
     print(total_usage_by_day) 
     
     total_invocations = 1 #to avoid divide by zero
@@ -117,6 +140,7 @@ def calculate_daily_lambda_attribution_by_tenant(event, context):
         if 'LambdaInvocations' in result['field']:
             total_invocations = Decimal(result['value'])
         
+    
     print (total_invocations)
     
     if (total_invocations>0):
@@ -129,6 +153,8 @@ def calculate_daily_lambda_attribution_by_tenant(event, context):
                 if 'LambdaInvocations' in field['field']:
                     total_invocations_by_tenant = Decimal(field['value'])
                 
+            
+            #RCU is about 5 times cheaper
             tenant_attribution_percentage= (total_invocations_by_tenant / total_invocations) 
             tenant_lambda_cost = tenant_attribution_percentage * total_lambda_cost
             
@@ -153,8 +179,8 @@ def calculate_daily_lambda_attribution_by_tenant(event, context):
                 print("PutItem succeeded:")
             
             tenant_id = 'unknown'
-            total_invocations_by_tenant = 0
-            
+            tenant_total_RCU = 0.0
+            tenant_total_WCU = 0.0
 
 def __get_total_service_cost(servicename, start_date_time, end_date_time):
 
