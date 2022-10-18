@@ -9,6 +9,7 @@ import uuid
 from order_models import Order
 import json
 import utils
+import metrics_manager
 from types import SimpleNamespace
 import logger
 import random
@@ -31,9 +32,11 @@ def get_order(event, key):
         orderId = key.split(":")[1] 
         logger.log_with_tenant_context(event, shardId)
         logger.log_with_tenant_context(event, orderId)
-        response = table.get_item(Key={'shardId': shardId, 'orderId': orderId})
+        response = table.get_item(Key={'shardId': shardId, 'orderId': orderId}, ReturnConsumedCapacity='TOTAL')
         item = response['Item']
         order = Order(item['shardId'], item['orderId'], item['orderName'], item['orderProducts'])
+
+        metrics_manager.record_metric(event, "ReadCapacityUnits", "Count", response['ConsumedCapacity']['CapacityUnits'])
 
     except ClientError as e:
         logger.error(e.response['Error']['Message'])
@@ -47,7 +50,9 @@ def delete_order(event, key):
     try:
         shardId = key.split(":")[0]
         orderId = key.split(":")[1] 
-        response = table.delete_item(Key={'shardId':shardId, 'orderId': orderId})
+        response = table.delete_item(Key={'shardId':shardId, 'orderId': orderId}, ReturnConsumedCapacity='TOTAL')
+
+        metrics_manager.record_metric(event, "WriteCapacityUnits", "Count", response['ConsumedCapacity']['CapacityUnits'])
     except ClientError as e:
         logger.error(e.response['Error']['Message'])
         raise Exception('Error deleting a order', e)
@@ -70,7 +75,9 @@ def create_order(event, payload):
         'orderId': order.orderId, 
         'orderName': order.orderName,
         'orderProducts': get_order_products_dict(order.orderProducts)
-        })
+        }, ReturnConsumedCapacity='TOTAL')
+
+        metrics_manager.record_metric(event, "WriteCapacityUnits", "Count", response['ConsumedCapacity']['CapacityUnits'])
     except ClientError as e:
         logger.error(e.response['Error']['Message'])
         raise Exception('Error adding a order', e)
@@ -94,7 +101,10 @@ def update_order(event, payload, key):
             ':orderName': order.orderName,
             ':orderProducts': get_order_products_dict(order.orderProducts)
         },
-        ReturnValues="UPDATED_NEW")
+        ReturnValues="UPDATED_NEW", 
+        ReturnConsumedCapacity='TOTAL')
+
+        metrics_manager.record_metric(event, "WriteCapacityUnits", "Count", response['ConsumedCapacity']['CapacityUnits'])
     except ClientError as e:
         logger.error(e.response['Error']['Message'])
         raise Exception('Error updating a order', e)
@@ -107,7 +117,7 @@ def get_orders(event, tenantId):
     get_all_products_response = []
 
     try:
-        __query_all_partitions(tenantId,get_all_products_response, table)
+        __query_all_partitions(tenantId,get_all_products_response, table, event)
     except ClientError as e:
         logger.error("Error getting all orders")
         raise Exception('Error getting all orders', e) 
@@ -115,13 +125,13 @@ def get_orders(event, tenantId):
         logger.info("Get orders succeeded")
         return get_all_products_response
 
-def __query_all_partitions(tenantId,get_all_products_response, table):
+def __query_all_partitions(tenantId,get_all_products_response, table, event):
     threads = []    
     
     for suffix in range(suffix_start, suffix_end):
         partition_id = tenantId+'-'+str(suffix)
         
-        thread = threading.Thread(target=__get_tenant_data, args=[partition_id, get_all_products_response, table])
+        thread = threading.Thread(target=__get_tenant_data, args=[partition_id, get_all_products_response, table, event])
         threads.append(thread)
         
     # Start threads
@@ -131,13 +141,15 @@ def __query_all_partitions(tenantId,get_all_products_response, table):
     for thread in threads:
         thread.join()
            
-def __get_tenant_data(partition_id, get_all_products_response, table):    
+def __get_tenant_data(partition_id, get_all_products_response, table, event):    
     logger.info(partition_id)
-    response = table.query(KeyConditionExpression=Key('shardId').eq(partition_id))    
+    response = table.query(KeyConditionExpression=Key('shardId').eq(partition_id), ReturnConsumedCapacity='TOTAL')    
     if (len(response['Items']) > 0):
         for item in response['Items']:
             order = Order(item['shardId'], item['orderId'], item['orderName'], item['orderProducts'])
             get_all_products_response.append(order)
+
+    metrics_manager.record_metric(event, "ReadCapacityUnits", "Count", response['ConsumedCapacity']['CapacityUnits'])        
 
 def __get_dynamodb_table(event, dynamodb):
     """ Determine the table name based upo pooled vs silo model
