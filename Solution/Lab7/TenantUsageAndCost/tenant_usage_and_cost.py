@@ -80,7 +80,7 @@ def calculate_daily_dynamodb_attribution_by_tenant(event, context):
                     Item=
                         {
                             "Date": start_date_time,
-                            "ServiceName": "DynamoDB",
+                            "TenantId#ServiceName": tenant_id+"#"+"DynamoDB",
                             "TenantId": tenant_id, 
                             "TotalRCU": total_RCU, 
                             "TenantTotalRCU": total_RCU_By_Tenant, 
@@ -163,7 +163,7 @@ def calculate_daily_lambda_attribution_by_tenant(event, context):
                     Item=
                         {
                             "Date": start_date_time,
-                            "ServiceName": "AWSLambda",
+                            "TenantId#ServiceName": tenant_id+"#"+"AWSLambda",
                             "TenantId": tenant_id, 
                             "TotalInvocations": total_invocations, 
                             "TenantTotalInvocations": total_invocations_by_tenant,
