@@ -137,7 +137,7 @@ def calculate_daily_lambda_attribution_by_tenant(event, context):
                     Item=
                         {
                             "Date": start_date_time,
-                            "ServiceName": "AWSLambda",
+                            "TenantId#ServiceName": tenant_id+"#"+"AWSLambda",
                             "TenantId": tenant_id, 
                             "TotalInvocations": total_invocations, 
                             "TenantTotalInvocations": total_invocations_by_tenant,

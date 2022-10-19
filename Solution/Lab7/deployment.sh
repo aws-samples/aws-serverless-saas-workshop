@@ -1,5 +1,6 @@
-sam build -t template.yaml 
-sam deploy
+REGION=$(aws configure get region)
+sam build -t template.yaml --use-container
+sam deploy --config-file samconfig.toml --region=$REGION
   
 
 CUR_BUCKET=$(aws cloudformation list-exports --query "Exports[?Name=='CURBucketname'].Value" --output text)

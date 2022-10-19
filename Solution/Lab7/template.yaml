@@ -189,12 +189,12 @@ Resources:
       AttributeDefinitions:
         - AttributeName: Date
           AttributeType: N
-        - AttributeName: ServiceName
+        - AttributeName: TenantId#ServiceName
           AttributeType: S
       KeySchema:
         - AttributeName: Date
           KeyType: HASH
-        - AttributeName: ServiceName
+        - AttributeName: TenantId#ServiceName
           KeyType: RANGE
       BillingMode: PAY_PER_REQUEST 
       TableName: TenantCostAndUsageAttribution
