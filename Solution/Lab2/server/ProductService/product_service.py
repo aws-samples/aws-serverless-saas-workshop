@@ -5,6 +5,7 @@ import json
 import utils
 import logger
 import product_service_dal
+from decimal import Decimal
 from types import SimpleNamespace
 
 def get_product(event, context):
@@ -17,7 +18,7 @@ def get_product(event, context):
     
 def create_product(event, context):    
     logger.info("Request received to create a product")
-    payload = json.loads(event['body'], object_hook=lambda d: SimpleNamespace(**d))
+    payload = json.loads(event['body'], object_hook=lambda d: SimpleNamespace(**d), parse_float=Decimal)
     logger.info(payload)
     product = product_service_dal.create_product(event, payload)
     logger.info("Request completed to create a product")
@@ -25,7 +26,7 @@ def create_product(event, context):
     
 def update_product(event, context):
     logger.info("Request received to update a product")
-    payload = json.loads(event['body'], object_hook=lambda d: SimpleNamespace(**d))
+    payload = json.loads(event['body'], object_hook=lambda d: SimpleNamespace(**d), parse_float=Decimal)
     params = event['pathParameters']
     key = params['id']
     product = product_service_dal.update_product(event, payload, key)
