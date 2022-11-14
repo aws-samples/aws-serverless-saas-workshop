@@ -57,7 +57,7 @@
                   mat-raised-button
                   color="primary"
                   type="submit"
-                  [disabled]="!orderForm.valid"
+                  [disabled]="!orderForm.valid || !productQuantity"
                 >
                   Submit
                 </button>
