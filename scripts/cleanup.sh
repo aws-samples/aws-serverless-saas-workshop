@@ -88,6 +88,7 @@ fi
 
 delete_stack_after_confirming "serverless-saas-workshop-lab1"
 delete_stack_after_confirming "stack-pooled"
+delete_stack_after_confirming "serverless-saas-cost-per-tenant-lab7"
 
 echo "$(date) cleaning up platinum tenants..."
 next_token=""
@@ -121,7 +122,7 @@ done
 delete_stack_after_confirming "serverless-saas"
 delete_stack_after_confirming "serverless-saas-pipeline"
 
-delete_codecommit_repo_after_confirming "aws-saas-factory-ref-serverless-saas"
+# delete_codecommit_repo_after_confirming "aws-saas-factory-ref-serverless-saas"
 delete_codecommit_repo_after_confirming "aws-serverless-saas-workshop"
 
 echo "$(date) cleaning up buckets..."
