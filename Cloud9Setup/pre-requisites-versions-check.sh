@@ -69,7 +69,7 @@ echo ""
 echo "Checking sam cli version"
 sam --version
 SAM_VERSION=$(sam --version | cut -d'n' -f 2 | xargs)
-SAM_MIN_VERSION=1.20.0
+SAM_MIN_VERSION=1.53.0
 check_version $SAM_MIN_VERSION $SAM_VERSION
 if [[ $? -eq 1 ]]; then
     echo "ACTION REQUIRED: Need to have SAM version greater than or equal to $SAM_MIN_VERSION"
