@@ -72,7 +72,9 @@ if [[ $client -eq 1 ]]; then
   APP_SITE_BUCKET=$(aws cloudformation describe-stacks --stack-name "$stackname" --query "Stacks[0].Outputs[?OutputKey=='AppBucket'].OutputValue" --output text)
   APP_SITE_URL=$(aws cloudformation describe-stacks --stack-name "$stackname" --query "Stacks[0].Outputs[?OutputKey=='ApplicationSite'].OutputValue" --output text)
   APP_APIGATEWAYURL=$(aws cloudformation describe-stacks --stack-name "$stackname" --query "Stacks[0].Outputs[?OutputKey=='APIGatewayURL'].OutputValue" --output text)
-
+  
+  # remove trailing slash from url
+  APP_APIGATEWAYURL=${APP_APIGATEWAYURL%/}
   # Configuring application UI
 
   echo "aws s3 ls s3://${APP_SITE_BUCKET}"

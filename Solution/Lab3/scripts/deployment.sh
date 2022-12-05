@@ -89,6 +89,9 @@ if [[ $client -eq 1 ]]; then
   APP_APPCLIENTID=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='CognitoTenantAppClientId'].OutputValue" --output text)
   APP_USERPOOLID=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='CognitoTenantUserPoolId'].OutputValue" --output text)
 
+  # remove trailing slash from url
+  ADMIN_APIGATEWAYURL=${ADMIN_APIGATEWAYURL%/}
+  APP_APIGATEWAYURL=${APP_APIGATEWAYURL%/}
 
   # Admin UI and Landing UI are configured in Lab2 
   echo "Admin UI and Landing UI are configured in Lab2. Only App UI will be configured in this Lab3."
