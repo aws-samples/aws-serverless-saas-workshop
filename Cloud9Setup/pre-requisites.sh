@@ -49,10 +49,10 @@ nvm install v14.18.1
 nvm use v14.18.1
 nvm alias default v14.18.1
 
-# Install cdk cli version ^2.0.0
-echo "Installing cdk cli version ^2.0.0"
+# Install cdk cli version ^2.40.0
+echo "Installing cdk cli version ^2.40.0"
 npm uninstall -g aws-cdk
-npm install -g aws-cdk@"^2.0.0"
+npm install -g aws-cdk@"^2.40.0"
 
 #Install jq version 1.5
 sudo yum -y install jq-1.5
