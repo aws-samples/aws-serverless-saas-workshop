@@ -88,8 +88,8 @@ if [[ $client -eq 1 ]]; then
   APP_APIGATEWAYURL=$(aws cloudformation describe-stacks --stack-name stack-pooled --query "Stacks[0].Outputs[?OutputKey=='TenantAPI'].OutputValue" --output text)
   APP_APPCLIENTID=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='CognitoTenantAppClientId'].OutputValue" --output text)
   APP_USERPOOLID=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='CognitoTenantUserPoolId'].OutputValue" --output text)
-  
-  
+
+
   # Admin UI and Landing UI are configured in Lab2 
   echo "Admin UI and Landing UI are configured in Lab2. Only App UI will be configured in this Lab3."
   # Configuring app UI 
