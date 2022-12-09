@@ -125,7 +125,7 @@ Resources:
 Outputs:
   AdminApi:
     Description: "API Gateway endpoint URL for Admin API"
-    Value: !Join ["", ["https://", !GetAtt APIs.Outputs.AdminApiGatewayApi, ".execute-api.", !Ref "AWS::Region", ".amazonaws.com/", !Ref StageName, "/"]]
+    Value: !Join ["", ["https://", !GetAtt APIs.Outputs.AdminApiGatewayApi, ".execute-api.", !Ref "AWS::Region", ".amazonaws.com/", !Ref StageName]]
   AdminSiteBucket:
     Description: The S3 Bucket that will contain the static assets for the tenant administration application
     Value: !GetAtt UserInterface.Outputs.AdminBucket

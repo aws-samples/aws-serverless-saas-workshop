@@ -134,8 +134,8 @@ def get_users(event, context):
                     user_info.status = user["UserStatus"] 
                     user_info.user_name = user["Username"]
                     users.append(user_info)                   
-    # return an empty list when there are no users otherwise will result in API Gateway error    
-    return utils.generate_response(users)
+        # return an empty list when there are no users otherwise will result in API Gateway error    
+        return utils.generate_response(users)
     else:
         logger.log_with_tenant_context(event, "Request completed as unauthorized.")        
         return utils.create_unauthorized_response()

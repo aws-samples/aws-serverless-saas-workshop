@@ -110,9 +110,6 @@ if [[ $client -eq 1 ]]; then
   ADMIN_APPCLIENTID=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='CognitoOperationUsersUserPoolClientId'].OutputValue" --output text)
   ADMIN_USERPOOL_ID=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='CognitoOperationUsersUserPoolId'].OutputValue" --output text)
   ADMIN_USER_GROUP_NAME=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='CognitoAdminUserGroupName'].OutputValue" --output text)
-
- # remove trailing slash from url
-  ADMIN_APIGATEWAYURL=${ADMIN_APIGATEWAYURL%/}
   
   # Create admin-user in OperationUsers userpool with given input email address
   CREATE_ADMIN_USER=$(aws cognito-idp admin-create-user \
