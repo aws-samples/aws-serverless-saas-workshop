@@ -886,4 +886,4 @@ Outputs:
     Value: !Ref ApiGatewayTenantApi
   TenantAPI:
     Description: "API Gateway endpoint URL for Tenant API"
-    Value: !Join ['', [!Sub "https://${ApiGatewayTenantApi}.execute-api.${AWS::Region}.amazonaws.com/", !Ref StageName, "/"]]
+    Value: !Join ['', [!Sub "https://${ApiGatewayTenantApi}.execute-api.${AWS::Region}.amazonaws.com/", !Ref StageName]]
