@@ -43,7 +43,7 @@ def create_tenant_admin_user(event, context):
 #TODO: Implement the below method
 def create_user(event, context):
     pass
-    
+
 def get_users(event, context):
     users = []  
     logger.info("Request received to get users")
@@ -73,8 +73,9 @@ def get_users(event, context):
             user_info.user_name = user["Username"]
             users.append(user_info)                    
     
-        return utils.generate_response(users)
-   
+    # return an empty list when there are no users otherwise will result in API Gateway error
+    return utils.generate_response(users)
+    
 
 def get_user(event, context):
     user_name = event['pathParameters']['username']  

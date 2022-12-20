@@ -134,7 +134,7 @@ def get_users(event, context):
                     user_info.status = user["UserStatus"] 
                     user_info.user_name = user["Username"]
                     users.append(user_info)                   
-        
+
         return utils.generate_response(users)
     else:
         logger.log_with_tenant_context(event, "Request completed as unauthorized.")        
