@@ -19,9 +19,8 @@ RETRY_COUNT = 100
 
 #This function needs to be scheduled on daily basis
 def calculate_daily_dynamodb_attribution_by_tenant(event, context):
-    time_zone = datetime.now().astimezone().tzinfo
-    start_date_time = int(datetime.now(tz=time_zone).date().strftime('%s')) #current day epoch
-    end_date_time =  int((datetime.now(tz=time_zone) + timedelta(days=1)).date().strftime('%s')) #next day epoch
+    start_date_time = __get_start_date_time() #current day epoch
+    end_date_time =  __get_end_date_time() #next day epoch
     
     #Get total dynamodb cost for the given duration
     #TODO: Get total cost of DynamoDB for the current date
@@ -91,10 +90,9 @@ def calculate_daily_dynamodb_attribution_by_tenant(event, context):
 def calculate_daily_lambda_attribution_by_tenant(event, context):
     
     #Get total dynamodb cost for the given duration
-    time_zone = datetime.now().astimezone().tzinfo
-    start_date_time = int(datetime.now(tz=time_zone).date().strftime('%s')) #current day epoch
-    end_date_time =  int((datetime.now(tz=time_zone) + timedelta(days=1)).date().strftime('%s')) #next day epoch
-    
+    start_date_time = __get_start_date_time() #current day epoch
+    end_date_time =  __get_end_date_time() #next day epoch
+
     #Get total dynamodb cost for the given duration
     total_lambda_cost = __get_total_service_cost('AWSLambda', start_date_time, end_date_time)
 
@@ -281,5 +279,15 @@ def __get_list_of_log_group_names():
                  log_group_names) 
                 continue 
 
-    return log_group_names                     
+    return log_group_names          
 
+                  
+def __get_start_date_time():
+    time_zone = datetime.now().astimezone().tzinfo
+    start_date_time = int(datetime.now(tz=time_zone).date().strftime('%s')) #current day epoch
+    return start_date_time
+
+def __get_end_date_time():
+    time_zone = datetime.now().astimezone().tzinfo    
+    end_date_time =  int((datetime.now(tz=time_zone) + timedelta(days=1)).date().strftime('%s')) #next day epoch
+    return end_date_time
