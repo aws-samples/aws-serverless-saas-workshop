@@ -25,6 +25,8 @@ Resources:
   ServerlessSaaSLayers:
     Type: AWS::Serverless::LayerVersion
     Properties:
+      CompatibleArchitectures:
+        - arm64
       LayerName: serverless-saas-workshoplab1
       Description: Utilities for project
       ContentUri: layers/
