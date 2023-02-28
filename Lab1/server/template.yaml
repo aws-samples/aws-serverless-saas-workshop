@@ -99,7 +99,7 @@ Resources:
     Type: AWS::Serverless::Function 
     DependsOn: ProductFunctionExecutionRole 
     Properties:
-      CompatibleArchitectures:
+      Architectures:
         - arm64
       CodeUri: ProductService/
       Handler: product_service.get_product
@@ -118,7 +118,7 @@ Resources:
     Type: AWS::Serverless::Function 
     DependsOn: ProductFunctionExecutionRole 
     Properties:
-      CompatibleArchitectures:
+      Architectures:
         - arm64
       CodeUri: ProductService/
       Handler: product_service.get_products
@@ -136,7 +136,7 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: ProductFunctionExecutionRole 
     Properties:
-      CompatibleArchitectures:
+      Architectures:
         - arm64
       CodeUri: ProductService/
       Handler: product_service.create_product
@@ -154,7 +154,7 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: ProductFunctionExecutionRole 
     Properties:
-      CompatibleArchitectures:
+      Architectures:
         - arm64
       CodeUri: ProductService/
       Handler: product_service.update_product
@@ -172,7 +172,7 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: ProductFunctionExecutionRole 
     Properties:
-      CompatibleArchitectures:
+      Architectures:
         - arm64
       CodeUri: ProductService/
       Handler: product_service.delete_product
@@ -224,7 +224,7 @@ Resources:
     Type: AWS::Serverless::Function 
     DependsOn: OrderFunctionExecutionRole 
     Properties:
-      CompatibleArchitectures:
+      Architectures:
         - arm64
       CodeUri: OrderService/
       Handler: order_service.get_orders
@@ -242,7 +242,7 @@ Resources:
     Type: AWS::Serverless::Function 
     DependsOn: OrderFunctionExecutionRole 
     Properties:
-      CompatibleArchitectures:
+      Architectures:
         - arm64
       CodeUri: OrderService/
       Handler: order_service.get_order
@@ -260,7 +260,7 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: OrderFunctionExecutionRole 
     Properties:
-      CompatibleArchitectures:
+      Architectures:
         - arm64
       CodeUri: OrderService/
       Handler: order_service.create_order
@@ -278,7 +278,7 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: OrderFunctionExecutionRole 
     Properties:
-      CompatibleArchitectures:
+      Architectures:
         - arm64
       CodeUri: OrderService/
       Handler: order_service.update_order
@@ -296,7 +296,7 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: OrderFunctionExecutionRole 
     Properties:
-      CompatibleArchitectures:
+      Architectures:
         - arm64
       CodeUri: OrderService/
       Handler: order_service.delete_order
