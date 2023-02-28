@@ -99,6 +99,8 @@ Resources:
     Type: AWS::Serverless::Function 
     DependsOn: ProductFunctionExecutionRole 
     Properties:
+      CompatibleArchitectures:
+        - arm64
       CodeUri: ProductService/
       Handler: product_service.get_product
       Runtime: python3.8  
@@ -116,6 +118,8 @@ Resources:
     Type: AWS::Serverless::Function 
     DependsOn: ProductFunctionExecutionRole 
     Properties:
+      CompatibleArchitectures:
+        - arm64
       CodeUri: ProductService/
       Handler: product_service.get_products
       Runtime: python3.8  
@@ -132,6 +136,8 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: ProductFunctionExecutionRole 
     Properties:
+      CompatibleArchitectures:
+        - arm64
       CodeUri: ProductService/
       Handler: product_service.create_product
       Runtime: python3.8  
@@ -148,6 +154,8 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: ProductFunctionExecutionRole 
     Properties:
+      CompatibleArchitectures:
+        - arm64
       CodeUri: ProductService/
       Handler: product_service.update_product
       Runtime: python3.8 
@@ -164,6 +172,8 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: ProductFunctionExecutionRole 
     Properties:
+      CompatibleArchitectures:
+        - arm64
       CodeUri: ProductService/
       Handler: product_service.delete_product
       Runtime: python3.8 
@@ -214,6 +224,8 @@ Resources:
     Type: AWS::Serverless::Function 
     DependsOn: OrderFunctionExecutionRole 
     Properties:
+      CompatibleArchitectures:
+        - arm64
       CodeUri: OrderService/
       Handler: order_service.get_orders
       Runtime: python3.8  
@@ -230,6 +242,8 @@ Resources:
     Type: AWS::Serverless::Function 
     DependsOn: OrderFunctionExecutionRole 
     Properties:
+      CompatibleArchitectures:
+        - arm64
       CodeUri: OrderService/
       Handler: order_service.get_order
       Runtime: python3.8  
@@ -246,6 +260,8 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: OrderFunctionExecutionRole 
     Properties:
+      CompatibleArchitectures:
+        - arm64
       CodeUri: OrderService/
       Handler: order_service.create_order
       Runtime: python3.8  
@@ -262,6 +278,8 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: OrderFunctionExecutionRole 
     Properties:
+      CompatibleArchitectures:
+        - arm64
       CodeUri: OrderService/
       Handler: order_service.update_order
       Runtime: python3.8 
@@ -278,6 +296,8 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: OrderFunctionExecutionRole 
     Properties:
+      CompatibleArchitectures:
+        - arm64
       CodeUri: OrderService/
       Handler: order_service.delete_order
       Runtime: python3.8 
