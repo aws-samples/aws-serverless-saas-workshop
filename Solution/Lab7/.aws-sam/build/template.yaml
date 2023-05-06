@@ -236,7 +236,7 @@ Resources:
     Properties:
       CodeUri: GetDynamoDBUsageAndCostByTenant
       Handler: tenant_usage_and_cost.calculate_daily_dynamodb_attribution_by_tenant
-      Runtime: python3.8
+      Runtime: python3.9
       Role:
         Fn::GetAtt:
         - QueryLogInsightsExecutionRole
@@ -257,7 +257,7 @@ Resources:
     Properties:
       CodeUri: GetLambdaUsageAndCostByTenant
       Handler: tenant_usage_and_cost.calculate_daily_lambda_attribution_by_tenant
-      Runtime: python3.8
+      Runtime: python3.9
       Role:
         Fn::GetAtt:
         - QueryLogInsightsExecutionRole
