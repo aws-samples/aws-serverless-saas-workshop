@@ -127,7 +127,7 @@ Resources:
           return environment_info
         
       Handler: index.lambda_handler
-      Runtime: python3.8
+      Runtime: python3.9
       Timeout: 900
       Policies:
       - Statement:        
@@ -192,7 +192,7 @@ Resources:
             return environment_info
         
       Handler: index.lambda_handler
-      Runtime: python3.8
+      Runtime: python3.9
       Timeout: 900
       Policies:
       - Statement:
@@ -327,7 +327,7 @@ Resources:
           return environment_info
 
       Handler: index.lambda_handler
-      Runtime: python3.8
+      Runtime: python3.9
       Timeout: 900
       Environment:
         Variables:
@@ -368,7 +368,7 @@ Resources:
             response = ssm_client.get_command_invocation(CommandId=command_id, InstanceId=instance_id)
           
       Handler: index.lambda_handler
-      Runtime: python3.8
+      Runtime: python3.9
       Timeout: 900
       Policies:
       - Statement:

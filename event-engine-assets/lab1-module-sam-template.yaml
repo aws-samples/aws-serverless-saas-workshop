@@ -56,11 +56,11 @@ Resources:
         Bucket: !Ref EEAssetsBucket
         Key: !Sub ${EEAssetsKeyPrefix}1b6d1796b5948e393749602691c77e44
       CompatibleRuntimes:
-      - python3.8
+      - python3.9
       LicenseInfo: MIT
       RetentionPolicy: Retain
     Metadata:
-      BuildMethod: python3.8
+      BuildMethod: python3.9
   ProductTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -126,7 +126,7 @@ Resources:
         Bucket: !Ref EEAssetsBucket
         Key: !Sub ${EEAssetsKeyPrefix}3f9284a8b1fb9547d59e56cc8560b94c
       Handler: product_service.get_product
-      Runtime: python3.8
+      Runtime: python3.9
       Tracing: Active
       Role:
         Fn::GetAtt:
@@ -147,7 +147,7 @@ Resources:
         Bucket: !Ref EEAssetsBucket
         Key: !Sub ${EEAssetsKeyPrefix}3f9284a8b1fb9547d59e56cc8560b94c
       Handler: product_service.get_products
-      Runtime: python3.8
+      Runtime: python3.9
       Tracing: Active
       Role:
         Fn::GetAtt:
@@ -168,7 +168,7 @@ Resources:
         Bucket: !Ref EEAssetsBucket
         Key: !Sub ${EEAssetsKeyPrefix}3f9284a8b1fb9547d59e56cc8560b94c
       Handler: product_service.create_product
-      Runtime: python3.8
+      Runtime: python3.9
       Tracing: Active
       Role:
         Fn::GetAtt:
@@ -189,7 +189,7 @@ Resources:
         Bucket: !Ref EEAssetsBucket
         Key: !Sub ${EEAssetsKeyPrefix}3f9284a8b1fb9547d59e56cc8560b94c
       Handler: product_service.update_product
-      Runtime: python3.8
+      Runtime: python3.9
       Tracing: Active
       Role:
         Fn::GetAtt:
@@ -210,7 +210,7 @@ Resources:
         Bucket: !Ref EEAssetsBucket
         Key: !Sub ${EEAssetsKeyPrefix}3f9284a8b1fb9547d59e56cc8560b94c
       Handler: product_service.delete_product
-      Runtime: python3.8
+      Runtime: python3.9
       Tracing: Active
       Role:
         Fn::GetAtt:
@@ -266,7 +266,7 @@ Resources:
         Bucket: !Ref EEAssetsBucket
         Key: !Sub ${EEAssetsKeyPrefix}ac28465dbac64f71e4739d551119c420
       Handler: order_service.get_orders
-      Runtime: python3.8
+      Runtime: python3.9
       Tracing: Active
       Role:
         Fn::GetAtt:
@@ -287,7 +287,7 @@ Resources:
         Bucket: !Ref EEAssetsBucket
         Key: !Sub ${EEAssetsKeyPrefix}ac28465dbac64f71e4739d551119c420
       Handler: order_service.get_order
-      Runtime: python3.8
+      Runtime: python3.9
       Tracing: Active
       Role:
         Fn::GetAtt:
@@ -308,7 +308,7 @@ Resources:
         Bucket: !Ref EEAssetsBucket
         Key: !Sub ${EEAssetsKeyPrefix}ac28465dbac64f71e4739d551119c420
       Handler: order_service.create_order
-      Runtime: python3.8
+      Runtime: python3.9
       Tracing: Active
       Role:
         Fn::GetAtt:
@@ -329,7 +329,7 @@ Resources:
         Bucket: !Ref EEAssetsBucket
         Key: !Sub ${EEAssetsKeyPrefix}ac28465dbac64f71e4739d551119c420
       Handler: order_service.update_order
-      Runtime: python3.8
+      Runtime: python3.9
       Tracing: Active
       Role:
         Fn::GetAtt:
@@ -350,7 +350,7 @@ Resources:
         Bucket: !Ref EEAssetsBucket
         Key: !Sub ${EEAssetsKeyPrefix}ac28465dbac64f71e4739d551119c420
       Handler: order_service.delete_order
-      Runtime: python3.8
+      Runtime: python3.9
       Tracing: Active
       Role:
         Fn::GetAtt:
