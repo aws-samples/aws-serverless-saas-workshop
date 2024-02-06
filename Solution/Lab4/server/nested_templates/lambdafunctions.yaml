@@ -36,11 +36,11 @@ Resources:
       Description: Utilities for project
       ContentUri: ../layers/
       CompatibleRuntimes:
-        - python3.8
+        - python3.9
       LicenseInfo: "MIT"
       RetentionPolicy: Retain
     Metadata:
-      BuildMethod: python3.8
+      BuildMethod: python3.9
 
   
   AuthorizerExecutionRole:
@@ -114,7 +114,7 @@ Resources:
     Properties:
       CodeUri: ../Resources/
       Handler: shared_service_authorizer.lambda_handler
-      Runtime: python3.8
+      Runtime: python3.9
       Role: !GetAtt AuthorizerExecutionRole.Arn
       MemorySize: 256
       Tracing: Active
@@ -209,7 +209,7 @@ Resources:
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: user-management.create_tenant_admin_user
-      Runtime: python3.8
+      Runtime: python3.9
       Role: !GetAtt CreateUserLambdaExecutionRole.Arn      
       Tracing: Active
       Layers:
@@ -227,7 +227,7 @@ Resources:
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: user-management.create_user
-      Runtime: python3.8
+      Runtime: python3.9
       Role: !GetAtt CreateUserLambdaExecutionRole.Arn
       Tracing: Active
       Layers:
@@ -244,7 +244,7 @@ Resources:
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: user-management.update_user
-      Runtime: python3.8
+      Runtime: python3.9
       Role: !GetAtt TenantUserPoolLambdaExecutionRole.Arn
       Tracing: Active
       Layers:
@@ -260,7 +260,7 @@ Resources:
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: user-management.disable_user
-      Runtime: python3.8
+      Runtime: python3.9
       Role: !GetAtt TenantUserPoolLambdaExecutionRole.Arn
       Tracing: Active
       Layers:
@@ -276,7 +276,7 @@ Resources:
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: user-management.disable_users_by_tenant
-      Runtime: python3.8
+      Runtime: python3.9
       Role: !GetAtt TenantUserPoolLambdaExecutionRole.Arn
       Tracing: Active
       Layers:
@@ -292,7 +292,7 @@ Resources:
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: user-management.enable_users_by_tenant
-      Runtime: python3.8
+      Runtime: python3.9
       Role: !GetAtt TenantUserPoolLambdaExecutionRole.Arn
       Tracing: Active
       Layers:
@@ -308,7 +308,7 @@ Resources:
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: user-management.get_user
-      Runtime: python3.8
+      Runtime: python3.9
       Role: !GetAtt TenantUserPoolLambdaExecutionRole.Arn
       Tracing: Active
       Layers:
@@ -324,7 +324,7 @@ Resources:
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: user-management.get_users
-      Runtime: python3.8
+      Runtime: python3.9
       Role: !GetAtt TenantUserPoolLambdaExecutionRole.Arn
       Tracing: Active
       Layers:
@@ -374,7 +374,7 @@ Resources:
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: tenant-management.create_tenant
-      Runtime: python3.8
+      Runtime: python3.9
       Role: !GetAtt TenantManagementLambdaExecutionRole.Arn
       Tracing: Active
       Layers:
@@ -389,7 +389,7 @@ Resources:
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: tenant-management.activate_tenant
-      Runtime: python3.8
+      Runtime: python3.9
       Role: !GetAtt TenantManagementLambdaExecutionRole.Arn
       Tracing: Active
       Layers:
@@ -406,7 +406,7 @@ Resources:
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: tenant-management.get_tenant
-      Runtime: python3.8
+      Runtime: python3.9
       Role: !GetAtt TenantManagementLambdaExecutionRole.Arn
       Tracing: Active
       Layers:
@@ -421,7 +421,7 @@ Resources:
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: tenant-management.deactivate_tenant
-      Runtime: python3.8
+      Runtime: python3.9
       Role: !GetAtt TenantManagementLambdaExecutionRole.Arn
       Tracing: Active
       Layers:
@@ -437,7 +437,7 @@ Resources:
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: tenant-management.update_tenant
-      Runtime: python3.8
+      Runtime: python3.9
       Role: !GetAtt TenantManagementLambdaExecutionRole.Arn
       Tracing: Active
       Layers:
@@ -451,7 +451,7 @@ Resources:
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: tenant-management.get_tenants
-      Runtime: python3.8
+      Runtime: python3.9
       Role: !GetAtt TenantManagementLambdaExecutionRole.Arn
       Tracing: Active
       Layers:
@@ -482,7 +482,7 @@ Resources:
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: tenant-registration.register_tenant
-      Runtime: python3.8
+      Runtime: python3.9
       Role: !GetAtt RegisterTenantLambdaExecutionRole.Arn
       Tracing: Active
       Layers:

@@ -31,7 +31,7 @@ export class ServerlessSaaSStack extends cdk.Stack {
 
     const lambdaFunction = new Function(this, "deploy-tenant-stack", {
         handler: "lambda-deploy-tenant-stack.lambda_handler",
-        runtime: Runtime.PYTHON_3_8,
+        runtime: Runtime.PYTHON_3_9,
         code: new AssetCode(`./resources`),
         memorySize: 512,
         timeout: Duration.seconds(10),
@@ -79,7 +79,7 @@ export class ServerlessSaaSStack extends cdk.Stack {
     //Declare a new CodeBuild project
     const buildProject = new codebuild.PipelineProject(this, 'Build', {
       buildSpec : codebuild.BuildSpec.fromSourceFilename("Lab6/server/tenant-buildspec.yml"),
-      environment: { buildImage: codebuild.LinuxBuildImage.AMAZON_LINUX_2_2 },
+      environment: { buildImage: codebuild.LinuxBuildImage.AMAZON_LINUX_2_4 },
       environmentVariables: {
         'PACKAGE_BUCKET': {
           value: artifactsBucket.bucketName
