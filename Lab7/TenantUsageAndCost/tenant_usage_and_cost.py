@@ -41,8 +41,8 @@ def calculate_daily_dynamodb_attribution_by_tenant(event, context):
     total_usage_by_day = __query_cloudwatch_logs(logs, log_group_names, total_usage_by_day_query, start_date_time, end_date_time)
     print(total_usage_by_day)  
     
-    total_RCU = 0 
-    total_WCU = 0 
+    total_RCU = Decimal('0.0') 
+    total_WCU = Decimal('0.0') 
     for result in total_usage_by_day['results'][0]:
         if 'ReadCapacityUnits' in result['field']:
             total_RCU = Decimal(result['value'])
@@ -53,8 +53,8 @@ def calculate_daily_dynamodb_attribution_by_tenant(event, context):
     print (total_WCU)
     
     if (total_RCU + total_WCU > 0):
-        total_RCU_By_Tenant = 0
-        total_WCU_By_Tenant = 0
+        total_RCU_By_Tenant = Decimal('0.0')
+        total_WCU_By_Tenant = Decimal('0.0')
         
         for result in usage_by_tenant_by_day['results']:
             for field in result:
@@ -66,7 +66,9 @@ def calculate_daily_dynamodb_attribution_by_tenant(event, context):
                     total_WCU_By_Tenant = Decimal(field['value'])
             
             #RCU is about 5 times cheaper
-            tenant_attribution_percentage= (((total_RCU_By_Tenant * 5) + total_WCU_By_Tenant) / ((total_RCU * 5) + total_WCU)) 
+            tenant_attribution_percentage_numerator= Decimal(str(total_RCU_By_Tenant * Decimal('5.0'))) + Decimal(str(total_WCU_By_Tenant)) 
+            tenant_attribution_percentage_denominator= Decimal(str(total_RCU *  Decimal('5.0')))  + Decimal(str(total_WCU))
+            tenant_attribution_percentage = tenant_attribution_percentage_numerator/tenant_attribution_percentage_denominator        
             tenant_dynamodb_cost = tenant_attribution_percentage * total_dynamodb_cost
             
             try:
