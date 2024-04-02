@@ -1,2 +1,3 @@
 requests
 aws_requests_auth
+boto3

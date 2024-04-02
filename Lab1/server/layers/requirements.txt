@@ -1,3 +1,4 @@
 aws-lambda-powertools[Tracer,Logger,Metrics]
 simplejson
 jsonpickle
+boto3
