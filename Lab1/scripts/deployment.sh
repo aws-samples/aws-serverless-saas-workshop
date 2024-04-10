@@ -62,7 +62,9 @@ if [[ $server -eq 1 ]]; then
     exit 1
   fi
 
-  sam build -t template.yaml --use-container
+# Required to specify a specific build image because Cloud9 doesn't currently support AWS Graviton (arm64) runtimes
+# and SAM defaults to trying to build in a container of the same arch as the destination lambda.
+  sam build -t template.yaml --use-container --build-image public.ecr.aws/sam/build-python3.8
   sam deploy --config-file samconfig.toml --region="$REGION" --stack-name="$stackname"
   cd ../scripts || exit # stop execution if cd fails
 fi
