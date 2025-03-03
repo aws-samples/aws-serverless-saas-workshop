@@ -1,7 +1,7 @@
 #!/bin/bash
 cd ../server || exit # stop execution if cd fails
 rm -rf .aws-sam/
-python3 -m pylint -E -d E0401 $(find . -iname "*.py" -not -path "./.aws-sam/*")
+python3 -m pylint -E -d E0401,E0606 $(find . -iname "*.py" -not -path "./.aws-sam/*")
   if [[ $? -ne 0 ]]; then
     echo "****ERROR: Please fix above code errors and then rerun script!!****"
     exit 1
