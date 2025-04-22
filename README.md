@@ -8,6 +8,16 @@ This workshop is inspired by the [SaaS Factory Serverless SaaS reference solutio
 # Starting the workshop
 Follow this link for detailed instructions to run this workshop in your AWS Account: https://catalog.us-east-1.prod.workshops.aws/v2/workshops/b0c6ad36-0a4b-45d8-856b-8a64f0ac76bb/en-US
 
+## Development Environment Options
+
+This workshop provides two options for setting up your development environment:
+
+1. **VSCode Server (Recommended)**: A modern, feature-rich development environment that replaces Cloud9 (which is being deprecated). See the [VSCodeSetup](./VSCodeSetup/README.md) directory for instructions.
+
+2. **Cloud9 (Legacy)**: The original Cloud9-based development environment. This option is maintained for backward compatibility but is not recommended for new deployments. See the [Cloud9Setup](./Cloud9Setup/README.md) directory for instructions.
+
+For more details on the VSCode Server setup, see the [event-engine-assets](./event-engine-assets/README.md) directory.
+
 # License
 The documentation is made available under the Creative Commons Attribution-ShareAlike 4.0 International License. See the LICENSE file.
 
