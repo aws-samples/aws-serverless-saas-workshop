@@ -7,8 +7,13 @@ if [[ "$#" -eq 0 ]]; then
   echo "Command to deploy tenant server code: deployment.sh -t"
   echo "Command to deploy bootstrap & tenant server code: deployment.sh -s" 
   echo "Command to deploy server & client code: deployment.sh -s -c"
+  echo "Command to specify admin email: deployment.sh -s -e admin@example.com"
+  echo "Command to specify tenant admin email: deployment.sh -s -te tenant-admin@example.com"
   exit 1      
 fi
+
+ADMIN_EMAIL=""
+TENANT_ADMIN_EMAIL=""
 
 while [[ "$#" -gt 0 ]]; do
     case $1 in
@@ -16,6 +21,8 @@ while [[ "$#" -gt 0 ]]; do
         -b) bootstrap=1 ;;
         -t) tenant=1 ;;
         -c) client=1 ;;
+        -e) ADMIN_EMAIL="$2"; shift ;;
+        -te) TENANT_ADMIN_EMAIL="$2"; shift ;;
         *) echo "Unknown parameter passed: $1"; exit 1 ;;
     esac
     shift
@@ -43,6 +50,7 @@ if [[ $server -eq 1 ]] || [[ $bootstrap -eq 1 ]] || [[ $tenant -eq 1 ]]; then
   echo "Validating server code using pylint"
   cd ../server
   python3 -m pylint -E -d E0401,E1111 $(find . -iname "*.py" -not -path "./.aws-sam/*")
+  
   if [[ $? -ne 0 ]]; then
     echo "****ERROR: Please fix above code errors and then rerun script!!****"
     exit 1
@@ -56,10 +64,21 @@ if [[ $server -eq 1 ]] || [[ $bootstrap -eq 1 ]]; then
   REGION=$(aws configure get region)
   sam build -t shared-template.yaml --use-container
   
+  # Build parameter overrides
+  PARAM_OVERRIDES="EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE"
+  if [ ! -z "$ADMIN_EMAIL" ]; then
+    PARAM_OVERRIDES="$PARAM_OVERRIDES AdminEmailParameter=$ADMIN_EMAIL"
+    echo "Using admin email: $ADMIN_EMAIL"
+  fi
+  if [ ! -z "$TENANT_ADMIN_EMAIL" ]; then
+    PARAM_OVERRIDES="$PARAM_OVERRIDES TenantAdminEmailParameter=$TENANT_ADMIN_EMAIL"
+    echo "Using tenant admin email: $TENANT_ADMIN_EMAIL"
+  fi
+  
   if [ "$IS_RUNNING_IN_EVENT_ENGINE" = true ]; then
-    sam deploy --config-file shared-samconfig.toml --region=$REGION --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE AdminUserPoolCallbackURLParameter=$ADMIN_SITE_URL TenantUserPoolCallbackURLParameter=$APP_SITE_URL
+    sam deploy --config-file shared-samconfig.toml --region=$REGION --parameter-overrides $PARAM_OVERRIDES AdminUserPoolCallbackURLParameter=$ADMIN_SITE_URL TenantUserPoolCallbackURLParameter=$APP_SITE_URL
   else
-    sam deploy --config-file shared-samconfig.toml --region=$REGION --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE
+    sam deploy --config-file shared-samconfig.toml --region=$REGION --parameter-overrides $PARAM_OVERRIDES
   fi
   cd ../scripts
 fi  
@@ -135,7 +154,78 @@ EoF
 
   echo "Completed configuring environment for App Client"
   echo "Successfully completed deploying Application UI"
-fi  
+fi
+
+# Automatically create sample tenants if email was provided
+if [[ $server -eq 1 ]] && [ ! -z "$TENANT_ADMIN_EMAIL" ]; then
+  echo ""
+  echo "Creating sample tenants..."
+  
+  # Extract username and domain from email
+  EMAIL_USERNAME=$(echo "$TENANT_ADMIN_EMAIL" | cut -d'@' -f1)
+  EMAIL_DOMAIN=$(echo "$TENANT_ADMIN_EMAIL" | cut -d'@' -f2)
+  
+  # Get the Admin API Gateway URL
+  ADMIN_API_URL=$(aws cloudformation describe-stacks --stack-name serverless-saas-workshop-lab2 --query "Stacks[0].Outputs[?OutputKey=='AdminApi'].OutputValue" --output text 2>/dev/null)
+  
+  if [ -z "$ADMIN_API_URL" ]; then
+    echo "Warning: Could not find Admin API URL. Skipping automatic tenant creation."
+  else
+    # Create Tenant One
+    TENANT1_EMAIL="${EMAIL_USERNAME}+lab3tenant1@${EMAIL_DOMAIN}"
+    echo "Creating Tenant One with email: $TENANT1_EMAIL"
+    
+    TENANT1_RESPONSE=$(curl -s -X POST "${ADMIN_API_URL}/registration" \
+      -H "Content-Type: application/json" \
+      -d "{
+        \"tenantName\": \"Tenant One\",
+        \"tenantEmail\": \"$TENANT1_EMAIL\",
+        \"tenantTier\": \"standard\",
+        \"tenantPhone\": \"+1-555-0001\",
+        \"tenantAddress\": \"123 Main St, City, State 12345\"
+      }")
+    
+    if echo "$TENANT1_RESPONSE" | grep -q "registered"; then
+      echo "✓ Tenant One created successfully"
+      echo "  Email: $TENANT1_EMAIL"
+      echo "  Cognito will send a temporary password to this email"
+    else
+      echo "✗ Failed to create Tenant One"
+      echo "  Response: $TENANT1_RESPONSE"
+    fi
+    
+    # Create Tenant Two
+    TENANT2_EMAIL="${EMAIL_USERNAME}+lab3tenant2@${EMAIL_DOMAIN}"
+    echo ""
+    echo "Creating Tenant Two with email: $TENANT2_EMAIL"
+    
+    TENANT2_RESPONSE=$(curl -s -X POST "${ADMIN_API_URL}/registration" \
+      -H "Content-Type: application/json" \
+      -d "{
+        \"tenantName\": \"Tenant Two\",
+        \"tenantEmail\": \"$TENANT2_EMAIL\",
+        \"tenantTier\": \"standard\",
+        \"tenantPhone\": \"+1-555-0002\",
+        \"tenantAddress\": \"456 Oak Ave, City, State 12345\"
+      }")
+    
+    if echo "$TENANT2_RESPONSE" | grep -q "registered"; then
+      echo "✓ Tenant Two created successfully"
+      echo "  Email: $TENANT2_EMAIL"
+      echo "  Cognito will send a temporary password to this email"
+    else
+      echo "✗ Failed to create Tenant Two"
+      echo "  Response: $TENANT2_RESPONSE"
+    fi
+    
+    echo ""
+    echo "Sample tenant creation complete!"
+    echo "Check your email ($TENANT_ADMIN_EMAIL) for temporary passwords for:"
+    echo "  1. Default tenant: $TENANT_ADMIN_EMAIL"
+    echo "  2. Tenant One: $TENANT1_EMAIL"
+    echo "  3. Tenant Two: $TENANT2_EMAIL"
+  fi
+fi
 
 echo "Admin site URL: https://$ADMIN_SITE_URL"
 echo "Landing site URL: https://$LANDING_APP_SITE_URL"
