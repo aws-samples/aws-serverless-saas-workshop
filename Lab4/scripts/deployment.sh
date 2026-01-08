@@ -40,7 +40,15 @@ fi
 if [[ $server -eq 1 ]] || [[ $bootstrap -eq 1 ]] || [[ $tenant -eq 1 ]]; then
   echo "Validating server code using pylint"
   cd ../server
-  python3 -m pylint -E -d E0401,E1111 $(find . -iname "*.py" -not -path "./.aws-sam/*")
+  
+  # Use virtual environment Python if available
+  if [ -f "../../.venv_py313/bin/python" ]; then
+    PYTHON_CMD="../../.venv_py313/bin/python"
+  else
+    PYTHON_CMD="python3"
+  fi
+  
+  $PYTHON_CMD -m pylint -E -d E0401,E1111 $(find . -iname "*.py" -not -path "./.aws-sam/*")
   if [[ $? -ne 0 ]]; then
     echo "****ERROR: Please fix above code errors and then rerun script!!****"
     exit 1
@@ -52,7 +60,7 @@ if [[ $server -eq 1 ]] || [[ $bootstrap -eq 1 ]]; then
   echo "Bootstrap server code is getting deployed"
   cd ../server
   REGION=$(aws configure get region)
-  sam build -t shared-template.yaml --use-container
+  sam build -t shared-template.yaml
   
   if [ "$IS_RUNNING_IN_EVENT_ENGINE" = true ]; then
     sam deploy --config-file shared-samconfig.toml --region=$REGION --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE AdminUserPoolCallbackURLParameter=$ADMIN_SITE_URL TenantUserPoolCallbackURLParameter=$APP_SITE_URL
@@ -67,7 +75,7 @@ if [[ $server -eq 1 ]] || [[ $tenant -eq 1 ]]; then
   echo "Tenant server code is getting deployed"
   cd ../server
   REGION=$(aws configure get region)
-  sam build -t tenant-template.yaml --use-container
+  sam build -t tenant-template.yaml
   sam deploy --config-file tenant-samconfig.toml --region=$REGION
   cd ../scripts
 fi
@@ -78,9 +86,9 @@ if [[ $client -eq 1 ]]; then
   echo "Admin UI and Landing UI are configured in Lab2. App UI is configured in Lab3.
   So, no UI code is built in this Lab4"
   if [ "$IS_RUNNING_IN_EVENT_ENGINE" = false ]; then
-    ADMIN_SITE_URL=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='AdminAppSite'].OutputValue" --output text)
-    LANDING_APP_SITE_URL=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='LandingApplicationSite'].OutputValue" --output text)
-    APP_SITE_URL=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='ApplicationSite'].OutputValue" --output text)
+    ADMIN_SITE_URL=$(aws cloudformation describe-stacks --stack-name serverless-saas-workshop-shared-lab4 --query "Stacks[0].Outputs[?OutputKey=='AdminAppSite'].OutputValue" --output text)
+    LANDING_APP_SITE_URL=$(aws cloudformation describe-stacks --stack-name serverless-saas-workshop-shared-lab4 --query "Stacks[0].Outputs[?OutputKey=='LandingApplicationSite'].OutputValue" --output text)
+    APP_SITE_URL=$(aws cloudformation describe-stacks --stack-name serverless-saas-workshop-shared-lab4 --query "Stacks[0].Outputs[?OutputKey=='ApplicationSite'].OutputValue" --output text)
   fi
   
 
