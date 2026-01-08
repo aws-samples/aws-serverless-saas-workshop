@@ -68,6 +68,29 @@ def lambda_handler(event, context):
     authResponse = policy.build()
  
     #TODO : Add code for Fine-Grained-Access-Control
+    iam_policy = auth_manager.getPolicyForUser(user_role, utils.Service_Identifier.BUSINESS_SERVICES.value, tenant_id, region, aws_account_id)
+    logger.info(iam_policy)
+    
+    role_arn = "arn:aws:iam::{}:role/authorizer-access-role-lab4".format(aws_account_id)
+    
+    assumed_role = sts_client.assume_role(
+        RoleArn=role_arn,
+        RoleSessionName="tenant-aware-session",
+        Policy=iam_policy,
+    )
+    credentials = assumed_role["Credentials"]
+    #pass sts credentials to lambda
+    context = {
+        'accesskey': credentials['AccessKeyId'], # $context.authorizer.key -> value
+        'secretkey' : credentials['SecretAccessKey'],
+        'sessiontoken' : credentials["SessionToken"],
+        'userName': user_name,
+        'tenantId': tenant_id,
+        'userPoolId': userpool_id,
+        'userRole': user_role        
+    }
+    
+    authResponse['context'] = context
     
     
     return authResponse
