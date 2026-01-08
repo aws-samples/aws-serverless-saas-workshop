@@ -25,6 +25,7 @@ Resources:
     Condition: IsNotRunningInEventEngine
     DeletionPolicy : Retain
     Properties:
+      BucketName: !Sub '${AWS::StackName}-adminappbucket-lab6'
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
@@ -95,6 +96,7 @@ Resources:
     Condition: IsNotRunningInEventEngine
     DeletionPolicy : Retain
     Properties:
+      BucketName: !Sub '${AWS::StackName}-appbucket-lab6'
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
@@ -162,6 +164,7 @@ Resources:
     Condition: IsNotRunningInEventEngine
     DeletionPolicy : Retain
     Properties:
+      BucketName: !Sub '${AWS::StackName}-landingappbucket-lab6'
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:

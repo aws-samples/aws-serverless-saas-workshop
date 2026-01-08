@@ -36,7 +36,7 @@ Resources:
   ServerlessSaaSLayers:
     Type: AWS::Serverless::LayerVersion
     Properties:
-      LayerName: !Join ['-', [serverless-saas-dependencies, !Ref TenantIdParameter]]
+      LayerName: !Join ['-', [serverless-saas-dependencies, !Ref TenantIdParameter, lab6]]
       Description: Utilities for project
       ContentUri: layers/
       CompatibleRuntimes:
@@ -62,7 +62,7 @@ Resources:
       ProvisionedThroughput: 
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
-      TableName: !Join ['-', [Product, !Ref TenantIdParameter]]
+      TableName: !Join ['-', [Product, !Ref TenantIdParameter, lab6]]
       Tags:
         - Key: "TenantId"
           Value: !Ref TenantIdParameter
@@ -83,7 +83,7 @@ Resources:
       ProvisionedThroughput: 
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
-      TableName: !Join ['-', [Order, !Ref TenantIdParameter]]
+      TableName: !Join ['-', [Order, !Ref TenantIdParameter, lab6]]
       Tags:
         - Key: "TenantId"
           Value: !Ref TenantIdParameter
@@ -111,7 +111,7 @@ Resources:
   ProductFunctionExecutionRole:
     Type: AWS::IAM::Role     
     Properties:
-      RoleName: !Join ['-', [!Ref TenantIdParameter, product-function-execution-role]]
+      RoleName: !Join ['-', [!Ref TenantIdParameter, product-function-execution-role, lab6]]
       Path: '/'
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -131,6 +131,7 @@ Resources:
     Type: AWS::Serverless::Function 
     DependsOn: ProductFunctionExecutionRole 
     Properties:
+      FunctionName: serverless-saas-lab6-get-product
       CodeUri: ProductService/
       Handler: product_service.get_product
       Runtime: python3.9  
@@ -151,6 +152,7 @@ Resources:
     Type: AWS::Serverless::Function 
     DependsOn: ProductFunctionExecutionRole 
     Properties:
+      FunctionName: serverless-saas-lab6-get-products
       CodeUri: ProductService/
       Handler: product_service.get_products
       Runtime: python3.9  
@@ -171,6 +173,7 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: ProductFunctionExecutionRole 
     Properties:
+      FunctionName: serverless-saas-lab6-create-product
       CodeUri: ProductService/
       Handler: product_service.create_product
       Runtime: python3.9  
@@ -190,6 +193,7 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: ProductFunctionExecutionRole 
     Properties:
+      FunctionName: serverless-saas-lab6-update-product
       CodeUri: ProductService/
       Handler: product_service.update_product
       Runtime: python3.9 
@@ -209,6 +213,7 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: ProductFunctionExecutionRole 
     Properties:
+      FunctionName: serverless-saas-lab6-delete-product
       CodeUri: ProductService/
       Handler: product_service.delete_product
       Runtime: python3.9 
@@ -247,7 +252,7 @@ Resources:
   OrderFunctionExecutionRole:
     Type: AWS::IAM::Role     
     Properties:
-      RoleName: !Join ['-', [!Ref TenantIdParameter, order-function-execution-role]]
+      RoleName: !Join ['-', [!Ref TenantIdParameter, order-function-execution-role, lab6]]
       Path: '/'
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -267,6 +272,7 @@ Resources:
     Type: AWS::Serverless::Function 
     DependsOn: OrderFunctionExecutionRole 
     Properties:
+      FunctionName: serverless-saas-lab6-get-orders
       CodeUri: OrderService/
       Handler: order_service.get_orders
       Runtime: python3.9  
@@ -287,6 +293,7 @@ Resources:
     Type: AWS::Serverless::Function 
     DependsOn: OrderFunctionExecutionRole 
     Properties:
+      FunctionName: serverless-saas-lab6-get-order
       CodeUri: OrderService/
       Handler: order_service.get_order
       Runtime: python3.9  
@@ -307,6 +314,7 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: OrderFunctionExecutionRole 
     Properties:
+      FunctionName: serverless-saas-lab6-create-order
       CodeUri: OrderService/
       Handler: order_service.create_order
       Runtime: python3.9  
@@ -326,6 +334,7 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: OrderFunctionExecutionRole 
     Properties:
+      FunctionName: serverless-saas-lab6-update-order
       CodeUri: OrderService/
       Handler: order_service.update_order
       Runtime: python3.9 
@@ -345,6 +354,7 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: OrderFunctionExecutionRole 
     Properties:
+      FunctionName: serverless-saas-lab6-delete-order
       CodeUri: OrderService/
       Handler: order_service.delete_order
       Runtime: python3.9 
@@ -363,6 +373,7 @@ Resources:
   BusinessServicesAuthorizerFunction:
     Type: AWS::Serverless::Function 
     Properties:
+      FunctionName: serverless-saas-lab6-business-services-authorizer
       CodeUri: Resources/
       Handler: tenant_authorizer.lambda_handler
       Runtime: python3.9
@@ -979,7 +990,7 @@ Resources:
     Type: AWS::IAM::Role
     DependsOn: ApiGatewayTenantApi
     Properties:
-      RoleName: !Join ['-', [!Ref TenantIdParameter, update-usage-plan-role]]
+      RoleName: !Join ['-', [!Ref TenantIdParameter, update-usage-plan-role, lab6]]
       Path: "/"
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -1028,6 +1039,7 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: UpdateUsagePlanLambdaExecutionRole
     Properties:
+      FunctionName: serverless-saas-lab6-update-usage-plan
       CodeUri: custom_resources/
       Handler: update_usage_plan.handler
       Runtime: python3.9
@@ -1051,7 +1063,7 @@ Resources:
     Type: AWS::IAM::Role
     DependsOn: ApiGatewayTenantApi
     Properties:
-      RoleName: !Join ['-', [!Ref TenantIdParameter, apigwurl-lambda-exec-role]]
+      RoleName: !Join ['-', [!Ref TenantIdParameter, apigwurl-lambda-exec-role, lab6]]
       Path: "/"
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -1083,6 +1095,7 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: UpdateTenantApiGatewayUrlLambdaExecutionRole
     Properties:
+      FunctionName: serverless-saas-lab6-update-tenant-api-gateway-url
       CodeUri: custom_resources/
       Handler: update_tenant_apigatewayurl.handler
       Runtime: python3.9
