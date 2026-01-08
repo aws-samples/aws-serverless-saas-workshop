@@ -132,7 +132,7 @@ Resources:
   TenantUserPoolLambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub tenant-userpool-lambda-execution-role-${AWS::Region}
+      RoleName: !Sub tenant-userpool-lambda-execution-role-lab4-${AWS::Region}
       Path: "/"
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -170,7 +170,7 @@ Resources:
   CreateUserLambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub create-user-lambda-execution-role-${AWS::Region}
+      RoleName: !Sub create-user-lambda-execution-role-lab4-${AWS::Region}
       Path: "/"
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -347,7 +347,7 @@ Resources:
   TenantManagementLambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub tenant-management-lambda-execution-role-${AWS::Region}
+      RoleName: !Sub tenant-management-lambda-execution-role-lab4-${AWS::Region}
       Path: "/"
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -476,7 +476,7 @@ Resources:
   RegisterTenantLambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub tenant-registration-lambda-execution-role-${AWS::Region}
+      RoleName: !Sub tenant-registration-lambda-execution-role-lab4-${AWS::Region}
       Path: "/"
       AssumeRolePolicyDocument:
         Version: 2012-10-17

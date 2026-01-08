@@ -55,7 +55,7 @@ Resources:
   CognitoUserPoolClient:
     Type: "AWS::Cognito::UserPoolClient"
     Properties:
-      ClientName: ServerlessSaaSClient
+      ClientName: ServerlessSaaSClient 
       GenerateSecret: false
       UserPoolId: !Ref CognitoUserPool
       AllowedOAuthFlowsUserPoolClient: True
@@ -79,7 +79,7 @@ Resources:
   CognitoUserPoolDomain:
     Type: AWS::Cognito::UserPoolDomain
     Properties:
-      Domain: !Join ["-", [pooledtenant-serverlesssaas,!Ref "AWS::AccountId"]]
+      Domain: pooledtenant-serverlesssaas-lab4
       UserPoolId: !Ref CognitoUserPool
   CognitoOperationUsersUserPool:
     Type: "AWS::Cognito::UserPool"
@@ -141,7 +141,7 @@ Resources:
   CognitoOperationUsersUserPoolDomain:
     Type: AWS::Cognito::UserPoolDomain
     Properties:
-      Domain: !Join ["-", [operationsusers-serverlesssaas,!Ref "AWS::AccountId"]]
+      Domain: !Join ["-", [operationsusers-serverlesssaas-lab4,!Ref "AWS::AccountId"]]
       UserPoolId: !Ref CognitoOperationUsersUserPool
   CognitoAdminUserGroup:
     Type: AWS::Cognito::UserPoolGroup

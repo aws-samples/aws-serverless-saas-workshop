@@ -25,7 +25,7 @@ Resources:
     Condition: IsNotRunningInEventEngine
     DeletionPolicy : Retain
     Properties:
-      BucketName: !Sub '${AWS::StackName}-adminappbucket-lab4'
+      BucketName: !Sub 'serverless-saas-workshop-lab4-adminappbucket'
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
@@ -95,7 +95,7 @@ Resources:
     Condition: IsNotRunningInEventEngine
     DeletionPolicy : Retain
     Properties:
-      BucketName: !Sub '${AWS::StackName}-landingappbucket-lab4'
+      BucketName: !Sub 'serverless-saas-workshop-lab4-landingappbucket'
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
@@ -164,7 +164,7 @@ Resources:
     Condition: IsNotRunningInEventEngine
     DeletionPolicy : Retain
     Properties:
-      BucketName: !Sub '${AWS::StackName}-appbucket-lab4'
+      BucketName: !Sub 'serverless-saas-workshop-lab4-appbucket'
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:

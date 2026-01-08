@@ -160,14 +160,14 @@ Outputs:
     Description: The user pool id for tenant user pool
     Value: !GetAtt Cognito.Outputs.CognitoUserPoolId
     Export:
-      Name: "Serverless-SaaS-CognitoTenantUserPoolId"  
+      Name: "Serverless-SaaS-CognitoTenantUserPoolId-lab4"  
   CognitoTenantAppClientId:
     Description: The app client id for tenant user pool
     Value: !GetAtt Cognito.Outputs.CognitoUserPoolClientId
     Export:
-      Name: "Serverless-SaaS-CognitoTenantAppClientId"  
+      Name: "Serverless-SaaS-CognitoTenantAppClientId-lab4"  
   AuthorizerExecutionRoleArn:
     Description: The Lambda authorizer execution role
     Value: !GetAtt LambdaFunctions.Outputs.AuthorizerExecutionRoleArn 
     Export:
-      Name: "Serverless-SaaS-AuthorizerExecutionRoleArn"   
+      Name: "Serverless-SaaS-AuthorizerExecutionRoleArn-lab4"   

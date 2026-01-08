@@ -49,7 +49,7 @@ Resources:
   ApiGatewayCloudWatchLogRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub apigateway-cloudwatch-publish-role-${AWS::Region}
+      RoleName: apigateway-cloudwatch-publish-role-lab4
       Path: "/"
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs

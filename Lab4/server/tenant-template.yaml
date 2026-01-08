@@ -314,15 +314,15 @@ Resources:
       CodeUri: Resources/
       Handler: tenant_authorizer.lambda_handler
       Runtime: python3.9
-      Role: !ImportValue Serverless-SaaS-AuthorizerExecutionRoleArn
+      Role: !ImportValue Serverless-SaaS-AuthorizerExecutionRoleArn-lab4
       MemorySize: 256
       Tracing: Active
       Layers: 
         - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
-          TENANT_USER_POOL: !ImportValue Serverless-SaaS-CognitoTenantUserPoolId
-          TENANT_APP_CLIENT: !ImportValue Serverless-SaaS-CognitoTenantAppClientId
+          TENANT_USER_POOL: !ImportValue Serverless-SaaS-CognitoTenantUserPoolId-lab4
+          TENANT_APP_CLIENT: !ImportValue Serverless-SaaS-CognitoTenantAppClientId-lab4
           
   ApiGatewayAccessLogs:
     Type: AWS::Logs::LogGroup
