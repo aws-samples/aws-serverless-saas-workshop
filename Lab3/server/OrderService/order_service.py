@@ -9,7 +9,10 @@ import order_service_dal
 from decimal import Decimal
 from types import SimpleNamespace
 from aws_lambda_powertools import Tracer
+
 tracer = Tracer()
+# Patch AWS SDK calls for X-Ray tracing
+tracer.patch(['boto3'])
 
 @tracer.capture_lambda_handler
 def get_order(event, context):
