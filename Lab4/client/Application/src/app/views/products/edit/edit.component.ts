@@ -15,31 +15,36 @@ import { ProductService } from '../product.service';
   styleUrls: ['./edit.component.scss'],
 })
 export class EditComponent implements OnInit {
-  productForm: FormGroup | undefined;
+  productForm: FormGroup;
+  categories: string[] = ['category1', 'category2', 'category3', 'category4'];
   product$: Observable<Product | undefined> | undefined;
   productId$: Observable<string> | undefined;
   productName$: Observable<string | undefined> | undefined;
 
   constructor(
-    private route: ActivatedRoute,
-    private router: Router,
+    private fb: FormBuilder,
     private productSvc: ProductService,
-    private fb: FormBuilder
-  ) {}
+    private router: Router,
+    private route: ActivatedRoute
+  ) {
+    this.productForm = this.fb.group({});
+  }
 
   ngOnInit(): void {
+    this.productForm = this.fb.group({
+      shardId: [],
+      productId: [],
+      name: [''],
+      price: [''],
+      sku: '',
+      category: '',
+    });
+
     this.productId$ = this.route.params.pipe(map((p) => p['productId']));
     this.product$ = this.productId$.pipe(
       switchMap((p) => this.productSvc.get(p))
     );
     this.productName$ = this.product$.pipe(map((p) => p?.name));
-
-    this.productForm = this.fb.group({
-      productId: [''],
-      name: [''],
-      price: [''],
-      description: [''],
-    });
 
     this.product$.subscribe((val) => {
       this.productForm?.patchValue({
