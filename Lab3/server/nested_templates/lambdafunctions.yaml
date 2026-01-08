@@ -81,6 +81,7 @@ Resources:
     Type: AWS::Serverless::Function 
     DependsOn: AuthorizerExecutionRole
     Properties:
+      FunctionName: serverless-saas-lab3-shared-services-authorizer
       CodeUri: ../Resources/
       Handler: shared_service_authorizer.lambda_handler
       Runtime: python3.9
@@ -176,6 +177,7 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: CreateUserLambdaExecutionRole
     Properties:
+      FunctionName: serverless-saas-lab3-create-tenant-admin-user
       CodeUri: ../TenantManagementService/
       Handler: user-management.create_tenant_admin_user
       Runtime: python3.9
@@ -194,6 +196,7 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: CreateUserLambdaExecutionRole
     Properties:
+      FunctionName: serverless-saas-lab3-create-user
       CodeUri: ../TenantManagementService/
       Handler: user-management.create_user
       Runtime: python3.9
@@ -211,6 +214,7 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: TenantUserPoolLambdaExecutionRole
     Properties:
+      FunctionName: serverless-saas-lab3-update-user
       CodeUri: ../TenantManagementService/
       Handler: user-management.update_user
       Runtime: python3.9
@@ -227,6 +231,7 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: TenantUserPoolLambdaExecutionRole
     Properties:
+      FunctionName: serverless-saas-lab3-disable-user
       CodeUri: ../TenantManagementService/
       Handler: user-management.disable_user
       Runtime: python3.9
@@ -243,6 +248,7 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: TenantUserPoolLambdaExecutionRole
     Properties:
+      FunctionName: serverless-saas-lab3-disable-users-by-tenant
       CodeUri: ../TenantManagementService/
       Handler: user-management.disable_users_by_tenant
       Runtime: python3.9
@@ -259,6 +265,7 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: TenantUserPoolLambdaExecutionRole
     Properties:
+      FunctionName: serverless-saas-lab3-enable-users-by-tenant
       CodeUri: ../TenantManagementService/
       Handler: user-management.enable_users_by_tenant
       Runtime: python3.9
@@ -275,6 +282,7 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: TenantUserPoolLambdaExecutionRole
     Properties:
+      FunctionName: serverless-saas-lab3-get-user
       CodeUri: ../TenantManagementService/
       Handler: user-management.get_user
       Runtime: python3.9
@@ -291,6 +299,7 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: TenantUserPoolLambdaExecutionRole
     Properties:
+      FunctionName: serverless-saas-lab3-get-users
       CodeUri: ../TenantManagementService/
       Handler: user-management.get_users
       Runtime: python3.9
@@ -341,6 +350,7 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: TenantManagementLambdaExecutionRole
     Properties:
+      FunctionName: serverless-saas-lab3-create-tenant
       CodeUri: ../TenantManagementService/
       Handler: tenant-management.create_tenant
       Runtime: python3.9
@@ -356,6 +366,7 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: TenantManagementLambdaExecutionRole
     Properties:
+      FunctionName: serverless-saas-lab3-activate-tenant
       CodeUri: ../TenantManagementService/
       Handler: tenant-management.activate_tenant
       Runtime: python3.9
@@ -373,6 +384,7 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: TenantManagementLambdaExecutionRole
     Properties:
+      FunctionName: serverless-saas-lab3-get-tenant
       CodeUri: ../TenantManagementService/
       Handler: tenant-management.get_tenant
       Runtime: python3.9
@@ -388,6 +400,7 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: TenantManagementLambdaExecutionRole
     Properties:
+      FunctionName: serverless-saas-lab3-deactivate-tenant
       CodeUri: ../TenantManagementService/
       Handler: tenant-management.deactivate_tenant
       Runtime: python3.9
@@ -404,6 +417,7 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: TenantManagementLambdaExecutionRole
     Properties:
+      FunctionName: serverless-saas-lab3-update-tenant
       CodeUri: ../TenantManagementService/
       Handler: tenant-management.update_tenant
       Runtime: python3.9
@@ -418,6 +432,7 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: TenantManagementLambdaExecutionRole
     Properties:
+      FunctionName: serverless-saas-lab3-get-tenants
       CodeUri: ../TenantManagementService/
       Handler: tenant-management.get_tenants
       Runtime: python3.9
@@ -449,6 +464,7 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: RegisterTenantLambdaExecutionRole
     Properties:
+      FunctionName: serverless-saas-lab3-register-tenant
       CodeUri: ../TenantManagementService/
       Handler: tenant-registration.register_tenant
       Runtime: python3.9
