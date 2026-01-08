@@ -22,7 +22,7 @@ Resources:
   CognitoUserPool:
     Type: "AWS::Cognito::UserPool"
     Properties:
-      UserPoolName: PooledTenant-ServerlessSaaSUserPool
+      UserPoolName: PooledTenant-ServerlessSaaS-lab4-UserPool
       AutoVerifiedAttributes:
         - "email"
       AccountRecoverySetting:
@@ -84,7 +84,7 @@ Resources:
   CognitoOperationUsersUserPool:
     Type: "AWS::Cognito::UserPool"
     Properties:
-      UserPoolName: OperationUsers-ServerlessSaaSUserPool
+      UserPoolName: OperationUsers-ServerlessSaas-lab4-UserPool
       AutoVerifiedAttributes:
         - "email"
       AccountRecoverySetting:

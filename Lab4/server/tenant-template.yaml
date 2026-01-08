@@ -25,7 +25,7 @@ Resources:
   ServerlessSaaSLayers:
     Type: AWS::Serverless::LayerVersion
     Properties:
-      LayerName: serverless-saas-dependencies-pooled
+      LayerName: serverless-saas-dependencies-pooled-lab4
       Description: Utilities for project
       ContentUri: layers/
       CompatibleRuntimes:
@@ -51,7 +51,7 @@ Resources:
       ProvisionedThroughput: 
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
-      TableName: Product-pooled
+      TableName: Product-pooled-lab4
 
   OrderTable:
     Type: AWS::DynamoDB::Table
@@ -69,12 +69,12 @@ Resources:
       ProvisionedThroughput: 
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
-      TableName: Order-pooled
+      TableName: Order-pooled-lab4
 
   ProductFunctionExecutionRole:
     Type: AWS::IAM::Role     
     Properties:
-      RoleName: pooled-product-function-execution-role
+      RoleName: pooled-product-function-execution-role-lab4
       Path: '/'
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -108,6 +108,7 @@ Resources:
     Type: AWS::Serverless::Function 
     DependsOn: ProductFunctionExecutionRole 
     Properties:
+      FunctionName: serverless-saas-lab4-get-product
       CodeUri: ProductService/
       Handler: product_service.get_product
       Runtime: python3.9  
@@ -124,6 +125,7 @@ Resources:
     Type: AWS::Serverless::Function 
     DependsOn: ProductFunctionExecutionRole 
     Properties:
+      FunctionName: serverless-saas-lab4-get-products
       CodeUri: ProductService/
       Handler: product_service.get_products
       Runtime: python3.9  
@@ -140,6 +142,7 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: ProductFunctionExecutionRole 
     Properties:
+      FunctionName: serverless-saas-lab4-create-product
       CodeUri: ProductService/
       Handler: product_service.create_product
       Runtime: python3.9  
@@ -156,6 +159,7 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: ProductFunctionExecutionRole 
     Properties:
+      FunctionName: serverless-saas-lab4-update-product
       CodeUri: ProductService/
       Handler: product_service.update_product
       Runtime: python3.9 
@@ -172,6 +176,7 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: ProductFunctionExecutionRole 
     Properties:
+      FunctionName: serverless-saas-lab4-delete-product
       CodeUri: ProductService/
       Handler: product_service.delete_product
       Runtime: python3.9 
@@ -187,7 +192,7 @@ Resources:
   OrderFunctionExecutionRole:
     Type: AWS::IAM::Role     
     Properties:
-      RoleName: pooled-order-function-execution-role
+      RoleName: pooled-order-function-execution-role-lab4
       Path: '/'
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -221,6 +226,7 @@ Resources:
     Type: AWS::Serverless::Function 
     DependsOn: OrderFunctionExecutionRole 
     Properties:
+      FunctionName: serverless-saas-lab4-get-orders
       CodeUri: OrderService/
       Handler: order_service.get_orders
       Runtime: python3.9  
@@ -237,6 +243,7 @@ Resources:
     Type: AWS::Serverless::Function 
     DependsOn: OrderFunctionExecutionRole 
     Properties:
+      FunctionName: serverless-saas-lab4-get-order
       CodeUri: OrderService/
       Handler: order_service.get_order
       Runtime: python3.9  
@@ -253,6 +260,7 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: OrderFunctionExecutionRole 
     Properties:
+      FunctionName: serverless-saas-lab4-create-order
       CodeUri: OrderService/
       Handler: order_service.create_order
       Runtime: python3.9  
@@ -269,6 +277,7 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: OrderFunctionExecutionRole 
     Properties:
+      FunctionName: serverless-saas-lab4-update-order
       CodeUri: OrderService/
       Handler: order_service.update_order
       Runtime: python3.9 
@@ -285,6 +294,7 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: OrderFunctionExecutionRole 
     Properties:
+      FunctionName: serverless-saas-lab4-delete-order
       CodeUri: OrderService/
       Handler: order_service.delete_order
       Runtime: python3.9 
@@ -300,6 +310,7 @@ Resources:
   BusinessServicesAuthorizerFunction:
     Type: AWS::Serverless::Function 
     Properties:
+      FunctionName: serverless-saas-lab4-business-services-authorizer
       CodeUri: Resources/
       Handler: tenant_authorizer.lambda_handler
       Runtime: python3.9
@@ -316,7 +327,7 @@ Resources:
   ApiGatewayAccessLogs:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: /aws/api-gateway/access-logs-serverless-saas-tenant-api-pooled
+      LogGroupName: /aws/api-gateway/access-logs-serverless-saas-tenant-api-pooled-lab4
       RetentionInDays: 30
   ApiGatewayTenantApi:
     Type: AWS::Serverless::Api
@@ -334,7 +345,7 @@ Resources:
       DefinitionBody:
         openapi: 3.0.1
         info:
-          title: 'pooled-serverless-saas-tenant-api'
+          title: 'pooled-serverless-saas-tenant-api-lab4'
         basePath: !Join ['', ['/', !Ref StageName]]
         x-amazon-apigateway-api-key-source : "AUTHORIZER"
         schemes:

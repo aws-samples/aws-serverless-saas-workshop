@@ -29,7 +29,7 @@ Resources:
               - appClientId
               - apiGatewayUrl
             ProjectionType: INCLUDE              
-      TableName: ServerlessSaaS-TenantDetails
+      TableName: ServerlessSaaS-TenantDetails-lab4
   TenantUserMappingTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -44,7 +44,7 @@ Resources:
         - AttributeName: userName
           KeyType: RANGE
       BillingMode: PAY_PER_REQUEST 
-      TableName: ServerlessSaaS-TenantUserMapping
+      TableName: ServerlessSaaS-TenantUserMapping-lab4
       GlobalSecondaryIndexes: 
         - IndexName: UserName
           KeySchema: 

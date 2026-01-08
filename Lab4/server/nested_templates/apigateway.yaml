@@ -70,7 +70,7 @@ Resources:
   AdminApiGatewayAccessLogs:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub /aws/api-gateway/access-logs-serverless-saas-admin-api
+      LogGroupName: !Sub /aws/api-gateway/access-logs-serverless-saas-admin-api-lab4
       RetentionInDays: 30
   AdminApiGatewayApi:
     Type: AWS::Serverless::Api
@@ -138,7 +138,7 @@ Resources:
       DefinitionBody:
         openapi: 3.0.1
         info:
-          title: !Join ["", ["serverless-saas-admin-api-", !Ref "AWS::Region"]]
+          title: "serverless-saas-admin-api-lab4"
         basePath: !Join ["", ["/", !Ref StageName]]
         schemes:
           - https
