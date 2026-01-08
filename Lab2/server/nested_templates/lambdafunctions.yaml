@@ -26,13 +26,13 @@ Globals:
     Environment:
       Variables:
         LOG_LEVEL: DEBUG        
-        POWERTOOLS_METRICS_NAMESPACE: "ServerlessSaaS"
+        POWERTOOLS_METRICS_NAMESPACE: "ServerlessSaas-lab2"
         
 Resources:
-  ServerlessSaaSLayers:
+  ServerlessSaasLab2Layers:
     Type: AWS::Serverless::LayerVersion
     Properties:
-      LayerName: serverless-saas-dependencies
+      LayerName: serverless-saas-lab2-dependencies
       Description: Utilities for project
       ContentUri: ../layers/
       CompatibleRuntimes:
@@ -46,7 +46,7 @@ Resources:
   AuthorizerExecutionRole:
     Type: AWS::IAM::Role     
     Properties:
-      RoleName: authorizer-execution-role
+      RoleName: serverless-saas-lab2-authorizer-exec-role
       Path: '/'
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -62,7 +62,7 @@ Resources:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
         - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess   
       Policies:      
-        - PolicyName: authorizer-execution-policy
+        - PolicyName: serverless-saas-lab2-authorizer-exec-policy
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -81,6 +81,7 @@ Resources:
     Type: AWS::Serverless::Function 
     DependsOn: AuthorizerExecutionRole
     Properties:
+      FunctionName: serverless-saas-lab2-authorizer
       CodeUri: ../Resources/
       Handler: shared_service_authorizer.lambda_handler
       Runtime: python3.9
@@ -88,7 +89,7 @@ Resources:
       MemorySize: 256
       Tracing: Active
       Layers: 
-        - !Ref ServerlessSaaSLayers
+        - !Ref ServerlessSaasLab2Layers
       Environment:
         Variables:
           OPERATION_USERS_USER_POOL: !Ref CognitoOperationUsersUserPoolId
@@ -98,7 +99,7 @@ Resources:
   TenantUserPoolLambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub tenant-userpool-lambda-execution-role-${AWS::Region}
+      RoleName: !Sub serverless-saas-lab2-userpool-exec-role-${AWS::Region}
       Path: "/"
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -114,7 +115,7 @@ Resources:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
         - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
       Policies:
-        - PolicyName: !Sub tenant-userpool-lambda-execution-policy-${AWS::Region}
+        - PolicyName: !Sub serverless-saas-lab2-userpool-exec-policy-${AWS::Region}
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -136,7 +137,7 @@ Resources:
   CreateUserLambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub create-user-lambda-execution-role-${AWS::Region}
+      RoleName: !Sub serverless-saas-lab2-create-user-exec-role-${AWS::Region}
       Path: "/"
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -152,7 +153,7 @@ Resources:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
         - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
       Policies:
-        - PolicyName: !Sub create-user-lambda-execution-policy-${AWS::Region}
+        - PolicyName: !Sub serverless-saas-lab2-create-user-exec-policy-${AWS::Region}
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -174,13 +175,14 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: CreateUserLambdaExecutionRole
     Properties:
+      FunctionName: serverless-saas-lab2-create-tenant-admin-user
       CodeUri: ../TenantManagementService/
       Handler: user-management.create_tenant_admin_user
       Runtime: python3.9
       Role: !GetAtt CreateUserLambdaExecutionRole.Arn      
       Tracing: Active
       Layers:
-        - !Ref ServerlessSaaSLayers
+        - !Ref ServerlessSaasLab2Layers
       Environment:
         Variables:
           TENANT_USER_POOL_ID: !Ref CognitoUserPoolId
@@ -192,13 +194,14 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: CreateUserLambdaExecutionRole
     Properties:
+      FunctionName: serverless-saas-lab2-create-user
       CodeUri: ../TenantManagementService/
       Handler: user-management.create_user
       Runtime: python3.9
       Role: !GetAtt CreateUserLambdaExecutionRole.Arn
       Tracing: Active
       Layers:
-        - !Ref ServerlessSaaSLayers      
+        - !Ref ServerlessSaasLab2Layers      
       Environment:
         Variables:
           TENANT_USER_POOL_ID: !Ref CognitoUserPoolId
@@ -209,13 +212,14 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: TenantUserPoolLambdaExecutionRole
     Properties:
+      FunctionName: serverless-saas-lab2-update-user
       CodeUri: ../TenantManagementService/
       Handler: user-management.update_user
       Runtime: python3.9
       Role: !GetAtt TenantUserPoolLambdaExecutionRole.Arn
       Tracing: Active
       Layers:
-        - !Ref ServerlessSaaSLayers
+        - !Ref ServerlessSaasLab2Layers
       Environment:
         Variables:
           TENANT_USER_POOL_ID: !Ref CognitoUserPoolId
@@ -225,13 +229,14 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: TenantUserPoolLambdaExecutionRole
     Properties:
+      FunctionName: serverless-saas-lab2-disable-user
       CodeUri: ../TenantManagementService/
       Handler: user-management.disable_user
       Runtime: python3.9
       Role: !GetAtt TenantUserPoolLambdaExecutionRole.Arn
       Tracing: Active
       Layers:
-        - !Ref ServerlessSaaSLayers      
+        - !Ref ServerlessSaasLab2Layers      
       Environment:
         Variables:
           TENANT_USER_POOL_ID: !Ref CognitoUserPoolId
@@ -241,13 +246,14 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: TenantUserPoolLambdaExecutionRole
     Properties:
+      FunctionName: serverless-saas-lab2-disable-users-by-tenant
       CodeUri: ../TenantManagementService/
       Handler: user-management.disable_users_by_tenant
       Runtime: python3.9
       Role: !GetAtt TenantUserPoolLambdaExecutionRole.Arn
       Tracing: Active
       Layers:
-        - !Ref ServerlessSaaSLayers      
+        - !Ref ServerlessSaasLab2Layers      
       Environment:
         Variables:
           TENANT_USER_POOL_ID: !Ref CognitoUserPoolId
@@ -257,13 +263,14 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: TenantUserPoolLambdaExecutionRole
     Properties:
+      FunctionName: serverless-saas-lab2-enable-users-by-tenant
       CodeUri: ../TenantManagementService/
       Handler: user-management.enable_users_by_tenant
       Runtime: python3.9
       Role: !GetAtt TenantUserPoolLambdaExecutionRole.Arn
       Tracing: Active
       Layers:
-        - !Ref ServerlessSaaSLayers      
+        - !Ref ServerlessSaasLab2Layers      
       Environment:
         Variables:
           TENANT_USER_POOL_ID: !Ref CognitoUserPoolId
@@ -273,13 +280,14 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: TenantUserPoolLambdaExecutionRole
     Properties:
+      FunctionName: serverless-saas-lab2-get-user
       CodeUri: ../TenantManagementService/
       Handler: user-management.get_user
       Runtime: python3.9
       Role: !GetAtt TenantUserPoolLambdaExecutionRole.Arn
       Tracing: Active
       Layers:
-        - !Ref ServerlessSaaSLayers      
+        - !Ref ServerlessSaasLab2Layers      
       Environment:
         Variables:
           TENANT_USER_POOL_ID: !Ref CognitoUserPoolId
@@ -289,13 +297,14 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: TenantUserPoolLambdaExecutionRole
     Properties:
+      FunctionName: serverless-saas-lab2-get-users
       CodeUri: ../TenantManagementService/
       Handler: user-management.get_users
       Runtime: python3.9
       Role: !GetAtt TenantUserPoolLambdaExecutionRole.Arn
       Tracing: Active
       Layers:
-        - !Ref ServerlessSaaSLayers      
+        - !Ref ServerlessSaasLab2Layers      
       Environment:
         Variables:
           TENANT_USER_POOL_ID: !Ref CognitoUserPoolId
@@ -305,7 +314,7 @@ Resources:
   TenantManagementLambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub tenant-management-lambda-execution-role-${AWS::Region}
+      RoleName: !Sub serverless-saas-lab2-tenant-mgmt-exec-role-${AWS::Region}
       Path: "/"
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -321,7 +330,7 @@ Resources:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
         - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
       Policies:
-        - PolicyName: !Sub create-tenant-execution-policy-${AWS::Region}
+        - PolicyName: !Sub serverless-saas-lab2-tenant-exec-policy-${AWS::Region}
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -339,13 +348,14 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: TenantManagementLambdaExecutionRole
     Properties:
+      FunctionName: serverless-saas-lab2-create-tenant
       CodeUri: ../TenantManagementService/
       Handler: tenant-management.create_tenant
       Runtime: python3.9
       Role: !GetAtt TenantManagementLambdaExecutionRole.Arn
       Tracing: Active
       Layers:
-        - !Ref ServerlessSaaSLayers
+        - !Ref ServerlessSaasLab2Layers
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "TenantManagement.CreateTenant"
@@ -354,13 +364,14 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: TenantManagementLambdaExecutionRole
     Properties:
+      FunctionName: serverless-saas-lab2-activate-tenant
       CodeUri: ../TenantManagementService/
       Handler: tenant-management.activate_tenant
       Runtime: python3.9
       Role: !GetAtt TenantManagementLambdaExecutionRole.Arn
       Tracing: Active
       Layers:
-        - !Ref ServerlessSaaSLayers
+        - !Ref ServerlessSaasLab2Layers
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "TenantManagement.ActivateTenant"
@@ -371,13 +382,14 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: TenantManagementLambdaExecutionRole
     Properties:
+      FunctionName: serverless-saas-lab2-get-tenant
       CodeUri: ../TenantManagementService/
       Handler: tenant-management.get_tenant
       Runtime: python3.9
       Role: !GetAtt TenantManagementLambdaExecutionRole.Arn
       Tracing: Active
       Layers:
-        - !Ref ServerlessSaaSLayers
+        - !Ref ServerlessSaasLab2Layers
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "TenantManagement.GetTenant"    
@@ -386,13 +398,14 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: TenantManagementLambdaExecutionRole
     Properties:
+      FunctionName: serverless-saas-lab2-deactivate-tenant
       CodeUri: ../TenantManagementService/
       Handler: tenant-management.deactivate_tenant
       Runtime: python3.9
       Role: !GetAtt TenantManagementLambdaExecutionRole.Arn
       Tracing: Active
       Layers:
-        - !Ref ServerlessSaaSLayers
+        - !Ref ServerlessSaasLab2Layers
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "TenantManagement.DeactivateTenant"
@@ -402,13 +415,14 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: TenantManagementLambdaExecutionRole
     Properties:
+      FunctionName: serverless-saas-lab2-update-tenant
       CodeUri: ../TenantManagementService/
       Handler: tenant-management.update_tenant
       Runtime: python3.9
       Role: !GetAtt TenantManagementLambdaExecutionRole.Arn
       Tracing: Active
       Layers:
-        - !Ref ServerlessSaaSLayers
+        - !Ref ServerlessSaasLab2Layers
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "TenantManagement.UpdateTenant"          
@@ -416,19 +430,20 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: TenantManagementLambdaExecutionRole
     Properties:
+      FunctionName: serverless-saas-lab2-get-tenants
       CodeUri: ../TenantManagementService/
       Handler: tenant-management.get_tenants
       Runtime: python3.9
       Role: !GetAtt TenantManagementLambdaExecutionRole.Arn
       Tracing: Active
       Layers:
-        - !Ref ServerlessSaaSLayers 
+        - !Ref ServerlessSaasLab2Layers 
   
   #Tenant Registration
   RegisterTenantLambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub tenant-registration-lambda-execution-role-${AWS::Region}
+      RoleName: !Sub serverless-saas-lab2-tenant-reg-exec-role-${AWS::Region}
       Path: "/"
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -442,18 +457,30 @@ Resources:
       ManagedPolicyArns: 
         - arn:aws:iam::aws:policy/CloudWatchLambdaInsightsExecutionRolePolicy    
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-        - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess      
+        - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
+      Policies:
+        - PolicyName: !Sub serverless-saas-lab2-tenant-reg-exec-policy-${AWS::Region}
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource:
+                  - !GetAtt CreateTenantFunction.Arn
+                  - !GetAtt CreateTenantAdminUserFunction.Arn
   RegisterTenantFunction:
     Type: AWS::Serverless::Function
     DependsOn: RegisterTenantLambdaExecutionRole
     Properties:
+      FunctionName: serverless-saas-lab2-register-tenant
       CodeUri: ../TenantManagementService/
       Handler: tenant-registration.register_tenant
       Runtime: python3.9
       Role: !GetAtt RegisterTenantLambdaExecutionRole.Arn
       Tracing: Active
       Layers:
-        - !Ref ServerlessSaaSLayers
+        - !Ref ServerlessSaasLab2Layers
       Environment:
         Variables: # Need to find a better way than hard coding resource paths
           CREATE_TENANT_ADMIN_USER_RESOURCE_PATH: "/user/tenant-admin"

@@ -19,7 +19,7 @@ Resources:
           KeyType: HASH
       BillingMode: PAY_PER_REQUEST 
       GlobalSecondaryIndexes:
-        - IndexName: ServerlessSaas-TenantConfig
+        - IndexName: ServerlessSaas-lab2-TenantConfig
           KeySchema:
             - AttributeName: tenantName
               KeyType: HASH
@@ -29,7 +29,7 @@ Resources:
               - appClientId
               - apiGatewayUrl
             ProjectionType: INCLUDE              
-      TableName: ServerlessSaaS-TenantDetails
+      TableName: ServerlessSaas-lab2-TenantDetails
   TenantUserMappingTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -44,7 +44,7 @@ Resources:
         - AttributeName: userName
           KeyType: RANGE
       BillingMode: PAY_PER_REQUEST 
-      TableName: ServerlessSaaS-TenantUserMapping
+      TableName: ServerlessSaas-lab2-TenantUserMapping
       GlobalSecondaryIndexes: 
         - IndexName: UserName
           KeySchema: 

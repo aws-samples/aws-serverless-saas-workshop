@@ -19,7 +19,7 @@ Resources:
   CognitoUserPool:
     Type: "AWS::Cognito::UserPool"
     Properties:
-      UserPoolName: PooledTenant-ServerlessSaaSUserPool
+      UserPoolName: PooledTenant-ServerlessSaas-lab2-UserPool
       AutoVerifiedAttributes:
         - "email"
       AccountRecoverySetting:
@@ -49,7 +49,7 @@ Resources:
   CognitoUserPoolClient:
     Type: "AWS::Cognito::UserPoolClient"
     Properties:
-      ClientName: ServerlessSaaSClient
+      ClientName: ServerlessSaas-lab2-Client
       GenerateSecret: false
       UserPoolId: !Ref CognitoUserPool
       AllowedOAuthFlowsUserPoolClient: True
@@ -73,12 +73,12 @@ Resources:
   CognitoUserPoolDomain:
     Type: AWS::Cognito::UserPoolDomain
     Properties:
-      Domain: !Join ["-", [pooledtenant-serverlesssaas,!Ref "AWS::AccountId"]]
+      Domain: !Join ["-", [pooledtenant-serverlesssaas-lab2,!Ref "AWS::AccountId"]]
       UserPoolId: !Ref CognitoUserPool
   CognitoOperationUsersUserPool:
     Type: "AWS::Cognito::UserPool"
     Properties:
-      UserPoolName: OperationUsers-ServerlessSaaSUserPool
+      UserPoolName: OperationUsers-ServerlessSaas-lab2-UserPool
       AutoVerifiedAttributes:
         - "email"
       AccountRecoverySetting:
@@ -111,7 +111,7 @@ Resources:
   CognitoOperationUsersUserPoolClient:
     Type: "AWS::Cognito::UserPoolClient"
     Properties:
-      ClientName: ServerlessSaaSOperationUsersPoolClient
+      ClientName: ServerlessSaas-lab2-OperationUsersPoolClient
       GenerateSecret: false
       UserPoolId: !Ref CognitoOperationUsersUserPool
       AllowedOAuthFlowsUserPoolClient: True
@@ -135,7 +135,7 @@ Resources:
   CognitoOperationUsersUserPoolDomain:
     Type: AWS::Cognito::UserPoolDomain
     Properties:
-      Domain: !Join ["-", [operationsusers-serverlesssaas,!Ref "AWS::AccountId"]]
+      Domain: !Join ["-", [operationsusers-serverlesssaas-lab2,!Ref "AWS::AccountId"]]
       UserPoolId: !Ref CognitoOperationUsersUserPool
   CognitoAdminUserGroup:
     Type: AWS::Cognito::UserPoolGroup
