@@ -12,6 +12,9 @@ Parameters:
   SystemAdminRoleNameParameter:
     Type: String
     Description: "Enter the role name for system admin"
+  TenantAdminEmailParameter:
+    Type: String
+    Description: "Enter tenant admin email address"
   AdminUserPoolCallbackURLParameter: 
     Type: String
     Description: "Enter Admin Management userpool call back url" 
@@ -22,7 +25,7 @@ Resources:
   CognitoUserPool:
     Type: "AWS::Cognito::UserPool"
     Properties:
-      UserPoolName: PooledTenant-ServerlessSaaSUserPool
+      UserPoolName: PooledTenant-ServerlessSaaS-lab3-UserPool
       AutoVerifiedAttributes:
         - "email"
       AccountRecoverySetting:
@@ -84,7 +87,7 @@ Resources:
   CognitoOperationUsersUserPool:
     Type: "AWS::Cognito::UserPool"
     Properties:
-      UserPoolName: OperationUsers-ServerlessSaaSUserPool
+      UserPoolName: OperationUsers-ServerlessSaas-lab3-UserPool
       AutoVerifiedAttributes:
         - "email"
       AccountRecoverySetting:
@@ -171,6 +174,37 @@ Resources:
         GroupName: !Ref CognitoAdminUserGroup
         Username: !Ref CognitoAdminUser
         UserPoolId: !Ref CognitoOperationUsersUserPool
+  
+  CognitoTenantAdminUserGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      GroupName: TenantAdmins
+      Description: Tenant admin user group
+      Precedence: 0
+      UserPoolId: !Ref CognitoUserPool
+  
+  CognitoTenantAdminUser:
+    Type: AWS::Cognito::UserPoolUser
+    Properties:
+      Username: tenant-admin
+      DesiredDeliveryMediums:
+        - EMAIL
+      ForceAliasCreation: true
+      UserAttributes:
+        - Name: email
+          Value: !Ref TenantAdminEmailParameter
+        - Name: custom:tenantId
+          Value: default-tenant
+        - Name: custom:userRole
+          Value: TenantAdmin
+      UserPoolId: !Ref CognitoUserPool
+  
+  CognitoAddTenantAdminToGroup:
+      Type: AWS::Cognito::UserPoolUserToGroupAttachment
+      Properties:
+        GroupName: !Ref CognitoTenantAdminUserGroup
+        Username: !Ref CognitoTenantAdminUser
+        UserPoolId: !Ref CognitoUserPool
         
 Outputs:  
   CognitoUserPoolId:
