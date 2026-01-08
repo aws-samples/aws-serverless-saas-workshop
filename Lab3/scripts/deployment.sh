@@ -166,3 +166,78 @@ fi
 echo "Admin site URL: https://$ADMIN_SITE_URL"
 echo "Landing site URL: https://$LANDING_APP_SITE_URL"
 echo "App site URL: https://$APP_SITE_URL"
+
+# Automatically create sample tenants if email was provided
+if [[ $server -eq 1 ]] && [ ! -z "$TENANT_ADMIN_EMAIL" ]; then
+  echo ""
+  echo "Creating sample tenants..."
+  
+  # Extract username and domain from email
+  EMAIL_USERNAME=$(echo "$TENANT_ADMIN_EMAIL" | cut -d'@' -f1)
+  EMAIL_DOMAIN=$(echo "$TENANT_ADMIN_EMAIL" | cut -d'@' -f2)
+  
+  # Get the Admin API Gateway URL from Lab3 shared stack
+  ADMIN_API_URL=$(aws cloudformation describe-stacks --stack-name serverless-saas-workshop-shared-lab3 --query "Stacks[0].Outputs[?OutputKey=='AdminApi'].OutputValue" --output text 2>/dev/null)
+  
+  if [ -z "$ADMIN_API_URL" ]; then
+    echo "Warning: Could not find Admin API URL. Skipping automatic tenant creation."
+  else
+    # Create Tenant One
+    TENANT1_EMAIL="${EMAIL_USERNAME}+lab3tenant1@${EMAIL_DOMAIN}"
+    echo "Creating Tenant One with email: $TENANT1_EMAIL"
+    
+    TENANT1_RESPONSE=$(curl -s -X POST "${ADMIN_API_URL}/registration" \
+      -H "Content-Type: application/json" \
+      -d "{
+        \"tenantName\": \"Tenant One\",
+        \"tenantEmail\": \"$TENANT1_EMAIL\",
+        \"tenantAdminUserName\": \"tenant1-admin\",
+        \"tenantTier\": \"standard\",
+        \"tenantPhone\": \"+1-555-0001\",
+        \"tenantAddress\": \"123 Main St, City, State 12345\"
+      }")
+    
+    if echo "$TENANT1_RESPONSE" | grep -q "registered"; then
+      echo "✓ Tenant One created successfully"
+      echo "  Username: tenant1-admin"
+      echo "  Email: $TENANT1_EMAIL"
+      echo "  Cognito will send a temporary password to this email"
+    else
+      echo "✗ Failed to create Tenant One"
+      echo "  Response: $TENANT1_RESPONSE"
+    fi
+    
+    # Create Tenant Two
+    TENANT2_EMAIL="${EMAIL_USERNAME}+lab3tenant2@${EMAIL_DOMAIN}"
+    echo ""
+    echo "Creating Tenant Two with email: $TENANT2_EMAIL"
+    
+    TENANT2_RESPONSE=$(curl -s -X POST "${ADMIN_API_URL}/registration" \
+      -H "Content-Type: application/json" \
+      -d "{
+        \"tenantName\": \"Tenant Two\",
+        \"tenantEmail\": \"$TENANT2_EMAIL\",
+        \"tenantAdminUserName\": \"tenant2-admin\",
+        \"tenantTier\": \"standard\",
+        \"tenantPhone\": \"+1-555-0002\",
+        \"tenantAddress\": \"456 Oak Ave, City, State 12345\"
+      }")
+    
+    if echo "$TENANT2_RESPONSE" | grep -q "registered"; then
+      echo "✓ Tenant Two created successfully"
+      echo "  Username: tenant2-admin"
+      echo "  Email: $TENANT2_EMAIL"
+      echo "  Cognito will send a temporary password to this email"
+    else
+      echo "✗ Failed to create Tenant Two"
+      echo "  Response: $TENANT2_RESPONSE"
+    fi
+    
+    echo ""
+    echo "Sample tenant creation complete!"
+    echo "Check your email ($TENANT_ADMIN_EMAIL) for temporary passwords for:"
+    echo "  1. Default tenant: tenant-admin (email: $TENANT_ADMIN_EMAIL)"
+    echo "  2. Tenant One: tenant1-admin (email: $TENANT1_EMAIL)"
+    echo "  3. Tenant Two: tenant2-admin (email: $TENANT2_EMAIL)"
+  fi
+fi
