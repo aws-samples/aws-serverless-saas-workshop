@@ -2,10 +2,10 @@ version = 0.1
 [default]
 [default.deploy]
 [default.deploy.parameters]
-stack_name = "serverless-saas-cost-per-tenant-lab7"
-s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-1p6m7gm2vwaaz"
+stack_name = "serverless-saas-workshop-lab7"
+s3_bucket = "sam-bootstrap-bucket-bdd95af9-0e28-4609-8080-8af0d3d2fbd5"
 s3_prefix = "serverless-saas-lab7"
-region = "us-west-2"
+region = "us-east-1"
 confirm_changeset = false
 capabilities = "CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND"
 cached="true"

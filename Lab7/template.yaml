@@ -142,6 +142,7 @@ Resources:
     Type: 'AWS::Lambda::Function'
     DependsOn: AWSCURCrawler
     Properties:
+      FunctionName: serverless-saas-lab7-aws-cur-initializer
       Code:
         ZipFile: >
           const AWS = require('aws-sdk');
@@ -197,12 +198,12 @@ Resources:
         - AttributeName: TenantId#ServiceName
           KeyType: RANGE
       BillingMode: PAY_PER_REQUEST 
-      TableName: TenantCostAndUsageAttribution
+      TableName: TenantCostAndUsageAttribution-lab7
   
   QueryLogInsightsExecutionRole:
     Type: AWS::IAM::Role     
     Properties:
-      RoleName: query-log-insights-execution-role
+      RoleName: query-log-insights-execution-role-lab7
       Path: '/'
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -255,6 +256,7 @@ Resources:
     Type: AWS::Serverless::Function 
     DependsOn: QueryLogInsightsExecutionRole 
     Properties:
+      FunctionName: serverless-saas-lab7-get-dynamodb-usage-and-cost-by-tenant
       CodeUri: TenantUsageAndCost/
       Handler: tenant_usage_and_cost.calculate_daily_dynamodb_attribution_by_tenant
       Runtime: python3.9  
@@ -273,6 +275,7 @@ Resources:
     Type: AWS::Serverless::Function 
     DependsOn: QueryLogInsightsExecutionRole 
     Properties:
+      FunctionName: serverless-saas-lab7-get-lambda-usage-and-cost-by-tenant
       CodeUri: TenantUsageAndCost/
       Handler: tenant_usage_and_cost.calculate_daily_lambda_attribution_by_tenant
       Runtime: python3.9  

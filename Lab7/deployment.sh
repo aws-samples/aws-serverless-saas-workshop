@@ -1,5 +1,13 @@
+#!/bin/bash
+
 REGION=$(aws configure get region)
-sam build -t template.yaml --use-container
+
+# Use virtual environment Python if available
+if [ -f "../.venv_py313/bin/python" ]; then
+  export PATH="../.venv_py313/bin:$PATH"
+fi
+
+sam build -t template.yaml
 sam deploy --config-file samconfig.toml --region=$REGION
   
 
