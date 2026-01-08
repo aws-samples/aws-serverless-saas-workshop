@@ -15,7 +15,7 @@ import utils
 region = os.environ['AWS_REGION']
 sts_client = boto3.client("sts", region_name=region)
 dynamodb = boto3.resource('dynamodb')
-table_tenant_details = dynamodb.Table('ServerlessSaaS-TenantDetails')
+table_tenant_details = dynamodb.Table('ServerlessSaas-lab2-TenantDetails')
 user_pool_operation_user = os.environ['OPERATION_USERS_USER_POOL']
 app_client_operation_user = os.environ['OPERATION_USERS_APP_CLIENT']
 
