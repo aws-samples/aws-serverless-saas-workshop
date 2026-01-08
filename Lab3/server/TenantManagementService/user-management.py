@@ -31,7 +31,11 @@ def create_tenant_admin_user(event, context):
     #Add tenant admin now based upon user pool
     tenant_user_group_response = user_mgmt.create_user_group(user_pool_id,tenant_id,"User group for tenant {0}".format(tenant_id))
 
-    tenant_admin_user_name = 'tenant-admin-{0}'.format(tenant_details['tenantId'])
+    # Use custom username if provided, otherwise generate default
+    if 'tenantAdminUserName' in tenant_details and tenant_details['tenantAdminUserName']:
+        tenant_admin_user_name = tenant_details['tenantAdminUserName']
+    else:
+        tenant_admin_user_name = 'tenant-admin-{0}'.format(tenant_details['tenantId'])
 
     create_tenant_admin_response = user_mgmt.create_tenant_admin(user_pool_id, tenant_admin_user_name, tenant_details)
     
