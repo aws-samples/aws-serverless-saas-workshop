@@ -19,7 +19,7 @@ tracer = Tracer()
 region = os.environ['AWS_REGION']
 
 dynamodb = boto3.resource('dynamodb')
-table_tenant_details = dynamodb.Table('ServerlessSaaS-TenantDetails')
+table_tenant_details = dynamodb.Table('ServerlessSaaS-TenantDetails-lab4')
 
 #This method has been locked down to be only called from tenant registration service
 def create_tenant(event, context):
