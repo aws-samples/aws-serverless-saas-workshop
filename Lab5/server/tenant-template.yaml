@@ -107,7 +107,7 @@ Resources:
   ProductFunctionExecutionRole:
     Type: AWS::IAM::Role     
     Properties:
-      RoleName: !Join ['-', [!Ref TenantIdParameter, product-function-execution-role, lab5]]
+      RoleName: !Join ['-', [!Ref TenantIdParameter, prod-lab5]]
       Path: '/'
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -246,7 +246,7 @@ Resources:
   OrderFunctionExecutionRole:
     Type: AWS::IAM::Role     
     Properties:
-      RoleName: !Join ['-', [!Ref TenantIdParameter, order-function-execution-role, lab5]]
+      RoleName: !Join ['-', [!Ref TenantIdParameter, order-lab5]]
       Path: '/'
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -948,7 +948,7 @@ Resources:
     Type: AWS::IAM::Role
     DependsOn: ApiGatewayTenantApi
     Properties:
-      RoleName: !Join ['-', [!Ref TenantIdParameter, apigwurl-lambda-exec-role, lab5]]
+      RoleName: !Join ['-', [!Ref TenantIdParameter, apigw-url-lab5]]
       Path: "/"
       AssumeRolePolicyDocument:
         Version: 2012-10-17
