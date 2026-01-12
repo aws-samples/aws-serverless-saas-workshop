@@ -1,0 +1,27 @@
+# SAM build artifacts
+.aws-sam/
+build/
+dist/
+
+# Node modules and package locks
+node_modules/
+package-lock.json
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Environment files
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
