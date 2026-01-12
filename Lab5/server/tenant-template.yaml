@@ -127,7 +127,7 @@ Resources:
     Type: AWS::Serverless::Function 
     DependsOn: ProductFunctionExecutionRole 
     Properties:
-      FunctionName: !Sub 'serverless-saas-lab5-get-product-${TenantIdParameter}'
+      FunctionName: !Sub 'get-prod-lab5-${TenantIdParameter}'
       CodeUri: ProductService/
       Handler: product_service.get_product
       Runtime: python3.9  
@@ -147,7 +147,7 @@ Resources:
     Type: AWS::Serverless::Function 
     DependsOn: ProductFunctionExecutionRole 
     Properties:
-      FunctionName: !Sub 'serverless-saas-lab5-get-products-${TenantIdParameter}'
+      FunctionName: !Sub 'get-prods-lab5-${TenantIdParameter}'
       CodeUri: ProductService/
       Handler: product_service.get_products
       Runtime: python3.9  
@@ -167,7 +167,7 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: ProductFunctionExecutionRole 
     Properties:
-      FunctionName: !Sub 'serverless-saas-lab5-create-product-${TenantIdParameter}'
+      FunctionName: !Sub 'create-prod-lab5-${TenantIdParameter}'
       CodeUri: ProductService/
       Handler: product_service.create_product
       Runtime: python3.9  
@@ -187,7 +187,7 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: ProductFunctionExecutionRole 
     Properties:
-      FunctionName: !Sub 'serverless-saas-lab5-update-product-${TenantIdParameter}'
+      FunctionName: !Sub 'update-prod-lab5-${TenantIdParameter}'
       CodeUri: ProductService/
       Handler: product_service.update_product
       Runtime: python3.9 
@@ -207,7 +207,7 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: ProductFunctionExecutionRole 
     Properties:
-      FunctionName: !Sub 'serverless-saas-lab5-delete-product-${TenantIdParameter}'
+      FunctionName: !Sub 'delete-prod-lab5-${TenantIdParameter}'
       CodeUri: ProductService/
       Handler: product_service.delete_product
       Runtime: python3.9 
@@ -266,7 +266,7 @@ Resources:
     Type: AWS::Serverless::Function 
     DependsOn: OrderFunctionExecutionRole 
     Properties:
-      FunctionName: !Sub 'serverless-saas-lab5-get-orders-${TenantIdParameter}'
+      FunctionName: !Sub 'get-orders-lab5-${TenantIdParameter}'
       CodeUri: OrderService/
       Handler: order_service.get_orders
       Runtime: python3.9  
@@ -286,7 +286,7 @@ Resources:
     Type: AWS::Serverless::Function 
     DependsOn: OrderFunctionExecutionRole 
     Properties:
-      FunctionName: !Sub 'serverless-saas-lab5-get-order-${TenantIdParameter}'
+      FunctionName: !Sub 'get-order-lab5-${TenantIdParameter}'
       CodeUri: OrderService/
       Handler: order_service.get_order
       Runtime: python3.9  
@@ -306,7 +306,7 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: OrderFunctionExecutionRole 
     Properties:
-      FunctionName: !Sub 'serverless-saas-lab5-create-order-${TenantIdParameter}'
+      FunctionName: !Sub 'create-order-lab5-${TenantIdParameter}'
       CodeUri: OrderService/
       Handler: order_service.create_order
       Runtime: python3.9  
@@ -326,7 +326,7 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: OrderFunctionExecutionRole 
     Properties:
-      FunctionName: !Sub 'serverless-saas-lab5-update-order-${TenantIdParameter}'
+      FunctionName: !Sub 'update-order-lab5-${TenantIdParameter}'
       CodeUri: OrderService/
       Handler: order_service.update_order
       Runtime: python3.9 
@@ -346,7 +346,7 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: OrderFunctionExecutionRole 
     Properties:
-      FunctionName: !Sub 'serverless-saas-lab5-delete-order-${TenantIdParameter}'
+      FunctionName: !Sub 'delete-order-lab5-${TenantIdParameter}'
       CodeUri: OrderService/
       Handler: order_service.delete_order
       Runtime: python3.9 
@@ -365,7 +365,7 @@ Resources:
   BusinessServicesAuthorizerFunction:
     Type: AWS::Serverless::Function 
     Properties:
-      FunctionName: !Sub 'serverless-saas-lab5-business-services-authorizer-${TenantIdParameter}'
+      FunctionName: !Sub 'authorizer-lab5-${TenantIdParameter}'
       CodeUri: Resources/
       Handler: tenant_authorizer.lambda_handler
       Runtime: python3.9
@@ -980,7 +980,7 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: UpdateTenantApiGatewayUrlLambdaExecutionRole
     Properties:
-      FunctionName: !Sub 'serverless-saas-lab5-update-tenant-api-gateway-url-${TenantIdParameter}'
+      FunctionName: !Sub 'update-apigw-lab5-${TenantIdParameter}'
       CodeUri: custom_resources/
       Handler: update_tenant_apigatewayurl.handler
       Runtime: python3.9
