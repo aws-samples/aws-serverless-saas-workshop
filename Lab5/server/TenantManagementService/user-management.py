@@ -386,7 +386,7 @@ class UserManagement:
                         " with username {username} and temporary password {####}"])
         email_subject = "Your temporary password for tenant UI application"  
         response = client.create_user_pool(
-            PoolName= tenant_id + '-ServerlessSaaSUserPool',
+            PoolName= tenant_id + '-ServerlessSaaSUserPool-lab5',
             AutoVerifiedAttributes=['email'],
             AccountRecoverySetting={
                 'RecoveryMechanisms': [
