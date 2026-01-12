@@ -168,7 +168,7 @@ Outputs:
     Description: The name of the CloudFront url for Landing site
     Value: !GetAtt UserInterface.Outputs.LandingApplicationSite
     Condition: IsNotRunningInEventEngine
-  ApplicationSiteBucket:
+  AppBucket:
     Description: The S3 Bucket that will contain the static assets for the tenant application
     Value: !GetAtt UserInterface.Outputs.AppBucket
     Condition: IsNotRunningInEventEngine
@@ -180,7 +180,7 @@ Outputs:
     Description: The user pool id of Admin Management userpool 
     Value: !GetAtt Cognito.Outputs.CognitoOperationUsersUserPoolId
     Export:
-      Name: "Serverless-SaaS-CognitoOperationUsersUserPoolId"  
+      Name: "Serverless-SaaS-CognitoOperationUsersUserPoolId-lab5"  
   CognitoOperationUsersUserPoolProviderURL:
     Description: The Admin Management userpool provider url
     Value: !GetAtt Cognito.Outputs.CognitoOperationUsersUserPoolProviderURL
@@ -188,19 +188,19 @@ Outputs:
     Description: The Admin Management userpool client id
     Value: !GetAtt Cognito.Outputs.CognitoOperationUsersUserPoolClientId
     Export:
-      Name: "Serverless-SaaS-CognitoOperationUsersUserPoolClientId"
+      Name: "Serverless-SaaS-CognitoOperationUsersUserPoolClientId-lab5"
   CognitoTenantUserPoolId:
     Description: The user pool id for tenant user pool
     Value: !GetAtt Cognito.Outputs.CognitoUserPoolId
     Export:
-      Name: "Serverless-SaaS-CognitoTenantUserPoolId"  
+      Name: "Serverless-SaaS-CognitoTenantUserPoolId-lab5"  
   CognitoTenantAppClientId:
     Description: The app client id for tenant user pool
     Value: !GetAtt Cognito.Outputs.CognitoUserPoolClientId
     Export:
-      Name: "Serverless-SaaS-CognitoTenantAppClientId"  
+      Name: "Serverless-SaaS-CognitoTenantAppClientId-lab5"  
   AuthorizerExecutionRoleArn:
     Description: The Lambda authorizer execution role
     Value: !GetAtt LambdaFunctions.Outputs.AuthorizerExecutionRoleArn 
     Export:
-      Name: "Serverless-SaaS-AuthorizerExecutionRoleArn"   
+      Name: "Serverless-SaaS-AuthorizerExecutionRoleArn-lab5"   

@@ -79,7 +79,9 @@ Resources:
   CognitoUserPoolDomain:
     Type: AWS::Cognito::UserPoolDomain
     Properties:
-      Domain: !Join ["-", [pooledtenant-serverlesssaas,!Ref "AWS::AccountId"]]
+      Domain: !Sub 
+        - 'serverless-saas-lab5-pool-${ShortId}'
+        - ShortId: !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref 'AWS::StackId']]]]
       UserPoolId: !Ref CognitoUserPool
 
   CognitoOperationUsersUserPool:
@@ -142,7 +144,9 @@ Resources:
   CognitoOperationUsersUserPoolDomain:
     Type: AWS::Cognito::UserPoolDomain
     Properties:
-      Domain: !Join ["-", [operationsusers-serverlesssaas,!Ref "AWS::AccountId"]]
+      Domain: !Sub 
+        - 'serverless-saas-lab5-ops-${ShortId}'
+        - ShortId: !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref 'AWS::StackId']]]]
       UserPoolId: !Ref CognitoOperationUsersUserPool
   CognitoAdminUserGroup:
     Type: AWS::Cognito::UserPoolGroup

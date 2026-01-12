@@ -55,7 +55,7 @@ Resources:
   ApiGatewayCloudWatchLogRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub apigateway-cloudwatch-publish-role-${AWS::Region}
+      RoleName: apigateway-cloudwatch-publish-role
       Path: "/"
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs
@@ -76,11 +76,12 @@ Resources:
   AdminApiGatewayAccessLogs:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub /aws/api-gateway/access-logs-serverless-saas-admin-api
+      LogGroupName: !Sub /aws/api-gateway/access-logs-serverless-saas-lab5-admin-api
       RetentionInDays: 30
   AdminApiGatewayApi:
     Type: AWS::Serverless::Api
     Properties:
+      Name: serverless-saas-admin-api-lab5
       MethodSettings:
         - DataTraceEnabled: False
           LoggingLevel: INFO

@@ -54,7 +54,36 @@ def do_action(event, _):
 def do_nothing(_, __):
     pass
 
-def handler(event, context):   
+def generate_manual_success_command(event):
+    """Generate curl command for manual SUCCESS signal if needed for recovery"""
+    response_url = event.get('ResponseURL', '')
+    request_id = event.get('RequestId', '')
+    stack_id = event.get('StackId', '')
+    logical_resource_id = event.get('LogicalResourceId', '')
+    physical_resource_id = event.get('PhysicalResourceId', 'CustomResource')
+    
+    curl_command = (
+        f'curl -H "Content-Type: \'\'" -X PUT -d '
+        f'"{{\\\"Status\\\": \\\"SUCCESS\\\",'
+        f'\\\"PhysicalResourceId\\\": \\\"{physical_resource_id}\\\",'
+        f'\\\"StackId\\\": \\\"{stack_id}\\\",'
+        f'\\\"RequestId\\\": \\\"{request_id}\\\",'
+        f'\\\"LogicalResourceId\\\": \\\"{logical_resource_id}\\\"}}" '
+        f'"{response_url}"'
+    )
+    return curl_command
+
+def handler(event, context):
+    # Log the full event for troubleshooting stuck custom resources
+    # This enables manual recovery via ResponseURL if needed
+    logger.info("Received event: " + json.dumps(event, indent=2))
+    
+    # Log manual recovery command for all request types (Create, Update, Delete)
+    # Custom resources can get stuck in any of these states
+    recovery_command = generate_manual_success_command(event)
+    logger.info("Manual recovery command (if needed):")
+    logger.info(recovery_command)
+    
     helper(event, context)
         
     

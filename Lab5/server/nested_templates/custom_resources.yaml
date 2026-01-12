@@ -4,7 +4,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 Description: >
-  Template to deploy cloudfront and s3 bucket for UI code
+  Template to deploy custom resources for initializing DynamoDB tables with configuration data
 Parameters:
   ServerlessSaaSSettingsTableArn:
     Type: String
@@ -32,6 +32,7 @@ Resources:
       SettingsTableName: !Ref ServerlessSaaSSettingsTableName
       cognitoUserPoolId: !Ref CognitoUserPoolId
       cognitoUserPoolClientId: !Ref CognitoUserPoolClientId
+      ServiceTimeout: 300
   
   
   UpdateTenantStackMap:
@@ -39,3 +40,4 @@ Resources:
     Properties:
       ServiceToken: !Ref UpdateTenantStackMapTableFunctionArn
       TenantStackMappingTableName: !Ref TenantStackMappingTableName
+      ServiceTimeout: 300

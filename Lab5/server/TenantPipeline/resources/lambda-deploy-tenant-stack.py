@@ -18,9 +18,9 @@ print('Loading function')
 cf = boto3.client('cloudformation')
 code_pipeline = boto3.client('codepipeline')
 dynamodb = boto3.resource('dynamodb')
-table_tenant_stack_mapping = dynamodb.Table('ServerlessSaaS-TenantStackMapping')
-table_tenant_details = dynamodb.Table('ServerlessSaaS-TenantDetails')
-table_tenant_settings = dynamodb.Table('ServerlessSaaS-Settings')
+table_tenant_stack_mapping = dynamodb.Table('ServerlessSaaS-TenantStackMapping-lab5')
+table_tenant_details = dynamodb.Table('ServerlessSaaS-TenantDetails-lab5')
+table_tenant_settings = dynamodb.Table('ServerlessSaaS-Settings-lab5')
 
 
 def find_artifact(artifacts, name):

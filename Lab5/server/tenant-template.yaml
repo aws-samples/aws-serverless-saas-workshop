@@ -369,20 +369,20 @@ Resources:
       CodeUri: Resources/
       Handler: tenant_authorizer.lambda_handler
       Runtime: python3.9
-      Role: !ImportValue Serverless-SaaS-AuthorizerExecutionRoleArn
+      Role: !ImportValue Serverless-SaaS-AuthorizerExecutionRoleArn-lab5
       MemorySize: 256
       Tracing: Active
       Layers: 
         - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
-          OPERATION_USERS_USER_POOL: !ImportValue Serverless-SaaS-CognitoOperationUsersUserPoolId
-          OPERATION_USERS_APP_CLIENT: !ImportValue Serverless-SaaS-CognitoOperationUsersUserPoolClientId
+          OPERATION_USERS_USER_POOL: !ImportValue Serverless-SaaS-CognitoOperationUsersUserPoolId-lab5
+          OPERATION_USERS_APP_CLIENT: !ImportValue Serverless-SaaS-CognitoOperationUsersUserPoolClientId-lab5
           
   ApiGatewayAccessLogs:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Join ['-', [/aws/api-gateway/access-logs-serverless-saas-tenant-api-, !Ref TenantIdParameter]]
+      LogGroupName: !Join ['-', [/aws/api-gateway/access-logs-serverless-saas-lab5-tenant-api-, !Ref TenantIdParameter]]
       RetentionInDays: 30
   ApiGatewayTenantApi:
     Type: AWS::Serverless::Api
@@ -971,11 +971,11 @@ Resources:
               - Effect: Allow
                 Action:
                   - dynamodb:PutItem
-                Resource: !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/ServerlessSaaS-Settings 
+                Resource: !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/ServerlessSaaS-Settings-lab5 
               - Effect: Allow
                 Action:
                   - dynamodb:UpdateItem
-                Resource: !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/ServerlessSaaS-TenantDetails    
+                Resource: !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/ServerlessSaaS-TenantDetails-lab5    
   UpdateTenantApiGatewayUrlFunction:
     Type: AWS::Serverless::Function
     DependsOn: UpdateTenantApiGatewayUrlLambdaExecutionRole
@@ -992,10 +992,11 @@ Resources:
     DependsOn: UpdateTenantApiGatewayUrlFunction
     Properties:
       ServiceToken: !GetAtt UpdateTenantApiGatewayUrlFunction.Arn
-      TenantDetailsTableName: ServerlessSaaS-TenantDetails
-      SettingsTableName: ServerlessSaaS-Settings  
+      TenantDetailsTableName: ServerlessSaaS-TenantDetails-lab5
+      SettingsTableName: ServerlessSaaS-Settings-lab5  
       TenantId: !Ref TenantIdParameter  
-      TenantApiGatewayUrl: !Sub "https://${ApiGatewayTenantApi}.execute-api.${AWS::Region}.amazonaws.com/prod/"    
+      TenantApiGatewayUrl: !Sub "https://${ApiGatewayTenantApi}.execute-api.${AWS::Region}.amazonaws.com/prod/"
+      ServiceTimeout: 300
   
 Outputs:
   TenantApiGatewayId:
