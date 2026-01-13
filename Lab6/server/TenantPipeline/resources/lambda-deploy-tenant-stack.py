@@ -411,8 +411,17 @@ def lambda_handler(event, context):
         commit_id = params['commit_id']
 
         # Get all the stacks for each tenant to be updated/created from tenant stack mapping table
-        mappings = table_tenant_stack_mapping.scan()
-        print (mappings)
+        try:
+            mappings = table_tenant_stack_mapping.scan()
+            print (mappings)
+        except botocore.exceptions.ClientError as e:
+            if e.response['Error']['Code'] == 'ResourceNotFoundException':
+                # Table doesn't exist yet - this can happen if pipeline is triggered before shared stack completes
+                print('TenantStackMapping table not found - shared stack may still be deploying')
+                put_job_success(job_id, 'TenantStackMapping table not found - will retry on next pipeline run')
+                return "Complete."
+            else:
+                raise e
         
         # Check if there are any tenants to process
         if mappings['Count'] == 0:
