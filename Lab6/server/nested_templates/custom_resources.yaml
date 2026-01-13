@@ -32,6 +32,7 @@ Resources:
       SettingsTableName: !Ref ServerlessSaaSSettingsTableName
       cognitoUserPoolId: !Ref CognitoUserPoolId
       cognitoUserPoolClientId: !Ref CognitoUserPoolClientId
+      ServiceTimeout: 300
   
   
   UpdateTenantStackMap:
@@ -39,3 +40,4 @@ Resources:
     Properties:
       ServiceToken: !Ref UpdateTenantStackMapTableFunctionArn
       TenantStackMappingTableName: !Ref TenantStackMappingTableName
+      ServiceTimeout: 300

@@ -65,7 +65,7 @@ Resources:
   ApiGatewayCloudWatchLogRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub apigateway-cloudwatch-publish-role-${AWS::Region}
+      RoleName: apigateway-cloudwatch-publish-role
       Path: "/"
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs
@@ -962,35 +962,35 @@ Resources:
     Properties:
       Description: "This is the api key to be used by system admin"
       Enabled: True
-      Name: Serverless-SaaS-SysAdmin-ApiKey
+      Name: serverless-saas-lab6-sysadmin-apikey
       Value: !Ref ApiKeyOperationUsersParameter
   APIGatewayApiKeyPlatinumTier:
     Type: AWS::ApiGateway::ApiKey
     Properties: 
       Description: 'This is the api key to be used by platinum tier tenants'
       Enabled: True
-      Name: Serverless-SaaS-PlatinumTier-ApiKey
+      Name: serverless-saas-lab6-platinum-apikey
       Value: !Ref ApiKeyPlatinumTierParameter
   APIGatewayApiKeyPremiumTier:
     Type: AWS::ApiGateway::ApiKey
     Properties: 
       Description: 'This is the api key to be used by premium tier tenants'
       Enabled: True
-      Name: Serverless-SaaS-PremiumTier-ApiKey
+      Name: serverless-saas-lab6-premium-apikey
       Value: !Ref ApiKeyPremiumTierParameter
   APIGatewayApiKeyStandardTier:
     Type: AWS::ApiGateway::ApiKey
     Properties: 
       Description: 'This is the api key to be used by standard tier tenants'
       Enabled: True
-      Name: Serverless-SaaS-StandardTier-ApiKey
+      Name: serverless-saas-lab6-standard-apikey
       Value: !Ref ApiKeyStandardTierParameter
   APIGatewayApiKeyBasicTier:
     Type: AWS::ApiGateway::ApiKey
     Properties: 
       Description: 'This is the api key to be used by basic tier tenants'
       Enabled: True
-      Name: Serverless-SaaS-BasicTier-ApiKey
+      Name: serverless-saas-lab6-basic-apikey
       Value: !Ref ApiKeyBasicTierParameter
 
   UsagePlanPlatinumTier:   
@@ -1006,7 +1006,7 @@ Resources:
       Throttle:
         BurstLimit: 300
         RateLimit: 300
-      UsagePlanName: Plan_Platinum_Tier
+      UsagePlanName: serverless-saas-lab6-platinum-plan
     DependsOn: 
       - AdminApiGatewayApiprodStage
   UsagePlanPremiumTier:   
@@ -1022,7 +1022,7 @@ Resources:
       Throttle:
         BurstLimit: 200
         RateLimit: 100
-      UsagePlanName: Plan_Premium_Tier
+      UsagePlanName: serverless-saas-lab6-premium-plan
     DependsOn: 
       - AdminApiGatewayApiprodStage
   UsagePlanStandardTier: 
@@ -1038,7 +1038,7 @@ Resources:
       Throttle:
         BurstLimit: 100
         RateLimit: 75
-      UsagePlanName: Plan_Standard_Tier
+      UsagePlanName: serverless-saas-lab6-standard-plan
     DependsOn: 
       - AdminApiGatewayApiprodStage
   UsagePlanBasicTier:   
@@ -1054,7 +1054,7 @@ Resources:
       Throttle:
         BurstLimit: 50
         RateLimit: 50
-      UsagePlanName: Plan_Basic_Tier
+      UsagePlanName: serverless-saas-lab6-basic-plan
     DependsOn: 
       - AdminApiGatewayApiprodStage
   UsagePlanSystemAdmin:
@@ -1070,7 +1070,7 @@ Resources:
       Throttle:
         BurstLimit: 5000
         RateLimit: 500
-      UsagePlanName: System_Admin_Usage_Plan
+      UsagePlanName: serverless-saas-lab6-sysadmin-plan
     DependsOn:
       - AdminApiGatewayApiprodStage
 

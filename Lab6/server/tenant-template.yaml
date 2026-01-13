@@ -377,16 +377,16 @@ Resources:
       CodeUri: Resources/
       Handler: tenant_authorizer.lambda_handler
       Runtime: python3.9
-      Role: !ImportValue Serverless-SaaS-AuthorizerExecutionRoleArn
+      Role: !ImportValue Serverless-SaaS-AuthorizerExecutionRoleArn-lab6
       MemorySize: 256
       Tracing: Active
       Layers: 
         - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
-          OPERATION_USERS_USER_POOL: !ImportValue Serverless-SaaS-CognitoOperationUsersUserPoolId
-          OPERATION_USERS_APP_CLIENT: !ImportValue Serverless-SaaS-CognitoOperationUsersUserPoolClientId
-          OPERATION_USERS_API_KEY : !ImportValue Serverless-SaaS-ApiKeyOperationUsers
+          OPERATION_USERS_USER_POOL: !ImportValue Serverless-SaaS-CognitoOperationUsersUserPoolId-lab6
+          OPERATION_USERS_APP_CLIENT: !ImportValue Serverless-SaaS-CognitoOperationUsersUserPoolClientId-lab6
+          OPERATION_USERS_API_KEY : !ImportValue Serverless-SaaS-ApiKeyOperationUsers-lab6
           
   ApiGatewayAccessLogs:
     Type: AWS::Logs::LogGroup
@@ -1034,7 +1034,7 @@ Resources:
               - Effect: Allow
                 Action:
                   - dynamodb:GetItem
-                Resource: !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/ServerlessSaaS-Settings
+                Resource: !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/ServerlessSaaS-Settings-lab6
   UpdateUsagePlanFunction:
     Type: AWS::Serverless::Function
     DependsOn: UpdateUsagePlanLambdaExecutionRole
@@ -1052,13 +1052,13 @@ Resources:
     Properties:
       ServiceToken: !GetAtt UpdateUsagePlanFunction.Arn
       ApiGatewayId: !Ref ApiGatewayTenantApi
-      SettingsTableName: ServerlessSaaS-Settings
+      SettingsTableName: ServerlessSaaS-Settings-lab6
       IsPooledDeploy: !If [IsPooledDeploy, true, false]     
       Stage: !Ref StageName
-      UsagePlanBasicTier: !ImportValue Serverless-SaaS-UsagePlanBasicTier
-      UsagePlanStandardTier: !ImportValue Serverless-SaaS-UsagePlanStandardTier
-      UsagePlanPremiumTier: !ImportValue Serverless-SaaS-UsagePlanPremiumTier
-      UsagePlanPlatinumTier: !ImportValue Serverless-SaaS-UsagePlanPlatinumTier    
+      UsagePlanBasicTier: !ImportValue Serverless-SaaS-UsagePlanBasicTier-lab6
+      UsagePlanStandardTier: !ImportValue Serverless-SaaS-UsagePlanStandardTier-lab6
+      UsagePlanPremiumTier: !ImportValue Serverless-SaaS-UsagePlanPremiumTier-lab6
+      UsagePlanPlatinumTier: !ImportValue Serverless-SaaS-UsagePlanPlatinumTier-lab6    
   UpdateTenantApiGatewayUrlLambdaExecutionRole:
     Type: AWS::IAM::Role
     DependsOn: ApiGatewayTenantApi
@@ -1086,11 +1086,11 @@ Resources:
               - Effect: Allow
                 Action:
                   - dynamodb:PutItem
-                Resource: !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/ServerlessSaaS-Settings 
+                Resource: !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/ServerlessSaaS-Settings-lab6 
               - Effect: Allow
                 Action:
                   - dynamodb:UpdateItem
-                Resource: !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/ServerlessSaaS-TenantDetails    
+                Resource: !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/ServerlessSaaS-TenantDetails-lab6    
   UpdateTenantApiGatewayUrlFunction:
     Type: AWS::Serverless::Function
     DependsOn: UpdateTenantApiGatewayUrlLambdaExecutionRole
@@ -1107,8 +1107,8 @@ Resources:
     DependsOn: UpdateTenantApiGatewayUrlFunction
     Properties:
       ServiceToken: !GetAtt UpdateTenantApiGatewayUrlFunction.Arn
-      TenantDetailsTableName: ServerlessSaaS-TenantDetails
-      SettingsTableName: ServerlessSaaS-Settings  
+      TenantDetailsTableName: ServerlessSaaS-TenantDetails-lab6
+      SettingsTableName: ServerlessSaaS-Settings-lab6  
       TenantId: !Ref TenantIdParameter  
       TenantApiGatewayUrl: !Sub "https://${ApiGatewayTenantApi}.execute-api.${AWS::Region}.amazonaws.com/prod/"    
   

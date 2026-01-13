@@ -65,7 +65,7 @@ Resources:
   AuthorizerExecutionRole:
     Type: AWS::IAM::Role     
     Properties:
-      RoleName: authorizer-execution-role
+      RoleName: authorizer-execution-role-lab6
       Path: '/'
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -99,7 +99,7 @@ Resources:
     Type: AWS::IAM::Role
     DependsOn: AuthorizerExecutionRole
     Properties:
-      RoleName: authorizer-access-role
+      RoleName: authorizer-access-role-lab6
       Path: '/'
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -151,7 +151,7 @@ Resources:
   TenantUserPoolLambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub tenant-userpool-lambda-execution-role-${AWS::Region}
+      RoleName: !Sub tenant-userpool-lambda-execution-role-lab6-${AWS::Region}
       Path: "/"
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -189,7 +189,7 @@ Resources:
   CreateUserLambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub create-user-lambda-execution-role-${AWS::Region}
+      RoleName: !Sub create-user-lambda-execution-role-lab6-${AWS::Region}
       Path: "/"
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -360,7 +360,7 @@ Resources:
   TenantManagementLambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub tenant-management-lambda-execution-role-${AWS::Region}
+      RoleName: !Sub tenant-management-lambda-execution-role-lab6-${AWS::Region}
       Path: "/"
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -514,7 +514,7 @@ Resources:
   RegisterTenantLambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub tenant-registration-lambda-execution-role-${AWS::Region}
+      RoleName: !Sub tenant-registration-lambda-execution-role-lab6-${AWS::Region}
       Path: "/"
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -556,7 +556,7 @@ Resources:
   ProvisionTenantLambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub tenant-provisioning-lambda-execution-role-${AWS::Region}
+      RoleName: !Sub tenant-provisioning-lambda-execution-role-lab6-${AWS::Region}
       Path: "/"
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -572,7 +572,7 @@ Resources:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
         - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
       Policies:
-        - PolicyName: !Sub tenant-provisioning-lambda-execution-policy-${AWS::Region}
+        - PolicyName: !Sub tenant-provisioning-lambda-execution-policy-lab6-${AWS::Region}
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -610,7 +610,7 @@ Resources:
   DeProvisionTenantLambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub tenant-deprovisioning-lambda-execution-role-${AWS::Region}
+      RoleName: !Sub tenant-deprovisioning-lambda-execution-role-lab6-${AWS::Region}
       Path: "/"
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -626,7 +626,7 @@ Resources:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
         - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
       Policies:
-        - PolicyName: !Sub tenant-deprovisioning-lambda-execution-policy-${AWS::Region}
+        - PolicyName: !Sub tenant-deprovisioning-lambda-execution-policy-lab6-${AWS::Region}
           PolicyDocument:
             Version: 2012-10-17
             #Since this lambda is invoking cloudformation which is inturn removing AWS resources, we are giving overly permissive permissions to this lambda. 
@@ -654,7 +654,7 @@ Resources:
   UpdateSettingsTableLambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub update-settingstable-lambda-execution-role-${AWS::Region}
+      RoleName: !Sub update-settingstable-lambda-execution-role-lab6-${AWS::Region}
       Path: "/"
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -670,7 +670,7 @@ Resources:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
         - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
       Policies:
-        - PolicyName: !Sub update-settingstable-lambda-execution-policy-${AWS::Region}
+        - PolicyName: !Sub update-settingstable-lambda-execution-policy-lab6-${AWS::Region}
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -692,7 +692,7 @@ Resources:
   UpdateTenantStackMapTableLambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub update-tenantstackmap-lambda-execution-role-${AWS::Region}
+      RoleName: !Sub update-tenantstackmap-lambda-execution-role-lab6-${AWS::Region}
       Path: "/"
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -708,7 +708,7 @@ Resources:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
         - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
       Policies:
-        - PolicyName: !Sub update-tenantstackmap-lambda-execution-policy-${AWS::Region}
+        - PolicyName: !Sub update-tenantstackmap-lambda-execution-policy-lab6-${AWS::Region}
           PolicyDocument:
             Version: 2012-10-17
             Statement:

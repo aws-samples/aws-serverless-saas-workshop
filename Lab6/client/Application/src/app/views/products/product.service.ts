@@ -32,6 +32,7 @@ export class ProductService {
     const url = `${this.baseUrl}/product/${product.shardId}:${product.productId}`;
     return this.http.put<Product>(url, product);
   }
+
   post(product: Product) {
     return this.http.post<Product>(`${this.baseUrl}/product`, product);
   }

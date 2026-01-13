@@ -33,6 +33,15 @@ def register_tenant(event, context):
         #TODO: Pass relevant apikey to tenant_details object based upon tenant tier
         if (tenant_details['tenantTier'].upper() == utils.TenantTier.PLATINUM.value.upper()):
             tenant_details['dedicatedTenancy'] = 'true'
+            api_key = platinum_tier_api_key
+        elif (tenant_details['tenantTier'].upper() == utils.TenantTier.PREMIUM.value.upper()):
+            api_key = premium_tier_api_key
+        elif (tenant_details['tenantTier'].upper() == utils.TenantTier.STANDARD.value.upper()):
+            api_key = standard_tier_api_key
+        elif (tenant_details['tenantTier'].upper() == utils.TenantTier.BASIC.value.upper()):
+            api_key = basic_tier_api_key
+
+        tenant_details['apiKey'] = api_key
         
         tenant_details['tenantId'] = tenant_id
         
