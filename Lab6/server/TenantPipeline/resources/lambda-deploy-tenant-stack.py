@@ -413,6 +413,12 @@ def lambda_handler(event, context):
         # Get all the stacks for each tenant to be updated/created from tenant stack mapping table
         mappings = table_tenant_stack_mapping.scan()
         print (mappings)
+        
+        # Check if there are any tenants to process
+        if mappings['Count'] == 0:
+            put_job_success(job_id, 'No tenants found in TenantStackMapping table')
+            return "Complete."
+        
         #Update/Create stacks for all tenants
         for mapping in mappings['Items']:
             stack = mapping['stackName']
