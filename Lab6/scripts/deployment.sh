@@ -40,62 +40,6 @@ fi
 
 
 
-if [[ $server -eq 1 ]] || [[ $pipeline -eq 1 ]]; then
-  echo "=========================================="
-  echo "CI/CD pipeline code is getting deployed"
-  echo "=========================================="
-  
-  #Create CodeCommit repo
-  REGION=$(aws configure get region)
-  REPO=$(aws codecommit get-repository --repository-name aws-serverless-saas-workshop 2>&1)
-  if [[ $? -ne 0 ]]; then
-      echo "aws-serverless-saas-workshop codecommit repo is not present, will create one now"
-      CREATE_REPO=$(aws codecommit create-repository --repository-name aws-serverless-saas-workshop --repository-description "Serverless SaaS workshop repository")
-      echo $CREATE_REPO
-      REPO_URL="codecommit::${REGION}://aws-serverless-saas-workshop"
-      git remote add cc $REPO_URL
-      if [[ $? -ne 0 ]]; then
-           echo "Setting url to remote cc"
-           git remote set-url cc $REPO_URL
-      fi
-  fi
-  
-  # Push current branch changes to CodeCommit main branch
-  echo ""
-  echo "Pushing latest code to CodeCommit..."
-  CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-  echo "Current branch: $CURRENT_BRANCH"
-  
-  # Check if there are uncommitted changes
-  if [[ -n $(git status -s) ]]; then
-    echo "⚠ Warning: You have uncommitted changes. Committing them now..."
-    git add -A
-    git commit -m "chore: Auto-commit before Lab6 deployment"
-  fi
-  
-  # Push current branch to CodeCommit main
-  git push cc $CURRENT_BRANCH:main --force
-  if [[ $? -eq 0 ]]; then
-    echo "✓ Code pushed to CodeCommit main branch"
-  else
-    echo "✗ Error: Failed to push code to CodeCommit"
-    exit 1
-  fi
-  echo ""
-
-  #Deploying CI/CD pipeline
-  cd ../server/TenantPipeline/
-  npm install && npm run build 
-  cdk bootstrap  
-  cdk deploy --require-approval never
-
-  cd ../../scripts
-  
-  echo "✓ Pipeline deployed successfully"
-  echo ""
-
-fi
-
 if [[ $server -eq 1 ]] || [[ $bootstrap -eq 1 ]]; then
   echo "=========================================="
   echo "Bootstrap server code is getting deployed"
@@ -157,6 +101,63 @@ if [[ $server -eq 1 ]] || [[ $bootstrap -eq 1 ]]; then
   echo ""
 
   cd ../scripts
+
+fi
+
+# Deploy pipeline AFTER shared stack and DynamoDB tables are ready
+if [[ $server -eq 1 ]] || [[ $pipeline -eq 1 ]]; then
+  echo "=========================================="
+  echo "CI/CD pipeline code is getting deployed"
+  echo "=========================================="
+  
+  #Create CodeCommit repo
+  REGION=$(aws configure get region)
+  REPO=$(aws codecommit get-repository --repository-name aws-serverless-saas-workshop 2>&1)
+  if [[ $? -ne 0 ]]; then
+      echo "aws-serverless-saas-workshop codecommit repo is not present, will create one now"
+      CREATE_REPO=$(aws codecommit create-repository --repository-name aws-serverless-saas-workshop --repository-description "Serverless SaaS workshop repository")
+      echo $CREATE_REPO
+      REPO_URL="codecommit::${REGION}://aws-serverless-saas-workshop"
+      git remote add cc $REPO_URL
+      if [[ $? -ne 0 ]]; then
+           echo "Setting url to remote cc"
+           git remote set-url cc $REPO_URL
+      fi
+  fi
+  
+  # Push current branch changes to CodeCommit main branch
+  echo ""
+  echo "Pushing latest code to CodeCommit..."
+  CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+  echo "Current branch: $CURRENT_BRANCH"
+  
+  # Check if there are uncommitted changes
+  if [[ -n $(git status -s) ]]; then
+    echo "⚠ Warning: You have uncommitted changes. Committing them now..."
+    git add -A
+    git commit -m "chore: Auto-commit before Lab6 deployment"
+  fi
+  
+  # Push current branch to CodeCommit main
+  git push cc $CURRENT_BRANCH:main --force
+  if [[ $? -eq 0 ]]; then
+    echo "✓ Code pushed to CodeCommit main branch"
+  else
+    echo "✗ Error: Failed to push code to CodeCommit"
+    exit 1
+  fi
+  echo ""
+
+  #Deploying CI/CD pipeline
+  cd ../server/TenantPipeline/
+  npm install && npm run build 
+  cdk bootstrap  
+  cdk deploy --require-approval never
+
+  cd ../../scripts
+  
+  echo "✓ Pipeline deployed successfully"
+  echo ""
 
 fi
 
