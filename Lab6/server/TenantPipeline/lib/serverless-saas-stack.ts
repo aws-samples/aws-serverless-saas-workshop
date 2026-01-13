@@ -30,6 +30,7 @@ export class ServerlessSaaSStack extends cdk.Stack {
         lambdaPolicy.addResources("*")
 
     const lambdaFunction = new Function(this, "deploy-tenant-stack-lab6", {
+        functionName: 'serverless-saas-lab6-deploy-tenant-stack',
         handler: "lambda-deploy-tenant-stack.lambda_handler",
         runtime: Runtime.PYTHON_3_9,
         code: new AssetCode(`./resources`),
