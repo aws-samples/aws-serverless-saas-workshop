@@ -34,30 +34,33 @@ echo ""
 echo "Starting deployment now..."
 echo ""
 
+# Get the absolute path to the script directory
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
 # Run deployment in detached screen session
-screen -dmS "$SESSION_NAME" bash -c '
-    cd "$(dirname "$0")"
-    echo "==================================================="
-    echo "Lab6 Deployment Started: $(date)"
-    echo "==================================================="
-    echo ""
+screen -dmS "$SESSION_NAME" bash -c "
+    cd '$SCRIPT_DIR'
+    echo '==================================================='
+    echo 'Lab6 Deployment Started: \$(date)'
+    echo '==================================================='
+    echo ''
     
     ./deployment.sh -s -c
-    EXIT_CODE=$?
+    EXIT_CODE=\$?
     
-    echo ""
-    echo "==================================================="
-    if [ $EXIT_CODE -eq 0 ]; then
-        echo "✓ Deployment completed successfully!"
+    echo ''
+    echo '==================================================='
+    if [ \$EXIT_CODE -eq 0 ]; then
+        echo '✓ Deployment completed successfully!'
     else
-        echo "✗ Deployment failed with exit code: $EXIT_CODE"
+        echo '✗ Deployment failed with exit code: '\$EXIT_CODE
     fi
-    echo "Completed at: $(date)"
-    echo "==================================================="
-    echo ""
-    echo "Press Enter to close this screen session..."
+    echo 'Completed at: \$(date)'
+    echo '==================================================='
+    echo ''
+    echo 'Press Enter to close this screen session...'
     read
-'
+"
 
 sleep 2
 
