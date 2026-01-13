@@ -219,20 +219,31 @@ export const environment = {
 EoF
 
   # Try to build, fallback to pre-built if it fails
+  USED_PREBUILT=false
   if [ "$USE_PREBUILT" = true ] && [ ! -d "dist" ]; then
     echo "Using pre-built files from Lab5..."
     cp -r ../../../Lab5/client/Admin/dist .
+    USED_PREBUILT=true
   else
     npm install --legacy-peer-deps && npm run build
     if [[ $? -ne 0 ]]; then
       if [ "$USE_PREBUILT" = true ]; then
         echo "⚠️  Build failed, using pre-built files from Lab5..."
         cp -r ../../../Lab5/client/Admin/dist .
+        USED_PREBUILT=true
       else
         echo "❌ Error building Admin UI and no pre-built files available"
         exit 1
       fi
     fi
+  fi
+
+  # Update API Gateway URL in pre-built files if they were used
+  if [ "$USED_PREBUILT" = true ]; then
+    echo "Updating API Gateway URL in pre-built files..."
+    find dist -name "*.js" -type f -exec sed -i.bak "s|https://[a-z0-9]*\.execute-api\.[a-z0-9-]*\.amazonaws\.com/prod|$ADMIN_APIGATEWAYURL|g" {} \;
+    find dist -name "*.js.bak" -type f -delete
+    echo "✓ API Gateway URL updated"
   fi
 
   aws s3 sync --delete --cache-control no-store dist s3://$ADMIN_SITE_BUCKET
@@ -263,20 +274,31 @@ export const environment = {
 EoF
 
   # Try to build, fallback to pre-built if it fails
+  USED_PREBUILT=false
   if [ "$USE_PREBUILT" = true ] && [ ! -d "dist" ]; then
     echo "Using pre-built files from Lab5..."
     cp -r ../../../Lab5/client/Landing/dist .
+    USED_PREBUILT=true
   else
     npm install --legacy-peer-deps && npm run build
     if [[ $? -ne 0 ]]; then
       if [ "$USE_PREBUILT" = true ]; then
         echo "⚠️  Build failed, using pre-built files from Lab5..."
         cp -r ../../../Lab5/client/Landing/dist .
+        USED_PREBUILT=true
       else
         echo "❌ Error building Landing UI and no pre-built files available"
         exit 1
       fi
     fi
+  fi
+
+  # Update API Gateway URL in pre-built files if they were used
+  if [ "$USED_PREBUILT" = true ]; then
+    echo "Updating API Gateway URL in pre-built files..."
+    find dist -name "*.js" -type f -exec sed -i.bak "s|https://[a-z0-9]*\.execute-api\.[a-z0-9-]*\.amazonaws\.com/prod|$ADMIN_APIGATEWAYURL|g" {} \;
+    find dist -name "*.js.bak" -type f -delete
+    echo "✓ API Gateway URL updated"
   fi
 
   aws s3 sync --delete --cache-control no-store dist s3://$LANDING_SITE_BUCKET
@@ -307,20 +329,31 @@ export const environment = {
 EoF
 
   # Try to build, fallback to pre-built if it fails
+  USED_PREBUILT=false
   if [ "$USE_PREBUILT" = true ] && [ ! -d "dist" ]; then
     echo "Using pre-built files from Lab5..."
     cp -r ../../../Lab5/client/Application/dist .
+    USED_PREBUILT=true
   else
     npm install --legacy-peer-deps && npm run build
     if [[ $? -ne 0 ]]; then
       if [ "$USE_PREBUILT" = true ]; then
         echo "⚠️  Build failed, using pre-built files from Lab5..."
         cp -r ../../../Lab5/client/Application/dist .
+        USED_PREBUILT=true
       else
         echo "❌ Error building Application UI and no pre-built files available"
         exit 1
       fi
     fi
+  fi
+
+  # Update API Gateway URL in pre-built files if they were used
+  if [ "$USED_PREBUILT" = true ]; then
+    echo "Updating API Gateway URL in pre-built files..."
+    find dist -name "*.js" -type f -exec sed -i.bak "s|https://[a-z0-9]*\.execute-api\.[a-z0-9-]*\.amazonaws\.com/prod|$ADMIN_APIGATEWAYURL|g" {} \;
+    find dist -name "*.js.bak" -type f -delete
+    echo "✓ API Gateway URL updated"
   fi
 
   aws s3 sync --delete --cache-control no-store dist s3://$APP_SITE_BUCKET
