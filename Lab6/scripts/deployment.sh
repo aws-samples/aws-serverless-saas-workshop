@@ -189,6 +189,12 @@ if [[ $client -eq 1 ]]; then
   done
   echo "✓ All S3 buckets verified"
   echo ""
+
+  # Deploy Admin UI
+  echo "=========================================="
+  echo "Deploying Admin UI..."
+  echo "=========================================="
+  cd ../client/Admin
   
   # Check if Lab6 pre-built files exist (fallback for Node.js compatibility issues)
   USE_PREBUILT=false
@@ -198,12 +204,6 @@ if [[ $client -eq 1 ]]; then
     echo "   These can be used if Node.js build fails (Node.js v18 or earlier recommended)"
     USE_PREBUILT=true
   fi
-
-  # Deploy Admin UI
-  echo "=========================================="
-  echo "Deploying Admin UI..."
-  echo "=========================================="
-  cd ../client/Admin
 
   cat << EoF > ./src/environments/environment.prod.ts
 export const environment = {
