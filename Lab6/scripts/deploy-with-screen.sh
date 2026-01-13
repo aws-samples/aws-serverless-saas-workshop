@@ -42,7 +42,7 @@ screen -dmS "$SESSION_NAME" bash -c '
     echo "==================================================="
     echo ""
     
-    ./deployment.sh
+    ./deployment.sh -s -c
     EXIT_CODE=$?
     
     echo ""

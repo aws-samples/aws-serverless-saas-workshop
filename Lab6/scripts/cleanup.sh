@@ -236,7 +236,89 @@ fi
 echo "✓ SAM artifacts cleanup complete"
 echo ""
 
-# Step 10: Clean up Cognito User Pools
+# Step 10: Clean up CDK bootstrap resources
+echo "=========================================="
+echo "Step 10: Cleaning up CDK bootstrap resources"
+echo "=========================================="
+
+# Find CDK bootstrap bucket
+CDK_BUCKET=$(aws s3 ls | grep cdktoolkit | awk '{print $3}')
+
+if [[ ! -z "$CDK_BUCKET" ]]; then
+  echo "Found CDK bootstrap bucket: $CDK_BUCKET"
+  empty_bucket $CDK_BUCKET
+  echo "  Deleting bucket: $CDK_BUCKET"
+  aws s3 rb s3://$CDK_BUCKET 2>/dev/null
+  if [[ $? -eq 0 ]]; then
+    echo "  ✓ Bucket deleted: $CDK_BUCKET"
+  else
+    echo "  ⚠ Could not delete bucket: $CDK_BUCKET"
+  fi
+else
+  echo "No CDK bootstrap bucket found"
+fi
+
+# Delete CDKToolkit stack
+if delete_stack "CDKToolkit"; then
+  wait_for_deletion "CDKToolkit"
+fi
+
+echo "✓ CDK bootstrap cleanup complete"
+echo ""
+
+# Step 11: Clean up CDK assets bucket
+echo "=========================================="
+echo "Step 11: Cleaning up CDK assets bucket"
+echo "=========================================="
+
+CDK_ASSETS_BUCKET=$(aws s3 ls | grep "cdk-hnb659fds-assets" | awk '{print $3}')
+
+if [[ ! -z "$CDK_ASSETS_BUCKET" ]]; then
+  echo "Found CDK assets bucket: $CDK_ASSETS_BUCKET"
+  empty_bucket $CDK_ASSETS_BUCKET
+  
+  # Verify bucket is completely empty before deletion
+  REMAINING_VERSIONS=$(aws s3api list-object-versions --bucket $CDK_ASSETS_BUCKET --output json 2>/dev/null | jq -r '(.Versions // []) + (.DeleteMarkers // []) | length')
+  
+  if [[ "$REMAINING_VERSIONS" == "0" ]]; then
+    echo "  Deleting bucket: $CDK_ASSETS_BUCKET"
+    aws s3 rb s3://$CDK_ASSETS_BUCKET 2>/dev/null
+    if [[ $? -eq 0 ]]; then
+      echo "  ✓ Bucket deleted: $CDK_ASSETS_BUCKET"
+    else
+      echo "  ⚠ Could not delete bucket: $CDK_ASSETS_BUCKET"
+    fi
+  else
+    echo "  ⚠ Warning: $REMAINING_VERSIONS versions/markers still exist in bucket"
+    echo "  Attempting force deletion of remaining versions..."
+    
+    # Force delete any remaining versions
+    aws s3api list-object-versions --bucket $CDK_ASSETS_BUCKET --query 'Versions[].{Key:Key,VersionId:VersionId}' --output json 2>/dev/null | \
+      jq -r '.[]? | "aws s3api delete-object --bucket '"$CDK_ASSETS_BUCKET"' --key \"\(.Key)\" --version-id \"\(.VersionId)\""' | \
+      bash 2>/dev/null
+    
+    # Force delete any remaining delete markers
+    aws s3api list-object-versions --bucket $CDK_ASSETS_BUCKET --query 'DeleteMarkers[].{Key:Key,VersionId:VersionId}' --output json 2>/dev/null | \
+      jq -r '.[]? | "aws s3api delete-object --bucket '"$CDK_ASSETS_BUCKET"' --key \"\(.Key)\" --version-id \"\(.VersionId)\""' | \
+      bash 2>/dev/null
+    
+    # Try deletion again
+    echo "  Retrying bucket deletion: $CDK_ASSETS_BUCKET"
+    aws s3 rb s3://$CDK_ASSETS_BUCKET 2>/dev/null
+    if [[ $? -eq 0 ]]; then
+      echo "  ✓ Bucket deleted: $CDK_ASSETS_BUCKET"
+    else
+      echo "  ⚠ Could not delete bucket: $CDK_ASSETS_BUCKET (manual deletion may be required)"
+    fi
+  fi
+else
+  echo "No CDK assets bucket found"
+fi
+
+echo "✓ CDK assets cleanup complete"
+echo ""
+
+# Step 12: Clean up Cognito User Pools
 echo "=========================================="
 echo "Step 10: Cleaning up Cognito User Pools"
 echo "=========================================="
@@ -274,9 +356,9 @@ fi
 echo "✓ Cognito User Pools cleanup complete"
 echo ""
 
-# Step 11: Verify cleanup
+# Step 13: Verify cleanup
 echo "=========================================="
-echo "Step 11: Verifying cleanup"
+echo "Step 13: Verifying cleanup"
 echo "=========================================="
 
 REMAINING_EXPORTS=$(aws cloudformation list-exports --query 'Exports[?contains(Name, `lab6`)].Name' --output text 2>/dev/null)
