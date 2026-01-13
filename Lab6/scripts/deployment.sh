@@ -190,11 +190,11 @@ if [[ $client -eq 1 ]]; then
   echo "✓ All S3 buckets verified"
   echo ""
   
-  # Check if Lab5 pre-built files exist (fallback for Node.js compatibility issues)
+  # Check if Lab6 pre-built files exist (fallback for Node.js compatibility issues)
   USE_PREBUILT=false
-  if [ -d "../../Lab5/client/Landing/dist" ] && [ -d "../../Lab5/client/Admin/dist" ] && [ -d "../../Lab5/client/Application/dist" ]; then
+  if [ -d "dist" ]; then
     echo ""
-    echo "ℹ️  Lab5 pre-built client files detected"
+    echo "ℹ️  Lab6 pre-built client files detected"
     echo "   These can be used if Node.js build fails (Node.js v18 or earlier recommended)"
     USE_PREBUILT=true
   fi
@@ -220,16 +220,14 @@ EoF
 
   # Try to build, fallback to pre-built if it fails
   USED_PREBUILT=false
-  if [ "$USE_PREBUILT" = true ] && [ ! -d "dist" ]; then
-    echo "Using pre-built files from Lab5..."
-    cp -r ../../../Lab5/client/Admin/dist .
+  if [ "$USE_PREBUILT" = true ] && [ -d "dist" ]; then
+    echo "Using pre-built files from Lab6..."
     USED_PREBUILT=true
   else
     npm install --legacy-peer-deps && npm run build
     if [[ $? -ne 0 ]]; then
-      if [ "$USE_PREBUILT" = true ]; then
-        echo "⚠️  Build failed, using pre-built files from Lab5..."
-        cp -r ../../../Lab5/client/Admin/dist .
+      if [ "$USE_PREBUILT" = true ] && [ -d "dist" ]; then
+        echo "⚠️  Build failed, using pre-built files from Lab6..."
         USED_PREBUILT=true
       else
         echo "❌ Error building Admin UI and no pre-built files available"
@@ -275,16 +273,14 @@ EoF
 
   # Try to build, fallback to pre-built if it fails
   USED_PREBUILT=false
-  if [ "$USE_PREBUILT" = true ] && [ ! -d "dist" ]; then
-    echo "Using pre-built files from Lab5..."
-    cp -r ../../../Lab5/client/Landing/dist .
+  if [ "$USE_PREBUILT" = true ] && [ -d "dist" ]; then
+    echo "Using pre-built files from Lab6..."
     USED_PREBUILT=true
   else
     npm install --legacy-peer-deps && npm run build
     if [[ $? -ne 0 ]]; then
-      if [ "$USE_PREBUILT" = true ]; then
-        echo "⚠️  Build failed, using pre-built files from Lab5..."
-        cp -r ../../../Lab5/client/Landing/dist .
+      if [ "$USE_PREBUILT" = true ] && [ -d "dist" ]; then
+        echo "⚠️  Build failed, using pre-built files from Lab6..."
         USED_PREBUILT=true
       else
         echo "❌ Error building Landing UI and no pre-built files available"
@@ -330,16 +326,14 @@ EoF
 
   # Try to build, fallback to pre-built if it fails
   USED_PREBUILT=false
-  if [ "$USE_PREBUILT" = true ] && [ ! -d "dist" ]; then
-    echo "Using pre-built files from Lab5..."
-    cp -r ../../../Lab5/client/Application/dist .
+  if [ "$USE_PREBUILT" = true ] && [ -d "dist" ]; then
+    echo "Using pre-built files from Lab6..."
     USED_PREBUILT=true
   else
     npm install --legacy-peer-deps && npm run build
     if [[ $? -ne 0 ]]; then
-      if [ "$USE_PREBUILT" = true ]; then
-        echo "⚠️  Build failed, using pre-built files from Lab5..."
-        cp -r ../../../Lab5/client/Application/dist .
+      if [ "$USE_PREBUILT" = true ] && [ -d "dist" ]; then
+        echo "⚠️  Build failed, using pre-built files from Lab6..."
         USED_PREBUILT=true
       else
         echo "❌ Error building Application UI and no pre-built files available"
