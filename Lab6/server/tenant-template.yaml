@@ -391,7 +391,7 @@ Resources:
   ApiGatewayAccessLogs:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Join ['-', [/aws/api-gateway/access-logs-serverless-saas-tenant-api-, !Ref TenantIdParameter]]
+      LogGroupName: !Join ['-', [/aws/api-gateway/access-logs-serverless-saas-lab6-tenant-api, !Ref TenantIdParameter]]
       RetentionInDays: 30
   ThrottlingLimitMetricFilter:
     Type: AWS::Logs::MetricFilter
@@ -431,7 +431,7 @@ Resources:
       DefinitionBody:
         openapi: 3.0.1
         info:
-          title: !Join ['-', [!Ref TenantIdParameter, 'serverless-saas-tenant-api']]
+          title: !Join ['-', [!Ref TenantIdParameter, 'serverless-saas-tenant-api-lab6']]
         basePath: !Join ['', ['/', !Ref StageName]]
         x-amazon-apigateway-api-key-source : "AUTHORIZER"
         schemes:

@@ -86,7 +86,7 @@ Resources:
   AdminApiGatewayAccessLogs:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub /aws/api-gateway/access-logs-serverless-saas-admin-api
+      LogGroupName: !Sub /aws/api-gateway/access-logs-serverless-saas-lab6-admin-api
       RetentionInDays: 30
   AdminApiGatewayApi:
     Type: AWS::Serverless::Api
@@ -172,7 +172,7 @@ Resources:
       DefinitionBody:
         openapi: 3.0.1
         info:
-          title: !Join ["", ["serverless-saas-admin-api-", !Ref "AWS::Region"]]
+          title: serverless-saas-admin-api-lab6
         basePath: !Join ["", ["/", !Ref StageName]]
         x-amazon-apigateway-api-key-source : "AUTHORIZER"
         schemes:
