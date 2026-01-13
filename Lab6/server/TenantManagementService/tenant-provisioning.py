@@ -17,7 +17,8 @@ codepipeline = boto3.client('codepipeline')
 cloudformation = boto3.client('cloudformation')
 table_tenant_stack_mapping = dynamodb.Table(tenant_stack_mapping_table_name)
 
-stack_name = 'stack-{0}'
+# Stack name format: stack-lab6-{tenantId} for silo tenants, stack-lab6-pooled for pooled
+stack_name = 'stack-lab6-{0}'
 @tracer.capture_lambda_handler
 def provision_tenant(event, context):
     tenant_details = json.loads(event['body'])
@@ -35,7 +36,7 @@ def provision_tenant(event, context):
         logger.info(response_ddb)
 
         response_codepipeline = codepipeline.start_pipeline_execution(
-            name='serverless-saas-pipeline'
+            name='serverless-saas-pipeline-lab6'
         )
 
         logger.info(response_ddb)
