@@ -43,7 +43,7 @@ export class ServerlessSaaSStack extends cdk.Stack {
 
     // Pipeline creation starts
     const pipeline = new codepipeline.Pipeline(this, 'Pipeline', {
-      pipelineName: 'serverless-saas-pipeline',
+      pipelineName: 'serverless-saas-pipeline-lab5',
       artifactBucket: artifactsBucket
     });
 
