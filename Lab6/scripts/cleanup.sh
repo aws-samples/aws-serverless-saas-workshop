@@ -1,14 +1,26 @@
 #!/bin/bash
 
+# Lab6 Complete Cleanup Script
+# Removes all Lab6 resources in the correct order to avoid dependency issues
+
+LOG_FILE="cleanup-$(date +%Y%m%d-%H%M%S).log"
+
+# Redirect all output to both console and log file
+exec > >(tee -a "$LOG_FILE") 2>&1
+
 echo "=========================================="
 echo "Lab6 Complete Cleanup Script"
 echo "=========================================="
+echo "Started: $(date)"
+echo "Log file: $LOG_FILE"
 echo ""
 echo "This will delete:"
 echo "  - All tenant stacks (stack-*)"
 echo "  - Shared infrastructure stack"
+echo "  - Pipeline stack"
 echo "  - S3 buckets (will be emptied first)"
 echo "  - Cognito User Pools"
+echo "  - SAM and CDK resources"
 echo ""
 read -p "Are you sure you want to continue? (yes/no): " confirm
 
@@ -22,6 +34,7 @@ echo "Starting cleanup..."
 echo ""
 
 REGION=$(aws configure get region)
+CLEANUP_START=$(date +%s)
 
 # Function to empty S3 bucket (including all versions and delete markers)
 empty_bucket() {
@@ -40,15 +53,17 @@ empty_bucket() {
   if [[ "$VERSIONING" == "Enabled" ]]; then
     echo "    Bucket has versioning enabled, deleting all versions..."
     
-    # Delete all object versions
+    # Delete all object versions in parallel batches
     aws s3api list-object-versions --bucket $bucket --query 'Versions[].{Key:Key,VersionId:VersionId}' --output json 2>/dev/null | \
-      jq -r '.[]? | "aws s3api delete-object --bucket '"$bucket"' --key \"\(.Key)\" --version-id \"\(.VersionId)\""' | \
+      jq -r '.[]? | "aws s3api delete-object --bucket '"$bucket"' --key \"\(.Key)\" --version-id \"\(.VersionId)\" &"' | \
       bash 2>/dev/null
+    wait
     
-    # Delete all delete markers
+    # Delete all delete markers in parallel batches
     aws s3api list-object-versions --bucket $bucket --query 'DeleteMarkers[].{Key:Key,VersionId:VersionId}' --output json 2>/dev/null | \
-      jq -r '.[]? | "aws s3api delete-object --bucket '"$bucket"' --key \"\(.Key)\" --version-id \"\(.VersionId)\""' | \
+      jq -r '.[]? | "aws s3api delete-object --bucket '"$bucket"' --key \"\(.Key)\" --version-id \"\(.VersionId)\" &"' | \
       bash 2>/dev/null
+    wait
   fi
   
   # Delete current objects (for non-versioned buckets or remaining objects)
@@ -87,7 +102,7 @@ wait_for_deletion() {
   fi
 }
 
-# Step 1: Delete tenant stacks
+# Step 1: Delete tenant stacks (in parallel)
 echo "=========================================="
 echo "Step 1: Deleting tenant stacks"
 echo "=========================================="
@@ -100,15 +115,18 @@ TENANT_STACKS=$(aws cloudformation list-stacks \
 if [[ -z "$TENANT_STACKS" ]]; then
   echo "No tenant stacks found"
 else
+  # Delete all tenant stacks in parallel
   for stack in $TENANT_STACKS; do
     delete_stack $stack
   done
   
   echo ""
-  echo "Waiting for tenant stacks to delete..."
+  echo "Waiting for tenant stacks to delete (parallel)..."
+  # Wait for all deletions in parallel
   for stack in $TENANT_STACKS; do
-    wait_for_deletion $stack
+    wait_for_deletion $stack &
   done
+  wait
 fi
 
 echo "✓ Tenant stacks cleanup complete"
@@ -144,14 +162,16 @@ fi
 echo "✓ Tenant template cleanup complete"
 echo ""
 
-# Step 4: Empty S3 buckets
+# Step 4: Empty S3 buckets (in parallel)
 echo "=========================================="
 echo "Step 4: Emptying S3 buckets"
 echo "=========================================="
 
-[[ ! -z "$ADMIN_BUCKET" ]] && empty_bucket $ADMIN_BUCKET
-[[ ! -z "$LANDING_BUCKET" ]] && empty_bucket $LANDING_BUCKET
-[[ ! -z "$APP_BUCKET" ]] && empty_bucket $APP_BUCKET
+# Empty buckets in parallel for faster cleanup
+[[ ! -z "$ADMIN_BUCKET" ]] && empty_bucket $ADMIN_BUCKET &
+[[ ! -z "$LANDING_BUCKET" ]] && empty_bucket $LANDING_BUCKET &
+[[ ! -z "$APP_BUCKET" ]] && empty_bucket $APP_BUCKET &
+wait
 
 echo "✓ S3 buckets emptied"
 echo ""
@@ -394,15 +414,21 @@ else
   echo "✓ No Lab6 stacks remaining"
 fi
 
+CLEANUP_END=$(date +%s)
+CLEANUP_DURATION=$((CLEANUP_END - CLEANUP_START))
+CLEANUP_MINUTES=$((CLEANUP_DURATION / 60))
+CLEANUP_SECONDS=$((CLEANUP_DURATION % 60))
+
 echo ""
 echo "=========================================="
 echo "Cleanup Complete!"
 echo "=========================================="
+echo "Completed: $(date)"
+echo "Duration: ${CLEANUP_MINUTES}m ${CLEANUP_SECONDS}s"
+echo "Log file: $LOG_FILE"
 echo ""
 echo "You can now run a fresh deployment:"
 echo "  cd Lab6/scripts"
-echo "  ./deployment.sh"
-echo ""
-echo "Or use screen for long deployments:"
-echo "  ./deploy-with-screen.sh"
+echo "  ./deploy-with-screen.sh    # Recommended for long deployments"
+echo "  ./deployment.sh -s -c      # Direct deployment"
 echo ""
