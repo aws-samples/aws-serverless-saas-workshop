@@ -1,5 +1,5 @@
 #!/bin/bash
-APP_APIGATEWAYURL=$(aws cloudformation describe-stacks --stack-name stack-pooled --query "Stacks[0].Outputs[?OutputKey=='TenantAPI'].OutputValue" --output text)
+APP_APIGATEWAYURL=$(aws cloudformation describe-stacks --stack-name stack-lab6-pooled --query "Stacks[0].Outputs[?OutputKey=='TenantAPI'].OutputValue" --output text)
 
 get_product() {
    
