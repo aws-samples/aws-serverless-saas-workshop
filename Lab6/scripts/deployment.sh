@@ -158,6 +158,65 @@ if [[ $server -eq 1 ]] || [[ $pipeline -eq 1 ]]; then
   
   echo "✓ Pipeline deployed successfully"
   echo ""
+  
+  # Wait for pipeline to create the pooled stack
+  echo "=========================================="
+  echo "Waiting for pipeline to create pooled stack..."
+  echo "=========================================="
+  echo "The pipeline will automatically trigger and create stack-lab6-pooled"
+  echo "This typically takes 5-10 minutes..."
+  echo ""
+  
+  # Wait for pipeline execution to start
+  sleep 30
+  
+  # Monitor pipeline execution
+  MAX_WAIT=900  # 15 minutes
+  ELAPSED=0
+  INTERVAL=30
+  
+  while [ $ELAPSED -lt $MAX_WAIT ]; do
+    PIPELINE_STATUS=$(aws codepipeline get-pipeline-state --name serverless-saas-pipeline-lab6 --region us-east-1 --query 'stageStates[?stageName==`Deploy`].latestExecution.status' --output text 2>/dev/null)
+    
+    if [ "$PIPELINE_STATUS" = "Succeeded" ]; then
+      echo "✓ Pipeline Deploy stage completed successfully"
+      break
+    elif [ "$PIPELINE_STATUS" = "Failed" ]; then
+      echo "⚠ Warning: Pipeline Deploy stage failed"
+      echo "  You may need to manually trigger the pipeline"
+      break
+    elif [ ! -z "$PIPELINE_STATUS" ]; then
+      echo "  Pipeline Deploy stage status: $PIPELINE_STATUS (waiting...)"
+    fi
+    
+    sleep $INTERVAL
+    ELAPSED=$((ELAPSED + INTERVAL))
+  done
+  
+  if [ $ELAPSED -ge $MAX_WAIT ]; then
+    echo "⚠ Warning: Timeout waiting for pipeline"
+    echo "  The pipeline may still be running. Check the console:"
+    echo "  https://console.aws.amazon.com/codesuite/codepipeline/pipelines/serverless-saas-pipeline-lab6/view"
+  fi
+  
+  # Wait for pooled stack to be fully created
+  echo ""
+  echo "Waiting for stack-lab6-pooled to be ready..."
+  aws cloudformation wait stack-create-complete --stack-name stack-lab6-pooled --region us-east-1 2>/dev/null
+  
+  if [ $? -eq 0 ]; then
+    echo "✓ stack-lab6-pooled is ready"
+  else
+    # Stack might already exist, check if it's in UPDATE_COMPLETE
+    STACK_STATUS=$(aws cloudformation describe-stacks --stack-name stack-lab6-pooled --region us-east-1 --query 'Stacks[0].StackStatus' --output text 2>/dev/null)
+    if [ "$STACK_STATUS" = "CREATE_COMPLETE" ] || [ "$STACK_STATUS" = "UPDATE_COMPLETE" ]; then
+      echo "✓ stack-lab6-pooled is ready (status: $STACK_STATUS)"
+    else
+      echo "⚠ Warning: stack-lab6-pooled status: $STACK_STATUS"
+      echo "  Continuing anyway, but tenant registration may fail until stack is ready"
+    fi
+  fi
+  echo ""
 
 fi
 
