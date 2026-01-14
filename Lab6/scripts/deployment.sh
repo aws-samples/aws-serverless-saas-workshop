@@ -250,21 +250,21 @@ if [[ $client -eq 1 ]]; then
   echo "✓ All S3 buckets verified"
   echo ""
 
-  # Deploy Admin UI
-  echo "=========================================="
-  echo "Deploying Admin UI..."
-  echo "=========================================="
-  cd ../client/Admin
-  
   # Check if Lab6 pre-built files exist (fallback for Node.js compatibility issues)
   USE_PREBUILT=false
-  if [ -d "dist" ]; then
+  if [ -d "../client/Admin/dist" ] && [ -d "../client/Landing/dist" ] && [ -d "../client/Application/dist" ]; then
     echo ""
     echo "ℹ️  Lab6 pre-built client files detected"
     echo "   These can be used if Node.js build fails (Node.js v18 or earlier recommended)"
     USE_PREBUILT=true
   fi
 
+  # Deploy Admin UI
+  echo "=========================================="
+  echo "Deploying Admin UI..."
+  echo "=========================================="
+  cd ../client/Admin
+  
   cat << EoF > ./src/environments/environment.prod.ts
 export const environment = {
   production: true,
@@ -279,16 +279,16 @@ export const environment = {
 EoF
 
   # Try to build, fallback to pre-built if it fails
-  USED_PREBUILT=false
+  USED_PREBUILT_ADMIN=false
   if [ "$USE_PREBUILT" = true ] && [ -d "dist" ]; then
     echo "Using pre-built files from Lab6..."
-    USED_PREBUILT=true
+    USED_PREBUILT_ADMIN=true
   else
     npm install --legacy-peer-deps && npm run build
     if [[ $? -ne 0 ]]; then
       if [ "$USE_PREBUILT" = true ] && [ -d "dist" ]; then
         echo "⚠️  Build failed, using pre-built files from Lab6..."
-        USED_PREBUILT=true
+        USED_PREBUILT_ADMIN=true
       else
         echo "❌ Error building Admin UI and no pre-built files available"
         exit 1
@@ -297,7 +297,7 @@ EoF
   fi
 
   # Update API Gateway URL in pre-built files if they were used
-  if [ "$USED_PREBUILT" = true ]; then
+  if [ "$USED_PREBUILT_ADMIN" = true ]; then
     echo "Updating API Gateway URL in pre-built files..."
     find dist -name "*.js" -type f -exec sed -i.bak "s|https://[a-z0-9]*\.execute-api\.[a-z0-9-]*\.amazonaws\.com/prod|$ADMIN_APIGATEWAYURL|g" {} \;
     find dist -name "*.js.bak" -type f -delete
@@ -332,16 +332,16 @@ export const environment = {
 EoF
 
   # Try to build, fallback to pre-built if it fails
-  USED_PREBUILT=false
+  USED_PREBUILT_LANDING=false
   if [ "$USE_PREBUILT" = true ] && [ -d "dist" ]; then
     echo "Using pre-built files from Lab6..."
-    USED_PREBUILT=true
+    USED_PREBUILT_LANDING=true
   else
     npm install --legacy-peer-deps && npm run build
     if [[ $? -ne 0 ]]; then
       if [ "$USE_PREBUILT" = true ] && [ -d "dist" ]; then
         echo "⚠️  Build failed, using pre-built files from Lab6..."
-        USED_PREBUILT=true
+        USED_PREBUILT_LANDING=true
       else
         echo "❌ Error building Landing UI and no pre-built files available"
         exit 1
@@ -350,7 +350,7 @@ EoF
   fi
 
   # Update API Gateway URL in pre-built files if they were used
-  if [ "$USED_PREBUILT" = true ]; then
+  if [ "$USED_PREBUILT_LANDING" = true ]; then
     echo "Updating API Gateway URL in pre-built files..."
     find dist -name "*.js" -type f -exec sed -i.bak "s|https://[a-z0-9]*\.execute-api\.[a-z0-9-]*\.amazonaws\.com/prod|$ADMIN_APIGATEWAYURL|g" {} \;
     find dist -name "*.js.bak" -type f -delete
@@ -385,16 +385,16 @@ export const environment = {
 EoF
 
   # Try to build, fallback to pre-built if it fails
-  USED_PREBUILT=false
+  USED_PREBUILT_APP=false
   if [ "$USE_PREBUILT" = true ] && [ -d "dist" ]; then
     echo "Using pre-built files from Lab6..."
-    USED_PREBUILT=true
+    USED_PREBUILT_APP=true
   else
     npm install --legacy-peer-deps && npm run build
     if [[ $? -ne 0 ]]; then
       if [ "$USE_PREBUILT" = true ] && [ -d "dist" ]; then
         echo "⚠️  Build failed, using pre-built files from Lab6..."
-        USED_PREBUILT=true
+        USED_PREBUILT_APP=true
       else
         echo "❌ Error building Application UI and no pre-built files available"
         exit 1
@@ -403,7 +403,7 @@ EoF
   fi
 
   # Update API Gateway URL in pre-built files if they were used
-  if [ "$USED_PREBUILT" = true ]; then
+  if [ "$USED_PREBUILT_APP" = true ]; then
     echo "Updating API Gateway URL in pre-built files..."
     find dist -name "*.js" -type f -exec sed -i.bak "s|https://[a-z0-9]*\.execute-api\.[a-z0-9-]*\.amazonaws\.com/prod|$ADMIN_APIGATEWAYURL|g" {} \;
     find dist -name "*.js.bak" -type f -delete
@@ -418,7 +418,7 @@ EoF
   echo "✓ Application UI deployed successfully"
   echo ""
 
-  # Invalidate CloudFront caches
+  # Invalidate CloudFront caches (async - don't wait)
   echo "=========================================="
   echo "Invalidating CloudFront caches..."
   echo "=========================================="
@@ -434,15 +434,10 @@ EoF
     
     if [ ! -z "$DIST_IDS" ]; then
       for dist_id in $DIST_IDS; do
-        echo "Invalidating CloudFront distribution: $dist_id"
-        aws cloudfront create-invalidation --distribution-id "$dist_id" --paths "/*" > /dev/null 2>&1
-        if [[ $? -eq 0 ]]; then
-          echo "  ✓ Invalidation created for $dist_id"
-        else
-          echo "  ⚠ Warning: Could not invalidate $dist_id (may not exist or no permissions)"
-        fi
+        echo "Invalidating CloudFront distribution: $dist_id (async)"
+        aws cloudfront create-invalidation --distribution-id "$dist_id" --paths "/*" > /dev/null 2>&1 &
       done
-      echo "✓ CloudFront cache invalidation completed"
+      echo "✓ CloudFront cache invalidations initiated (running in background)"
     else
       echo "⚠ Warning: No CloudFront distributions found for ShortId: $SHORTID"
       echo "  CloudFront caches will clear automatically within 24 hours"
