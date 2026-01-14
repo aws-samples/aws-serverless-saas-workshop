@@ -15,6 +15,9 @@ Resources:
     Type: AWS::S3::Bucket
     DeletionPolicy : Retain
     Properties:
+      BucketName: !Sub 
+        - 'serverless-saas-lab7-cur-${ShortId}'
+        - ShortId: !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref 'AWS::StackId']]]]
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
@@ -29,7 +32,7 @@ Resources:
     Type: 'AWS::Glue::Database'
     Properties:
       DatabaseInput:
-        Name: !Sub 'costexplorerdb'
+        Name: !Sub 'costexplorerdb-lab7'
       CatalogId: !Ref AWS::AccountId
 
          
@@ -37,6 +40,7 @@ Resources:
   AWSCURCrawlerComponentFunction:
     Type: 'AWS::IAM::Role'
     Properties:
+      RoleName: aws-cur-crawler-component-role-lab7
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -86,6 +90,7 @@ Resources:
   AWSCURCrawlerLambdaExecutor:
     Type: 'AWS::IAM::Role'
     Properties:
+      RoleName: aws-cur-crawler-lambda-executor-role-lab7
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -119,7 +124,7 @@ Resources:
       - AWSCURDatabase
       - AWSCURCrawlerComponentFunction
     Properties:
-      Name: AWSCURCrawler-Multi-tenant
+      Name: AWSCURCrawler-Multi-tenant-lab7
       Description: A recurring crawler that keeps your CUR table in Athena up-to-date.
       Role: !GetAtt AWSCURCrawlerComponentFunction.Arn
       DatabaseName: !Ref AWSCURDatabase
@@ -152,7 +157,7 @@ Resources:
               response.send(event, context, response.SUCCESS);
             } else {
               const glue = new AWS.Glue();
-              glue.startCrawler({ Name: 'AWSCURCrawler-Multi-tenant' }, function(err, data) {
+              glue.startCrawler({ Name: 'AWSCURCrawler-Multi-tenant-lab7' }, function(err, data) {
                 if (err) {
                   const responseData = JSON.parse(this.httpResponse.body);
                   if (responseData['__type'] == 'CrawlerRunningException') {
@@ -268,7 +273,7 @@ Resources:
         ScheduledEvent:
           Type: Schedule
           Properties:
-            Name: CalculateDynamoUsageAndCostByTenant
+            Name: CalculateDynamoUsageAndCostByTenant-lab7
             Schedule: rate(5 minutes)
   
   GetLambdaUsageAndCostByTenant:
@@ -287,7 +292,7 @@ Resources:
         ScheduledEvent:
           Type: Schedule
           Properties:
-            Name: CalculateLambdaUsageAndCostByTenant
+            Name: CalculateLambdaUsageAndCostByTenant-lab7
             Schedule: rate(5 minutes)
             
 Outputs:
