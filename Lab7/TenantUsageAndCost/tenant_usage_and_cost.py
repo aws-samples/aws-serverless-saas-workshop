@@ -12,7 +12,7 @@ cloudformation = boto3.client('cloudformation')
 logs = boto3.client('logs')
 athena = boto3.client('athena')
 dynamodb = boto3.resource('dynamodb')
-attribution_table = dynamodb.Table("TenantCostAndUsageAttribution")
+attribution_table = dynamodb.Table("TenantCostAndUsageAttribution-lab7")
 
 ATHENA_S3_OUTPUT = os.getenv("ATHENA_S3_OUTPUT")
 RETRY_COUNT = 100
@@ -24,19 +24,25 @@ def calculate_daily_dynamodb_attribution_by_tenant(event, context):
     
     #Get total dynamodb cost for the given duration
     #TODO: Get total cost of DynamoDB for the current date
-    total_dynamodb_cost = 0
+    total_dynamodb_cost = __get_total_service_cost('AmazonDynamoDB', start_date_time, end_date_time)
 
     log_group_names = __get_list_of_log_group_names()
     print( log_group_names)
         
     #TODO: Write the query to get the DynamoDB WCU and RCUs consumption grouped by TenantId
-    usage_by_tenant_by_day_query = 'query placeholder'
+    # Query logs for exact consumed_rcu and consumed_wcu values logged by Lambda functions
+    usage_by_tenant_by_day_query = 'filter ispresent(consumed_rcu) or ispresent(consumed_wcu) \
+    | fields tenant_id as TenantId, consumed_rcu as RCapacityUnits, consumed_wcu as WCapacityUnits \
+    | stats sum(RCapacityUnits) as ReadCapacityUnits, sum(WCapacityUnits) as WriteCapacityUnits by TenantId, dateceil(@timestamp, 1d) as timestamp'
     
     usage_by_tenant_by_day = __query_cloudwatch_logs(logs, log_group_names, usage_by_tenant_by_day_query, start_date_time, end_date_time)
     print(usage_by_tenant_by_day)        
     
     #TODO: Write the query to get the Total DynamoDB WCU and RCUs consumption across all tenants
-    total_usage_by_day_query = 'query placeholder'
+    # Query logs for total consumed_rcu and consumed_wcu values
+    total_usage_by_day_query = 'filter ispresent(consumed_rcu) or ispresent(consumed_wcu) \
+    | fields consumed_rcu as RCapacityUnits, consumed_wcu as WCapacityUnits \
+    | stats sum(RCapacityUnits) as ReadCapacityUnits, sum(WCapacityUnits) as WriteCapacityUnits by dateceil(@timestamp, 1d) as timestamp'
     
     total_usage_by_day = __query_cloudwatch_logs(logs, log_group_names, total_usage_by_day_query, start_date_time, end_date_time)
     print(total_usage_by_day)  
@@ -73,7 +79,21 @@ def calculate_daily_dynamodb_attribution_by_tenant(event, context):
             
             try:
                 #TODO: Save the tenant attribution data inside a dynamodb table
-                pass
+                response = attribution_table.put_item(
+                Item=
+                    {
+                        "Date": start_date_time,
+                        "TenantId#ServiceName": tenant_id+"#"+"DynamoDB",
+                        "TenantId": tenant_id,
+                        "TotalRCU": Decimal(str(total_RCU)),
+                        "TenantTotalRCU": Decimal(str(total_RCU_By_Tenant)),
+                        "TotalWCU": Decimal(str(total_WCU)),
+                        "TenantTotalWCU": Decimal(str(total_WCU_By_Tenant)),
+                        "TenantAttributionPercentage": Decimal(str(tenant_attribution_percentage)),
+                        "TenantServiceCost": Decimal(str(tenant_dynamodb_cost)),
+                        "TotalServiceCost": Decimal(str(total_dynamodb_cost))
+                    }
+                )
             except ClientError as e:
                 print(e.response['Error']['Message'])
                 raise Exception('Error adding a product', e)
@@ -101,13 +121,17 @@ def calculate_daily_lambda_attribution_by_tenant(event, context):
     log_group_names = __get_list_of_log_group_names()
     
     #TODO: Write the below query to get the total lambda invocations grouped by tenants
-    usage_by_tenant_by_day_query='query placeholder'
+    usage_by_tenant_by_day_query='filter @message like /Request completed/ \
+        | fields tenant_id as TenantId , CountLambdaInvocations.0 As LambdaInvocations\
+        | stats count (tenant_id) as CountLambdaInvocations by TenantId, dateceil(@timestamp, 1d) as timestamp'
 
     usage_by_tenant_by_day = __query_cloudwatch_logs(logs, log_group_names, usage_by_tenant_by_day_query, start_date_time, end_date_time)
     print(usage_by_tenant_by_day) 
 
     #TODO: Write the below query to get the total lambda invocations across all tenants
-    total_usage_by_day_query = 'query placeholder'
+    total_usage_by_day_query = 'filter @message like /Request completed/ \
+        | fields CountLambdaInvocations.0 As LambdaInvocations, timestamp\
+        | stats count (tenant_id) as CountLambdaInvocations by dateceil(@timestamp, 1d) as timestamp'
     
     total_usage_by_day = __query_cloudwatch_logs(logs,  log_group_names, total_usage_by_day_query, start_date_time, end_date_time)
     print(total_usage_by_day) 
@@ -161,13 +185,13 @@ def __get_total_service_cost(servicename, start_date_time, end_date_time):
     # We need to add more filters for day, month, year, resource ids etc. Below query is because we are just using a sample cur file
     #Ignoting startTime and endTime filter for now since we have a static/sample cur file
     
-    query = "SELECT sum(line_item_blended_cost) AS cost FROM costexplorerdb.curoutput WHERE line_item_product_code='{0}'".format(servicename) 
+    query = "SELECT sum(line_item_blended_cost) AS cost FROM curoutput WHERE line_item_product_code='{0}'".format(servicename) 
 
     # Execution
     response = athena.start_query_execution(
         QueryString=query,
         QueryExecutionContext={
-            'Database': 'costexplorerdb'
+            'Database': 'costexplorerdb-lab7'
         },
         ResultConfiguration={
             'OutputLocation': "s3://" + ATHENA_S3_OUTPUT,
@@ -245,7 +269,7 @@ def __get_list_of_log_group_names():
     log_group_names = []
     log_group_prefix = '/aws/lambda/'
     cloudformation_paginator = cloudformation.get_paginator('list_stack_resources')
-    response_iterator = cloudformation_paginator.paginate(StackName='stack-pooled')
+    response_iterator = cloudformation_paginator.paginate(StackName='stack-pooled-lab7')
     for stack_resources in response_iterator:
         for resource in stack_resources['StackResourceSummaries']:
             if (resource["LogicalResourceId"] == "CreateProductFunction"):
@@ -260,26 +284,6 @@ def __get_list_of_log_group_names():
                 __add_log_group_name(logs, ''.join([log_group_prefix,resource["PhysicalResourceId"]]), 
                  log_group_names)
                 continue
-            if (resource["LogicalResourceId"] == "DeleteProductFunction"):
-                __add_log_group_name(logs, ''.join([log_group_prefix,resource["PhysicalResourceId"]]), 
-                 log_group_names) 
-                continue         
-            if (resource["LogicalResourceId"] == "CreateOrderFunction"):
-                __add_log_group_name(logs, ''.join([log_group_prefix,resource["PhysicalResourceId"]]), 
-                 log_group_names) 
-                continue
-            if (resource["LogicalResourceId"] == "UpdateOrderFunction"):
-                __add_log_group_name(logs, ''.join([log_group_prefix,resource["PhysicalResourceId"]]), 
-                 log_group_names) 
-                continue
-            if (resource["LogicalResourceId"] == "GetOrdersFunction"):
-                __add_log_group_name(logs, ''.join([log_group_prefix,resource["PhysicalResourceId"]]), 
-                 log_group_names) 
-                continue
-            if (resource["LogicalResourceId"] == "DeleteOrderFunction"):
-                __add_log_group_name(logs, ''.join([log_group_prefix,resource["PhysicalResourceId"]]), 
-                 log_group_names) 
-                continue 
 
     return log_group_names          
 
