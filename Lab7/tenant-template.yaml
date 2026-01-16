@@ -4,6 +4,17 @@ Description: >
   Lab7 - Minimal Tenant Stack for Cost Attribution Demo
 
 Resources:
+  PowerToolsLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: lab7-powertools-layer
+      Description: AWS Lambda PowerTools for structured logging
+      ContentUri: layers/
+      CompatibleRuntimes:
+        - python3.9
+      RetentionPolicy: Delete
+    Metadata:
+      BuildMethod: python3.9
   TenantLambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -36,151 +47,46 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: create-product-pooled-lab7
-      Handler: index.handler
+      CodeUri: ProductService/
+      Handler: product_service.create_product
       Runtime: python3.9
       Role: !GetAtt TenantLambdaExecutionRole.Arn
-      InlineCode: |
-        import json
-        import boto3
-        from decimal import Decimal
-        
-        dynamodb = boto3.resource('dynamodb')
-        table = dynamodb.Table('Product-pooled-lab7')
-        
-        def handler(event, context):
-            tenant_id = 'pooled'
-            
-            # Simple product creation
-            product_id = event.get('productId', 'prod-123')
-            product_name = event.get('productName', 'Sample Product')
-            price = Decimal(str(event.get('price', 99.99)))
-            
-            # Put item - Request consumed capacity from DynamoDB
-            response = table.put_item(
-                Item={
-                    'productId': product_id,
-                    'productName': product_name,
-                    'price': price,
-                    'tenantId': tenant_id
-                },
-                ReturnConsumedCapacity='TOTAL'
-            )
-            
-            # Extract actual consumed capacity from response
-            consumed_capacity = response.get('ConsumedCapacity', {})
-            consumed_wcu = consumed_capacity.get('CapacityUnits', 0)
-            
-            # Log for cost attribution with actual consumed capacity
-            print(json.dumps({
-                'message': 'Request completed',
-                'tenant_id': tenant_id,
-                'consumed_rcu': 0,  # Write operation
-                'consumed_wcu': consumed_wcu
-            }))
-            
-            return {
-                'statusCode': 200,
-                'body': json.dumps({'message': 'Product created', 'productId': product_id})
-            }
+      Layers:
+        - !Ref PowerToolsLayer
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: product-service
+          LOG_LEVEL: INFO
 
   UpdateProductFunction:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: update-product-pooled-lab7
-      Handler: index.handler
+      CodeUri: ProductService/
+      Handler: product_service.update_product
       Runtime: python3.9
       Role: !GetAtt TenantLambdaExecutionRole.Arn
-      InlineCode: |
-        import json
-        import boto3
-        from decimal import Decimal
-        
-        dynamodb = boto3.resource('dynamodb')
-        table = dynamodb.Table('Product-pooled-lab7')
-        
-        def handler(event, context):
-            tenant_id = 'pooled'
-            
-            # Simple product update
-            product_id = event.get('productId', 'prod-123')
-            product_name = event.get('productName', 'Updated Product')
-            price = Decimal(str(event.get('price', 149.99)))
-            
-            # Update item - Request consumed capacity from DynamoDB
-            response = table.update_item(
-                Key={'productId': product_id},
-                UpdateExpression='SET productName = :name, price = :price',
-                ExpressionAttributeValues={
-                    ':name': product_name,
-                    ':price': price
-                },
-                ReturnConsumedCapacity='TOTAL'
-            )
-            
-            # Extract actual consumed capacity from response
-            consumed_capacity = response.get('ConsumedCapacity', {})
-            consumed_wcu = consumed_capacity.get('CapacityUnits', 0)
-            
-            # Log for cost attribution with actual consumed capacity
-            print(json.dumps({
-                'message': 'Request completed',
-                'tenant_id': tenant_id,
-                'consumed_rcu': 0,  # Write operation
-                'consumed_wcu': consumed_wcu
-            }))
-            
-            return {
-                'statusCode': 200,
-                'body': json.dumps({'message': 'Product updated', 'productId': product_id})
-            }
+      Layers:
+        - !Ref PowerToolsLayer
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: product-service
+          LOG_LEVEL: INFO
 
   GetProductsFunction:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: get-products-pooled-lab7
-      Handler: index.handler
+      CodeUri: ProductService/
+      Handler: product_service.get_products
       Runtime: python3.9
       Role: !GetAtt TenantLambdaExecutionRole.Arn
-      InlineCode: |
-        import json
-        import boto3
-        from decimal import Decimal
-        
-        dynamodb = boto3.resource('dynamodb')
-        table = dynamodb.Table('Product-pooled-lab7')
-        
-        class DecimalEncoder(json.JSONEncoder):
-            def default(self, obj):
-                if isinstance(obj, Decimal):
-                    return float(obj)
-                return super(DecimalEncoder, self).default(obj)
-        
-        def handler(event, context):
-            tenant_id = 'pooled'
-            
-            # Scan for products - Request consumed capacity from DynamoDB
-            response = table.scan(
-                ReturnConsumedCapacity='TOTAL'
-            )
-            
-            # Extract actual consumed capacity from response
-            consumed_capacity = response.get('ConsumedCapacity', {})
-            consumed_rcu = consumed_capacity.get('CapacityUnits', 0)
-            
-            # Log for cost attribution with actual consumed capacity
-            print(json.dumps({
-                'message': 'Request completed',
-                'tenant_id': tenant_id,
-                'consumed_rcu': consumed_rcu,
-                'consumed_wcu': 0  # Read operation
-            }))
-            
-            return {
-                'statusCode': 200,
-                'body': json.dumps({
-                    'products': response.get('Items', [])
-                }, cls=DecimalEncoder)
-            }
+      Layers:
+        - !Ref PowerToolsLayer
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: product-service
+          LOG_LEVEL: INFO
 
   ProductTable:
     Type: AWS::DynamoDB::Table
