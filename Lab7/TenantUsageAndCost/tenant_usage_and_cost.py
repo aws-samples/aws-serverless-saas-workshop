@@ -21,6 +21,7 @@ RETRY_COUNT = 100
 def calculate_daily_dynamodb_attribution_by_tenant(event, context):
     start_date_time = __get_start_date_time() #current day epoch
     end_date_time =  __get_end_date_time() #next day epoch
+    print("Processing attribution for current day")
     
     #Get total dynamodb cost for the given duration
     #TODO: Get total cost of DynamoDB for the current date
@@ -110,10 +111,9 @@ def calculate_daily_dynamodb_attribution_by_tenant(event, context):
 #You can go granluar by recording duration of each metrics and use that to get more granular
 #Since our functions are basic CRUD this might work as a ball park cost estimate
 def calculate_daily_lambda_attribution_by_tenant(event, context):
-    
-    #Get total dynamodb cost for the given duration
     start_date_time = __get_start_date_time() #current day epoch
     end_date_time =  __get_end_date_time() #next day epoch
+    print("Processing attribution for current day")
 
     #Get total dynamodb cost for the given duration
     total_lambda_cost = __get_total_service_cost('AWSLambda', start_date_time, end_date_time)
@@ -162,8 +162,8 @@ def calculate_daily_lambda_attribution_by_tenant(event, context):
                         {
                             "Date": start_date_time,
                             "TenantId#ServiceName": tenant_id+"#"+"AWSLambda",
-                            "TenantId": tenant_id, 
-                            "TotalInvocations": total_invocations, 
+                            "TenantId": tenant_id,
+                            "TotalInvocations": total_invocations,
                             "TenantTotalInvocations": total_invocations_by_tenant,
                             "TenantAttributionPercentage": tenant_attribution_percentage,
                             "TenantServiceCost": tenant_lambda_cost,
@@ -297,3 +297,5 @@ def __get_end_date_time():
     time_zone = datetime.now().astimezone().tzinfo    
     end_date_time =  int((datetime.now(tz=time_zone) + timedelta(days=1)).date().strftime('%s')) #next day epoch
     return end_date_time
+
+
