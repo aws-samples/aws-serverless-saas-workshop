@@ -70,8 +70,9 @@ else
 fi
 echo ""
 
-# Delete tenant stack first (if exists)
+# Delete tenant stack (if exists)
 echo -e "${YELLOW}Step 2: Deleting tenant stack...${NC}"
+
 TENANT_STACK="stack-pooled-lab7"
 if stack_exists "$TENANT_STACK"; then
     echo "  Deleting stack: $TENANT_STACK"
@@ -93,16 +94,28 @@ else
 fi
 echo ""
 
-# Delete DynamoDB table
-echo -e "${YELLOW}Step 4: Deleting DynamoDB table...${NC}"
+# Delete DynamoDB tables
+echo -e "${YELLOW}Step 4: Deleting DynamoDB tables...${NC}"
+
+# Attribution table
 TABLE_NAME="TenantCostAndUsageAttribution-lab7"
 if aws dynamodb describe-table --table-name "$TABLE_NAME" --region us-east-1 >/dev/null 2>&1; then
     echo "  Deleting table: $TABLE_NAME"
     aws dynamodb delete-table --table-name "$TABLE_NAME" --region us-east-1 >/dev/null 2>&1 || true
-    echo -e "${GREEN}DynamoDB table deleted${NC}"
 else
     echo "  Table $TABLE_NAME not found"
 fi
+
+# Tenant product table (if not deleted by stack)
+PRODUCT_TABLE="Product-pooled-lab7"
+if aws dynamodb describe-table --table-name "$PRODUCT_TABLE" --region us-east-1 >/dev/null 2>&1; then
+    echo "  Deleting table: $PRODUCT_TABLE"
+    aws dynamodb delete-table --table-name "$PRODUCT_TABLE" --region us-east-1 >/dev/null 2>&1 || true
+else
+    echo "  Table $PRODUCT_TABLE not found"
+fi
+
+echo -e "${GREEN}DynamoDB tables cleaned up${NC}"
 echo ""
 
 # Delete Lambda functions with lab7 prefix
