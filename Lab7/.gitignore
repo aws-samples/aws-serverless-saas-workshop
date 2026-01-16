@@ -1,0 +1,24 @@
+# Build artifacts
+.aws-sam/
+build/
+dist/
+
+# Python
+__pycache__/
+*.py[cod]
+.Python
+*.egg-info/
+.venv/
+
+# Lambda outputs
+lambdaoutput.json
+payload.json
+
+# Logs
+*.log
+deployment-*.log
+cleanup-*.log
+
+# OS
+.DS_Store
+Thumbs.db
