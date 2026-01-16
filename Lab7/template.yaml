@@ -205,6 +205,7 @@ Resources:
       BillingMode: PAY_PER_REQUEST 
       TableName: TenantCostAndUsageAttribution-lab7
   
+
   QueryLogInsightsExecutionRole:
     Type: AWS::IAM::Role     
     Properties:
@@ -234,6 +235,7 @@ Resources:
                   - logs:FilterLogEvents
                   - logs:DescribeLogGroups
                   - cloudformation:ListStackResources
+                  - cloudformation:DescribeStacks
                 Resource:
                   - "*"
               - Effect: Allow
@@ -261,7 +263,7 @@ Resources:
     Type: AWS::Serverless::Function 
     DependsOn: QueryLogInsightsExecutionRole 
     Properties:
-      FunctionName: serverless-saas-lab7-get-dynamodb-usage-and-cost-by-tenant
+      FunctionName: serverless-saas-lab7-dynamodb-cost
       CodeUri: TenantUsageAndCost/
       Handler: tenant_usage_and_cost.calculate_daily_dynamodb_attribution_by_tenant
       Runtime: python3.9  
@@ -274,13 +276,13 @@ Resources:
           Type: Schedule
           Properties:
             Name: CalculateDynamoUsageAndCostByTenant-lab7
-            Schedule: rate(1 minute)
+            Schedule: rate(5 minutes)
   
   GetLambdaUsageAndCostByTenant:
     Type: AWS::Serverless::Function 
     DependsOn: QueryLogInsightsExecutionRole 
     Properties:
-      FunctionName: serverless-saas-lab7-get-lambda-usage-and-cost-by-tenant
+      FunctionName: serverless-saas-lab7-lambda-cost
       CodeUri: TenantUsageAndCost/
       Handler: tenant_usage_and_cost.calculate_daily_lambda_attribution_by_tenant
       Runtime: python3.9  
@@ -293,8 +295,8 @@ Resources:
           Type: Schedule
           Properties:
             Name: CalculateLambdaUsageAndCostByTenant-lab7
-            Schedule: rate(1 minute)
-            
+            Schedule: rate(5 minutes)
+
 Outputs:
     CURBucketname:
         Description: The name of S3 bucket name
