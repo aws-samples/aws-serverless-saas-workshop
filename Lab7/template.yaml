@@ -274,7 +274,7 @@ Resources:
           Type: Schedule
           Properties:
             Name: CalculateDynamoUsageAndCostByTenant-lab7
-            Schedule: rate(5 minutes)
+            Schedule: rate(1 minute)
   
   GetLambdaUsageAndCostByTenant:
     Type: AWS::Serverless::Function 
@@ -293,7 +293,7 @@ Resources:
           Type: Schedule
           Properties:
             Name: CalculateLambdaUsageAndCostByTenant-lab7
-            Schedule: rate(5 minutes)
+            Schedule: rate(1 minute)
             
 Outputs:
     CURBucketname:
