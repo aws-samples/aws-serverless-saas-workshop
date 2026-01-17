@@ -11,10 +11,27 @@ The cost attribution system consists of:
 1. **AWS Cost and Usage Report (CUR)** - Sample cost data stored in S3
 2. **AWS Glue Crawler** - Catalogs CUR data for querying
 3. **Amazon Athena** - Queries total service costs from CUR data
-4. **CloudWatch Logs** - Captures tenant usage metrics from Lambda functions
-5. **EventBridge Rules** - Triggers cost attribution calculations every 1 minute
+4. **CloudWatch Logs** - Captures tenant usage metrics from Lambda functions with structured logging
+5. **EventBridge Rules** - Triggers cost attribution calculations every 5 minutes
 6. **Lambda Functions** - Calculates and stores cost attribution data
 7. **DynamoDB Table** - Stores tenant cost attribution results
+8. **AWS Lambda PowerTools** - Provides structured logging, tracing, and metrics
+
+### Attribution Timing and Accuracy
+
+**EventBridge Schedule**: Attribution Lambdas run every 5 minutes (not every minute) to ensure accurate data collection.
+
+**Why 5 minutes?** CloudWatch Logs Insights has an indexing delay of 1-3 minutes. Running attribution too frequently (e.g., every minute) can result in incomplete data because logs aren't fully indexed yet. The 5-minute schedule ensures all logs are queryable before attribution runs.
+
+**Deployment Wait Time**: The deployment script waits 4 minutes after generating test invocations to allow CloudWatch Logs Insights to fully index all logs before the first attribution run.
+
+### PowerTools Structured Logging
+
+Lambda functions use AWS Lambda PowerTools for structured JSON logging with:
+- **Structured JSON format** - Consistent, parseable log format
+- **Tenant context** - Automatic tenant_id injection
+- **X-Ray tracing** - Distributed tracing with correlation IDs
+- **Consumed capacity tracking** - Actual DynamoDB RCU/WCU from responses
 
 ## Prerequisites
 
@@ -36,6 +53,7 @@ cd aws-serverless-saas-workshop/Lab7
 The deployment script handles everything needed for the workshop:
 
 ```bash
+cd scripts
 ./deployment.sh
 ```
 
@@ -43,14 +61,15 @@ This script will:
 1. Deploy the main Lab7 CloudFormation stack
 2. Upload sample CUR data to S3
 3. Initialize the Glue crawler to catalog CUR data
-4. Deploy the tenant stack with Lambda functions
-5. Generate 60 Lambda invocations (30 create + 30 update) to simulate tenant activity
+4. Deploy the tenant stack with Lambda functions (using PowerTools)
+5. Generate 30 Lambda invocations (10 create + 10 update + 10 get) to simulate tenant activity
+6. Wait 4 minutes for CloudWatch Logs Insights indexing
 
-**Deployment takes approximately 3-4 minutes.**
+**Deployment takes approximately 5-6 minutes.**
 
 ### Step 3: Wait for Cost Attribution
 
-After deployment completes, wait **90 seconds** for the EventBridge rules to trigger the cost attribution Lambda functions. These functions run every 1 minute.
+After deployment completes, wait **5 minutes** for the EventBridge rules to trigger the cost attribution Lambda functions. These functions run every 5 minutes.
 
 ## Deployed Resources
 
@@ -65,37 +84,50 @@ After deployment completes, wait **90 seconds** for the EventBridge rules to tri
   - `serverless-saas-lab7-get-dynamodb-usage-and-cost-by-tenant` - Calculates DynamoDB costs
   - `serverless-saas-lab7-get-lambda-usage-and-cost-by-tenant` - Calculates Lambda costs
 - **EventBridge Rules**:
-  - `CalculateDynamoUsageAndCostByTenant-lab7` - Runs every 1 minute
-  - `CalculateLambdaUsageAndCostByTenant-lab7` - Runs every 1 minute
+  - `CalculateDynamoUsageAndCostByTenant-lab7` - Runs every 5 minutes
+  - `CalculateLambdaUsageAndCostByTenant-lab7` - Runs every 5 minutes
 
 ### Tenant Stack: `stack-pooled-lab7`
 
+- **Lambda Layer**: `lab7-powertools-layer` - AWS Lambda PowerTools with X-Ray SDK
 - **Lambda Functions**:
-  - `create-product-pooled-lab7` - Creates products in DynamoDB
-  - `update-product-pooled-lab7` - Updates products in DynamoDB
-- **DynamoDB Table**: `Product-pooled-lab7` - Stores product data
+  - `create-product-pooled-lab7` - Creates products in DynamoDB with PowerTools logging
+  - `update-product-pooled-lab7` - Updates products in DynamoDB with PowerTools logging
+  - `get-products-pooled-lab7` - Retrieves products from DynamoDB with PowerTools logging
+- **DynamoDB Table**: `Product-pooled-lab7` - Stores product data (PROVISIONED billing mode)
 - **IAM Role**: `tenant-lambda-execution-role-pooled-lab7` - Execution role for Lambda functions
 
 ## How Cost Attribution Works
 
 ### 1. Tenant Lambda Functions Log Usage Metrics
 
-Each tenant Lambda function logs usage data in JSON format to CloudWatch Logs:
+Each tenant Lambda function uses AWS Lambda PowerTools to log structured usage data in JSON format to CloudWatch Logs:
 
 ```json
 {
+  "level": "INFO",
+  "location": "create_product:56",
   "message": "Request completed",
+  "timestamp": "2026-01-16 21:44:18,299+0000",
+  "service": "product-service",
   "tenant_id": "pooled",
-  "ReadCapacityUnits": [1],
-  "WriteCapacityUnits": [1]
+  "consumed_rcu": 0,
+  "consumed_wcu": 1.0,
+  "operation": "create_product",
+  "xray_trace_id": "1-696ab130-7b1ef6c66c6049bb342ac8ce"
 }
 ```
 
-**Note**: In this demo, RCU/WCU values are hardcoded to `[1]` for simplicity. In production, you would capture actual consumed capacity from DynamoDB responses.
+**Key Fields:**
+- `tenant_id` - Tenant identifier for cost attribution
+- `consumed_rcu` - Actual read capacity units consumed from DynamoDB response
+- `consumed_wcu` - Actual write capacity units consumed from DynamoDB response
+- `operation` - Operation type (create_product, update_product, get_products)
+- `xray_trace_id` - X-Ray trace ID for distributed tracing
 
-### 2. EventBridge Triggers Cost Attribution (Every 1 Minute)
+### 2. EventBridge Triggers Cost Attribution (Every 5 Minutes)
 
-Two EventBridge rules run every 1 minute:
+Two EventBridge rules run every 5 minutes:
 - One for DynamoDB cost attribution
 - One for Lambda cost attribution
 
@@ -108,8 +140,8 @@ The cost attribution Lambda functions query CloudWatch Logs to:
 
 **Example Query for DynamoDB:**
 ```
-filter @message like /ReadCapacityUnits|WriteCapacityUnits/
-| fields tenant_id as TenantId, ReadCapacityUnits.0 as RCapacityUnits, WriteCapacityUnits.0 as WCapacityUnits
+filter ispresent(consumed_rcu) or ispresent(consumed_wcu)
+| fields tenant_id as TenantId, consumed_rcu as RCapacityUnits, consumed_wcu as WCapacityUnits
 | stats sum(RCapacityUnits) as ReadCapacityUnits, sum(WCapacityUnits) as WriteCapacityUnits by TenantId
 ```
 
@@ -172,7 +204,12 @@ aws logs tail /aws/lambda/create-product-pooled-lab7 --follow
 aws logs tail /aws/lambda/update-product-pooled-lab7 --follow
 ```
 
-You should see JSON log entries with `tenant_id`, `ReadCapacityUnits`, and `WriteCapacityUnits`.
+You should see PowerTools structured JSON log entries with fields like:
+- `tenant_id` - Tenant identifier
+- `consumed_rcu` - Read capacity units consumed
+- `consumed_wcu` - Write capacity units consumed
+- `operation` - Operation type (create_product, update_product, get_products)
+- `xray_trace_id` - X-Ray trace ID for distributed tracing
 
 ### 3. Check Cost Attribution Lambda Logs
 
@@ -194,7 +231,7 @@ Check that EventBridge rules are enabled and triggering:
 aws events list-rules --name-prefix "Calculate" --query "Rules[?contains(Name, 'lab7')]"
 ```
 
-Both rules should show `State: "ENABLED"` and `ScheduleExpression: "rate(1 minute)"`.
+Both rules should show `State: "ENABLED"` and `ScheduleExpression: "rate(5 minute)"`.
 
 ### 5. Query Cost Attribution with AWS CLI
 
@@ -258,37 +295,15 @@ The system tracks:
 
 ## Production Considerations
 
-### 1. Capture Actual DynamoDB Capacity
+### 1. Optimize EventBridge Schedule
 
-Replace hardcoded values with actual consumed capacity:
-
-```python
-response = table.put_item(
-    Item={...},
-    ReturnConsumedCapacity='TOTAL'
-)
-
-consumed = response.get('ConsumedCapacity', {})
-rcu = consumed.get('ReadCapacityUnits', 0)
-wcu = consumed.get('WriteCapacityUnits', 0)
-
-print(json.dumps({
-    'message': 'Request completed',
-    'tenant_id': tenant_id,
-    'ReadCapacityUnits': [rcu],
-    'WriteCapacityUnits': [wcu]
-}))
-```
-
-### 2. Optimize EventBridge Schedule
-
-Change from 1 minute to daily for production:
+Change from 5 minutes to daily for production:
 
 ```yaml
 ScheduleExpression: rate(1 day)
 ```
 
-### 3. Add More Services
+### 2. Add More Services
 
 Extend cost attribution to other AWS services:
 - API Gateway
@@ -296,11 +311,11 @@ Extend cost attribution to other AWS services:
 - CloudFront
 - RDS
 
-### 4. Implement Cost Alerts
+### 3. Implement Cost Alerts
 
 Add CloudWatch Alarms to notify when tenant costs exceed thresholds.
 
-### 5. Create Cost Dashboards
+### 4. Create Cost Dashboards
 
 Use QuickSight or CloudWatch Dashboards to visualize tenant costs over time.
 
@@ -309,6 +324,7 @@ Use QuickSight or CloudWatch Dashboards to visualize tenant costs over time.
 To remove all Lab7 resources:
 
 ```bash
+cd scripts
 ./cleanup.sh
 ```
 
@@ -374,6 +390,38 @@ for i in {1..10}; do
     /dev/null
 done
 ```
+
+### Attribution Shows Fewer Invocations Than Expected
+
+**Symptom**: DynamoDB table shows 26-28 invocations instead of 30.
+
+**Cause**: CloudWatch Logs Insights indexing delay. Logs are written immediately but take 1-3 minutes to be indexed and queryable via Insights.
+
+**Solutions**:
+
+1. **Wait for next attribution run** (recommended):
+   ```bash
+   # Attribution runs every 5 minutes, wait and check again
+   sleep 300
+   aws dynamodb scan --table-name TenantCostAndUsageAttribution-lab7 --region us-east-1
+   ```
+
+2. **Verify all logs exist** (they should):
+   ```bash
+   # Check actual log count (should be 30)
+   aws logs filter-log-events \
+     --log-group-name /aws/lambda/create-product-pooled-lab7 \
+     --filter-pattern "Request completed" \
+     --start-time $(($(date +%s) - 3600))000 \
+     --region us-east-1 \
+     --output json | python3 -c "import sys, json; print(f'Count: {len(json.load(sys.stdin)[\"events\"])}')"
+   ```
+
+3. **Increase deployment wait time**:
+   - Edit `scripts/deployment.sh` and increase `sleep 240` to `sleep 300` (5 minutes)
+   - This gives more time for CloudWatch Logs Insights indexing
+
+**Note**: In production, run attribution hourly or daily for complete accuracy. The 5-minute schedule is a balance between demo responsiveness and data accuracy.
 
 ## Additional Resources
 
