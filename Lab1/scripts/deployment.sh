@@ -24,6 +24,20 @@ while [[ "$#" -gt 0 ]]; do
   shift
 done
 
+# Create log directory and file
+LOG_DIR="logs"
+mkdir -p "$LOG_DIR"
+LOG_FILE="$LOG_DIR/deployment-$(date +%Y%m%d-%H%M%S).log"
+
+# Redirect all output to log file and console
+exec > >(tee -a "$LOG_FILE") 2>&1
+
+echo "=========================================="
+echo "Lab1 Deployment Script"
+echo "=========================================="
+echo "Log file: $LOG_FILE"
+echo ""
+
 if [[ -z "$stackname" ]]; then
   echo "Please provide CloudFormation stack name as parameter"
   echo "Note: Invoke script without parameters to know the list of script parameters"

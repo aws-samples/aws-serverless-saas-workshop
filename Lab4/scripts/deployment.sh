@@ -28,6 +28,20 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
+# Create log directory and file
+LOG_DIR="logs"
+mkdir -p "$LOG_DIR"
+LOG_FILE="$LOG_DIR/deployment-$(date +%Y%m%d-%H%M%S).log"
+
+# Redirect all output to log file and console
+exec > >(tee -a "$LOG_FILE") 2>&1
+
+echo "=========================================="
+echo "Lab4 Deployment Script"
+echo "=========================================="
+echo "Log file: $LOG_FILE"
+echo ""
+
 # During AWS hosted events using event engine tool 
 # we pre-provision cloudfront and s3 buckets which hosts UI code. 
 # So that it improves this labs total execution time. 

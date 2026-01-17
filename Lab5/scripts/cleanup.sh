@@ -1,8 +1,18 @@
 #!/bin/bash
 
+# Create log directory and file
+LOG_DIR="logs"
+mkdir -p "$LOG_DIR"
+LOG_FILE="$LOG_DIR/cleanup-$(date +%Y%m%d-%H%M%S).log"
+
+# Redirect all output to log file and console
+exec > >(tee -a "$LOG_FILE") 2>&1
+
 echo "=========================================="
 echo "Lab5 Complete Cleanup Script"
 echo "=========================================="
+echo "Started: $(date)"
+echo "Log file: $LOG_FILE"
 echo ""
 echo "This will delete:"
 echo "  - All tenant stacks (stack-*)"
@@ -22,6 +32,7 @@ echo "Starting cleanup..."
 echo ""
 
 REGION=$(aws configure get region)
+CLEANUP_START=$(date +%s)
 
 # Function to empty S3 bucket (including all versions and delete markers)
 empty_bucket() {
@@ -364,15 +375,21 @@ else
   echo "✓ No Lab5 stacks remaining"
 fi
 
+CLEANUP_END=$(date +%s)
+CLEANUP_DURATION=$((CLEANUP_END - CLEANUP_START))
+CLEANUP_MINUTES=$((CLEANUP_DURATION / 60))
+CLEANUP_SECONDS=$((CLEANUP_DURATION % 60))
+
 echo ""
 echo "=========================================="
 echo "Cleanup Complete!"
 echo "=========================================="
+echo "Completed: $(date)"
+echo "Duration: ${CLEANUP_MINUTES}m ${CLEANUP_SECONDS}s"
+echo "Log file: $LOG_FILE"
 echo ""
 echo "You can now run a fresh deployment:"
 echo "  cd Lab5/scripts"
-echo "  ./deployment.sh -s -c"
-echo ""
-echo "Or use screen for long deployments:"
-echo "  ./deploy-with-screen.sh"
+echo "  ./deploy-with-screen.sh    # Recommended for long deployments"
+echo "  ./deployment.sh -s -c      # Direct deployment"
 echo ""

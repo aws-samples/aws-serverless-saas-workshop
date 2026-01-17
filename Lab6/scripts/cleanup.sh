@@ -3,9 +3,12 @@
 # Lab6 Complete Cleanup Script
 # Removes all Lab6 resources in the correct order to avoid dependency issues
 
-LOG_FILE="cleanup-$(date +%Y%m%d-%H%M%S).log"
+# Create log directory and file
+LOG_DIR="logs"
+mkdir -p "$LOG_DIR"
+LOG_FILE="$LOG_DIR/cleanup-$(date +%Y%m%d-%H%M%S).log"
 
-# Redirect all output to both console and log file
+# Redirect all output to log file and console
 exec > >(tee -a "$LOG_FILE") 2>&1
 
 echo "=========================================="
