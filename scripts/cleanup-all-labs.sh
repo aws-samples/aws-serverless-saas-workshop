@@ -55,9 +55,31 @@ cleanup_lab() {
     if [ -f "$lab_dir/scripts/cleanup.sh" ]; then
         print_message "$GREEN" "Running Lab${lab_num} cleanup script..."
         cd "$lab_dir/scripts"
-        ./cleanup.sh
-        cd "$WORKSHOP_ROOT"
-        print_message "$GREEN" "Lab${lab_num} cleanup completed!"
+        
+        # Run cleanup script with appropriate parameters
+        local cleanup_cmd=""
+        case $lab_num in
+            1)
+                # Lab1 requires --stack-name parameter
+                cleanup_cmd="./cleanup.sh --stack-name ${LAB1_STACK_NAME:-serverless-saas-workshop-lab1}"
+                print_message "$YELLOW" "Using stack name: ${LAB1_STACK_NAME:-serverless-saas-workshop-lab1}"
+                ;;
+            *)
+                # All other labs don't require parameters
+                cleanup_cmd="./cleanup.sh"
+                ;;
+        esac
+        
+        # Run cleanup script
+        if eval "$cleanup_cmd"; then
+            print_message "$GREEN" "Lab${lab_num} cleanup completed!"
+            cd "$WORKSHOP_ROOT"
+            return 0
+        else
+            print_message "$RED" "Lab${lab_num} cleanup failed!"
+            cd "$WORKSHOP_ROOT"
+            return 1
+        fi
     else
         print_message "$YELLOW" "No cleanup script found for Lab${lab_num}, performing manual cleanup..."
         cleanup_lab_manual "$lab_num"
@@ -136,6 +158,7 @@ cleanup_lab_manual() {
 # Parse command line arguments
 LABS_TO_CLEANUP=()
 CLEANUP_ALL=false
+LAB1_STACK_NAME="serverless-saas-workshop-lab1"
 
 if [ $# -eq 0 ]; then
     CLEANUP_ALL=true
@@ -150,19 +173,25 @@ else
                 LABS_TO_CLEANUP+=("$2")
                 shift 2
                 ;;
+            --lab1-stack-name)
+                LAB1_STACK_NAME=$2
+                shift 2
+                ;;
             --help)
                 echo "Usage: $0 [OPTIONS]"
                 echo ""
                 echo "Options:"
-                echo "  --all           Cleanup all labs (default if no options provided)"
-                echo "  --lab <number>  Cleanup specific lab (can be used multiple times)"
-                echo "  --help          Show this help message"
+                echo "  --all                    Cleanup all labs (default if no options provided)"
+                echo "  --lab <number>           Cleanup specific lab (can be used multiple times)"
+                echo "  --lab1-stack-name <name> Stack name for Lab1 (default: serverless-saas-workshop-lab1)"
+                echo "  --help                   Show this help message"
                 echo ""
                 echo "Examples:"
-                echo "  $0                    # Cleanup all labs"
-                echo "  $0 --all              # Cleanup all labs"
-                echo "  $0 --lab 5            # Cleanup only Lab5"
-                echo "  $0 --lab 5 --lab 6   # Cleanup Lab5 and Lab6"
+                echo "  $0                                      # Cleanup all labs"
+                echo "  $0 --all                                # Cleanup all labs"
+                echo "  $0 --lab 5                              # Cleanup only Lab5"
+                echo "  $0 --lab 5 --lab 6                     # Cleanup Lab5 and Lab6"
+                echo "  $0 --lab 1 --lab1-stack-name my-stack  # Cleanup Lab1 with custom stack name"
                 exit 0
                 ;;
             *)
