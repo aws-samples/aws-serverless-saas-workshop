@@ -11,8 +11,10 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# Create log file
-LOG_FILE="cleanup-$(date +%Y%m%d-%H%M%S).log"
+# Create log directory and file
+LOG_DIR="logs"
+mkdir -p "$LOG_DIR"
+LOG_FILE="$LOG_DIR/cleanup-$(date +%Y%m%d-%H%M%S).log"
 
 # Redirect all output to log file and console
 exec > >(tee -a "$LOG_FILE") 2>&1

@@ -11,7 +11,9 @@ NC='\033[0m' # No Color
 
 # Logging setup
 TIMESTAMP=$(date +"%Y%m%d-%H%M%S")
-LOG_FILE="cleanup-${TIMESTAMP}.log"
+LOG_DIR="logs"
+mkdir -p "$LOG_DIR"
+LOG_FILE="$LOG_DIR/cleanup-${TIMESTAMP}.log"
 exec > >(tee -a "$LOG_FILE") 2>&1
 
 echo "========================================"

@@ -1,0 +1,5 @@
+# Log files and directories
+logs/
+*.log
+deployment-*.log
+cleanup-*.log

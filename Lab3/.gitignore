@@ -1,5 +1,5 @@
 # Log files and directories
-logs/
+scripts/logs/
 *.log
 deployment-*.log
 cleanup-*.log
@@ -9,21 +9,18 @@ cleanup-*.log
 build/
 dist/
 
+# Dependencies
+node_modules/
+package-lock.json
+
 # Python
 __pycache__/
-*.py[cod]
-.Python
-*.egg-info/
+*.pyc
 .venv/
 
-# Lambda outputs
-lambdaoutput.json
-payload.json
-
-# Logs
-*.log
-deployment-*.log
-cleanup-*.log
+# IDE
+.vscode/
+.idea/
 
 # OS
 .DS_Store

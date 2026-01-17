@@ -7,6 +7,14 @@ LAB_DIR="$(dirname "$SCRIPT_DIR")"
 
 REGION=$(aws configure get region)
 
+# Create log directory and file
+LOG_DIR="$SCRIPT_DIR/logs"
+mkdir -p "$LOG_DIR"
+LOG_FILE="$LOG_DIR/deployment-$(date +%Y%m%d-%H%M%S).log"
+
+# Redirect all output to log file and console
+exec > >(tee -a "$LOG_FILE") 2>&1
+
 # Use virtual environment Python if available
 if [ -f "$LAB_DIR/../.venv_py313/bin/python" ]; then
   export PATH="$LAB_DIR/../.venv_py313/bin:$PATH"
@@ -15,6 +23,7 @@ fi
 echo "=========================================="
 echo "Lab7 Deployment Script - Provisioned"
 echo "=========================================="
+echo "Log file: $LOG_FILE"
 echo ""
 
 # Step 1: Deploy main Lab7 stack
