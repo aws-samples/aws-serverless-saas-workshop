@@ -1,1 +1,37 @@
+# Credentials
 credentials.txt
+
+# Log files
+*.log
+logs/
+**/logs/*.log
+**/scripts/logs/*.log
+
+# Build artifacts
+.aws-sam/
+build/
+dist/
+node_modules/
+package-lock.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
