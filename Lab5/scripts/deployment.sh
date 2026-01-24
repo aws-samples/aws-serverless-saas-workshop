@@ -274,6 +274,9 @@ if [[ $DEPLOY_PIPELINE -eq 1 ]]; then
           --region "$AWS_REGION")
       if [[ $? -eq 0 ]]; then
           print_message "$GREEN" "  ✓ Repository created"
+          # Wait a few seconds for repository to be fully available
+          print_message "$YELLOW" "  Waiting for repository to be ready..."
+          sleep 5
       else
           print_message "$RED" "Error: Failed to create CodeCommit repository"
           exit 1
