@@ -12,7 +12,6 @@
     "cdk": "cdk"
   },
   "devDependencies": {
-    "@aws-cdk/assert": "1.64.1",
     "@types/jest": "^29.5.0",
     "@types/node": "20.x",
     "aws-cdk-lib": "^2.0.0",
