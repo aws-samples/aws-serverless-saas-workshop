@@ -290,20 +290,33 @@ if [[ $DEPLOY_PIPELINE -eq 1 ]]; then
   
   # Push code to CodeCommit
   print_message "$YELLOW" "  Pushing code to CodeCommit..."
-  CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+  
+  # Navigate to git repository root (workshop directory)
+  GIT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
+  if [[ -z "$GIT_ROOT" ]]; then
+    print_message "$RED" "Error: Not in a git repository"
+    exit 1
+  fi
+  
+  CURRENT_BRANCH=$(git -C "$GIT_ROOT" rev-parse --abbrev-ref HEAD)
   print_message "$YELLOW" "    Current branch: $CURRENT_BRANCH"
+  print_message "$YELLOW" "    Git root: $GIT_ROOT"
   
   # Check for uncommitted changes
-  if [[ -n $(git status -s) ]]; then
+  if [[ -n $(git -C "$GIT_ROOT" status -s) ]]; then
     print_message "$YELLOW" "    ⚠ Warning: Uncommitted changes detected, committing now..."
-    git add -A
-    git commit -m "chore: Auto-commit before Lab5 deployment"
+    git -C "$GIT_ROOT" add -A
+    git -C "$GIT_ROOT" commit -m "chore: Auto-commit before Lab5 deployment"
   fi
   
   # Push to CodeCommit
+  # Export AWS_PROFILE for git-remote-codecommit (required for authentication)
+  if [[ -n "$AWS_PROFILE" ]]; then
+    export AWS_PROFILE
+  fi
   REPO_URL="codecommit::${AWS_REGION}://aws-serverless-saas-workshop"
-  git remote set-url cc $REPO_URL 2>/dev/null || git remote add cc $REPO_URL
-  git push cc $CURRENT_BRANCH:main --force
+  git -C "$GIT_ROOT" remote set-url cc $REPO_URL 2>/dev/null || git -C "$GIT_ROOT" remote add cc $REPO_URL
+  git -C "$GIT_ROOT" push cc $CURRENT_BRANCH:main --force
   if [[ $? -eq 0 ]]; then
     print_message "$GREEN" "  ✓ Code pushed to CodeCommit main branch"
   else

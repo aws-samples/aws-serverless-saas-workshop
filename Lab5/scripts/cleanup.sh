@@ -174,24 +174,24 @@ empty_bucket() {
   print_message "$YELLOW" "  Emptying bucket: $bucket"
   
   # Check if bucket has versioning enabled
-  VERSIONING=$(aws s3api $AWS_PROFILE_ARG get-bucket-versioning --bucket $bucket --region "$AWS_REGION" --query 'Status' --output text 2>/dev/null)
+  VERSIONING=$(aws s3api $PROFILE_ARG get-bucket-versioning --bucket $bucket --region "$AWS_REGION" --query 'Status' --output text 2>/dev/null)
   
   if [[ "$VERSIONING" == "Enabled" ]]; then
     print_message "$YELLOW" "    Bucket has versioning enabled, deleting all versions..."
     
     # Delete all object versions
-    aws s3api $AWS_PROFILE_ARG list-object-versions --bucket $bucket --region "$AWS_REGION" --query 'Versions[].{Key:Key,VersionId:VersionId}' --output json 2>/dev/null | \
-      jq -r '.[]? | "aws s3api '"$AWS_PROFILE_ARG"' delete-object --bucket '"$bucket"' --region '"$AWS_REGION"' --key \"\(.Key)\" --version-id \"\(.VersionId)\""' | \
+    aws s3api $PROFILE_ARG list-object-versions --bucket $bucket --region "$AWS_REGION" --query 'Versions[].{Key:Key,VersionId:VersionId}' --output json 2>/dev/null | \
+      jq -r '.[]? | "aws s3api '"$PROFILE_ARG"' delete-object --bucket '"$bucket"' --region '"$AWS_REGION"' --key \"\(.Key)\" --version-id \"\(.VersionId)\""' | \
       bash 2>/dev/null
     
     # Delete all delete markers
-    aws s3api $AWS_PROFILE_ARG list-object-versions --bucket $bucket --region "$AWS_REGION" --query 'DeleteMarkers[].{Key:Key,VersionId:VersionId}' --output json 2>/dev/null | \
-      jq -r '.[]? | "aws s3api '"$AWS_PROFILE_ARG"' delete-object --bucket '"$bucket"' --region '"$AWS_REGION"' --key \"\(.Key)\" --version-id \"\(.VersionId)\""' | \
+    aws s3api $PROFILE_ARG list-object-versions --bucket $bucket --region "$AWS_REGION" --query 'DeleteMarkers[].{Key:Key,VersionId:VersionId}' --output json 2>/dev/null | \
+      jq -r '.[]? | "aws s3api '"$PROFILE_ARG"' delete-object --bucket '"$bucket"' --region '"$AWS_REGION"' --key \"\(.Key)\" --version-id \"\(.VersionId)\""' | \
       bash 2>/dev/null
   fi
   
   # Delete current objects (for non-versioned buckets or remaining objects)
-  aws s3 $AWS_PROFILE_ARG rm s3://$bucket --recursive --region "$AWS_REGION" 2>/dev/null
+  aws s3 $PROFILE_ARG rm s3://$bucket --recursive --region "$AWS_REGION" 2>/dev/null
   
   if [[ $? -eq 0 ]] || [[ "$VERSIONING" == "Enabled" ]]; then
     print_message "$GREEN" "  ✓ Bucket emptied: $bucket"
@@ -205,7 +205,7 @@ delete_stack() {
   local stack=$1
   PROFILE_ARG=$(get_profile_arg)
   print_message "$YELLOW" "  Deleting stack: $stack"
-  aws cloudformation $AWS_PROFILE_ARG delete-stack --stack-name $stack --region "$AWS_REGION" 2>/dev/null
+  aws cloudformation $PROFILE_ARG delete-stack --stack-name $stack --region "$AWS_REGION" 2>/dev/null
   if [[ $? -eq 0 ]]; then
     print_message "$GREEN" "  ✓ Delete initiated: $stack"
     return 0
@@ -220,7 +220,7 @@ wait_for_deletion() {
   local stack=$1
   PROFILE_ARG=$(get_profile_arg)
   print_message "$YELLOW" "  Waiting for deletion: $stack"
-  aws cloudformation $AWS_PROFILE_ARG wait stack-delete-complete --stack-name $stack --region "$AWS_REGION" 2>/dev/null
+  aws cloudformation $PROFILE_ARG wait stack-delete-complete --stack-name $stack --region "$AWS_REGION" 2>/dev/null
   if [[ $? -eq 0 ]]; then
     print_message "$GREEN" "  ✓ Deleted: $stack"
   else
@@ -234,7 +234,7 @@ print_message "$BLUE" "Step 1: Deleting tenant stacks"
 print_message "$BLUE" "=========================================="
 
 PROFILE_ARG=$(get_profile_arg)
-TENANT_STACKS=$(aws cloudformation $AWS_PROFILE_ARG list-stacks \
+TENANT_STACKS=$(aws cloudformation $PROFILE_ARG list-stacks \
   --region "$AWS_REGION" \
   --stack-status-filter CREATE_COMPLETE ROLLBACK_COMPLETE UPDATE_COMPLETE CREATE_FAILED ROLLBACK_FAILED UPDATE_ROLLBACK_COMPLETE \
   --query 'StackSummaries[?contains(StackName, `stack-`)].StackName' \
@@ -263,15 +263,15 @@ print_message "$BLUE" "Step 2: Identifying resources from stacks"
 print_message "$BLUE" "=========================================="
 
 PROFILE_ARG=$(get_profile_arg)
-ADMIN_BUCKET=$(aws cloudformation $AWS_PROFILE_ARG describe-stacks --stack-name "$SHARED_STACK_NAME" --region "$AWS_REGION" \
+ADMIN_BUCKET=$(aws cloudformation $PROFILE_ARG describe-stacks --stack-name "$SHARED_STACK_NAME" --region "$AWS_REGION" \
   --query "Stacks[0].Outputs[?OutputKey=='AdminSiteBucket'].OutputValue" --output text 2>/dev/null)
-LANDING_BUCKET=$(aws cloudformation $AWS_PROFILE_ARG describe-stacks --stack-name "$SHARED_STACK_NAME" --region "$AWS_REGION" \
+LANDING_BUCKET=$(aws cloudformation $PROFILE_ARG describe-stacks --stack-name "$SHARED_STACK_NAME" --region "$AWS_REGION" \
   --query "Stacks[0].Outputs[?OutputKey=='LandingApplicationSiteBucket'].OutputValue" --output text 2>/dev/null)
-APP_BUCKET=$(aws cloudformation $AWS_PROFILE_ARG describe-stacks --stack-name "$SHARED_STACK_NAME" --region "$AWS_REGION" \
+APP_BUCKET=$(aws cloudformation $PROFILE_ARG describe-stacks --stack-name "$SHARED_STACK_NAME" --region "$AWS_REGION" \
   --query "Stacks[0].Outputs[?OutputKey=='AppBucket'].OutputValue" --output text 2>/dev/null)
 
 # Get API Gateway IDs for log deletion
-SHARED_API_ID=$(aws cloudformation $AWS_PROFILE_ARG describe-stacks --stack-name "$SHARED_STACK_NAME" --region "$AWS_REGION" \
+SHARED_API_ID=$(aws cloudformation $PROFILE_ARG describe-stacks --stack-name "$SHARED_STACK_NAME" --region "$AWS_REGION" \
   --query "Stacks[0].Outputs[?OutputKey=='AdminApiGatewayId'].OutputValue" --output text 2>/dev/null)
 
 print_message "$YELLOW" "Found resources:"
@@ -372,7 +372,7 @@ print_message "$BLUE" "Step 6: Cleaning up pipeline artifacts"
 print_message "$BLUE" "=========================================="
 
 PROFILE_ARG=$(get_profile_arg)
-PIPELINE_BUCKET=$(aws s3 $AWS_PROFILE_ARG ls --region "$AWS_REGION" | grep "${PIPELINE_STACK_NAME}-artifactsbucket" | awk '{print $3}')
+PIPELINE_BUCKET=$(aws s3 $PROFILE_ARG ls --region "$AWS_REGION" | grep "${PIPELINE_STACK_NAME}-artifactsbucket" | awk '{print $3}')
 
 if [[ ! -z "$PIPELINE_BUCKET" ]]; then
   print_message "$YELLOW" "Found pipeline bucket: $PIPELINE_BUCKET"
@@ -402,13 +402,13 @@ print_message "$BLUE" "=========================================="
 
 # Find CDK bootstrap bucket
 PROFILE_ARG=$(get_profile_arg)
-CDK_BUCKET=$(aws s3 $AWS_PROFILE_ARG ls --region "$AWS_REGION" | grep cdktoolkit | awk '{print $3}')
+CDK_BUCKET=$(aws s3 $PROFILE_ARG ls --region "$AWS_REGION" | grep cdktoolkit | awk '{print $3}')
 
 if [[ ! -z "$CDK_BUCKET" ]]; then
   print_message "$YELLOW" "Found CDK bootstrap bucket: $CDK_BUCKET"
   empty_bucket $CDK_BUCKET
   print_message "$YELLOW" "  Deleting bucket: $CDK_BUCKET"
-  aws s3 $AWS_PROFILE_ARG rb s3://$CDK_BUCKET --region "$AWS_REGION" 2>/dev/null
+  aws s3 $PROFILE_ARG rb s3://$CDK_BUCKET --region "$AWS_REGION" 2>/dev/null
   if [[ $? -eq 0 ]]; then
     print_message "$GREEN" "  ✓ Bucket deleted: $CDK_BUCKET"
   else
@@ -433,7 +433,7 @@ echo "=========================================="
 
 # Find Lab5 SAM buckets
 PROFILE_ARG=$(get_profile_arg)
-LAB5_SAM_BUCKETS=$(aws s3 $AWS_PROFILE_ARG ls | grep -E "aws-sam-cli-managed.*lab5|serverless-saas.*lab5" | awk '{print $3}')
+LAB5_SAM_BUCKETS=$(aws s3 $PROFILE_ARG ls | grep -E "aws-sam-cli-managed.*lab5|serverless-saas.*lab5" | awk '{print $3}')
 
 if [[ ! -z "$LAB5_SAM_BUCKETS" ]]; then
   echo "Found Lab5 SAM buckets:"
@@ -442,7 +442,7 @@ if [[ ! -z "$LAB5_SAM_BUCKETS" ]]; then
     empty_bucket $bucket
     # Delete the bucket after emptying
     echo "  Deleting bucket: $bucket"
-    aws s3 $AWS_PROFILE_ARG rb s3://$bucket 2>/dev/null
+    aws s3 $PROFILE_ARG rb s3://$bucket 2>/dev/null
     if [[ $? -eq 0 ]]; then
       echo "  ✓ Bucket deleted: $bucket"
     else
@@ -462,18 +462,18 @@ echo "Step 10: Cleaning up CDK assets bucket"
 echo "=========================================="
 
 PROFILE_ARG=$(get_profile_arg)
-CDK_ASSETS_BUCKET=$(aws s3 $AWS_PROFILE_ARG ls | grep "cdk-hnb659fds-assets" | awk '{print $3}')
+CDK_ASSETS_BUCKET=$(aws s3 $PROFILE_ARG ls | grep "cdk-hnb659fds-assets" | awk '{print $3}')
 
 if [[ ! -z "$CDK_ASSETS_BUCKET" ]]; then
   echo "Found CDK assets bucket: $CDK_ASSETS_BUCKET"
   empty_bucket $CDK_ASSETS_BUCKET
   
   # Verify bucket is completely empty before deletion
-  REMAINING_VERSIONS=$(aws s3api $AWS_PROFILE_ARG list-object-versions --bucket $CDK_ASSETS_BUCKET --output json 2>/dev/null | jq -r '(.Versions // []) + (.DeleteMarkers // []) | length')
+  REMAINING_VERSIONS=$(aws s3api $PROFILE_ARG list-object-versions --bucket $CDK_ASSETS_BUCKET --output json 2>/dev/null | jq -r '(.Versions // []) + (.DeleteMarkers // []) | length')
   
   if [[ "$REMAINING_VERSIONS" == "0" ]]; then
     echo "  Deleting bucket: $CDK_ASSETS_BUCKET"
-    aws s3 $AWS_PROFILE_ARG rb s3://$CDK_ASSETS_BUCKET 2>/dev/null
+    aws s3 $PROFILE_ARG rb s3://$CDK_ASSETS_BUCKET 2>/dev/null
     if [[ $? -eq 0 ]]; then
       echo "  ✓ Bucket deleted: $CDK_ASSETS_BUCKET"
     else
@@ -484,18 +484,18 @@ if [[ ! -z "$CDK_ASSETS_BUCKET" ]]; then
     echo "  Attempting force deletion of remaining versions..."
     
     # Force delete any remaining versions
-    aws s3api $AWS_PROFILE_ARG list-object-versions --bucket $CDK_ASSETS_BUCKET --query 'Versions[].{Key:Key,VersionId:VersionId}' --output json 2>/dev/null | \
-      jq -r '.[]? | "aws s3api '"$AWS_PROFILE_ARG"' delete-object --bucket '"$CDK_ASSETS_BUCKET"' --key \"\(.Key)\" --version-id \"\(.VersionId)\""' | \
+    aws s3api $PROFILE_ARG list-object-versions --bucket $CDK_ASSETS_BUCKET --query 'Versions[].{Key:Key,VersionId:VersionId}' --output json 2>/dev/null | \
+      jq -r '.[]? | "aws s3api '"$PROFILE_ARG"' delete-object --bucket '"$CDK_ASSETS_BUCKET"' --key \"\(.Key)\" --version-id \"\(.VersionId)\""' | \
       bash 2>/dev/null
     
     # Force delete any remaining delete markers
-    aws s3api $AWS_PROFILE_ARG list-object-versions --bucket $CDK_ASSETS_BUCKET --query 'DeleteMarkers[].{Key:Key,VersionId:VersionId}' --output json 2>/dev/null | \
-      jq -r '.[]? | "aws s3api '"$AWS_PROFILE_ARG"' delete-object --bucket '"$CDK_ASSETS_BUCKET"' --key \"\(.Key)\" --version-id \"\(.VersionId)\""' | \
+    aws s3api $PROFILE_ARG list-object-versions --bucket $CDK_ASSETS_BUCKET --query 'DeleteMarkers[].{Key:Key,VersionId:VersionId}' --output json 2>/dev/null | \
+      jq -r '.[]? | "aws s3api '"$PROFILE_ARG"' delete-object --bucket '"$CDK_ASSETS_BUCKET"' --key \"\(.Key)\" --version-id \"\(.VersionId)\""' | \
       bash 2>/dev/null
     
     # Try deletion again
     echo "  Retrying bucket deletion: $CDK_ASSETS_BUCKET"
-    aws s3 $AWS_PROFILE_ARG rb s3://$CDK_ASSETS_BUCKET 2>/dev/null
+    aws s3 $PROFILE_ARG rb s3://$CDK_ASSETS_BUCKET 2>/dev/null
     if [[ $? -eq 0 ]]; then
       echo "  ✓ Bucket deleted: $CDK_ASSETS_BUCKET"
     else
@@ -516,24 +516,24 @@ echo "=========================================="
 
 # Find and delete Lab5 Cognito User Pools
 PROFILE_ARG=$(get_profile_arg)
-LAB5_POOLS=$(aws cognito-idp $AWS_PROFILE_ARG list-user-pools --max-results 60 --output json 2>/dev/null | jq -r '.UserPools[] | select(.Name | contains("lab5")) | .Id')
+LAB5_POOLS=$(aws cognito-idp $PROFILE_ARG list-user-pools --max-results 60 --output json 2>/dev/null | jq -r '.UserPools[] | select(.Name | contains("lab5")) | .Id')
 
 if [[ ! -z "$LAB5_POOLS" ]]; then
   echo "Found Lab5 Cognito User Pools:"
   for pool_id in $LAB5_POOLS; do
-    POOL_NAME=$(aws cognito-idp $AWS_PROFILE_ARG describe-user-pool --user-pool-id $pool_id --query 'UserPool.Name' --output text 2>/dev/null)
+    POOL_NAME=$(aws cognito-idp $PROFILE_ARG describe-user-pool --user-pool-id $pool_id --query 'UserPool.Name' --output text 2>/dev/null)
     echo "  Processing pool: $POOL_NAME ($pool_id)"
     
     # Delete domain first if it exists
-    DOMAIN=$(aws cognito-idp $AWS_PROFILE_ARG describe-user-pool --user-pool-id $pool_id --query 'UserPool.Domain' --output text 2>/dev/null)
+    DOMAIN=$(aws cognito-idp $PROFILE_ARG describe-user-pool --user-pool-id $pool_id --query 'UserPool.Domain' --output text 2>/dev/null)
     if [[ ! -z "$DOMAIN" && "$DOMAIN" != "None" ]]; then
       echo "    Deleting domain: $DOMAIN"
-      aws cognito-idp $AWS_PROFILE_ARG delete-user-pool-domain --domain $DOMAIN --user-pool-id $pool_id 2>/dev/null
+      aws cognito-idp $PROFILE_ARG delete-user-pool-domain --domain $DOMAIN --user-pool-id $pool_id 2>/dev/null
     fi
     
     # Now delete the pool
     echo "    Deleting pool: $POOL_NAME"
-    aws cognito-idp $AWS_PROFILE_ARG delete-user-pool --user-pool-id $pool_id 2>/dev/null
+    aws cognito-idp $PROFILE_ARG delete-user-pool --user-pool-id $pool_id 2>/dev/null
     if [[ $? -eq 0 ]]; then
       echo "  ✓ Pool deleted: $POOL_NAME"
     else
@@ -553,7 +553,7 @@ echo "Step 12: Verifying cleanup"
 echo "=========================================="
 
 PROFILE_ARG=$(get_profile_arg)
-REMAINING_EXPORTS=$(aws cloudformation $AWS_PROFILE_ARG list-exports --query 'Exports[?contains(Name, `lab5`)].Name' --output text 2>/dev/null)
+REMAINING_EXPORTS=$(aws cloudformation $PROFILE_ARG list-exports --query 'Exports[?contains(Name, `lab5`)].Name' --output text 2>/dev/null)
 if [[ ! -z "$REMAINING_EXPORTS" ]]; then
   echo "⚠ Warning: Some Lab5 exports still exist:"
   echo "$REMAINING_EXPORTS"
@@ -564,7 +564,7 @@ fi
 
 echo ""
 
-REMAINING_TABLES=$(aws dynamodb $AWS_PROFILE_ARG list-tables --query 'TableNames[?contains(@, `lab5`)]' --output text 2>/dev/null)
+REMAINING_TABLES=$(aws dynamodb $PROFILE_ARG list-tables --query 'TableNames[?contains(@, `lab5`)]' --output text 2>/dev/null)
 if [[ ! -z "$REMAINING_TABLES" ]]; then
   echo "⚠ Warning: Some Lab5 DynamoDB tables still exist:"
   echo "$REMAINING_TABLES"
@@ -575,7 +575,7 @@ fi
 
 echo ""
 
-REMAINING_STACKS=$(aws cloudformation $AWS_PROFILE_ARG list-stacks \
+REMAINING_STACKS=$(aws cloudformation $PROFILE_ARG list-stacks \
   --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE \
   --query 'StackSummaries[?contains(StackName, `lab5`) || contains(StackName, `serverless-saas-pipeline-lab5`)].StackName' \
   --output text 2>/dev/null)
