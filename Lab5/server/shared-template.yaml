@@ -47,7 +47,7 @@ Parameters:
     Default: "engineering"
     Description: "Cost center for billing"   
 Conditions:
-  IsNotRunningInEventEngine: !Not [ !Equals [ !Ref EventEngineParameter, true] ]   
+  IsNotRunningInEventEngine: !Not [ !Equals [ !Ref EventEngineParameter, "true"] ]   
 Resources:
   DynamoDBTables:
     Type: AWS::Serverless::Application

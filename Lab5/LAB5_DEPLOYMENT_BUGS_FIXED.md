@@ -60,6 +60,43 @@ git -C "$GIT_ROOT" push cc $CURRENT_BRANCH:main --force
 - Git commands were failing because they couldn't find the repository
 - Git push was failing with "repository not found" error due to authentication issues
 
+## Bug 5: TypeScript Version Incompatibility ✅ FIXED
+**Issue**: TenantPipeline CDK code uses TypeScript 4.9.5 which doesn't support CDK 2.x decorator syntax
+**Location**: `workshop/Lab5/server/TenantPipeline/package.json`
+**Fix**: Updated TypeScript from 4.9.5 to ~5.3.0
+**Impact**: CDK synthesis was failing with decorator syntax errors
+
+## Bug 6: ts-jest Compatibility ✅ FIXED
+**Issue**: ts-jest version ^26.2.0 doesn't support TypeScript 5.x
+**Location**: `workshop/Lab5/server/TenantPipeline/package.json`
+**Fix**: Updated ts-jest from ^26.2.0 to ^29.1.0
+**Impact**: Test framework compatibility with TypeScript 5.x
+
+## Bug 7: Jest Version Compatibility ✅ FIXED
+**Issue**: jest version ^26.4.2 incompatible with ts-jest ^29.x
+**Location**: `workshop/Lab5/server/TenantPipeline/package.json`
+**Fix**: Updated jest from ^26.4.2 to ^29.5.0
+**Impact**: Test framework compatibility
+
+## Bug 8: @types Package Versions ✅ FIXED
+**Issue**: @types/jest and @types/node versions incompatible with TypeScript 5.x
+**Location**: `workshop/Lab5/server/TenantPipeline/package.json`
+**Fix**: Updated @types/jest to ^29.5.0 and @types/node to 20.x
+**Impact**: Type definitions compatibility
+
+## Bug 9: Deprecated Package ✅ FIXED
+**Issue**: @aws-cdk/assert@1.64.1 is deprecated and requires old jest version
+**Location**: `workshop/Lab5/server/TenantPipeline/package.json`
+**Fix**: Removed @aws-cdk/assert package
+**Impact**: Removed dependency on deprecated package
+
+## Bug 10: CloudFormation Condition Syntax Error ✅ FIXED
+**Issue**: `!Equals` function comparing string parameter to boolean value causing YAML parser error
+**Location**: Line 50 in `workshop/Lab5/server/shared-template.yaml`
+**Error**: "mapping values are not allowed here" and "could not determine a constructor for the tag '!Not'"
+**Fix**: Changed `!Equals [ !Ref EventEngineParameter, true]` to `!Equals [ !Ref EventEngineParameter, "true"]`
+**Impact**: SAM build was failing with YAML syntax error, preventing stack deployment
+
 ## Testing Results
 After all fixes:
 - ✅ Repository check works correctly
@@ -67,10 +104,13 @@ After all fixes:
 - ✅ Git push succeeds with proper authentication
 - ✅ All git operations use correct directory context
 - ✅ Script continues to CDK deployment phase
+- ✅ TypeScript and dependency versions updated
+- ✅ CloudFormation condition syntax fixed
 
 ## Next Steps
-1. Monitor CDK pipeline deployment
-2. Verify SAM bootstrap deployment
-3. Test client application deployments
-4. Verify all stacks deploy successfully
-5. Update tasks.md with Task 27.5 completion summary
+1. Re-run deployment: `./deployment.sh -s -c --profile serverless-saas-demo`
+2. Monitor SAM build (should now succeed)
+3. Monitor shared stack deployment
+4. Test client application deployments
+5. Verify all stacks deploy successfully
+6. Update tasks.md with Task 27.5 completion summary
