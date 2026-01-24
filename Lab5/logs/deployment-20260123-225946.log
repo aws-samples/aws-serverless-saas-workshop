@@ -30,3 +30,13 @@ Pipeline Stack: serverless-saas-pipeline-lab5
 [1;33m    Current branch: checkpoint-lab7[0m
 [1;33m    Git root: /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop[0m
 [1;33m    ⚠ Warning: Uncommitted changes detected, committing now...[0m
+[checkpoint-lab7 4e1fbff] chore: Auto-commit before Lab5 deployment
+ 8 files changed, 671 insertions(+), 3 deletions(-)
+ create mode 100644 Lab5/logs/deployment-20260123-225946.log
+You are pushing to the remote cc at codecommit::us-west-2://aws-serverless-saas-workshop
+remote: Validating objects: 0%        remote: Validating objects: 100%        
+To codecommit::us-west-2://aws-serverless-saas-workshop
+   e67f1ec..4e1fbff  checkpoint-lab7 -> main
+[0;32m  ✓ Code pushed to CodeCommit main branch[0m
+[1;33m  Building and deploying pipeline with CDK...[0m
+./scripts/deployment.sh: line 329: cd: ../server/TenantPipeline/: No such file or directory
