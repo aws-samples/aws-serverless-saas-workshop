@@ -14,6 +14,7 @@ import { MatRadioModule } from '@angular/material/radio';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatTableModule } from '@angular/material/table';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatIconModule } from '@angular/material/icon';
 
 import { ProductsRoutingModule } from './products-routing.module';
 import { CreateComponent } from './create/create.component';
@@ -37,6 +38,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
     MatSelectModule,
     MatTableModule,
     MatProgressSpinnerModule,
+    MatIconModule,
   ],
   providers: [
     {

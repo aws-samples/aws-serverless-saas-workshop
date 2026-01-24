@@ -29,7 +29,8 @@ export class ServerlessSaaSStack extends cdk.Stack {
         lambdaPolicy.addActions("*")
         lambdaPolicy.addResources("*")
 
-    const lambdaFunction = new Function(this, "deploy-tenant-stack", {
+    const lambdaFunction = new Function(this, "deploy-tenant-stack-lab6", {
+        functionName: 'serverless-saas-lab6-deploy-tenant-stack',
         handler: "lambda-deploy-tenant-stack.lambda_handler",
         runtime: Runtime.PYTHON_3_9,
         code: new AssetCode(`./resources`),
@@ -43,7 +44,7 @@ export class ServerlessSaaSStack extends cdk.Stack {
 
     // Pipeline creation starts
     const pipeline = new codepipeline.Pipeline(this, 'Pipeline', {
-      pipelineName: 'serverless-saas-pipeline',
+      pipelineName: 'serverless-saas-pipeline-lab6',
       artifactBucket: artifactsBucket
     });
 

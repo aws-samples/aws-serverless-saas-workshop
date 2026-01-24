@@ -5,6 +5,16 @@ AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 Description: >
   Template to create dynamodb tables as part of bootstrap
+Parameters:
+  Environment:
+    Type: String
+    Description: "Environment name (dev, staging, prod)"
+  Owner:
+    Type: String
+    Description: "Owner of the resources"
+  CostCenter:
+    Type: String
+    Description: "Cost center for billing"
 Resources:
   ServerlessSaaSSettingsTable:
     Type: AWS::DynamoDB::Table
@@ -16,7 +26,18 @@ Resources:
         - AttributeName: settingName
           KeyType: HASH
       BillingMode: PAY_PER_REQUEST
-      TableName: ServerlessSaaS-Settings
+      TableName: ServerlessSaaS-Settings-lab5
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab5
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
   TenantStackMappingTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -27,7 +48,18 @@ Resources:
         - AttributeName: tenantId
           KeyType: HASH
       BillingMode: PAY_PER_REQUEST
-      TableName: ServerlessSaaS-TenantStackMapping
+      TableName: ServerlessSaaS-TenantStackMapping-lab5
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab5
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
   TenantDetailsTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -35,23 +67,34 @@ Resources:
         - AttributeName: tenantId
           AttributeType: S
         - AttributeName: tenantName
-          AttributeType: S   
+          AttributeType: S
       KeySchema:
         - AttributeName: tenantId
           KeyType: HASH
       BillingMode: PAY_PER_REQUEST
       GlobalSecondaryIndexes:
-        - IndexName: ServerlessSaas-TenantConfig
+        - IndexName: ServerlessSaas-TenantConfig-lab5
           KeySchema:
             - AttributeName: tenantName
               KeyType: HASH
           Projection:
-            NonKeyAttributes: 
+            NonKeyAttributes:
               - userPoolId
               - appClientId
               - apiGatewayUrl
-            ProjectionType: INCLUDE      
-      TableName: ServerlessSaaS-TenantDetails
+            ProjectionType: INCLUDE
+      TableName: ServerlessSaaS-TenantDetails-lab5
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab5
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
   TenantUserMappingTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -66,30 +109,41 @@ Resources:
         - AttributeName: userName
           KeyType: RANGE
       BillingMode: PAY_PER_REQUEST
-      TableName: ServerlessSaaS-TenantUserMapping
-      GlobalSecondaryIndexes: 
+      TableName: ServerlessSaaS-TenantUserMapping-lab5
+      GlobalSecondaryIndexes:
         - IndexName: UserName
-          KeySchema: 
+          KeySchema:
             - AttributeName: userName
               KeyType: HASH
             - AttributeName: tenantId
               KeyType: RANGE
           Projection:
             ProjectionType: ALL
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab5
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
 Outputs:
-  ServerlessSaaSSettingsTableArn: 
+  ServerlessSaaSSettingsTableArn:
     Value: !GetAtt ServerlessSaaSSettingsTable.Arn
-  ServerlessSaaSSettingsTableName: 
+  ServerlessSaaSSettingsTableName:
     Value: !Ref ServerlessSaaSSettingsTable
-  TenantStackMappingTableArn: 
+  TenantStackMappingTableArn:
     Value: !GetAtt TenantStackMappingTable.Arn
-  TenantStackMappingTableName: 
+  TenantStackMappingTableName:
     Value: !Ref TenantStackMappingTable
-  TenantDetailsTableArn: 
+  TenantDetailsTableArn:
     Value: !GetAtt TenantDetailsTable.Arn
-  TenantDetailsTableName: 
+  TenantDetailsTableName:
     Value: !Ref TenantDetailsTable
-  TenantUserMappingTableArn: 
+  TenantUserMappingTableArn:
     Value: !GetAtt TenantUserMappingTable.Arn
-  TenantUserMappingTableName: 
+  TenantUserMappingTableName:
     Value: !Ref TenantUserMappingTable

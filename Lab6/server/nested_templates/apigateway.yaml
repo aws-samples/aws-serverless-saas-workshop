@@ -59,13 +59,33 @@ Parameters:
   ApiKeyStandardTierParameter:
     Type: String
   ApiKeyBasicTierParameter:
-    Type: String  
+    Type: String
+  Environment:
+    Type: String
+    Description: "Environment name (dev, staging, prod)"
+  Owner:
+    Type: String
+    Description: "Owner of the resources"
+  CostCenter:
+    Type: String
+    Description: "Cost center for billing"
+  CreateCloudWatchRole:
+    Type: String
+    Default: "true"
+    AllowedValues:
+      - "true"
+      - "false"
+    Description: "Whether to create the API Gateway CloudWatch role (set to false if role already exists)"
   
+Conditions:
+  ShouldCreateCloudWatchRole: !Equals [!Ref CreateCloudWatchRole, "true"]
+
 Resources:
   ApiGatewayCloudWatchLogRole:
     Type: AWS::IAM::Role
+    Condition: ShouldCreateCloudWatchRole
     Properties:
-      RoleName: !Sub apigateway-cloudwatch-publish-role-${AWS::Region}
+      RoleName: apigateway-cloudwatch-publish-role
       Path: "/"
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs
@@ -78,16 +98,39 @@ Resources:
                 - apigateway.amazonaws.com
             Action:
               - sts:AssumeRole
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab6
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
   ApiGatewayAttachCloudwatchLogArn:
     Type: AWS::ApiGateway::Account
+    Condition: ShouldCreateCloudWatchRole
     Properties:
       CloudWatchRoleArn: !GetAtt ApiGatewayCloudWatchLogRole.Arn
 
   AdminApiGatewayAccessLogs:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub /aws/api-gateway/access-logs-serverless-saas-admin-api
-      RetentionInDays: 30
+      LogGroupName: !Sub /aws/api-gateway/access-logs-serverless-saas-lab6-admin-api
+      RetentionInDays: 60
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab6
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
   AdminApiGatewayApi:
     Type: AWS::Serverless::Api
     Properties:
@@ -172,7 +215,7 @@ Resources:
       DefinitionBody:
         openapi: 3.0.1
         info:
-          title: !Join ["", ["serverless-saas-admin-api-", !Ref "AWS::Region"]]
+          title: serverless-saas-admin-api-lab6
         basePath: !Join ["", ["/", !Ref StageName]]
         x-amazon-apigateway-api-key-source : "AUTHORIZER"
         schemes:
@@ -955,6 +998,12 @@ Resources:
                 authorizerResultTtlInSeconds: 60
                 type: "token"
       StageName: prod
+      Tags:
+        Application: serverless-saas-workshop
+        Lab: lab6
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
   
  #Create API Keys and Usage Plans
   APIGatewayApiKeySystemAdmin:
@@ -962,35 +1011,35 @@ Resources:
     Properties:
       Description: "This is the api key to be used by system admin"
       Enabled: True
-      Name: Serverless-SaaS-SysAdmin-ApiKey
+      Name: serverless-saas-lab6-sysadmin-apikey
       Value: !Ref ApiKeyOperationUsersParameter
   APIGatewayApiKeyPlatinumTier:
     Type: AWS::ApiGateway::ApiKey
     Properties: 
       Description: 'This is the api key to be used by platinum tier tenants'
       Enabled: True
-      Name: Serverless-SaaS-PlatinumTier-ApiKey
+      Name: serverless-saas-lab6-platinum-apikey
       Value: !Ref ApiKeyPlatinumTierParameter
   APIGatewayApiKeyPremiumTier:
     Type: AWS::ApiGateway::ApiKey
     Properties: 
       Description: 'This is the api key to be used by premium tier tenants'
       Enabled: True
-      Name: Serverless-SaaS-PremiumTier-ApiKey
+      Name: serverless-saas-lab6-premium-apikey
       Value: !Ref ApiKeyPremiumTierParameter
   APIGatewayApiKeyStandardTier:
     Type: AWS::ApiGateway::ApiKey
     Properties: 
       Description: 'This is the api key to be used by standard tier tenants'
       Enabled: True
-      Name: Serverless-SaaS-StandardTier-ApiKey
+      Name: serverless-saas-lab6-standard-apikey
       Value: !Ref ApiKeyStandardTierParameter
   APIGatewayApiKeyBasicTier:
     Type: AWS::ApiGateway::ApiKey
     Properties: 
       Description: 'This is the api key to be used by basic tier tenants'
       Enabled: True
-      Name: Serverless-SaaS-BasicTier-ApiKey
+      Name: serverless-saas-lab6-basic-apikey
       Value: !Ref ApiKeyBasicTierParameter
 
   UsagePlanPlatinumTier:   
@@ -1006,7 +1055,7 @@ Resources:
       Throttle:
         BurstLimit: 300
         RateLimit: 300
-      UsagePlanName: Plan_Platinum_Tier
+      UsagePlanName: serverless-saas-lab6-platinum-plan
     DependsOn: 
       - AdminApiGatewayApiprodStage
   UsagePlanPremiumTier:   
@@ -1022,7 +1071,7 @@ Resources:
       Throttle:
         BurstLimit: 200
         RateLimit: 100
-      UsagePlanName: Plan_Premium_Tier
+      UsagePlanName: serverless-saas-lab6-premium-plan
     DependsOn: 
       - AdminApiGatewayApiprodStage
   UsagePlanStandardTier: 
@@ -1038,7 +1087,7 @@ Resources:
       Throttle:
         BurstLimit: 100
         RateLimit: 75
-      UsagePlanName: Plan_Standard_Tier
+      UsagePlanName: serverless-saas-lab6-standard-plan
     DependsOn: 
       - AdminApiGatewayApiprodStage
   UsagePlanBasicTier:   
@@ -1054,7 +1103,7 @@ Resources:
       Throttle:
         BurstLimit: 50
         RateLimit: 50
-      UsagePlanName: Plan_Basic_Tier
+      UsagePlanName: serverless-saas-lab6-basic-plan
     DependsOn: 
       - AdminApiGatewayApiprodStage
   UsagePlanSystemAdmin:
@@ -1070,7 +1119,7 @@ Resources:
       Throttle:
         BurstLimit: 5000
         RateLimit: 500
-      UsagePlanName: System_Admin_Usage_Plan
+      UsagePlanName: serverless-saas-lab6-sysadmin-plan
     DependsOn:
       - AdminApiGatewayApiprodStage
 

@@ -2,9 +2,9 @@ version = 0.1
 [default]
 [default.deploy]
 [default.deploy.parameters]
-stack_name = "serverless-saas"
-s3_bucket = "aws-saas-sam-cli-ujwbuket"
-s3_prefix = "serverless-saas"
+stack_name = "serverless-saas-workshop-shared-lab4"
+s3_bucket = "sam-bootstrap-bucket-lab4-shared"
+s3_prefix = "serverless-saas-lab4/shared"
 region = "us-west-2"
 confirm_changeset = false
 capabilities = "CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND"

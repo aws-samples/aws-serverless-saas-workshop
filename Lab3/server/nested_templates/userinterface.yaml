@@ -6,6 +6,18 @@ Transform: AWS::Serverless-2016-10-31
 Description: >
   Template to deploy cloudfront and s3 bucket for UI code
 Parameters:
+  Environment:
+    Type: String
+    Description: Deployment environment for the workshop
+
+  Owner:
+    Type: String
+    Description: Owner identifier for resource tracking
+
+  CostCenter:
+    Type: String
+    Description: Cost center for billing allocation
+
   IsCloudFrontAndS3PreProvisioned:
     Type: String
     Default: false    
@@ -34,6 +46,17 @@ Resources:
         BlockPublicPolicy: True
         IgnorePublicAcls: True
         RestrictPublicBuckets: True
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab3
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
   AdminAppSiteReadPolicy:
     Type: AWS::S3::BucketPolicy
     Condition: IsNotRunningInEventEngine
@@ -88,7 +111,18 @@ Resources:
           Id: adminapp-s3origin
           S3OriginConfig:
             OriginAccessIdentity: !Join ["", ["origin-access-identity/cloudfront/", !Ref CloudFrontOriginAccessIdentity]] 
-        PriceClass: 'PriceClass_All'  
+        PriceClass: 'PriceClass_All'
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab3
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter  
   LandingAppBucket:
     Type: AWS::S3::Bucket
     Condition: IsNotRunningInEventEngine
@@ -103,6 +137,17 @@ Resources:
         BlockPublicPolicy: True
         IgnorePublicAcls: True
         RestrictPublicBuckets: True
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab3
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
   
   LandingAppSiteReadPolicy:
     Type: AWS::S3::BucketPolicy
@@ -156,7 +201,18 @@ Resources:
           Id: landingapp-s3origin
           S3OriginConfig:
             OriginAccessIdentity: !Join ["", ["origin-access-identity/cloudfront/", !Ref CloudFrontOriginAccessIdentity]] 
-        PriceClass: 'PriceClass_All' 
+        PriceClass: 'PriceClass_All'
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab3
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter 
   AppBucket:
     Type: AWS::S3::Bucket
     Condition: IsNotRunningInEventEngine
@@ -171,6 +227,17 @@ Resources:
         BlockPublicPolicy: True
         IgnorePublicAcls: True
         RestrictPublicBuckets: True
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab3
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
   AppSiteReadPolicy:
     Type: AWS::S3::BucketPolicy
     Condition: IsNotRunningInEventEngine
@@ -223,7 +290,18 @@ Resources:
           Id: tenantapp-s3origin
           S3OriginConfig:
             OriginAccessIdentity: !Join ["", ["origin-access-identity/cloudfront/", !Ref CloudFrontOriginAccessIdentity]] 
-        PriceClass: 'PriceClass_All'          
+        PriceClass: 'PriceClass_All'
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab3
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter          
 Outputs:
   AdminBucket:
     Description: The name of the bucket for uploading the Admin Management site to

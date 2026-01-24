@@ -63,6 +63,9 @@ def __create_tenant_admin_user(tenant_details, headers, auth, host, stage_name):
         logger.info(url)
         response = requests.post(url, data=json.dumps(tenant_details), auth=auth, headers=headers) 
         response_json = response.json()
+        # Parse the body field which contains the actual response data as a JSON string
+        if 'body' in response_json:
+            response_json = json.loads(response_json['body'])
     except Exception as e:
         logger.error('Error occured while calling the create tenant admin user service')
         raise Exception('Error occured while calling the create tenant admin user service', e)
@@ -74,6 +77,9 @@ def __create_tenant(tenant_details, headers, auth, host, stage_name):
         url = ''.join(['https://', host, '/', stage_name, create_tenant_resource_path])
         response = requests.post(url, data=json.dumps(tenant_details), auth=auth, headers=headers) 
         response_json = response.json()
+        # Parse the body field which contains the actual response data as a JSON string
+        if 'body' in response_json:
+            response_json = json.loads(response_json['body'])
     except Exception as e:
         logger.error('Error occured while creating the tenant record in table')
         raise Exception('Error occured while creating the tenant record in table', e) 
@@ -85,7 +91,13 @@ def __provision_tenant(tenant_details, headers, auth, host, stage_name):
         url = ''.join(['https://', host, '/', stage_name, provision_tenant_resource_path])
         logger.info(url)
         response = requests.post(url, data=json.dumps(tenant_details), auth=auth, headers=headers) 
-        response_json = response.json()['message']
+        response_json = response.json()
+        # Parse the body field which contains the actual response data as a JSON string
+        if 'body' in response_json:
+            response_json = json.loads(response_json['body'])
+        # Extract the message field if it exists
+        if 'message' in response_json:
+            response_json = response_json['message']
     except Exception as e:
         logger.error('Error occured while provisioning the tenant')
         raise Exception('Error occured while creating the tenant record in table', e) 

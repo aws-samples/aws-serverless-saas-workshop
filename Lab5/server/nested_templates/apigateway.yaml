@@ -33,7 +33,7 @@ Parameters:
   GetTenantConfigFunctionArn:
     Type: String
   GetUsersFunctionArn:
-    Type: String    
+    Type: String
   GetUserFunctionArn:
     Type: String
   UpdateUserFunctionArn:
@@ -50,12 +50,30 @@ Parameters:
     Type: String
   AuthorizerFunctionArn:
     Type: String
-  
+  Environment:
+    Type: String
+    Description: "Environment name (dev, staging, prod)"
+  Owner:
+    Type: String
+    Description: "Owner of the resources"
+  CostCenter:
+    Type: String
+    Description: "Cost center for billing"
+  CreateCloudWatchRole:
+    Type: String
+    Default: "true"
+    AllowedValues: ["true", "false"]
+    Description: Whether to create the API Gateway CloudWatch role (set to false if role already exists)
+
+Conditions:
+  ShouldCreateCloudWatchRole: !Equals [!Ref CreateCloudWatchRole, "true"]
+
 Resources:
   ApiGatewayCloudWatchLogRole:
     Type: AWS::IAM::Role
+    Condition: ShouldCreateCloudWatchRole
     Properties:
-      RoleName: !Sub apigateway-cloudwatch-publish-role-${AWS::Region}
+      RoleName: apigateway-cloudwatch-publish-role
       Path: "/"
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs
@@ -68,19 +86,43 @@ Resources:
                 - apigateway.amazonaws.com
             Action:
               - sts:AssumeRole
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab5
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
   ApiGatewayAttachCloudwatchLogArn:
     Type: AWS::ApiGateway::Account
+    Condition: ShouldCreateCloudWatchRole
     Properties:
       CloudWatchRoleArn: !GetAtt ApiGatewayCloudWatchLogRole.Arn
 
   AdminApiGatewayAccessLogs:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub /aws/api-gateway/access-logs-serverless-saas-admin-api
-      RetentionInDays: 30
+      LogGroupName: !Sub /aws/api-gateway/access-logs-serverless-saas-lab5-admin-api
+      RetentionInDays: 60
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab5
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
   AdminApiGatewayApi:
     Type: AWS::Serverless::Api
     Properties:
+      Name: serverless-saas-admin-api-lab5
       MethodSettings:
         - DataTraceEnabled: False
           LoggingLevel: INFO
@@ -97,13 +139,13 @@ Resources:
             - Effect: Deny
               Principal: "*"
               Action: "execute-api:Invoke"
-              Resource: 
+              Resource:
                 - !Join [
                    "",
                    [
                      "execute-api:/", !Ref StageName, "/POST/tenant"
                    ]
-                  ] 
+                  ]
                 - !Join [ "", [
                      "execute-api:/", !Ref StageName, "/POST/user/tenant-admin"
                    ]
@@ -113,20 +155,20 @@ Resources:
                    [
                      "execute-api:/", !Ref StageName, "/POST/provisioning"
                    ]
-                  ] 
+                  ]
               Condition:
                 StringNotEquals:
                   aws:PrincipalArn:
-                    - !Ref RegisterTenantLambdaExecutionRoleArn 
-                    - !Ref TenantManagementLambdaExecutionRoleArn 
+                    - !Ref RegisterTenantLambdaExecutionRoleArn
+                    - !Ref TenantManagementLambdaExecutionRoleArn
             - Effect: Deny
               Principal: "*"
               Action: "execute-api:Invoke"
-              Resource: 
+              Resource:
                 - !Join [ "", [
                      "execute-api:/", !Ref StageName, "/PUT/users/disable"
                    ]
-                 ]                
+                 ]
               Condition:
                 StringNotEquals:
                   aws:PrincipalArn:
@@ -134,11 +176,11 @@ Resources:
             - Effect: Deny
               Principal: "*"
               Action: "execute-api:Invoke"
-              Resource: 
+              Resource:
                 - !Join [ "", [
                      "execute-api:/", !Ref StageName, "/PUT/users/enable"
                    ]
-                 ]                
+                 ]
               Condition:
                 StringNotEquals:
                   aws:PrincipalArn:
@@ -146,11 +188,11 @@ Resources:
             - Effect: Deny
               Principal: "*"
               Action: "execute-api:Invoke"
-              Resource: 
+              Resource:
                 - !Join [ "", [
                      "execute-api:/", !Ref StageName, "/PUT/provisioning/{tenantid}"
                    ]
-                 ]                
+                 ]
               Condition:
                 StringNotEquals:
                   aws:PrincipalArn:
@@ -210,7 +252,7 @@ Resources:
                 passthroughBehavior: when_no_match
                 requestTemplates:
                   application/json: '{"statusCode": 200}'
-                type: mock                   
+                type: mock
           /provisioning:
             post:
               summary: provisions resource for new tenant
@@ -227,7 +269,7 @@ Resources:
                     -  !Ref ProvisionTenantFunctionArn
                     - /invocations
                 httpMethod: POST
-                type: aws_proxy            
+                type: aws_proxy
             options:
               consumes:
                 - application/json
@@ -256,7 +298,7 @@ Resources:
                 passthroughBehavior: when_no_match
                 requestTemplates:
                   application/json: "{\"statusCode\": 200}"
-                type: mock 
+                type: mock
           /provisioning/{tenantid}:
             put:
               summary: deprovision by tenant
@@ -275,7 +317,7 @@ Resources:
                       type: string
                     Access-Control-Allow-Headers:
                       type: string
-              security:                
+              security:
                 - sigv4Reference: []
               x-amazon-apigateway-integration:
                 responses:
@@ -285,7 +327,7 @@ Resources:
                       method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
                       method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
                       method.response.header.Access-Control-Allow-Origin:  "'*'"
-                passthroughBehavior: when_no_match                
+                passthroughBehavior: when_no_match
                 uri: !Join
                   - ''
                   - - !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/
@@ -295,7 +337,7 @@ Resources:
                 type: AWS
                 requestParameters:
                   integration.request.header.X-Amz-Invocation-Type: '''Event'''
-                        
+
             options:
               consumes:
                 - application/json
@@ -324,7 +366,7 @@ Resources:
                 passthroughBehavior: when_no_match
                 requestTemplates:
                   application/json: "{\"statusCode\": 200}"
-                type: mock  
+                type: mock
           /tenant/activation/{tenantid}:
             put:
               security:
@@ -416,7 +458,7 @@ Resources:
                 passthroughBehavior: when_no_match
                 requestTemplates:
                   application/json: '{"statusCode": 200}'
-                type: mock                 
+                type: mock
           /tenant:
             post:
               summary: Creates a tenant
@@ -433,7 +475,7 @@ Resources:
                     -  !Ref CreateTenantFunctionArn
                     - /invocations
                 httpMethod: POST
-                type: aws_proxy                
+                type: aws_proxy
             options:
               consumes:
                 - application/json
@@ -462,7 +504,7 @@ Resources:
                 passthroughBehavior: when_no_match
                 requestTemplates:
                   application/json: "{\"statusCode\": 200}"
-                type: mock 
+                type: mock
           /tenant/init/{tenantname}:
             get:
               summary: Returns a tenant config
@@ -477,7 +519,7 @@ Resources:
                     -  !Ref GetTenantConfigFunctionArn
                     - /invocations
                 httpMethod: POST
-                type: aws_proxy 
+                type: aws_proxy
             options:
               consumes:
                 - application/json
@@ -506,7 +548,7 @@ Resources:
                 passthroughBehavior: when_no_match
                 requestTemplates:
                   application/json: "{\"statusCode\": 200}"
-                type: mock        
+                type: mock
           /tenant/{tenantid}:
             get:
               summary: Returns a tenant
@@ -514,7 +556,7 @@ Resources:
               produces:
                 - application/json
               responses: {}
-              security:   
+              security:
                 - Authorizer: []
               x-amazon-apigateway-integration:
                 uri: !Join
@@ -523,14 +565,14 @@ Resources:
                     -  !Ref GetTenantFunctionArn
                     - /invocations
                 httpMethod: POST
-                type: aws_proxy        
-            delete:              
+                type: aws_proxy
+            delete:
               summary: Disables a tenant
               description: Disables a tenant by a tenant id
               produces:
                 - application/json
               responses: {}
-              security:   
+              security:
                 - Authorizer: []
               x-amazon-apigateway-integration:
                 uri: !Join
@@ -540,13 +582,13 @@ Resources:
                     - /invocations
                 httpMethod: POST
                 type: aws_proxy
-            put:  
+            put:
               summary: Updates a tenant
               description: Updates a tenant
               produces:
                 - application/json
               responses: {}
-              security:        
+              security:
                 - Authorizer: []
               x-amazon-apigateway-integration:
                 uri: !Join
@@ -555,7 +597,7 @@ Resources:
                     -  !Ref UpdateTenantFunctionArn
                     - /invocations
                 httpMethod: POST
-                type: aws_proxy            
+                type: aws_proxy
             options:
               consumes:
                 - application/json
@@ -584,8 +626,8 @@ Resources:
                 passthroughBehavior: when_no_match
                 requestTemplates:
                   application/json: "{\"statusCode\": 200}"
-                type: mock     
-            
+                type: mock
+
           /user/{username}:
             get:
               summary: Returns a user
@@ -593,7 +635,7 @@ Resources:
               produces:
                 - application/json
               responses: {}
-              security:     
+              security:
                 - Authorizer: []
               x-amazon-apigateway-integration:
                 uri: !Join
@@ -602,12 +644,12 @@ Resources:
                     -  !Ref GetUserFunctionArn
                     - /invocations
                 httpMethod: POST
-                type: aws_proxy    
-            put:              
+                type: aws_proxy
+            put:
               produces:
                 - application/json
               responses: {}
-              security:                
+              security:
                 - Authorizer: []
               x-amazon-apigateway-integration:
                 uri: !Join
@@ -617,13 +659,13 @@ Resources:
                     - /invocations
                 httpMethod: POST
                 type: aws_proxy
-            delete:          
+            delete:
               summary: Diables a user
-              description: Disable a user by a user id    
+              description: Disable a user by a user id
               produces:
                 - application/json
               responses: {}
-              security: 
+              security:
                 - Authorizer: []
               x-amazon-apigateway-integration:
                 uri: !Join
@@ -649,7 +691,7 @@ Resources:
                     -  !Ref CreateTenantAdminUserFunctionArn
                     - /invocations
                 httpMethod: POST
-                type: aws_proxy          
+                type: aws_proxy
             options:
               consumes:
                 - application/json
@@ -678,7 +720,7 @@ Resources:
                 passthroughBehavior: when_no_match
                 requestTemplates:
                   application/json: "{\"statusCode\": 200}"
-                type: mock       
+                type: mock
           /user:
             post:
               summary: Create a user
@@ -686,7 +728,7 @@ Resources:
               produces:
                 - application/json
               responses: {}
-              security:            
+              security:
                 - Authorizer: []
               x-amazon-apigateway-integration:
                 uri: !Join
@@ -696,7 +738,7 @@ Resources:
                     - /invocations
                 httpMethod: POST
                 type: aws_proxy
-                        
+
             options:
               consumes:
                 - application/json
@@ -725,7 +767,7 @@ Resources:
                 passthroughBehavior: when_no_match
                 requestTemplates:
                   application/json: "{\"statusCode\": 200}"
-                type: mock 
+                type: mock
           /users:
             get:
               summary: Get all users by tenantId
@@ -733,7 +775,7 @@ Resources:
               produces:
                 - application/json
               responses: {}
-              security:   
+              security:
                 - Authorizer: []
               x-amazon-apigateway-integration:
                 uri: !Join
@@ -743,7 +785,7 @@ Resources:
                     - /invocations
                 httpMethod: POST
                 type: aws_proxy
-                        
+
             options:
               consumes:
                 - application/json
@@ -772,7 +814,7 @@ Resources:
                 passthroughBehavior: when_no_match
                 requestTemplates:
                   application/json: "{\"statusCode\": 200}"
-                type: mock         
+                type: mock
           /users/disable:
             put:
               summary: disable users by tenant id
@@ -791,7 +833,7 @@ Resources:
                       type: string
                     Access-Control-Allow-Headers:
                       type: string
-              security:     
+              security:
                 - sigv4Reference: []
               x-amazon-apigateway-integration:
                 responses:
@@ -801,7 +843,7 @@ Resources:
                       method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
                       method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
                       method.response.header.Access-Control-Allow-Origin:  "'*'"
-                passthroughBehavior: when_no_match                
+                passthroughBehavior: when_no_match
                 uri: !Join
                   - ''
                   - - !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/
@@ -811,7 +853,7 @@ Resources:
                 type: AWS
                 requestParameters:
                   integration.request.header.X-Amz-Invocation-Type: '''Event'''
-                        
+
             options:
               consumes:
                 - application/json
@@ -840,7 +882,7 @@ Resources:
                 passthroughBehavior: when_no_match
                 requestTemplates:
                   application/json: "{\"statusCode\": 200}"
-                type: mock  
+                type: mock
           /users/enable:
             put:
               summary: enable users by tenant id
@@ -859,7 +901,7 @@ Resources:
                       type: string
                     Access-Control-Allow-Headers:
                       type: string
-              security:     
+              security:
                 - sigv4Reference: []
               x-amazon-apigateway-integration:
                 responses:
@@ -869,7 +911,7 @@ Resources:
                       method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
                       method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
                       method.response.header.Access-Control-Allow-Origin:  "'*'"
-                passthroughBehavior: when_no_match                
+                passthroughBehavior: when_no_match
                 uri: !Join
                   - ''
                   - - !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/
@@ -879,7 +921,7 @@ Resources:
                 type: AWS
                 requestParameters:
                   integration.request.header.X-Amz-Invocation-Type: '''Event'''
-                        
+
             options:
               consumes:
                 - application/json
@@ -908,18 +950,18 @@ Resources:
                 passthroughBehavior: when_no_match
                 requestTemplates:
                   application/json: "{\"statusCode\": 200}"
-                type: mock  
+                type: mock
         components:
-          securitySchemes:      
+          securitySchemes:
             api_key:
               type: "apiKey"
               name: "x-api-key"
-              in: "header"     
+              in: "header"
             sigv4Reference:
               type: "apiKey"
               name: "Authorization"
               in: "header"
-              x-amazon-apigateway-authtype: "awsSigv4"  
+              x-amazon-apigateway-authtype: "awsSigv4"
             Authorizer:
               type: "apiKey"
               name: "Authorization"
@@ -934,7 +976,13 @@ Resources:
                 authorizerResultTtlInSeconds: 60
                 type: "token"
       StageName: prod
-  
+      Tags:
+        Application: serverless-saas-workshop
+        Lab: lab5
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
+
 
 Outputs:
   AdminApiGatewayApi:

@@ -63,7 +63,12 @@ def lambda_handler(event, context):
     authResponse = policy.build()
  
     # TODO: Add tenant context to authResponse
-    
+    context = {
+        'userName': user_name,
+        'tenantId': tenant_id        
+    }
+
+    authResponse['context'] = context
     return authResponse
 
 def validateJWT(token, app_client_id, keys):
@@ -124,7 +129,7 @@ class AuthPolicy(object):
     """The principal used for the policy, this should be a unique identifier for the end user."""
     version = "2012-10-17"
     """The policy version used for the evaluation. This should always be '2012-10-17'"""
-    pathRegex = "^[/.a-zA-Z0-9-\*]+$"
+    pathRegex = r"^[/.a-zA-Z0-9-\*]+$"
     """The regular expression used to validate resource paths for the policy"""
 
     """these are the internal lists of allowed and denied methods. These are lists

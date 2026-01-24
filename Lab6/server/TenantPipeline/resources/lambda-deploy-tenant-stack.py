@@ -18,9 +18,9 @@ print('Loading function')
 cf = boto3.client('cloudformation')
 code_pipeline = boto3.client('codepipeline')
 dynamodb = boto3.resource('dynamodb')
-table_tenant_stack_mapping = dynamodb.Table('ServerlessSaaS-TenantStackMapping')
-table_tenant_details = dynamodb.Table('ServerlessSaaS-TenantDetails')
-table_tenant_settings = dynamodb.Table('ServerlessSaaS-Settings')
+table_tenant_stack_mapping = dynamodb.Table('ServerlessSaaS-TenantStackMapping-lab6')
+table_tenant_details = dynamodb.Table('ServerlessSaaS-TenantDetails-lab6')
+table_tenant_settings = dynamodb.Table('ServerlessSaaS-Settings-lab6')
 
 
 def find_artifact(artifacts, name):
@@ -413,6 +413,12 @@ def lambda_handler(event, context):
         # Get all the stacks for each tenant to be updated/created from tenant stack mapping table
         mappings = table_tenant_stack_mapping.scan()
         print (mappings)
+        
+        # Check if there are any tenants to process
+        if mappings['Count'] == 0:
+            put_job_success(job_id, 'No tenants found in TenantStackMapping table')
+            return "Complete."
+        
         #Update/Create stacks for all tenants
         for mapping in mappings['Items']:
             stack = mapping['stackName']

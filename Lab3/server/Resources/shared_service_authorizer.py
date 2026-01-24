@@ -75,7 +75,16 @@ def lambda_handler(event, context):
 
     #only tenant admin and system admin can do certain actions like create and disable users
     #TODO: Add policy so that only tenant and SaaS admins can add/modify tenant information
-    
+    if (auth_manager.isTenantAdmin(user_role) or auth_manager.isSystemAdmin(user_role)):
+        policy.allowAllMethods()
+        if (auth_manager.isTenantAdmin(user_role)):
+            policy.denyMethod(HttpVerb.POST, "tenant-activation")
+            policy.denyMethod(HttpVerb.GET, "tenants")
+    else:
+        #if not tenant admin or system admin then only allow to get info and update info
+        policy.allowMethod(HttpVerb.GET, "user/*")
+        policy.allowMethod(HttpVerb.PUT, "user/*")
+
 
     authResponse = policy.build()
  
@@ -148,7 +157,7 @@ class AuthPolicy(object):
     """The principal used for the policy, this should be a unique identifier for the end user."""
     version = "2012-10-17"
     """The policy version used for the evaluation. This should always be '2012-10-17'"""
-    pathRegex = "^[/.a-zA-Z0-9-\*]+$"
+    pathRegex = r"^[/.a-zA-Z0-9-\*]+$"
     """The regular expression used to validate resource paths for the policy"""
 
     """these are the internal lists of allowed and denied methods. These are lists

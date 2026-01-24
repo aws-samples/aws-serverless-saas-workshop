@@ -31,7 +31,7 @@ Parameters:
   GetTenantConfigFunctionArn:
     Type: String
   GetUsersFunctionArn:
-    Type: String   
+    Type: String
   GetUserFunctionArn:
     Type: String
   UpdateUserFunctionArn:
@@ -121,7 +121,7 @@ Resources:
       Action: lambda:InvokeFunction
       FunctionName: !Ref GetUsersFunctionArn
       Principal: apigateway.amazonaws.com
-      SourceArn: !Join ["", ["arn:aws:execute-api:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":", !Ref AdminApiGatewayApi, "/*/*/*" ]]   
+      SourceArn: !Join ["", ["arn:aws:execute-api:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":", !Ref AdminApiGatewayApi, "/*/*/*" ]]
   GetUserLambdaApiGatewayExecutionPermission:
     Type: AWS::Lambda::Permission
     Properties:
@@ -184,4 +184,4 @@ Resources:
       Action: lambda:InvokeFunction
       FunctionName: !Ref GetTenantConfigFunctionArn
       Principal: apigateway.amazonaws.com
-      SourceArn: !Join ["", ["arn:aws:execute-api:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":", !Ref AdminApiGatewayApi, "/*/*/*" ]]    
+      SourceArn: !Join ["", ["arn:aws:execute-api:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":", !Ref AdminApiGatewayApi, "/*/*/*" ]]

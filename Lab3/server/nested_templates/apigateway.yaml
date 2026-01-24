@@ -6,6 +6,22 @@ Transform: AWS::Serverless-2016-10-31
 Description: >
   Template to setup api gateway, apis, api keys and usage plan as part of bootstrap
 Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+    Description: Deployment environment for the workshop
+  Owner:
+    Type: String
+    Default: workshop-participant
+    Description: Owner identifier for resource tracking
+  CostCenter:
+    Type: String
+    Default: serverless-saas-workshop
+    Description: Cost center for billing allocation
   StageName:
     Type: String
   RegisterTenantLambdaExecutionRoleArn:
@@ -44,12 +60,21 @@ Parameters:
     Type: String
   AuthorizerFunctionArn:
     Type: String
+  CreateCloudWatchRole:
+    Type: String
+    Default: "true"
+    AllowedValues: ["true", "false"]
+    Description: Whether to create the API Gateway CloudWatch role (set to false if role already exists)
+
+Conditions:
+  ShouldCreateCloudWatchRole: !Equals [!Ref CreateCloudWatchRole, "true"]
   
 Resources:
   ApiGatewayCloudWatchLogRole:
     Type: AWS::IAM::Role
+    Condition: ShouldCreateCloudWatchRole
     Properties:
-      RoleName: !Sub apigateway-cloudwatch-publish-role-${AWS::Region}
+      RoleName: apigateway-cloudwatch-publish-role
       Path: "/"
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs
@@ -62,19 +87,48 @@ Resources:
                 - apigateway.amazonaws.com
             Action:
               - sts:AssumeRole
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab3
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
   ApiGatewayAttachCloudwatchLogArn:
     Type: AWS::ApiGateway::Account
+    Condition: ShouldCreateCloudWatchRole
     Properties:
       CloudWatchRoleArn: !GetAtt ApiGatewayCloudWatchLogRole.Arn
 
   AdminApiGatewayAccessLogs:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub /aws/api-gateway/access-logs-serverless-saas-admin-api
-      RetentionInDays: 30
+      LogGroupName: !Sub /aws/api-gateway/access-logs-serverless-saas-admin-api-lab3
+      RetentionInDays: 60
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab3
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
   AdminApiGatewayApi:
     Type: AWS::Serverless::Api
     Properties:
+      Tags:
+        Application: serverless-saas-workshop
+        Lab: lab3
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
       MethodSettings:
         - DataTraceEnabled: False
           LoggingLevel: INFO
@@ -138,7 +192,7 @@ Resources:
       DefinitionBody:
         openapi: 3.0.1
         info:
-          title: !Join ["", ["serverless-saas-admin-api-", !Ref "AWS::Region"]]
+          title: "serverless-saas-admin-api-lab3"
         basePath: !Join ["", ["/", !Ref StageName]]
         schemes:
           - https

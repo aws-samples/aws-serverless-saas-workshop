@@ -26,8 +26,8 @@ def create_tenant(event, context):
     tenant_details = json.loads(event['body'])
 
     dynamodb = boto3.resource('dynamodb')
-    table_tenant_details = dynamodb.Table('ServerlessSaaS-TenantDetails')#TODO: read table names from env vars
-    table_system_settings = dynamodb.Table('ServerlessSaaS-Settings')
+    table_tenant_details = dynamodb.Table('ServerlessSaaS-TenantDetails-lab6')#TODO: read table names from env vars
+    table_system_settings = dynamodb.Table('ServerlessSaaS-Settings-lab6')
 
     try:          
         # for pooled tenants the apigateway url is saving in settings during stack creation
@@ -49,7 +49,7 @@ def create_tenant(event, context):
                     'tenantEmail': tenant_details['tenantEmail'],
                     'tenantPhone': tenant_details['tenantPhone'],
                     'tenantTier': tenant_details['tenantTier'],
-                    #'apiKey': tenant_details['apiKey'],
+                    'apiKey': tenant_details['apiKey'],
                     'userPoolId': tenant_details['userPoolId'],                 
                     'appClientId': tenant_details['appClientId'],
                     'dedicatedTenancy': tenant_details['dedicatedTenancy'],
@@ -274,11 +274,11 @@ def load_tenant_config(event, context):
     tenantName = urllib.parse.unquote(params['tenantname'])
 
     dynamodb = boto3.resource('dynamodb')
-    table_tenant_details = dynamodb.Table('ServerlessSaaS-TenantDetails')#TODO: read table names from env vars
+    table_tenant_details = dynamodb.Table('ServerlessSaaS-TenantDetails-lab6')#TODO: read table names from env vars
     
     try:
         response = table_tenant_details.query(
-            IndexName="ServerlessSaas-TenantConfig",
+            IndexName="ServerlessSaas-TenantConfig-lab6",
             KeyConditionExpression=Key('tenantName').eq(tenantName),
             ProjectionExpression="userPoolId, appClientId, apiGatewayUrl"
         ) 
@@ -366,7 +366,7 @@ def __getTenantManagementTable(event):
     secretkey = event['requestContext']['authorizer']['secretkey']
     sessiontoken = event['requestContext']['authorizer']['sessiontoken']    
     dynamodb = boto3.resource('dynamodb', aws_access_key_id=accesskey, aws_secret_access_key=secretkey, aws_session_token=sessiontoken)
-    table_tenant_details = dynamodb.Table('ServerlessSaaS-TenantDetails')#TODO: read table names from env vars
+    table_tenant_details = dynamodb.Table('ServerlessSaaS-TenantDetails-lab6')#TODO: read table names from env vars
     
     return table_tenant_details
 

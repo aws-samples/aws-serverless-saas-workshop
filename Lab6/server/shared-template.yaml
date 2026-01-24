@@ -6,6 +6,22 @@ Transform: AWS::Serverless-2016-10-31
 Description: >
   Template to Bootstrap the Common Resources
 Parameters:
+  Environment:
+    Type: String
+    Default: "dev"
+    Description: "Environment name (dev, staging, prod)"
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+  Owner:
+    Type: String
+    Default: "workshop-participant"
+    Description: "Owner of the resources"
+  CostCenter:
+    Type: String
+    Default: "serverless-saas-workshop"
+    Description: "Cost center for billing"
   AdminEmailParameter:
     Type: String
     Default: "test@test.com"
@@ -57,6 +73,10 @@ Resources:
     Type: AWS::Serverless::Application
     Properties:
       Location: nested_templates/tables.yaml
+      Parameters:
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
 
   #Create cloudfront and s3 for UI Cde
   UserInterface:
@@ -65,6 +85,9 @@ Resources:
       Location: nested_templates/userinterface.yaml
       Parameters:
         IsCloudFrontAndS3PreProvisioned: !Ref EventEngineParameter
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
       
   Cognito:
     Type: AWS::Serverless::Application
@@ -76,6 +99,9 @@ Resources:
         SystemAdminRoleNameParameter: !Ref SystemAdminRoleNameParameter
         AdminUserPoolCallbackURLParameter: !If [IsNotRunningInEventEngine, !GetAtt UserInterface.Outputs.AdminAppSite, !Ref AdminUserPoolCallbackURLParameter]
         TenantUserPoolCallbackURLParameter: !If [IsNotRunningInEventEngine, !GetAtt UserInterface.Outputs.ApplicationSite, !Ref TenantUserPoolCallbackURLParameter]
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
         
   LambdaFunctions:
     Type: AWS::Serverless::Application
@@ -98,6 +124,9 @@ Resources:
         TenantUserMappingTableArn: !GetAtt DynamoDBTables.Outputs.TenantUserMappingTableArn
         TenantStackMappingTableName: !GetAtt DynamoDBTables.Outputs.TenantStackMappingTableName
         TenantUserPoolCallbackURLParameter: !If [IsNotRunningInEventEngine, !GetAtt UserInterface.Outputs.ApplicationSite, !Ref TenantUserPoolCallbackURLParameter]
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
         
         
   APIs:
@@ -132,7 +161,10 @@ Resources:
         ApiKeyPlatinumTierParameter: !Ref ApiKeyPlatinumTierParameter
         ApiKeyPremiumTierParameter: !Ref ApiKeyPremiumTierParameter
         ApiKeyStandardTierParameter: !Ref ApiKeyStandardTierParameter
-        ApiKeyBasicTierParameter: !Ref ApiKeyBasicTierParameter 
+        ApiKeyBasicTierParameter: !Ref ApiKeyBasicTierParameter
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter 
         
   APIGatewayLambdaPermissions:
     Type: AWS::Serverless::Application
@@ -162,6 +194,9 @@ Resources:
         EnableUsersByTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.EnableUsersByTenantFunctionArn          
         AuthorizerFunctionArn: !GetAtt LambdaFunctions.Outputs.SharedServicesAuthorizerFunctionArn         
         AdminApiGatewayApi: !GetAtt APIs.Outputs.AdminApiGatewayApi
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
   #setup custom resources
   CustomResources:
     Type: AWS::Serverless::Application
@@ -176,7 +211,10 @@ Resources:
         UpdateSettingsTableFunctionArn: !GetAtt LambdaFunctions.Outputs.UpdateSettingsTableFunctionArn
         UpdateTenantStackMapTableFunctionArn: !GetAtt LambdaFunctions.Outputs.UpdateTenantStackMapTableFunctionArn
         CognitoUserPoolId: !GetAtt Cognito.Outputs.CognitoUserPoolId
-        CognitoUserPoolClientId: !GetAtt Cognito.Outputs.CognitoUserPoolClientId      
+        CognitoUserPoolClientId: !GetAtt Cognito.Outputs.CognitoUserPoolClientId
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter      
 
 Outputs:
   AdminApi:
@@ -210,7 +248,7 @@ Outputs:
     Description: The user pool id of Admin Management userpool 
     Value: !GetAtt Cognito.Outputs.CognitoOperationUsersUserPoolId
     Export:
-      Name: "Serverless-SaaS-CognitoOperationUsersUserPoolId"  
+      Name: "Serverless-SaaS-CognitoOperationUsersUserPoolId-lab6"  
   CognitoOperationUsersUserPoolProviderURL:
     Description: The Admin Management userpool provider url
     Value: !GetAtt Cognito.Outputs.CognitoOperationUsersUserPoolProviderURL
@@ -218,45 +256,45 @@ Outputs:
     Description: The Admin Management userpool client id
     Value: !GetAtt Cognito.Outputs.CognitoOperationUsersUserPoolClientId
     Export:
-      Name: "Serverless-SaaS-CognitoOperationUsersUserPoolClientId"
+      Name: "Serverless-SaaS-CognitoOperationUsersUserPoolClientId-lab6"
   CognitoTenantUserPoolId:
     Description: The user pool id for tenant user pool
     Value: !GetAtt Cognito.Outputs.CognitoUserPoolId
     Export:
-      Name: "Serverless-SaaS-CognitoTenantUserPoolId"  
+      Name: "Serverless-SaaS-CognitoTenantUserPoolId-lab6"  
   CognitoTenantAppClientId:
     Description: The app client id for tenant user pool
     Value: !GetAtt Cognito.Outputs.CognitoUserPoolClientId
     Export:
-      Name: "Serverless-SaaS-CognitoTenantAppClientId"  
+      Name: "Serverless-SaaS-CognitoTenantAppClientId-lab6"  
   AuthorizerExecutionRoleArn:
     Description: The Lambda authorizer execution role
     Value: !GetAtt LambdaFunctions.Outputs.AuthorizerExecutionRoleArn 
     Export:
-      Name: "Serverless-SaaS-AuthorizerExecutionRoleArn"   
+      Name: "Serverless-SaaS-AuthorizerExecutionRoleArn-lab6"   
   UsagePlanBasicTier: 
     Description: The basic tier usage plan
     Value: !GetAtt APIs.Outputs.UsagePlanBasicTier
     Export:
-      Name: "Serverless-SaaS-UsagePlanBasicTier"
+      Name: "Serverless-SaaS-UsagePlanBasicTier-lab6"
   UsagePlanStandardTier: 
     Description: The standard tier usage plan
     Value: !GetAtt APIs.Outputs.UsagePlanStandardTier
     Export:
-      Name: "Serverless-SaaS-UsagePlanStandardTier"
+      Name: "Serverless-SaaS-UsagePlanStandardTier-lab6"
   UsagePlanPremiumTier: 
     Description: The premium tier usage plan
     Value: !GetAtt APIs.Outputs.UsagePlanPremiumTier
     Export:
-      Name: "Serverless-SaaS-UsagePlanPremiumTier"
+      Name: "Serverless-SaaS-UsagePlanPremiumTier-lab6"
   UsagePlanPlatinumTier: 
     Description: The premium tier usage plan
     Value: !GetAtt APIs.Outputs.UsagePlanPlatinumTier
     Export:
-      Name: "Serverless-SaaS-UsagePlanPlatinumTier"
+      Name: "Serverless-SaaS-UsagePlanPlatinumTier-lab6"
   ApiKeyOperationUsers:
     Description: The api key of system admins
     Value: !Ref ApiKeyOperationUsersParameter
     Export:
-      Name: "Serverless-SaaS-ApiKeyOperationUsers"    
+      Name: "Serverless-SaaS-ApiKeyOperationUsers-lab6"    
           

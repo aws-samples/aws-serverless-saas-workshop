@@ -17,15 +17,29 @@ codepipeline = boto3.client('codepipeline')
 cloudformation = boto3.client('cloudformation')
 table_tenant_stack_mapping = dynamodb.Table(tenant_stack_mapping_table_name)
 
-stack_name = 'stack-{0}'
+stack_name = 'stack-{0}-lab5'
 @tracer.capture_lambda_handler
 def provision_tenant(event, context):
     tenant_details = json.loads(event['body'])
     
     try:          
         
-        #TODO: Add missing code to kick off the pipeline
-        pass
+        response_ddb = table_tenant_stack_mapping.put_item(
+        Item={
+                'tenantId': tenant_details['tenantId'],
+                'stackName': stack_name.format(tenant_details['tenantId']),
+                'applyLatestRelease': True,
+                'codeCommitId': ''
+            }
+        )    
+
+        logger.info(response_ddb)
+
+        response_codepipeline = codepipeline.start_pipeline_execution(
+            name='serverless-saas-pipeline-lab5'
+        )
+
+        logger.info(response_ddb)
 
     except Exception as e:
         raise

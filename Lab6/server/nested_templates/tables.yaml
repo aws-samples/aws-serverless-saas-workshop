@@ -5,6 +5,16 @@ AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 Description: >
   Template to create dynamodb tables as part of bootstrap
+Parameters:
+  Environment:
+    Type: String
+    Description: "Environment name (dev, staging, prod)"
+  Owner:
+    Type: String
+    Description: "Owner of the resources"
+  CostCenter:
+    Type: String
+    Description: "Cost center for billing"
 Resources:
   ServerlessSaaSSettingsTable:
     Type: AWS::DynamoDB::Table
@@ -16,7 +26,18 @@ Resources:
         - AttributeName: settingName
           KeyType: HASH
       BillingMode: PAY_PER_REQUEST
-      TableName: ServerlessSaaS-Settings
+      TableName: ServerlessSaaS-Settings-lab6
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab6
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
   TenantStackMappingTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -27,7 +48,18 @@ Resources:
         - AttributeName: tenantId
           KeyType: HASH
       BillingMode: PAY_PER_REQUEST
-      TableName: ServerlessSaaS-TenantStackMapping
+      TableName: ServerlessSaaS-TenantStackMapping-lab6
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab6
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
   TenantDetailsTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -41,7 +73,7 @@ Resources:
           KeyType: HASH
       BillingMode: PAY_PER_REQUEST
       GlobalSecondaryIndexes:
-        - IndexName: ServerlessSaas-TenantConfig
+        - IndexName: ServerlessSaas-TenantConfig-lab6
           KeySchema:
             - AttributeName: tenantName
               KeyType: HASH
@@ -51,7 +83,18 @@ Resources:
               - appClientId
               - apiGatewayUrl
             ProjectionType: INCLUDE      
-      TableName: ServerlessSaaS-TenantDetails
+      TableName: ServerlessSaaS-TenantDetails-lab6
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab6
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
   TenantUserMappingTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -66,7 +109,7 @@ Resources:
         - AttributeName: userName
           KeyType: RANGE
       BillingMode: PAY_PER_REQUEST
-      TableName: ServerlessSaaS-TenantUserMapping
+      TableName: ServerlessSaaS-TenantUserMapping-lab6
       GlobalSecondaryIndexes: 
         - IndexName: UserName
           KeySchema: 
@@ -76,6 +119,17 @@ Resources:
               KeyType: RANGE
           Projection:
             ProjectionType: ALL
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab6
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
 Outputs:
   ServerlessSaaSSettingsTableArn: 
     Value: !GetAtt ServerlessSaaSSettingsTable.Arn

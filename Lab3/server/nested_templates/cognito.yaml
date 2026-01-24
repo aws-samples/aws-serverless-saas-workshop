@@ -6,6 +6,18 @@ Transform: AWS::Serverless-2016-10-31
 Description: >
   Template to setup cognito as part of bootstrap
 Parameters:
+  Environment:
+    Type: String
+    Description: Deployment environment for the workshop
+
+  Owner:
+    Type: String
+    Description: Owner identifier for resource tracking
+
+  CostCenter:
+    Type: String
+    Description: Cost center for billing allocation
+
   AdminEmailParameter:
     Type: String
     Description: "Enter system admin email address"
@@ -54,7 +66,13 @@ Resources:
         - AttributeDataType: "String"
           Name: userRole
           Required: False
-          Mutable: True        
+          Mutable: True
+      UserPoolTags:
+        Application: serverless-saas-workshop
+        Lab: lab3
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter        
   CognitoUserPoolClient:
     Type: "AWS::Cognito::UserPoolClient"
     Properties:
@@ -117,6 +135,12 @@ Resources:
           Name: userRole
           Required: False
           Mutable: True
+      UserPoolTags:
+        Application: serverless-saas-workshop
+        Lab: lab3
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
   CognitoOperationUsersUserPoolClient:
     Type: "AWS::Cognito::UserPoolClient"
     Properties:

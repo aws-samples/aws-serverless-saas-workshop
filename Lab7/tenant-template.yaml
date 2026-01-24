@@ -1,0 +1,183 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Lab7 - Minimal Tenant Stack for Cost Attribution Demo
+
+Parameters:
+  TenantId:
+    Type: String
+    Default: pooled
+    Description: Tenant ID for the stack
+  Environment:
+    Type: String
+    Description: "Environment name (dev, staging, prod)"
+  Owner:
+    Type: String
+    Description: "Owner of the resources"
+  CostCenter:
+    Type: String
+    Description: "Cost center for billing"
+
+Resources:
+  PowerToolsLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: lab7-powertools-layer
+      Description: AWS Lambda PowerTools for structured logging
+      ContentUri: layers/
+      CompatibleRuntimes:
+        - python3.14
+      RetentionPolicy: Delete
+    Metadata:
+      BuildMethod: python3.14
+  TenantLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: tenant-lambda-execution-role-pooled-lab7
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                  - dynamodb:GetItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                Resource: '*'
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: TenantId
+          Value: !Ref TenantId
+        - Key: Lab
+          Value: lab7
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
+
+  CreateProductFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: create-product-pooled-lab7
+      CodeUri: ProductService/
+      Handler: product_service.create_product
+      Runtime: python3.14
+      Role: !GetAtt TenantLambdaExecutionRole.Arn
+      Layers:
+        - !Ref PowerToolsLayer
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: product-service
+          LOG_LEVEL: INFO
+      Tags:
+        Application: serverless-saas-workshop
+        TenantId: !Ref TenantId
+        Lab: lab7
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
+
+  UpdateProductFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: update-product-pooled-lab7
+      CodeUri: ProductService/
+      Handler: product_service.update_product
+      Runtime: python3.14
+      Role: !GetAtt TenantLambdaExecutionRole.Arn
+      Layers:
+        - !Ref PowerToolsLayer
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: product-service
+          LOG_LEVEL: INFO
+      Tags:
+        Application: serverless-saas-workshop
+        TenantId: !Ref TenantId
+        Lab: lab7
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
+
+  GetProductsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: get-products-pooled-lab7
+      CodeUri: ProductService/
+      Handler: product_service.get_products
+      Runtime: python3.14
+      Role: !GetAtt TenantLambdaExecutionRole.Arn
+      Layers:
+        - !Ref PowerToolsLayer
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: product-service
+          LOG_LEVEL: INFO
+      Tags:
+        Application: serverless-saas-workshop
+        TenantId: !Ref TenantId
+        Lab: lab7
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
+
+  ProductTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: Product-pooled-lab7
+      AttributeDefinitions:
+        - AttributeName: productId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: productId
+          KeyType: HASH
+      BillingMode: PROVISIONED
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: TenantId
+          Value: !Ref TenantId
+        - Key: Lab
+          Value: lab7
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
+
+Outputs:
+  CreateProductFunctionArn:
+    Description: ARN of Create Product Function
+    Value: !GetAtt CreateProductFunction.Arn
+  
+  UpdateProductFunctionArn:
+    Description: ARN of Update Product Function
+    Value: !GetAtt UpdateProductFunction.Arn
+  
+  GetProductsFunctionArn:
+    Description: ARN of Get Products Function
+    Value: !GetAtt GetProductsFunction.Arn
+  
+  ProductTableName:
+    Description: Name of Product DynamoDB Table
+    Value: !Ref ProductTable

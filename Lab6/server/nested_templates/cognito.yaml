@@ -17,12 +17,27 @@ Parameters:
     Description: "Enter Admin Management userpool call back url"
   TenantUserPoolCallbackURLParameter:
     Type: String
-    Description: "Enter Tenant Management userpool call back url"  
+    Description: "Enter Tenant Management userpool call back url"
+  Environment:
+    Type: String
+    Description: "Environment name (dev, staging, prod)"
+  Owner:
+    Type: String
+    Description: "Owner of the resources"
+  CostCenter:
+    Type: String
+    Description: "Cost center for billing"  
 Resources:
   CognitoUserPool:
     Type: "AWS::Cognito::UserPool"
     Properties:
-      UserPoolName: PooledTenant-ServerlessSaaSUserPool
+      UserPoolName: PooledTenant-ServerlessSaaS-lab6-UserPool
+      UserPoolTags:
+        Application: serverless-saas-workshop
+        Lab: lab6
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
       AutoVerifiedAttributes:
         - "email"
       AccountRecoverySetting:
@@ -79,13 +94,21 @@ Resources:
   CognitoUserPoolDomain:
     Type: AWS::Cognito::UserPoolDomain
     Properties:
-      Domain: !Join ["-", [pooledtenant-serverlesssaas,!Ref "AWS::AccountId"]]
+      Domain: !Sub 
+        - 'serverless-saas-lab6-pool-${ShortId}'
+        - ShortId: !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref 'AWS::StackId']]]]
       UserPoolId: !Ref CognitoUserPool
 
   CognitoOperationUsersUserPool:
     Type: "AWS::Cognito::UserPool"
     Properties:
-      UserPoolName: OperationUsers-ServerlessSaaSUserPool
+      UserPoolName: OperationUsers-ServerlessSaas-lab6-UserPool
+      UserPoolTags:
+        Application: serverless-saas-workshop
+        Lab: lab6
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
       AutoVerifiedAttributes:
         - "email"
       AccountRecoverySetting:
@@ -143,7 +166,9 @@ Resources:
   CognitoOperationUsersUserPoolDomain:
     Type: AWS::Cognito::UserPoolDomain
     Properties:
-      Domain: !Join ["-", [operationsusers-serverlesssaas,!Ref "AWS::AccountId"]]
+      Domain: !Sub 
+        - 'serverless-saas-lab6-ops-${ShortId}'
+        - ShortId: !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref 'AWS::StackId']]]]
       UserPoolId: !Ref CognitoOperationUsersUserPool
   CognitoAdminUserGroup:
     Type: AWS::Cognito::UserPoolGroup

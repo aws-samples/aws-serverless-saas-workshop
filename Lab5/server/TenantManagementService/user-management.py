@@ -15,8 +15,8 @@ tracer = Tracer()
 
 client = boto3.client('cognito-idp')
 dynamodb = boto3.resource('dynamodb')
-table_tenant_user_map = dynamodb.Table('ServerlessSaaS-TenantUserMapping')
-table_tenant_details = dynamodb.Table('ServerlessSaaS-TenantDetails')
+table_tenant_user_map = dynamodb.Table('ServerlessSaaS-TenantUserMapping-lab5')
+table_tenant_details = dynamodb.Table('ServerlessSaaS-TenantDetails-lab5')
 
 def create_tenant_admin_user(event, context):
     tenant_user_pool_id = os.environ['TENANT_USER_POOL_ID']
@@ -29,8 +29,16 @@ def create_tenant_admin_user(event, context):
     user_mgmt = UserManagement()
 
     if (tenant_details['dedicatedTenancy'] == 'true'):
-        #TODO: add code to provision new user pool
-        pass
+        user_pool_response = user_mgmt.create_user_pool(tenant_id)
+        user_pool_id = user_pool_response['UserPool']['Id']
+        logger.info (user_pool_id)
+        
+        app_client_response = user_mgmt.create_user_pool_client(user_pool_id)
+        logger.info(app_client_response)
+        app_client_id = app_client_response['UserPoolClient']['ClientId']
+        user_pool_domain_response = user_mgmt.create_user_pool_domain(user_pool_id, tenant_id)
+        
+        logger.info ("New Tenant Created")
     else:
         user_pool_id = tenant_user_pool_id
         app_client_id = tenant_app_client_id
@@ -378,7 +386,7 @@ class UserManagement:
                         " with username {username} and temporary password {####}"])
         email_subject = "Your temporary password for tenant UI application"  
         response = client.create_user_pool(
-            PoolName= tenant_id + '-ServerlessSaaSUserPool',
+            PoolName= tenant_id + '-ServerlessSaaSUserPool-lab5',
             AutoVerifiedAttributes=['email'],
             AccountRecoverySetting={
                 'RecoveryMechanisms': [

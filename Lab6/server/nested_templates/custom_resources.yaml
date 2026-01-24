@@ -22,6 +22,15 @@ Parameters:
     Type: String
   CognitoUserPoolClientId:
     Type: String
+  Environment:
+    Type: String
+    Description: "Environment name (dev, staging, prod)"
+  Owner:
+    Type: String
+    Description: "Owner of the resources"
+  CostCenter:
+    Type: String
+    Description: "Cost center for billing"
 Resources:
   #Custom resources
   
@@ -32,6 +41,7 @@ Resources:
       SettingsTableName: !Ref ServerlessSaaSSettingsTableName
       cognitoUserPoolId: !Ref CognitoUserPoolId
       cognitoUserPoolClientId: !Ref CognitoUserPoolClientId
+      ServiceTimeout: 300
   
   
   UpdateTenantStackMap:
@@ -39,3 +49,4 @@ Resources:
     Properties:
       ServiceToken: !Ref UpdateTenantStackMapTableFunctionArn
       TenantStackMappingTableName: !Ref TenantStackMappingTableName
+      ServiceTimeout: 300

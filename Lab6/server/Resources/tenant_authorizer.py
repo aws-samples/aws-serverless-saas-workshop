@@ -16,7 +16,7 @@ import utils
 region = os.environ['AWS_REGION']
 sts_client = boto3.client("sts", region_name=region)
 dynamodb = boto3.resource('dynamodb')
-table_tenant_details = dynamodb.Table('ServerlessSaaS-TenantDetails')
+table_tenant_details = dynamodb.Table('ServerlessSaaS-TenantDetails-lab6')
 user_pool_operation_user = os.environ['OPERATION_USERS_USER_POOL']
 app_client_operation_user = os.environ['OPERATION_USERS_APP_CLIENT']
 api_key_operation_user = os.environ['OPERATION_USERS_API_KEY']
@@ -37,7 +37,8 @@ def lambda_handler(event, context):
     if(auth_manager.isSaaSProvider(unauthorized_claims['custom:userRole'])):
         userpool_id = user_pool_operation_user
         appclient_id = app_client_operation_user   
-        api_key = api_key_operation_user  
+        api_key = api_key_operation_user
+        apigateway_url = None  # SaaS providers don't have a specific API gateway URL
     else:
         #get tenant user pool and app client to validate jwt token against
         tenant_details = table_tenant_details.get_item( 
@@ -50,7 +51,7 @@ def lambda_handler(event, context):
         appclient_id = tenant_details['Item']['appClientId']
         apigateway_url = tenant_details['Item']['apiGatewayUrl']
         #TODO: Get API Key from tenant management table
-        #api_key = tenant_details['Item']['apiKey']
+        api_key = tenant_details['Item']['apiKey']
         
 
     #get keys for tenant user pool to validate
@@ -103,7 +104,7 @@ def lambda_handler(event, context):
     iam_policy = auth_manager.getPolicyForUser(user_role, utils.Service_Identifier.BUSINESS_SERVICES.value, tenant_id, region, aws_account_id)
     logger.info(iam_policy)
     
-    role_arn = "arn:aws:iam::{}:role/authorizer-access-role".format(aws_account_id)
+    role_arn = "arn:aws:iam::{}:role/authorizer-access-role-lab6".format(aws_account_id)
     
     assumed_role = sts_client.assume_role(
         RoleArn=role_arn,
@@ -121,7 +122,7 @@ def lambda_handler(event, context):
         'tenantId': tenant_id,
         'userPoolId': userpool_id,
         #TODO: Assign API Key to authorizer response
-        #'apiKey': api_key,
+        'apiKey': api_key,
         'userRole': user_role
     }
     
@@ -194,7 +195,7 @@ class AuthPolicy(object):
     """The principal used for the policy, this should be a unique identifier for the end user."""
     version = "2012-10-17"
     """The policy version used for the evaluation. This should always be '2012-10-17'"""
-    pathRegex = "^[/.a-zA-Z0-9-\*]+$"
+    pathRegex = r"^[/.a-zA-Z0-9-\*]+$"
     """The regular expression used to validate resource paths for the policy"""
 
     """these are the internal lists of allowed and denied methods. These are lists

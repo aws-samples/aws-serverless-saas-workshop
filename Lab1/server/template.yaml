@@ -20,20 +20,261 @@ Parameters:
     Type: String
     Default: "prod"
     Description: "Stage Name for the api"
+  
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+    Description: Deployment environment for the workshop
+
+  Owner:
+    Type: String
+    Default: workshop-participant
+    Description: Owner identifier for resource tracking
+
+  CostCenter:
+    Type: String
+    Default: serverless-saas-workshop
+    Description: Cost center for billing allocation
     
 Resources: 
+
+
+  # CloudWatch Log Groups with 60-day retention
+  GetProductFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-GetProductFunction
+      RetentionInDays: 60
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab1
+
+  GetProductsFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-GetProductsFunction
+      RetentionInDays: 60
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab1
+
+  CreateProductFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-CreateProductFunction
+      RetentionInDays: 60
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab1
+
+  UpdateProductFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-UpdateProductFunction
+      RetentionInDays: 60
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab1
+
+  DeleteProductFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-DeleteProductFunction
+      RetentionInDays: 60
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab1
+
+  GetOrdersFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-GetOrdersFunction
+      RetentionInDays: 60
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab1
+
+  GetOrderFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-GetOrderFunction
+      RetentionInDays: 60
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab1
+
+  CreateOrderFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-CreateOrderFunction
+      RetentionInDays: 60
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab1
+
+  UpdateOrderFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-UpdateOrderFunction
+      RetentionInDays: 60
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab1
+
+  DeleteOrderFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-DeleteOrderFunction
+      RetentionInDays: 60
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab1
+
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-GetProductFunction
+      RetentionInDays: 60
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab1
+
+  GetProductsFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-GetProductsFunction
+      RetentionInDays: 60
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab1
+
+  CreateProductFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-CreateProductFunction
+      RetentionInDays: 60
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab1
+
+  UpdateProductFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-UpdateProductFunction
+      RetentionInDays: 60
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab1
+
+  DeleteProductFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-DeleteProductFunction
+      RetentionInDays: 60
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab1
+
+  GetOrdersFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-GetOrdersFunction
+      RetentionInDays: 60
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab1
+
+  GetOrderFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-GetOrderFunction
+      RetentionInDays: 60
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab1
+
+  CreateOrderFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-CreateOrderFunction
+      RetentionInDays: 60
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab1
+
+  UpdateOrderFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-UpdateOrderFunction
+      RetentionInDays: 60
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab1
+
+  DeleteOrderFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-DeleteOrderFunction
+      RetentionInDays: 60
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab1
+
   ServerlessSaaSLayers:
     Type: AWS::Serverless::LayerVersion
     Properties:
-      LayerName: serverless-saas-workshoplab1
+      LayerName: serverless-saas-dependencies-lab1
       Description: Utilities for project
       ContentUri: layers/
       CompatibleRuntimes:
-        - python3.9          
+        - python3.14          
       LicenseInfo: 'MIT'
       RetentionPolicy: Retain      
     Metadata:
-      BuildMethod: python3.9   
+      BuildMethod: python3.14   
   
   ProductTable:
     Type: AWS::DynamoDB::Table
@@ -45,7 +286,18 @@ Resources:
         - AttributeName: productId
           KeyType: HASH  
       BillingMode: PAY_PER_REQUEST 
-      TableName: Product-Lab1
+      TableName: Product-lab1
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab1
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
 
   OrderTable:
     Type: AWS::DynamoDB::Table
@@ -57,7 +309,18 @@ Resources:
         - AttributeName: orderId
           KeyType: HASH  
       BillingMode: PAY_PER_REQUEST
-      TableName: Order-Lab1
+      TableName: Order-lab1
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab1
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
 
   ProductFunctionExecutionRole:
     Type: AWS::IAM::Role     
@@ -77,6 +340,17 @@ Resources:
         - arn:aws:iam::aws:policy/CloudWatchLambdaInsightsExecutionRolePolicy    
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole        
         - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab1
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
       Policies:
         - PolicyName: product-function-policy-lab1
           PolicyDocument:
@@ -99,11 +373,19 @@ Resources:
     Properties:
       CodeUri: ProductService/
       Handler: product_service.get_product
-      Runtime: python3.9  
+      Runtime: python3.14  
       Tracing: Active
       Role: !GetAtt ProductFunctionExecutionRole.Arn
       Layers: 
         - !Ref ServerlessSaaSLayers
+      LoggingConfig:
+        LogGroup: !Ref GetProductFunctionLogGroup
+      Tags:
+        Application: serverless-saas-workshop
+        Lab: lab1
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "ProductService"
@@ -116,11 +398,19 @@ Resources:
     Properties:
       CodeUri: ProductService/
       Handler: product_service.get_products
-      Runtime: python3.9  
+      Runtime: python3.14  
       Tracing: Active
       Role: !GetAtt ProductFunctionExecutionRole.Arn
       Layers: 
         - !Ref ServerlessSaaSLayers
+      LoggingConfig:
+        LogGroup: !Ref GetProductsFunctionLogGroup
+      Tags:
+        Application: serverless-saas-workshop
+        Lab: lab1
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "ProductService"
@@ -132,11 +422,19 @@ Resources:
     Properties:
       CodeUri: ProductService/
       Handler: product_service.create_product
-      Runtime: python3.9  
+      Runtime: python3.14  
       Tracing: Active 
       Role: !GetAtt ProductFunctionExecutionRole.Arn 
       Layers: 
         - !Ref ServerlessSaaSLayers
+      LoggingConfig:
+        LogGroup: !Ref CreateProductFunctionLogGroup
+      Tags:
+        Application: serverless-saas-workshop
+        Lab: lab1
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "ProductService"
@@ -148,11 +446,19 @@ Resources:
     Properties:
       CodeUri: ProductService/
       Handler: product_service.update_product
-      Runtime: python3.9 
+      Runtime: python3.14 
       Tracing: Active
       Role: !GetAtt ProductFunctionExecutionRole.Arn 
       Layers: 
         - !Ref ServerlessSaaSLayers
+      LoggingConfig:
+        LogGroup: !Ref UpdateProductFunctionLogGroup
+      Tags:
+        Application: serverless-saas-workshop
+        Lab: lab1
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "ProductService"
@@ -164,11 +470,19 @@ Resources:
     Properties:
       CodeUri: ProductService/
       Handler: product_service.delete_product
-      Runtime: python3.9 
+      Runtime: python3.14 
       Tracing: Active
       Role: !GetAtt ProductFunctionExecutionRole.Arn 
       Layers: 
         - !Ref ServerlessSaaSLayers
+      LoggingConfig:
+        LogGroup: !Ref DeleteProductFunctionLogGroup
+      Tags:
+        Application: serverless-saas-workshop
+        Lab: lab1
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "ProductService"
@@ -192,6 +506,17 @@ Resources:
         - arn:aws:iam::aws:policy/CloudWatchLambdaInsightsExecutionRolePolicy    
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole       
         - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess 
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab1
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
       Policies:
         - PolicyName: order-function-policy-lab1
           PolicyDocument:
@@ -214,11 +539,19 @@ Resources:
     Properties:
       CodeUri: OrderService/
       Handler: order_service.get_orders
-      Runtime: python3.9  
+      Runtime: python3.14  
       Tracing: Active
       Role: !GetAtt OrderFunctionExecutionRole.Arn
       Layers: 
         - !Ref ServerlessSaaSLayers
+      LoggingConfig:
+        LogGroup: !Ref GetOrdersFunctionLogGroup
+      Tags:
+        Application: serverless-saas-workshop
+        Lab: lab1
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "OrderService"
@@ -230,11 +563,19 @@ Resources:
     Properties:
       CodeUri: OrderService/
       Handler: order_service.get_order
-      Runtime: python3.9  
+      Runtime: python3.14  
       Tracing: Active
       Role: !GetAtt OrderFunctionExecutionRole.Arn
       Layers: 
         - !Ref ServerlessSaaSLayers
+      LoggingConfig:
+        LogGroup: !Ref GetOrderFunctionLogGroup
+      Tags:
+        Application: serverless-saas-workshop
+        Lab: lab1
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "OrderService"
@@ -246,11 +587,19 @@ Resources:
     Properties:
       CodeUri: OrderService/
       Handler: order_service.create_order
-      Runtime: python3.9  
+      Runtime: python3.14  
       Tracing: Active 
       Role: !GetAtt OrderFunctionExecutionRole.Arn 
       Layers: 
         - !Ref ServerlessSaaSLayers
+      LoggingConfig:
+        LogGroup: !Ref CreateOrderFunctionLogGroup
+      Tags:
+        Application: serverless-saas-workshop
+        Lab: lab1
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "OrderService"
@@ -262,11 +611,19 @@ Resources:
     Properties:
       CodeUri: OrderService/
       Handler: order_service.update_order
-      Runtime: python3.9 
+      Runtime: python3.14 
       Tracing: Active
       Role: !GetAtt OrderFunctionExecutionRole.Arn 
       Layers: 
         - !Ref ServerlessSaaSLayers
+      LoggingConfig:
+        LogGroup: !Ref UpdateOrderFunctionLogGroup
+      Tags:
+        Application: serverless-saas-workshop
+        Lab: lab1
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "OrderService"
@@ -278,11 +635,19 @@ Resources:
     Properties:
       CodeUri: OrderService/
       Handler: order_service.delete_order
-      Runtime: python3.9 
+      Runtime: python3.14 
       Tracing: Active
       Role: !GetAtt OrderFunctionExecutionRole.Arn 
       Layers: 
         - !Ref ServerlessSaaSLayers
+      LoggingConfig:
+        LogGroup: !Ref DeleteOrderFunctionLogGroup
+      Tags:
+        Application: serverless-saas-workshop
+        Lab: lab1
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "OrderService"
@@ -292,7 +657,18 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: /aws/api-gateway/access-logs-serverless-saas-workshop-lab1-api
-      RetentionInDays: 30
+      RetentionInDays: 60
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab1
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
   ApiGatewayApi:
     Type: AWS::Serverless::Api
     Properties:
@@ -306,10 +682,16 @@ Resources:
         DestinationArn: !GetAtt ApiGatewayAccessLogs.Arn
         Format: '{ "requestId":"$context.requestId", "ip": "$context.identity.sourceIp", "caller":"$context.identity.caller", "user":"$context.identity.user","requestTime":"$context.requestTime", "httpMethod":"$context.httpMethod","resourcePath":"$context.resourcePath", "status":"$context.status","protocol":"$context.protocol", "responseLength":"$context.responseLength" }'
       TracingEnabled: True
+      Tags:
+        Application: serverless-saas-workshop
+        Lab: lab1
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
       DefinitionBody:
         openapi: 3.0.1
         info:
-          title: 'serverless-saas-workshop-lab1'
+          title: 'serverless-saas-lab1-api'
         basePath: !Join ['', ['/', !Ref StageName]]
         schemes:
           - https
@@ -809,15 +1191,18 @@ Resources:
           !Ref ApiGatewayApi, "/*/*/*"
           ]
         ]            
-  CloudFrontOriginAccessIdentity:
+  CloudFrontOriginAccessIdentityLab1:
     Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
     Properties:
       CloudFrontOriginAccessIdentityConfig:
-        Comment: "Origin Access Identity for CloudFront Distribution"
+        Comment: "Origin Access Identity for CloudFront Distribution Lab1"
   AppBucket:
     Type: AWS::S3::Bucket
     DeletionPolicy : Retain
     Properties:
+      BucketName: !Sub 
+        - 'serverless-saas-lab1-app-${ShortId}'
+        - ShortId: !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref 'AWS::StackId']]]]
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
@@ -827,6 +1212,17 @@ Resources:
         BlockPublicPolicy: True
         IgnorePublicAcls: True
         RestrictPublicBuckets: True
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab1
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
   AppSiteReadPolicy:
     Type: AWS::S3::BucketPolicy
     Properties:
@@ -837,7 +1233,7 @@ Resources:
           Effect: Allow
           Resource: !Sub 'arn:aws:s3:::${AppBucket}/*'
           Principal:
-            CanonicalUser: !GetAtt CloudFrontOriginAccessIdentity.S3CanonicalUserId
+            CanonicalUser: !GetAtt CloudFrontOriginAccessIdentityLab1.S3CanonicalUserId
   ApplicationSite:
     Type: AWS::CloudFront::Distribution
     Properties:
@@ -867,17 +1263,28 @@ Resources:
             QueryString: false
           MaxTTL: 86400 # in seconds
           MinTTL: 60 # in seconds
-          TargetOriginId: lab1-tenantapp-s3origin
+          TargetOriginId: serverless-saas-lab1-app-s3origin
           ViewerProtocolPolicy: 'allow-all'
         DefaultRootObject: 'index.html'
         Enabled: true
         HttpVersion: http2
         Origins:
         - DomainName: !GetAtt 'AppBucket.RegionalDomainName'
-          Id: lab1-tenantapp-s3origin
+          Id: serverless-saas-lab1-app-s3origin
           S3OriginConfig:
-            OriginAccessIdentity: !Join ["", ["origin-access-identity/cloudfront/", !Ref CloudFrontOriginAccessIdentity]] 
-        PriceClass: 'PriceClass_All'         
+            OriginAccessIdentity: !Join ["", ["origin-access-identity/cloudfront/", !Ref CloudFrontOriginAccessIdentityLab1]] 
+        PriceClass: 'PriceClass_All'
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab1
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter         
 Outputs:
   APIGatewayURL:
     Description: "API Gateway endpoint URL for API"

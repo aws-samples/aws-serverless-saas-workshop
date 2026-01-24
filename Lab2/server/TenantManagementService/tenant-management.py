@@ -12,9 +12,10 @@ import logger
 import requests
 
 region = os.environ['AWS_REGION']
+tenant_details_table_name = os.environ.get('TENANT_DETAILS_TABLE', 'ServerlessSaaS-TenantDetails-lab2')
 
 dynamodb = boto3.resource('dynamodb')
-table_tenant_details = dynamodb.Table('ServerlessSaaS-TenantDetails')
+table_tenant_details = dynamodb.Table(tenant_details_table_name)
 
 #This method has been locked down to be only called from tenant registration service
 def create_tenant(event, context):
@@ -77,7 +78,26 @@ def update_tenant(event, context):
 
 #TODO: Implement the below method
 def get_tenant(event, context):
-    pass
+    tenant_id = event['pathParameters']['tenantid']    
+    logger.info("Request received to get tenant details")
+    
+    tenant_details = table_tenant_details.get_item(
+        Key={
+            'tenantId': tenant_id,
+        },
+        AttributesToGet=[
+            'tenantName',
+            'tenantAddress',
+            'tenantEmail',
+            'tenantPhone'
+        ]    
+    )             
+    item = tenant_details['Item']
+    tenant_info = TenantInfo(item['tenantName'], item['tenantAddress'],item['tenantEmail'], item['tenantPhone'])
+    logger.info(tenant_info)
+    
+    logger.info("Request completed to get tenant details")
+    return utils.create_success_response(tenant_info.__dict__)
 
 def deactivate_tenant(event, context):
     

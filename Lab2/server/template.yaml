@@ -8,8 +8,8 @@ Description: >
 Parameters:
   AdminEmailParameter:
     Type: String
-    Default: "test@test.com"
-    Description: "Enter system admin email address"
+    Default: ""
+    Description: "Enter system admin email address (leave empty to skip CloudFormation user creation)"
   SystemAdminRoleNameParameter:
     Type: String
     Default: "SystemAdmin"
@@ -25,7 +25,26 @@ Parameters:
   AdminUserPoolCallbackURLParameter: 
     Type: String
     Default: "http://example.com"
-    Description: "Enter Admin Management userpool call back url"  
+    Description: "Enter Admin Management userpool call back url"
+  
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+    Description: Deployment environment for the workshop
+
+  Owner:
+    Type: String
+    Default: workshop-participant
+    Description: Owner identifier for resource tracking
+
+  CostCenter:
+    Type: String
+    Default: serverless-saas-workshop
+    Description: Cost center for billing allocation  
 Conditions:
   IsNotRunningInEventEngine: !Not [ !Equals [ !Ref EventEngineParameter, true] ]    
 Resources:
@@ -33,6 +52,10 @@ Resources:
     Type: AWS::Serverless::Application
     Properties:
       Location: nested_templates/tables.yaml
+      Parameters:
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
 
   #Create cloudfront and s3 for UI Cde
   UserInterface:
@@ -41,6 +64,9 @@ Resources:
       Location: nested_templates/userinterface.yaml
       Parameters:
         IsCloudFrontAndS3PreProvisioned: !Ref EventEngineParameter
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
       
   Cognito:
     Type: AWS::Serverless::Application
@@ -51,6 +77,9 @@ Resources:
         AdminEmailParameter: !Ref AdminEmailParameter
         SystemAdminRoleNameParameter: !Ref SystemAdminRoleNameParameter
         AdminUserPoolCallbackURLParameter: !If [IsNotRunningInEventEngine, !GetAtt UserInterface.Outputs.AdminAppSite, !Ref AdminUserPoolCallbackURLParameter]
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
         
   LambdaFunctions:
     Type: AWS::Serverless::Application
@@ -64,6 +93,9 @@ Resources:
         CognitoOperationUsersUserPoolClientId: !GetAtt Cognito.Outputs.CognitoOperationUsersUserPoolClientId
         TenantDetailsTableArn: !GetAtt DynamoDBTables.Outputs.TenantDetailsTableArn
         TenantUserMappingTableArn: !GetAtt DynamoDBTables.Outputs.TenantUserMappingTableArn
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
         
   APIs:
     Type: AWS::Serverless::Application
@@ -89,7 +121,10 @@ Resources:
         CreateUserFunctionArn: !GetAtt LambdaFunctions.Outputs.CreateUserFunctionArn
         DisableUsersByTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.DisableUsersByTenantFunctionArn
         EnableUsersByTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.EnableUsersByTenantFunctionArn                  
-        AuthorizerFunctionArn: !GetAtt LambdaFunctions.Outputs.SharedServicesAuthorizerFunctionArn  
+        AuthorizerFunctionArn: !GetAtt LambdaFunctions.Outputs.SharedServicesAuthorizerFunctionArn
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter  
         
   APIGatewayLambdaPermissions:
     Type: AWS::Serverless::Application
@@ -121,6 +156,9 @@ Outputs:
   AdminApi:
     Description: "API Gateway endpoint URL for Admin API"
     Value: !Join ["", ["https://", !GetAtt APIs.Outputs.AdminApiGatewayApi, ".execute-api.", !Ref "AWS::Region", ".amazonaws.com/", !Ref StageName]]
+  AdminApiGatewayId:
+    Description: "Admin API Gateway ID for log group cleanup"
+    Value: !GetAtt APIs.Outputs.AdminApiGatewayId
   AdminSiteBucket:
     Description: The S3 Bucket that will contain the static assets for the tenant administration application
     Value: !GetAtt UserInterface.Outputs.AdminBucket

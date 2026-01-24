@@ -1,0 +1,33 @@
+========================================
+Lab1 Cleanup Script
+========================================
+Log file: logs/cleanup-20260121-232737.log
+
+Usage: /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop/Lab1/scripts/cleanup.sh --stack-name <CloudFormation stack name> [--region <AWS region>] [--profile <AWS profile>]
+
+Options:
+  --stack-name <name>  CloudFormation stack name to cleanup (required)
+  --region <region>    AWS region (default: us-west-2)
+  --profile <profile>  AWS profile (optional, uses machine's default if not provided)
+  --help               Show this help message
+
+Example:
+  /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop/Lab1/scripts/cleanup.sh --stack-name serverless-saas-lab1
+  /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop/Lab1/scripts/cleanup.sh --stack-name my-stack --region us-east-1 --profile my-profile
+========================================
+Lab2 Cleanup Script
+========================================
+Log file: logs/cleanup-20260121-232737.log
+
+Usage: /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop/Lab2/scripts/cleanup.sh [OPTIONS]
+
+Options:
+  --stack-name <name>  CloudFormation stack name to cleanup (default: serverless-saas-lab2)
+  --region <region>    AWS region (default: us-west-2)
+  --profile <profile>  AWS CLI profile name (optional, uses default profile if not specified)
+  --help               Show this help message
+
+Example:
+  /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop/Lab2/scripts/cleanup.sh --stack-name serverless-saas-lab2
+  /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop/Lab2/scripts/cleanup.sh --stack-name my-stack --region us-east-1
+  /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop/Lab2/scripts/cleanup.sh --stack-name my-stack --profile my-profile

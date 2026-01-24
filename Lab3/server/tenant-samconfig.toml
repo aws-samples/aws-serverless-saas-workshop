@@ -2,9 +2,9 @@ version = 0.1
 [default]
 [default.deploy]
 [default.deploy.parameters]
-stack_name = "stack-pooled"
-s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-8tf6bmi4rdcx"
-s3_prefix = "serverless-saas-tenant"
+stack_name = "serverless-saas-workshop-tenant-lab3"
+s3_bucket = "sam-bootstrap-bucket-lab3-tenant"
+s3_prefix = "serverless-saas-lab3/tenant"
 region = "us-west-2"
 confirm_changeset = false
 capabilities = "CAPABILITY_NAMED_IAM"

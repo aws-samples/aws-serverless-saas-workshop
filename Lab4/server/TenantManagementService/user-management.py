@@ -15,8 +15,8 @@ tracer = Tracer()
 
 client = boto3.client('cognito-idp')
 dynamodb = boto3.resource('dynamodb')
-table_tenant_user_map = dynamodb.Table('ServerlessSaaS-TenantUserMapping')
-table_tenant_details = dynamodb.Table('ServerlessSaaS-TenantDetails')
+table_tenant_user_map = dynamodb.Table('ServerlessSaaS-TenantUserMapping-lab4')
+table_tenant_details = dynamodb.Table('ServerlessSaaS-TenantDetails-lab4')
 
 user_pool_id = os.environ['TENANT_USER_POOL_ID']
 
@@ -31,7 +31,8 @@ def create_tenant_admin_user(event, context):
     #Add tenant admin now based upon user pool
     tenant_user_group_response = user_mgmt.create_user_group(user_pool_id,tenant_id,"User group for tenant {0}".format(tenant_id))
 
-    tenant_admin_user_name = 'tenant-admin-{0}'.format(tenant_details['tenantId'])
+    # Use provided tenantAdminUserName if available, otherwise generate one
+    tenant_admin_user_name = tenant_details.get('tenantAdminUserName', 'tenant-admin-{0}'.format(tenant_details['tenantId']))
 
     create_tenant_admin_response = user_mgmt.create_tenant_admin(user_pool_id, tenant_admin_user_name, tenant_details)
     
