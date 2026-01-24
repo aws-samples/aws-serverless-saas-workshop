@@ -427,7 +427,8 @@ if [[ $DEPLOY_BOOTSTRAP -eq 1 ]]; then
   # Build SAM application
   print_message "$YELLOW" "  Building SAM application..."
   # Build without container since Python 3.14 is available locally
-  SAM_BUILD_MODE=use-local-python sam build -t shared-template.yaml || {
+  # SAM will use the local Python 3.14 installation instead of Docker/Finch
+  sam build -t shared-template.yaml || {
       print_message "$RED" "Error: SAM build failed"
       exit 1
   }
