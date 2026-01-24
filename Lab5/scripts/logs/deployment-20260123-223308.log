@@ -30,3 +30,295 @@ Pipeline Stack: serverless-saas-pipeline-lab5
 [1;33m    Current branch: checkpoint-lab7[0m
 [1;33m    Git root: /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop[0m
 [1;33m    ⚠ Warning: Uncommitted changes detected, committing now...[0m
+[checkpoint-lab7 e67f1ec] chore: Auto-commit before Lab5 deployment
+ 5 files changed, 266 insertions(+), 1 deletion(-)
+ create mode 100644 Lab5/scripts/deployment-test-2.log
+ create mode 100644 Lab5/scripts/logs/deployment-20260123-223308.log
+You are pushing to the remote cc at codecommit::us-west-2://aws-serverless-saas-workshop
+remote: Validating objects: 0%        remote: Validating objects: 100%        
+To codecommit::us-west-2://aws-serverless-saas-workshop
+   5dc4e6e..e67f1ec  checkpoint-lab7 -> main
+[0;32m  ✓ Code pushed to CodeCommit main branch[0m
+[1;33m  Building and deploying pipeline with CDK...[0m
+[1;33m  Cleaning previous npm installation for TenantPipeline...[0m
+npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+
+added 307 packages, and audited 344 packages in 10s
+
+38 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+
+> pipeline@0.1.0 build
+> tsc
+
+[1;33m  Bootstrapping CDK...[0m
+ ⏳  Bootstrapping environment aws://265098672980/us-east-1...
+Trusted accounts for deployment: (none)
+Trusted accounts for lookup: (none)
+Using default execution policy of 'arn:aws:iam::aws:policy/AdministratorAccess'. Pass '--cloudformation-execution-policies' to customize.
+ ✅  Environment aws://265098672980/us-east-1 bootstrapped (no changes).
+
+NOTICES         (What's this? https://github.com/aws/aws-cdk/wiki/CLI-Notices)
+
+34892	CDK CLI collects telemetry data on command usage starting at version 2.1100.0 (unless opted out)
+
+	Overview: We do not collect customer content and we anonymize the
+	          telemetry we do collect. See the attached issue for more
+	          information on what data is collected, why, and how to
+	          opt-out. Telemetry will NOT be collected for any CDK CLI
+	          version prior to version 2.1100.0 - regardless of
+	          opt-in/out. You can also view the telemetry we collect by
+	          logging it to a local file, by adding
+	          `--telemetry-file=my/local/file` to any `cdk` command.
+
+	Affected versions: cli: ^2.1100.0
+
+	More information at: https://github.com/aws/aws-cdk/issues/34892
+
+
+If you don’t want to see a notice anymore, use "cdk acknowledge <id>". For example, "cdk acknowledge 34892".
+[1;33m  Deploying CDK stack...[0m
+[Warning at /serverless-saas-pipeline-lab5/Pipeline] V1 pipeline type is implicitly selected when `pipelineType` is not set. If you want to use V2 type, set `PipelineType.V2`. [ack: @aws-cdk/aws-codepipeline:unspecifiedPipelineType]
+
+✨  Synthesis time: 6.34s
+
+serverless-saas-pipeline-lab5: deploying... [1/1]
+
+ ✅  serverless-saas-pipeline-lab5 (no changes)
+
+✨  Deployment time: 1.82s
+
+Stack ARN:
+arn:aws:cloudformation:us-east-1:265098672980:stack/serverless-saas-pipeline-lab5/8b4415f0-f8cb-11f0-b9a9-0e8d661a88d1
+
+✨  Total time: 8.16s
+
+
+NOTICES         (What's this? https://github.com/aws/aws-cdk/wiki/CLI-Notices)
+
+34892	CDK CLI collects telemetry data on command usage starting at version 2.1100.0 (unless opted out)
+
+	Overview: We do not collect customer content and we anonymize the
+	          telemetry we do collect. See the attached issue for more
+	          information on what data is collected, why, and how to
+	          opt-out. Telemetry will NOT be collected for any CDK CLI
+	          version prior to version 2.1100.0 - regardless of
+	          opt-in/out. You can also view the telemetry we collect by
+	          logging it to a local file, by adding
+	          `--telemetry-file=my/local/file` to any `cdk` command.
+
+	Affected versions: cli: ^2.1100.0
+
+	More information at: https://github.com/aws/aws-cdk/issues/34892
+
+
+If you don’t want to see a notice anymore, use "cdk acknowledge <id>". For example, "cdk acknowledge 34892".
+[0;32m  ✓ Pipeline deployed successfully[0m
+
+[1;33mStep 4: Deploying bootstrap server infrastructure...[0m
+[1;33m  Checking SAM deployment bucket: sam-bootstrap-bucket-lab5-shared[0m
+[0;32m  ✓ SAM deployment bucket exists: sam-bootstrap-bucket-lab5-shared[0m
+[1;33m  Validating Python code with pylint...[0m
+[0;32m  ✓ Code validation passed[0m
+[1;33m  Building SAM application...[0m
+Building layer 'LambdaFunctions/ServerlessSaaSLayers'
+ Running PythonPipBuilder:ResolveDependencies
+ Running PythonPipBuilder:CopySource
+Building codeuri: /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop/Lab5/server/Resources runtime: python3.14 architecture: x86_64 functions: LambdaFunctions/SharedServicesAuthorizerFunction
+ Running PythonPipBuilder:ResolveDependencies
+ Running PythonPipBuilder:CopySource
+Building codeuri: /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop/Lab5/server/TenantManagementService runtime: python3.14 architecture: x86_64 functions: LambdaFunctions/CreateTenantAdminUserFunction, LambdaFunctions/CreateUserFunction, LambdaFunctions/UpdateUserFunction, LambdaFunctions/DisableUserFunction, LambdaFunctions/DisableUsersByTenantFunction, LambdaFunctions/EnableUsersByTenantFunction, LambdaFunctions/GetUserFunction, LambdaFunctions/GetUsersFunction, LambdaFunctions/CreateTenantFunction, LambdaFunctions/ActivateTenantFunction, LambdaFunctions/GetTenantFunction, LambdaFunctions/DeactivateTenantFunction, LambdaFunctions/UpdateTenantFunction, LambdaFunctions/GetTenantsFunction, LambdaFunctions/GetTenantConfigFunction, LambdaFunctions/RegisterTenantFunction, LambdaFunctions/ProvisionTenantFunction, LambdaFunctions/DeProvisionTenantFunction
+ Running PythonPipBuilder:ResolveDependencies
+ Running PythonPipBuilder:CopySource
+Building codeuri: /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop/Lab5/server/custom_resources runtime: python3.14 architecture: x86_64 functions: LambdaFunctions/UpdateSettingsTableFunction, LambdaFunctions/UpdateTenantStackMapTableFunction
+ Running PythonPipBuilder:ResolveDependencies
+ Running PythonPipBuilder:CopySource
+
+Build Succeeded
+
+Built Artifacts  : .aws-sam/build
+Built Template   : .aws-sam/build/template.yaml
+
+Commands you can use next
+=========================
+[*] Validate SAM template: sam validate
+[*] Invoke Function: sam local invoke
+[*] Test Function in the Cloud: sam sync --stack-name {{stack-name}} --watch
+[*] Deploy: sam deploy --guided
+[0;32m  ✓ SAM build completed[0m
+[1;33m  Deploying shared infrastructure stack: serverless-saas-shared-lab5[0m
+	Uploading to serverless-saas-lab5/shared/80a1a7fe377c8b92f1f0248807fa1448.template  4562 / 4562  (100.00%)
+	Uploading to serverless-saas-lab5/shared/215e6e67f8de803289bea37728d4d825.template  12234 / 12234  (100.00%)
+	Uploading to serverless-saas-lab5/shared/9963f6354acf41b3e2a5edacf5d9d143.template  7791 / 7791  (100.00%)
+	Uploading to serverless-saas-lab5/shared/4ea1bc8b358b13506fdb72a5bb202dea  1048576 / 21705013  (4.83%)	Uploading to serverless-saas-lab5/shared/4ea1bc8b358b13506fdb72a5bb202dea  2097152 / 21705013  (9.66%)	Uploading to serverless-saas-lab5/shared/4ea1bc8b358b13506fdb72a5bb202dea  3145728 / 21705013  (14.49%)	Uploading to serverless-saas-lab5/shared/4ea1bc8b358b13506fdb72a5bb202dea  4194304 / 21705013  (19.32%)	Uploading to serverless-saas-lab5/shared/4ea1bc8b358b13506fdb72a5bb202dea  5242880 / 21705013  (24.16%)	Uploading to serverless-saas-lab5/shared/4ea1bc8b358b13506fdb72a5bb202dea  6291456 / 21705013  (28.99%)	Uploading to serverless-saas-lab5/shared/4ea1bc8b358b13506fdb72a5bb202dea  7340032 / 21705013  (33.82%)	Uploading to serverless-saas-lab5/shared/4ea1bc8b358b13506fdb72a5bb202dea  8388608 / 21705013  (38.65%)	Uploading to serverless-saas-lab5/shared/4ea1bc8b358b13506fdb72a5bb202dea  9437184 / 21705013  (43.48%)	Uploading to serverless-saas-lab5/shared/4ea1bc8b358b13506fdb72a5bb202dea  10485760 / 21705013  (48.31%)	Uploading to serverless-saas-lab5/shared/4ea1bc8b358b13506fdb72a5bb202dea  11534336 / 21705013  (53.14%)	Uploading to serverless-saas-lab5/shared/4ea1bc8b358b13506fdb72a5bb202dea  12582912 / 21705013  (57.97%)	Uploading to serverless-saas-lab5/shared/4ea1bc8b358b13506fdb72a5bb202dea  13631488 / 21705013  (62.80%)	Uploading to serverless-saas-lab5/shared/4ea1bc8b358b13506fdb72a5bb202dea  14680064 / 21705013  (67.63%)	Uploading to serverless-saas-lab5/shared/4ea1bc8b358b13506fdb72a5bb202dea  15728640 / 21705013  (72.47%)	Uploading to serverless-saas-lab5/shared/4ea1bc8b358b13506fdb72a5bb202dea  16777216 / 21705013  (77.30%)	Uploading to serverless-saas-lab5/shared/4ea1bc8b358b13506fdb72a5bb202dea  17825792 / 21705013  (82.13%)	Uploading to serverless-saas-lab5/shared/4ea1bc8b358b13506fdb72a5bb202dea  18874368 / 21705013  (86.96%)	Uploading to serverless-saas-lab5/shared/4ea1bc8b358b13506fdb72a5bb202dea  19607861 / 21705013  (90.34%)	Uploading to serverless-saas-lab5/shared/4ea1bc8b358b13506fdb72a5bb202dea  20656437 / 21705013  (95.17%)	Uploading to serverless-saas-lab5/shared/4ea1bc8b358b13506fdb72a5bb202dea  21705013 / 21705013  (100.00%)
+	Uploading to serverless-saas-lab5/shared/004682561428d5e8c8f8bfb54928eba4  1048576 / 5039067  (20.81%)	Uploading to serverless-saas-lab5/shared/004682561428d5e8c8f8bfb54928eba4  2097152 / 5039067  (41.62%)	Uploading to serverless-saas-lab5/shared/004682561428d5e8c8f8bfb54928eba4  3145728 / 5039067  (62.43%)	Uploading to serverless-saas-lab5/shared/004682561428d5e8c8f8bfb54928eba4  4194304 / 5039067  (83.24%)	Uploading to serverless-saas-lab5/shared/004682561428d5e8c8f8bfb54928eba4  5039067 / 5039067  (100.00%)
+	Uploading to serverless-saas-lab5/shared/96bb3c37b46d5a9d79e5987bafec3e7e  587573 / 587573  (100.00%)
+
+	File with same data already exists at serverless-saas-lab5/shared/96bb3c37b46d5a9d79e5987bafec3e7e, skipping upload
+
+	File with same data already exists at serverless-saas-lab5/shared/96bb3c37b46d5a9d79e5987bafec3e7e, skipping upload
+
+	File with same data already exists at serverless-saas-lab5/shared/96bb3c37b46d5a9d79e5987bafec3e7e, skipping upload
+
+	File with same data already exists at serverless-saas-lab5/shared/96bb3c37b46d5a9d79e5987bafec3e7e, skipping upload
+
+	File with same data already exists at serverless-saas-lab5/shared/96bb3c37b46d5a9d79e5987bafec3e7e, skipping upload
+
+	File with same data already exists at serverless-saas-lab5/shared/96bb3c37b46d5a9d79e5987bafec3e7e, skipping upload
+
+	File with same data already exists at serverless-saas-lab5/shared/96bb3c37b46d5a9d79e5987bafec3e7e, skipping upload
+
+	File with same data already exists at serverless-saas-lab5/shared/96bb3c37b46d5a9d79e5987bafec3e7e, skipping upload
+
+	File with same data already exists at serverless-saas-lab5/shared/96bb3c37b46d5a9d79e5987bafec3e7e, skipping upload
+
+	File with same data already exists at serverless-saas-lab5/shared/96bb3c37b46d5a9d79e5987bafec3e7e, skipping upload
+
+	File with same data already exists at serverless-saas-lab5/shared/96bb3c37b46d5a9d79e5987bafec3e7e, skipping upload
+
+	File with same data already exists at serverless-saas-lab5/shared/96bb3c37b46d5a9d79e5987bafec3e7e, skipping upload
+
+	File with same data already exists at serverless-saas-lab5/shared/96bb3c37b46d5a9d79e5987bafec3e7e, skipping upload
+
+	File with same data already exists at serverless-saas-lab5/shared/96bb3c37b46d5a9d79e5987bafec3e7e, skipping upload
+
+	File with same data already exists at serverless-saas-lab5/shared/96bb3c37b46d5a9d79e5987bafec3e7e, skipping upload
+
+	File with same data already exists at serverless-saas-lab5/shared/96bb3c37b46d5a9d79e5987bafec3e7e, skipping upload
+
+	File with same data already exists at serverless-saas-lab5/shared/96bb3c37b46d5a9d79e5987bafec3e7e, skipping upload
+	Uploading to serverless-saas-lab5/shared/ccf06b38e7a68b51395ccc16958b8b75  591348 / 591348  (100.00%)
+
+	File with same data already exists at serverless-saas-lab5/shared/ccf06b38e7a68b51395ccc16958b8b75, skipping upload
+	Uploading to serverless-saas-lab5/shared/bd1fae1f350ea1038c5358c36fd159d8.template  46780 / 46780  (100.00%)
+	Uploading to serverless-saas-lab5/shared/e941ae0fd1d886c7c9fedeec32dc25cb.template  38984 / 38984  (100.00%)
+	Uploading to serverless-saas-lab5/shared/d3c380658dbcf75b155057d5320f14cb.template  11706 / 11706  (100.00%)
+	Uploading to serverless-saas-lab5/shared/21c40f91e28a78b5e5d81d0ad6f10f54.template  1325 / 1325  (100.00%)
+
+	Deploying with following values
+	===============================
+	Stack name                   : serverless-saas-shared-lab5
+	Region                       : us-west-2
+	Confirm changeset            : False
+	Disable rollback             : False
+	Deployment s3 bucket         : sam-bootstrap-bucket-lab5-shared
+	Capabilities                 : ["CAPABILITY_NAMED_IAM", "CAPABILITY_AUTO_EXPAND"]
+	Parameter overrides          : {"EventEngineParameter": "false"}
+	Signing Profiles             : {}
+
+Initiating deployment
+=====================
+
+	Uploading to serverless-saas-lab5/shared/50b1a91817f466b38651db0cb5691f76.template  16355 / 16355  (100.00%)
+
+
+Waiting for changeset to be created..
+
+CloudFormation stack changeset
+-------------------------------------------------------------------------------------------------
+Operation                LogicalResourceId        ResourceType             Replacement            
+-------------------------------------------------------------------------------------------------
++ Add                    APIGatewayLambdaPermis   AWS::CloudFormation::S   N/A                    
+                         sions                    tack                                            
++ Add                    APIs                     AWS::CloudFormation::S   N/A                    
+                                                  tack                                            
++ Add                    Cognito                  AWS::CloudFormation::S   N/A                    
+                                                  tack                                            
++ Add                    CustomResources          AWS::CloudFormation::S   N/A                    
+                                                  tack                                            
++ Add                    DynamoDBTables           AWS::CloudFormation::S   N/A                    
+                                                  tack                                            
++ Add                    LambdaFunctions          AWS::CloudFormation::S   N/A                    
+                                                  tack                                            
++ Add                    UserInterface            AWS::CloudFormation::S   N/A                    
+                                                  tack                                            
+-------------------------------------------------------------------------------------------------
+
+
+Changeset created successfully. arn:aws:cloudformation:us-west-2:265098672980:changeSet/samcli-deploy1769225703/957e6d9b-37a4-4b27-8bf2-a4106b79b4ee
+
+
+2026-01-23 22:35:10 - Waiting for stack create/update to complete
+
+CloudFormation events from stack operations (refresh every 5.0 seconds)
+-------------------------------------------------------------------------------------------------
+ResourceStatus           ResourceType             LogicalResourceId        ResourceStatusReason   
+-------------------------------------------------------------------------------------------------
+CREATE_IN_PROGRESS       AWS::CloudFormation::S   serverless-saas-         User Initiated         
+                         tack                     shared-lab5                                     
+CREATE_IN_PROGRESS       AWS::CloudFormation::S   DynamoDBTables           -                      
+                         tack                                                                     
+CREATE_IN_PROGRESS       AWS::CloudFormation::S   UserInterface            -                      
+                         tack                                                                     
+CREATE_IN_PROGRESS       AWS::CloudFormation::S   DynamoDBTables           Resource creation      
+                         tack                                              Initiated              
+CREATE_IN_PROGRESS       AWS::CloudFormation::S   UserInterface            Resource creation      
+                         tack                                              Initiated              
+CREATE_COMPLETE          AWS::CloudFormation::S   DynamoDBTables           -                      
+                         tack                                                                     
+CREATE_COMPLETE          AWS::CloudFormation::S   UserInterface            -                      
+                         tack                                                                     
+CREATE_IN_PROGRESS       AWS::CloudFormation::S   Cognito                  -                      
+                         tack                                                                     
+CREATE_IN_PROGRESS       AWS::CloudFormation::S   Cognito                  Resource creation      
+                         tack                                              Initiated              
+CREATE_COMPLETE          AWS::CloudFormation::S   Cognito                  -                      
+                         tack                                                                     
+CREATE_IN_PROGRESS       AWS::CloudFormation::S   LambdaFunctions          -                      
+                         tack                                                                     
+CREATE_IN_PROGRESS       AWS::CloudFormation::S   LambdaFunctions          Resource creation      
+                         tack                                              Initiated              
+CREATE_COMPLETE          AWS::CloudFormation::S   LambdaFunctions          -                      
+                         tack                                                                     
+CREATE_IN_PROGRESS       AWS::CloudFormation::S   APIs                     -                      
+                         tack                                                                     
+CREATE_IN_PROGRESS       AWS::CloudFormation::S   APIs                     Resource creation      
+                         tack                                              Initiated              
+CREATE_FAILED            AWS::CloudFormation::S   APIs                     Embedded stack arn:aws 
+                         tack                                              :cloudformation:us-wes 
+                                                                           t-                     
+                                                                           2:265098672980:stack/s 
+                                                                           erverless-saas-shared- 
+                                                                           lab5-APIs-             
+                                                                           5APNSW3O3P3I/8cc7cec0- 
+                                                                           f8d6-11f0-9c59-        
+                                                                           024b4b0a3c19 was not   
+                                                                           successfully created:  
+                                                                           The following          
+                                                                           resource(s) failed to  
+                                                                           create: [ApiGatewayClo 
+                                                                           udWatchLogRole].       
+ROLLBACK_IN_PROGRESS     AWS::CloudFormation::S   serverless-saas-         The following          
+                         tack                     shared-lab5              resource(s) failed to  
+                                                                           create: [APIs].        
+                                                                           Rollback requested by  
+                                                                           user.                  
+DELETE_IN_PROGRESS       AWS::CloudFormation::S   APIs                     -                      
+                         tack                                                                     
+DELETE_COMPLETE          AWS::CloudFormation::S   APIs                     -                      
+                         tack                                                                     
+DELETE_IN_PROGRESS       AWS::CloudFormation::S   LambdaFunctions          -                      
+                         tack                                                                     
+DELETE_COMPLETE          AWS::CloudFormation::S   LambdaFunctions          -                      
+                         tack                                                                     
+DELETE_IN_PROGRESS       AWS::CloudFormation::S   Cognito                  -                      
+                         tack                                                                     
+DELETE_IN_PROGRESS       AWS::CloudFormation::S   DynamoDBTables           -                      
+                         tack                                                                     
+DELETE_COMPLETE          AWS::CloudFormation::S   DynamoDBTables           -                      
+                         tack                                                                     
+DELETE_COMPLETE          AWS::CloudFormation::S   Cognito                  -                      
+                         tack                                                                     
+DELETE_IN_PROGRESS       AWS::CloudFormation::S   UserInterface            -                      
+                         tack                                                                     
+DELETE_COMPLETE          AWS::CloudFormation::S   UserInterface            -                      
+                         tack                                                                     
+ROLLBACK_COMPLETE        AWS::CloudFormation::S   serverless-saas-         -                      
+                         tack                     shared-lab5                                     
+-------------------------------------------------------------------------------------------------
+
+Error: Failed to create/update the stack: serverless-saas-shared-lab5, Waiter StackCreateComplete failed: Waiter encountered a terminal failure state: For expression "Stacks[].StackStatus" we matched expected path: "ROLLBACK_COMPLETE" at least once
+[0;31mError: SAM deployment failed[0m

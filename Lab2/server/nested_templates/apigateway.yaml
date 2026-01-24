@@ -57,10 +57,19 @@ Parameters:
     Type: String
     Default: serverless-saas-workshop
     Description: Cost center for billing allocation
+  CreateCloudWatchRole:
+    Type: String
+    Default: "true"
+    AllowedValues: ["true", "false"]
+    Description: Whether to create the API Gateway CloudWatch role (set to false if role already exists)
+
+Conditions:
+  ShouldCreateCloudWatchRole: !Equals [!Ref CreateCloudWatchRole, "true"]
   
 Resources:
   ApiGatewayCloudWatchLogRole:
     Type: AWS::IAM::Role
+    Condition: ShouldCreateCloudWatchRole
     Properties:
       RoleName: apigateway-cloudwatch-publish-role
       Path: "/"
@@ -88,6 +97,7 @@ Resources:
           Value: !Ref CostCenter
   ApiGatewayAttachCloudwatchLogArn:
     Type: AWS::ApiGateway::Account
+    Condition: ShouldCreateCloudWatchRole
     Properties:
       CloudWatchRoleArn: !GetAtt ApiGatewayCloudWatchLogRole.Arn
 
