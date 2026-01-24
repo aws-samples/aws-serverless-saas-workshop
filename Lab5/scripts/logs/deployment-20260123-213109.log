@@ -30,3 +30,102 @@ Pipeline Stack: serverless-saas-pipeline-lab5
 [1;33m    Current branch: checkpoint-lab7[0m
 [1;33m    Git root: /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop[0m
 [1;33m    ⚠ Warning: Uncommitted changes detected, committing now...[0m
+[checkpoint-lab7 970230f] chore: Auto-commit before Lab5 deployment
+ 4 files changed, 291 insertions(+), 6 deletions(-)
+ create mode 100644 Lab5/scripts/logs/deployment-20260123-213109.log
+You are pushing to the remote cc at codecommit::us-west-2://aws-serverless-saas-workshop
+remote: Validating objects: 0%        remote: Validating objects: 100%        
+To codecommit::us-west-2://aws-serverless-saas-workshop
+   40aa0bd..970230f  checkpoint-lab7 -> main
+[0;32m  ✓ Code pushed to CodeCommit main branch[0m
+[1;33m  Building and deploying pipeline with CDK...[0m
+[1;33m  Cleaning previous npm installation for TenantPipeline...[0m
+npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+
+added 307 packages, and audited 344 packages in 20s
+
+38 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+
+> pipeline@0.1.0 build
+> tsc
+
+[1;33m  Bootstrapping CDK...[0m
+ ⏳  Bootstrapping environment aws://265098672980/us-east-1...
+Trusted accounts for deployment: (none)
+Trusted accounts for lookup: (none)
+Using default execution policy of 'arn:aws:iam::aws:policy/AdministratorAccess'. Pass '--cloudformation-execution-policies' to customize.
+ ✅  Environment aws://265098672980/us-east-1 bootstrapped (no changes).
+
+NOTICES         (What's this? https://github.com/aws/aws-cdk/wiki/CLI-Notices)
+
+34892	CDK CLI collects telemetry data on command usage starting at version 2.1100.0 (unless opted out)
+
+	Overview: We do not collect customer content and we anonymize the
+	          telemetry we do collect. See the attached issue for more
+	          information on what data is collected, why, and how to
+	          opt-out. Telemetry will NOT be collected for any CDK CLI
+	          version prior to version 2.1100.0 - regardless of
+	          opt-in/out. You can also view the telemetry we collect by
+	          logging it to a local file, by adding
+	          `--telemetry-file=my/local/file` to any `cdk` command.
+
+	Affected versions: cli: ^2.1100.0
+
+	More information at: https://github.com/aws/aws-cdk/issues/34892
+
+
+If you don’t want to see a notice anymore, use "cdk acknowledge <id>". For example, "cdk acknowledge 34892".
+[1;33m  Deploying CDK stack...[0m
+[Warning at /serverless-saas-pipeline-lab5/Pipeline] V1 pipeline type is implicitly selected when `pipelineType` is not set. If you want to use V2 type, set `PipelineType.V2`. [ack: @aws-cdk/aws-codepipeline:unspecifiedPipelineType]
+
+✨  Synthesis time: 8.84s
+
+serverless-saas-pipeline-lab5: deploying... [1/1]
+
+ ✅  serverless-saas-pipeline-lab5 (no changes)
+
+✨  Deployment time: 1.94s
+
+Stack ARN:
+arn:aws:cloudformation:us-east-1:265098672980:stack/serverless-saas-pipeline-lab5/8b4415f0-f8cb-11f0-b9a9-0e8d661a88d1
+
+✨  Total time: 10.78s
+
+
+NOTICES         (What's this? https://github.com/aws/aws-cdk/wiki/CLI-Notices)
+
+34892	CDK CLI collects telemetry data on command usage starting at version 2.1100.0 (unless opted out)
+
+	Overview: We do not collect customer content and we anonymize the
+	          telemetry we do collect. See the attached issue for more
+	          information on what data is collected, why, and how to
+	          opt-out. Telemetry will NOT be collected for any CDK CLI
+	          version prior to version 2.1100.0 - regardless of
+	          opt-in/out. You can also view the telemetry we collect by
+	          logging it to a local file, by adding
+	          `--telemetry-file=my/local/file` to any `cdk` command.
+
+	Affected versions: cli: ^2.1100.0
+
+	More information at: https://github.com/aws/aws-cdk/issues/34892
+
+
+If you don’t want to see a notice anymore, use "cdk acknowledge <id>". For example, "cdk acknowledge 34892".
+[0;32m  ✓ Pipeline deployed successfully[0m
+
+[1;33mStep 4: Deploying bootstrap server infrastructure...[0m
+[1;33m  Checking SAM deployment bucket: sam-bootstrap-bucket-lab5-shared[0m
+[0;32m  ✓ SAM deployment bucket exists: sam-bootstrap-bucket-lab5-shared[0m
+[1;33m  Validating Python code with pylint...[0m
+[0;32m  ✓ Code validation passed[0m
+[1;33m  Building SAM application...[0m
+Starting Build inside a container
+Error: Failed to parse template: mapping values are not allowed here
+  in "<unicode string>", line 364, column 19:
+                Action:
+                      ^
+[0;31mError: SAM build failed[0m

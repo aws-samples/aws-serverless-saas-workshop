@@ -17,15 +17,15 @@ Parameters:
   StageName:
     Type: String
     Default: "prod"
-    Description: "Stage Name for the api" 
+    Description: "Stage Name for the api"
   EventEngineParameter:
     Type: String
-    Default: false    
+    Default: false
     Description: "Tells if this workshop is running as a part of AWS Event through AWS EventEngine or not"
-  AdminUserPoolCallbackURLParameter: 
+  AdminUserPoolCallbackURLParameter:
     Type: String
     Default: "http://example.com"
-    Description: "Enter Admin Management userpool call back url"  
+    Description: "Enter Admin Management userpool call back url"
   TenantUserPoolCallbackURLParameter:
     Type: String
     Default: "http://example.com"
@@ -45,9 +45,9 @@ Parameters:
   CostCenter:
     Type: String
     Default: "engineering"
-    Description: "Cost center for billing"   
+    Description: "Cost center for billing"
 Conditions:
-  IsNotRunningInEventEngine: !Not [ !Equals [ !Ref EventEngineParameter, "true"] ]   
+  IsNotRunningInEventEngine: !Not [ !Equals [ !Ref EventEngineParameter, true] ]
 Resources:
   DynamoDBTables:
     Type: AWS::Serverless::Application
@@ -68,7 +68,7 @@ Resources:
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter
-      
+
   Cognito:
     Type: AWS::Serverless::Application
     DependsOn: UserInterface
@@ -82,7 +82,7 @@ Resources:
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter
-        
+
   LambdaFunctions:
     Type: AWS::Serverless::Application
     DependsOn: UserInterface
@@ -90,7 +90,7 @@ Resources:
       Location: nested_templates/lambdafunctions.yaml
       Parameters:
         CognitoUserPoolId: !GetAtt Cognito.Outputs.CognitoUserPoolId
-        CognitoUserPoolClientId: !GetAtt Cognito.Outputs.CognitoUserPoolClientId                
+        CognitoUserPoolClientId: !GetAtt Cognito.Outputs.CognitoUserPoolClientId
         CognitoOperationUsersUserPoolId: !GetAtt Cognito.Outputs.CognitoOperationUsersUserPoolId
         CognitoOperationUsersUserPoolClientId: !GetAtt Cognito.Outputs.CognitoOperationUsersUserPoolClientId
         TenantDetailsTableArn: !GetAtt DynamoDBTables.Outputs.TenantDetailsTableArn
@@ -101,9 +101,9 @@ Resources:
         TenantUserPoolCallbackURLParameter: !If [IsNotRunningInEventEngine, !GetAtt UserInterface.Outputs.ApplicationSite, !Ref TenantUserPoolCallbackURLParameter]
         Environment: !Ref Environment
         Owner: !Ref Owner
-        CostCenter: !Ref CostCenter 
-        
-        
+        CostCenter: !Ref CostCenter
+
+
   APIs:
     Type: AWS::Serverless::Application
     DependsOn: LambdaFunctions
@@ -114,8 +114,8 @@ Resources:
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter
-        RegisterTenantLambdaExecutionRoleArn: !GetAtt LambdaFunctions.Outputs.RegisterTenantLambdaExecutionRoleArn          
-        TenantManagementLambdaExecutionRoleArn: !GetAtt LambdaFunctions.Outputs.TenantManagementLambdaExecutionRoleArn          
+        RegisterTenantLambdaExecutionRoleArn: !GetAtt LambdaFunctions.Outputs.RegisterTenantLambdaExecutionRoleArn
+        TenantManagementLambdaExecutionRoleArn: !GetAtt LambdaFunctions.Outputs.TenantManagementLambdaExecutionRoleArn
         RegisterTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.RegisterTenantFunctionArn
         ProvisionTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.ProvisionTenantFunctionArn
         DeProvisionTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.DeProvisionTenantFunctionArn
@@ -123,27 +123,27 @@ Resources:
         GetTenantsFunctionArn: !GetAtt LambdaFunctions.Outputs.GetTenantsFunctionArn
         GetTenantConfigFunctionArn: !GetAtt LambdaFunctions.Outputs.GetTenantConfigFunctionArn
         CreateTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.CreateTenantFunctionArn
-        GetTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.GetTenantFunctionArn          
-        DeactivateTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.DeactivateTenantFunctionArn          
-        UpdateTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.UpdateTenantFunctionArn          
-        GetUsersFunctionArn: !GetAtt LambdaFunctions.Outputs.GetUsersFunctionArn 
-        GetUserFunctionArn: !GetAtt LambdaFunctions.Outputs.GetUserFunctionArn          
-        UpdateUserFunctionArn: !GetAtt LambdaFunctions.Outputs.UpdateUserFunctionArn          
+        GetTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.GetTenantFunctionArn
+        DeactivateTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.DeactivateTenantFunctionArn
+        UpdateTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.UpdateTenantFunctionArn
+        GetUsersFunctionArn: !GetAtt LambdaFunctions.Outputs.GetUsersFunctionArn
+        GetUserFunctionArn: !GetAtt LambdaFunctions.Outputs.GetUserFunctionArn
+        UpdateUserFunctionArn: !GetAtt LambdaFunctions.Outputs.UpdateUserFunctionArn
         DisableUserFunctionArn: !GetAtt LambdaFunctions.Outputs.DisableUserFunctionArn
         CreateTenantAdminUserFunctionArn: !GetAtt LambdaFunctions.Outputs.CreateTenantAdminUserFunctionArn
         CreateUserFunctionArn: !GetAtt LambdaFunctions.Outputs.CreateUserFunctionArn
         DisableUsersByTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.DisableUsersByTenantFunctionArn
-        EnableUsersByTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.EnableUsersByTenantFunctionArn                  
-        AuthorizerFunctionArn: !GetAtt LambdaFunctions.Outputs.SharedServicesAuthorizerFunctionArn  
-        
+        EnableUsersByTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.EnableUsersByTenantFunctionArn
+        AuthorizerFunctionArn: !GetAtt LambdaFunctions.Outputs.SharedServicesAuthorizerFunctionArn
+
   APIGatewayLambdaPermissions:
     Type: AWS::Serverless::Application
     DependsOn: LambdaFunctions
     Properties:
       Location: nested_templates/apigateway_lambdapermissions.yaml
       Parameters:
-        RegisterTenantLambdaExecutionRoleArn: !GetAtt LambdaFunctions.Outputs.RegisterTenantLambdaExecutionRoleArn          
-        TenantManagementLambdaExecutionRoleArn: !GetAtt LambdaFunctions.Outputs.TenantManagementLambdaExecutionRoleArn          
+        RegisterTenantLambdaExecutionRoleArn: !GetAtt LambdaFunctions.Outputs.RegisterTenantLambdaExecutionRoleArn
+        TenantManagementLambdaExecutionRoleArn: !GetAtt LambdaFunctions.Outputs.TenantManagementLambdaExecutionRoleArn
         RegisterTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.RegisterTenantFunctionArn
         ProvisionTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.ProvisionTenantFunctionArn
         DeProvisionTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.DeProvisionTenantFunctionArn
@@ -151,34 +151,34 @@ Resources:
         GetTenantConfigFunctionArn: !GetAtt LambdaFunctions.Outputs.GetTenantConfigFunctionArn
         GetTenantsFunctionArn: !GetAtt LambdaFunctions.Outputs.GetTenantsFunctionArn
         CreateTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.CreateTenantFunctionArn
-        GetTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.GetTenantFunctionArn          
-        DeactivateTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.DeactivateTenantFunctionArn          
-        UpdateTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.UpdateTenantFunctionArn          
-        GetUsersFunctionArn: !GetAtt LambdaFunctions.Outputs.GetUsersFunctionArn 
-        GetUserFunctionArn: !GetAtt LambdaFunctions.Outputs.GetUserFunctionArn          
-        UpdateUserFunctionArn: !GetAtt LambdaFunctions.Outputs.UpdateUserFunctionArn          
+        GetTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.GetTenantFunctionArn
+        DeactivateTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.DeactivateTenantFunctionArn
+        UpdateTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.UpdateTenantFunctionArn
+        GetUsersFunctionArn: !GetAtt LambdaFunctions.Outputs.GetUsersFunctionArn
+        GetUserFunctionArn: !GetAtt LambdaFunctions.Outputs.GetUserFunctionArn
+        UpdateUserFunctionArn: !GetAtt LambdaFunctions.Outputs.UpdateUserFunctionArn
         DisableUserFunctionArn: !GetAtt LambdaFunctions.Outputs.DisableUserFunctionArn
         CreateTenantAdminUserFunctionArn: !GetAtt LambdaFunctions.Outputs.CreateTenantAdminUserFunctionArn
         CreateUserFunctionArn: !GetAtt LambdaFunctions.Outputs.CreateUserFunctionArn
         DisableUsersByTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.DisableUsersByTenantFunctionArn
-        EnableUsersByTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.EnableUsersByTenantFunctionArn          
-        AuthorizerFunctionArn: !GetAtt LambdaFunctions.Outputs.SharedServicesAuthorizerFunctionArn         
+        EnableUsersByTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.EnableUsersByTenantFunctionArn
+        AuthorizerFunctionArn: !GetAtt LambdaFunctions.Outputs.SharedServicesAuthorizerFunctionArn
         AdminApiGatewayApi: !GetAtt APIs.Outputs.AdminApiGatewayApi
   #setup custom resources
   CustomResources:
     Type: AWS::Serverless::Application
-    DependsOn: APIs    
+    DependsOn: APIs
     Properties:
       Location: nested_templates/custom_resources.yaml
       Parameters:
-        ServerlessSaaSSettingsTableArn: !GetAtt DynamoDBTables.Outputs.ServerlessSaaSSettingsTableArn  
+        ServerlessSaaSSettingsTableArn: !GetAtt DynamoDBTables.Outputs.ServerlessSaaSSettingsTableArn
         ServerlessSaaSSettingsTableName: !GetAtt DynamoDBTables.Outputs.ServerlessSaaSSettingsTableName
         TenantStackMappingTableArn: !GetAtt DynamoDBTables.Outputs.TenantStackMappingTableArn
         TenantStackMappingTableName: !GetAtt DynamoDBTables.Outputs.TenantStackMappingTableName
         UpdateSettingsTableFunctionArn: !GetAtt LambdaFunctions.Outputs.UpdateSettingsTableFunctionArn
         UpdateTenantStackMapTableFunctionArn: !GetAtt LambdaFunctions.Outputs.UpdateTenantStackMapTableFunctionArn
         CognitoUserPoolId: !GetAtt Cognito.Outputs.CognitoUserPoolId
-        CognitoUserPoolClientId: !GetAtt Cognito.Outputs.CognitoUserPoolClientId      
+        CognitoUserPoolClientId: !GetAtt Cognito.Outputs.CognitoUserPoolClientId
 
 Outputs:
   AdminApi:
@@ -209,10 +209,10 @@ Outputs:
     Value: !GetAtt UserInterface.Outputs.ApplicationSite
     Condition: IsNotRunningInEventEngine
   CognitoOperationUsersUserPoolId:
-    Description: The user pool id of Admin Management userpool 
+    Description: The user pool id of Admin Management userpool
     Value: !GetAtt Cognito.Outputs.CognitoOperationUsersUserPoolId
     Export:
-      Name: "Serverless-SaaS-CognitoOperationUsersUserPoolId-lab5"  
+      Name: "Serverless-SaaS-CognitoOperationUsersUserPoolId-lab5"
   CognitoOperationUsersUserPoolProviderURL:
     Description: The Admin Management userpool provider url
     Value: !GetAtt Cognito.Outputs.CognitoOperationUsersUserPoolProviderURL
@@ -225,14 +225,14 @@ Outputs:
     Description: The user pool id for tenant user pool
     Value: !GetAtt Cognito.Outputs.CognitoUserPoolId
     Export:
-      Name: "Serverless-SaaS-CognitoTenantUserPoolId-lab5"  
+      Name: "Serverless-SaaS-CognitoTenantUserPoolId-lab5"
   CognitoTenantAppClientId:
     Description: The app client id for tenant user pool
     Value: !GetAtt Cognito.Outputs.CognitoUserPoolClientId
     Export:
-      Name: "Serverless-SaaS-CognitoTenantAppClientId-lab5"  
+      Name: "Serverless-SaaS-CognitoTenantAppClientId-lab5"
   AuthorizerExecutionRoleArn:
     Description: The Lambda authorizer execution role
-    Value: !GetAtt LambdaFunctions.Outputs.AuthorizerExecutionRoleArn 
+    Value: !GetAtt LambdaFunctions.Outputs.AuthorizerExecutionRoleArn
     Export:
-      Name: "Serverless-SaaS-AuthorizerExecutionRoleArn-lab5"   
+      Name: "Serverless-SaaS-AuthorizerExecutionRoleArn-lab5"

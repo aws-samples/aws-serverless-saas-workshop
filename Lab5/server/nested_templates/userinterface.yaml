@@ -8,8 +8,8 @@ Description: >
 Parameters:
   IsCloudFrontAndS3PreProvisioned:
     Type: String
-    Default: false    
-    Description: "Tells if cloudfront and s3 buckets are pre-provisioned or not. 
+    Default: false
+    Description: "Tells if cloudfront and s3 buckets are pre-provisioned or not.
     They get pre-provisioned when the workshop is running as a part of AWS Event through AWS event engine tool."
   Environment:
     Type: String
@@ -21,7 +21,7 @@ Parameters:
     Type: String
     Description: "Cost center for billing"
 Conditions:
-  IsNotRunningInEventEngine: !Not [ !Equals [ !Ref IsCloudFrontAndS3PreProvisioned, true] ]  
+  IsNotRunningInEventEngine: !Not [ !Equals [ !Ref IsCloudFrontAndS3PreProvisioned, true] ]
 Resources:
   CloudFrontOriginAccessIdentity:
     Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
@@ -29,19 +29,19 @@ Resources:
     Properties:
       CloudFrontOriginAccessIdentityConfig:
         Comment: "Origin Access Identity for CloudFront Distributions"
-  AdminAppBucket:  
+  AdminAppBucket:
     Type: AWS::S3::Bucket
     Condition: IsNotRunningInEventEngine
     DeletionPolicy : Retain
     Properties:
-      BucketName: !Sub 
+      BucketName: !Sub
         - 'serverless-saas-lab5-admin-${ShortId}'
         - ShortId: !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref 'AWS::StackId']]]]
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
               SSEAlgorithm: 'AES256'
-      PublicAccessBlockConfiguration: 
+      PublicAccessBlockConfiguration:
         BlockPublicAcls: True
         BlockPublicPolicy: True
         IgnorePublicAcls: True
@@ -85,11 +85,11 @@ Resources:
         - Key: CostCenter
           Value: !Ref CostCenter
       DistributionConfig:
-        #Aliases: 
+        #Aliases:
          # - !Sub 'admin.${CustomDomainName}'
         CustomErrorResponses:
         # Needed to support angular routing
-        - ErrorCode: 403 
+        - ErrorCode: 403
           ResponseCode: 200
           ResponsePagePath: '/index.html'
         - ErrorCode: 404
@@ -121,22 +121,22 @@ Resources:
         - DomainName: !GetAtt AdminAppBucket.RegionalDomainName
           Id: adminapp-s3origin
           S3OriginConfig:
-            OriginAccessIdentity: !Join ["", ["origin-access-identity/cloudfront/", !Ref CloudFrontOriginAccessIdentity]] 
-        PriceClass: 'PriceClass_All'  
+            OriginAccessIdentity: !Join ["", ["origin-access-identity/cloudfront/", !Ref CloudFrontOriginAccessIdentity]]
+        PriceClass: 'PriceClass_All'
 
   AppBucket:
     Type: AWS::S3::Bucket
     Condition: IsNotRunningInEventEngine
     DeletionPolicy : Retain
     Properties:
-      BucketName: !Sub 
+      BucketName: !Sub
         - 'serverless-saas-lab5-app-${ShortId}'
         - ShortId: !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref 'AWS::StackId']]]]
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
               SSEAlgorithm: 'AES256'
-      PublicAccessBlockConfiguration: 
+      PublicAccessBlockConfiguration:
         BlockPublicAcls: True
         BlockPublicPolicy: True
         IgnorePublicAcls: True
@@ -182,7 +182,7 @@ Resources:
       DistributionConfig:
         CustomErrorResponses:
         # Needed to support angular routing
-        - ErrorCode: 403 
+        - ErrorCode: 403
           ResponseCode: 200
           ResponsePagePath: '/index.html'
         - ErrorCode: 404
@@ -214,21 +214,21 @@ Resources:
         - DomainName: !GetAtt 'AppBucket.RegionalDomainName'
           Id: tenantapp-s3origin
           S3OriginConfig:
-            OriginAccessIdentity: !Join ["", ["origin-access-identity/cloudfront/", !Ref CloudFrontOriginAccessIdentity]] 
-        PriceClass: 'PriceClass_All' 
+            OriginAccessIdentity: !Join ["", ["origin-access-identity/cloudfront/", !Ref CloudFrontOriginAccessIdentity]]
+        PriceClass: 'PriceClass_All'
   LandingAppBucket:
     Type: AWS::S3::Bucket
     Condition: IsNotRunningInEventEngine
     DeletionPolicy : Retain
     Properties:
-      BucketName: !Sub 
+      BucketName: !Sub
         - 'serverless-saas-lab5-landing-${ShortId}'
         - ShortId: !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref 'AWS::StackId']]]]
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
               SSEAlgorithm: 'AES256'
-      PublicAccessBlockConfiguration: 
+      PublicAccessBlockConfiguration:
         BlockPublicAcls: True
         BlockPublicPolicy: True
         IgnorePublicAcls: True
@@ -274,7 +274,7 @@ Resources:
       DistributionConfig:
         CustomErrorResponses:
         # Needed to support angular routing
-        - ErrorCode: 403 
+        - ErrorCode: 403
           ResponseCode: 200
           ResponsePagePath: '/index.html'
         - ErrorCode: 404
@@ -306,8 +306,8 @@ Resources:
         - DomainName: !GetAtt 'LandingAppBucket.RegionalDomainName'
           Id: landingapp-s3origin
           S3OriginConfig:
-            OriginAccessIdentity: !Join ["", ["origin-access-identity/cloudfront/", !Ref CloudFrontOriginAccessIdentity]] 
-        PriceClass: 'PriceClass_All'       
+            OriginAccessIdentity: !Join ["", ["origin-access-identity/cloudfront/", !Ref CloudFrontOriginAccessIdentity]]
+        PriceClass: 'PriceClass_All'
 Outputs:
   AdminBucket:
     Description: The name of the bucket for uploading the Admin Management site to
@@ -323,7 +323,7 @@ Outputs:
     Condition: IsNotRunningInEventEngine
   ApplicationSite:
     Description: The name of the CloudFront url for Tenant Management site
-    Value: !GetAtt ApplicationSite.DomainName    
+    Value: !GetAtt ApplicationSite.DomainName
     Condition: IsNotRunningInEventEngine
   LandingAppBucket:
     Description: The name of the bucket for uploading the Landing site to
@@ -331,5 +331,5 @@ Outputs:
     Condition: IsNotRunningInEventEngine
   LandingApplicationSite:
     Description: The name of the CloudFront url for Landing site
-    Value: !GetAtt LandingApplicationSite.DomainName   
+    Value: !GetAtt LandingApplicationSite.DomainName
     Condition: IsNotRunningInEventEngine

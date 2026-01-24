@@ -12,7 +12,7 @@ Parameters:
   SystemAdminRoleNameParameter:
     Type: String
     Description: "Enter the role name for system admin"
-  AdminUserPoolCallbackURLParameter: 
+  AdminUserPoolCallbackURLParameter:
     Type: String
     Description: "Enter Admin Management userpool call back url"
   TenantUserPoolCallbackURLParameter:
@@ -26,7 +26,7 @@ Parameters:
     Description: "Owner of the resources"
   CostCenter:
     Type: String
-    Description: "Cost center for billing"  
+    Description: "Cost center for billing"
 Resources:
   CognitoUserPool:
     Type: "AWS::Cognito::UserPool"
@@ -38,17 +38,17 @@ Resources:
         RecoveryMechanisms:
           - Name: verified_email
             Priority: 1
-      AdminCreateUserConfig:      
+      AdminCreateUserConfig:
         InviteMessageTemplate:
-          EmailMessage: !Join 
-            - "" 
+          EmailMessage: !Join
+            - ""
             - - "Login into tenant UI application at "
               - "https://"
-              - !Ref TenantUserPoolCallbackURLParameter 
+              - !Ref TenantUserPoolCallbackURLParameter
               - "/"
               - " with username {username} and temporary password {####}"
-          EmailSubject: !Join 
-            - "" 
+          EmailSubject: !Join
+            - ""
             - - "Your temporary password for tenant UI application"
       Schema:
         - AttributeDataType: "String"
@@ -56,7 +56,7 @@ Resources:
           Required: True
           Mutable: True
         - AttributeDataType: "String"
-          Name: tenantId          
+          Name: tenantId
         - AttributeDataType: "String"
           Name: userRole
           Required: False
@@ -66,7 +66,7 @@ Resources:
         Lab: lab5
         Environment: !Ref Environment
         Owner: !Ref Owner
-        CostCenter: !Ref CostCenter        
+        CostCenter: !Ref CostCenter
   CognitoUserPoolClient:
     Type: "AWS::Cognito::UserPoolClient"
     Properties:
@@ -82,7 +82,7 @@ Resources:
       CallbackURLs:
         - !Join ["",["https://",!Ref TenantUserPoolCallbackURLParameter, "/"]]
       LogoutURLs:
-        - !Join ["",["https://",!Ref TenantUserPoolCallbackURLParameter, "/"]]  
+        - !Join ["",["https://",!Ref TenantUserPoolCallbackURLParameter, "/"]]
       AllowedOAuthScopes:
         - email
         - openid
@@ -90,11 +90,11 @@ Resources:
       WriteAttributes:
         - "email"
         - "custom:tenantId"
-        - "custom:userRole"        
+        - "custom:userRole"
   CognitoUserPoolDomain:
     Type: AWS::Cognito::UserPoolDomain
     Properties:
-      Domain: !Sub 
+      Domain: !Sub
         - 'serverless-saas-lab5-pool-${ShortId}'
         - ShortId: !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref 'AWS::StackId']]]]
       UserPoolId: !Ref CognitoUserPool
@@ -109,25 +109,25 @@ Resources:
         RecoveryMechanisms:
           - Name: verified_email
             Priority: 1
-      AdminCreateUserConfig:      
+      AdminCreateUserConfig:
         InviteMessageTemplate:
-          EmailMessage: !Join 
-            - "" 
-            - - "Login into admin UI application at " 
-              - "https://"
-              - !Ref AdminUserPoolCallbackURLParameter 
-              - "/" 
-              - " with username {username} and temporary password {####}"
-          EmailSubject: !Join 
+          EmailMessage: !Join
             - ""
-            - - "Your temporary password for admin UI application"  
+            - - "Login into admin UI application at "
+              - "https://"
+              - !Ref AdminUserPoolCallbackURLParameter
+              - "/"
+              - " with username {username} and temporary password {####}"
+          EmailSubject: !Join
+            - ""
+            - - "Your temporary password for admin UI application"
       Schema:
         - AttributeDataType: "String"
           Name: email
           Required: True
           Mutable: True
         - AttributeDataType: "String"
-          Name: tenantId        
+          Name: tenantId
         - AttributeDataType: "String"
           Name: userRole
           Required: False
@@ -137,7 +137,7 @@ Resources:
         Lab: lab5
         Environment: !Ref Environment
         Owner: !Ref Owner
-        CostCenter: !Ref CostCenter        
+        CostCenter: !Ref CostCenter
   CognitoOperationUsersUserPoolClient:
     Type: "AWS::Cognito::UserPoolClient"
     Properties:
@@ -152,7 +152,7 @@ Resources:
         - COGNITO
       CallbackURLs:
         - !Join ["",["https://", !Ref AdminUserPoolCallbackURLParameter, "/"]]
-      LogoutURLs:  
+      LogoutURLs:
         - !Join ["",["https://", !Ref AdminUserPoolCallbackURLParameter, "/"]]
       AllowedOAuthScopes:
         - email
@@ -161,11 +161,11 @@ Resources:
       WriteAttributes:
         - "email"
         - "custom:tenantId"
-        - "custom:userRole"        
+        - "custom:userRole"
   CognitoOperationUsersUserPoolDomain:
     Type: AWS::Cognito::UserPoolDomain
     Properties:
-      Domain: !Sub 
+      Domain: !Sub
         - 'serverless-saas-lab5-ops-${ShortId}'
         - ShortId: !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref 'AWS::StackId']]]]
       UserPoolId: !Ref CognitoOperationUsersUserPool
@@ -197,7 +197,7 @@ Resources:
         GroupName: !Ref CognitoAdminUserGroup
         Username: !Ref CognitoAdminUser
         UserPoolId: !Ref CognitoOperationUsersUserPool
-        
+
 Outputs:
   CognitoUserPoolId:
     Value: !Ref CognitoUserPool

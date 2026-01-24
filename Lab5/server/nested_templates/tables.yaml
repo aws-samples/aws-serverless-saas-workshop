@@ -67,7 +67,7 @@ Resources:
         - AttributeName: tenantId
           AttributeType: S
         - AttributeName: tenantName
-          AttributeType: S   
+          AttributeType: S
       KeySchema:
         - AttributeName: tenantId
           KeyType: HASH
@@ -78,11 +78,11 @@ Resources:
             - AttributeName: tenantName
               KeyType: HASH
           Projection:
-            NonKeyAttributes: 
+            NonKeyAttributes:
               - userPoolId
               - appClientId
               - apiGatewayUrl
-            ProjectionType: INCLUDE      
+            ProjectionType: INCLUDE
       TableName: ServerlessSaaS-TenantDetails-lab5
       Tags:
         - Key: Application
@@ -110,9 +110,9 @@ Resources:
           KeyType: RANGE
       BillingMode: PAY_PER_REQUEST
       TableName: ServerlessSaaS-TenantUserMapping-lab5
-      GlobalSecondaryIndexes: 
+      GlobalSecondaryIndexes:
         - IndexName: UserName
-          KeySchema: 
+          KeySchema:
             - AttributeName: userName
               KeyType: HASH
             - AttributeName: tenantId
@@ -131,19 +131,19 @@ Resources:
         - Key: CostCenter
           Value: !Ref CostCenter
 Outputs:
-  ServerlessSaaSSettingsTableArn: 
+  ServerlessSaaSSettingsTableArn:
     Value: !GetAtt ServerlessSaaSSettingsTable.Arn
-  ServerlessSaaSSettingsTableName: 
+  ServerlessSaaSSettingsTableName:
     Value: !Ref ServerlessSaaSSettingsTable
-  TenantStackMappingTableArn: 
+  TenantStackMappingTableArn:
     Value: !GetAtt TenantStackMappingTable.Arn
-  TenantStackMappingTableName: 
+  TenantStackMappingTableName:
     Value: !Ref TenantStackMappingTable
-  TenantDetailsTableArn: 
+  TenantDetailsTableArn:
     Value: !GetAtt TenantDetailsTable.Arn
-  TenantDetailsTableName: 
+  TenantDetailsTableName:
     Value: !Ref TenantDetailsTable
-  TenantUserMappingTableArn: 
+  TenantUserMappingTableArn:
     Value: !GetAtt TenantUserMappingTable.Arn
-  TenantUserMappingTableName: 
+  TenantUserMappingTableName:
     Value: !Ref TenantUserMappingTable
