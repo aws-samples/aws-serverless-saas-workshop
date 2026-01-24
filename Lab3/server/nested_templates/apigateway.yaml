@@ -6,6 +6,22 @@ Transform: AWS::Serverless-2016-10-31
 Description: >
   Template to setup api gateway, apis, api keys and usage plan as part of bootstrap
 Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+    Description: Deployment environment for the workshop
+  Owner:
+    Type: String
+    Default: workshop-participant
+    Description: Owner identifier for resource tracking
+  CostCenter:
+    Type: String
+    Default: serverless-saas-workshop
+    Description: Cost center for billing allocation
   StageName:
     Type: String
   RegisterTenantLambdaExecutionRoleArn:
@@ -62,6 +78,17 @@ Resources:
                 - apigateway.amazonaws.com
             Action:
               - sts:AssumeRole
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab3
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
   ApiGatewayAttachCloudwatchLogArn:
     Type: AWS::ApiGateway::Account
     Properties:
@@ -71,10 +98,27 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub /aws/api-gateway/access-logs-serverless-saas-admin-api-lab3
-      RetentionInDays: 30
+      RetentionInDays: 60
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab3
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
   AdminApiGatewayApi:
     Type: AWS::Serverless::Api
     Properties:
+      Tags:
+        Application: serverless-saas-workshop
+        Lab: lab3
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
       MethodSettings:
         - DataTraceEnabled: False
           LoggingLevel: INFO

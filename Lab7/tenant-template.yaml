@@ -3,6 +3,21 @@ Transform: AWS::Serverless-2016-10-31
 Description: >
   Lab7 - Minimal Tenant Stack for Cost Attribution Demo
 
+Parameters:
+  TenantId:
+    Type: String
+    Default: pooled
+    Description: Tenant ID for the stack
+  Environment:
+    Type: String
+    Description: "Environment name (dev, staging, prod)"
+  Owner:
+    Type: String
+    Description: "Owner of the resources"
+  CostCenter:
+    Type: String
+    Description: "Cost center for billing"
+
 Resources:
   PowerToolsLayer:
     Type: AWS::Serverless::LayerVersion
@@ -11,10 +26,10 @@ Resources:
       Description: AWS Lambda PowerTools for structured logging
       ContentUri: layers/
       CompatibleRuntimes:
-        - python3.9
+        - python3.14
       RetentionPolicy: Delete
     Metadata:
-      BuildMethod: python3.9
+      BuildMethod: python3.14
   TenantLambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -42,6 +57,19 @@ Resources:
                   - dynamodb:Query
                   - dynamodb:Scan
                 Resource: '*'
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: TenantId
+          Value: !Ref TenantId
+        - Key: Lab
+          Value: lab7
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
 
   CreateProductFunction:
     Type: AWS::Serverless::Function
@@ -49,7 +77,7 @@ Resources:
       FunctionName: create-product-pooled-lab7
       CodeUri: ProductService/
       Handler: product_service.create_product
-      Runtime: python3.9
+      Runtime: python3.14
       Role: !GetAtt TenantLambdaExecutionRole.Arn
       Layers:
         - !Ref PowerToolsLayer
@@ -57,6 +85,13 @@ Resources:
         Variables:
           POWERTOOLS_SERVICE_NAME: product-service
           LOG_LEVEL: INFO
+      Tags:
+        Application: serverless-saas-workshop
+        TenantId: !Ref TenantId
+        Lab: lab7
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
 
   UpdateProductFunction:
     Type: AWS::Serverless::Function
@@ -64,7 +99,7 @@ Resources:
       FunctionName: update-product-pooled-lab7
       CodeUri: ProductService/
       Handler: product_service.update_product
-      Runtime: python3.9
+      Runtime: python3.14
       Role: !GetAtt TenantLambdaExecutionRole.Arn
       Layers:
         - !Ref PowerToolsLayer
@@ -72,6 +107,13 @@ Resources:
         Variables:
           POWERTOOLS_SERVICE_NAME: product-service
           LOG_LEVEL: INFO
+      Tags:
+        Application: serverless-saas-workshop
+        TenantId: !Ref TenantId
+        Lab: lab7
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
 
   GetProductsFunction:
     Type: AWS::Serverless::Function
@@ -79,7 +121,7 @@ Resources:
       FunctionName: get-products-pooled-lab7
       CodeUri: ProductService/
       Handler: product_service.get_products
-      Runtime: python3.9
+      Runtime: python3.14
       Role: !GetAtt TenantLambdaExecutionRole.Arn
       Layers:
         - !Ref PowerToolsLayer
@@ -87,6 +129,13 @@ Resources:
         Variables:
           POWERTOOLS_SERVICE_NAME: product-service
           LOG_LEVEL: INFO
+      Tags:
+        Application: serverless-saas-workshop
+        TenantId: !Ref TenantId
+        Lab: lab7
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
 
   ProductTable:
     Type: AWS::DynamoDB::Table
@@ -102,6 +151,19 @@ Resources:
       ProvisionedThroughput:
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: TenantId
+          Value: !Ref TenantId
+        - Key: Lab
+          Value: lab7
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
 
 Outputs:
   CreateProductFunctionArn:

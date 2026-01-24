@@ -3,9 +3,9 @@ version = 0.1
 [default.deploy]
 [default.deploy.parameters]
 stack_name = "serverless-saas-workshop-shared-lab6"
-s3_bucket = "sam-bootstrap-bucket-bdd95af9-0e28-4609-8080-8af0d3d2fbd5"
+s3_bucket = "sam-bootstrap-bucket-lab6-shared"
 s3_prefix = "serverless-saas-lab6/shared"
-region = "us-east-1"
+region = "us-west-2"
 confirm_changeset = false
 capabilities = "CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND"
 cached="true"

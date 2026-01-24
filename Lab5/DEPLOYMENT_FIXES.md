@@ -156,7 +156,7 @@ git fetch cc
 git log cc/main --oneline -5
 
 # Monitor pipeline execution
-aws codepipeline get-pipeline-state --name serverless-saas-pipeline
+aws codepipeline get-pipeline-state --name serverless-saas-pipeline-lab5
 
 # Check tenant stack status
 aws cloudformation describe-stacks --stack-name stack-lab5-pooled --query 'Stacks[0].StackStatus'
@@ -166,7 +166,7 @@ aws cloudformation describe-stacks --stack-name stack-lab5-pooled --query 'Stack
 
 1. **Check the logs:**
 ```bash
-aws logs tail /aws/lambda/serverless-saas-pipeline-deploytenantstackD22DC62B-* --since 30m
+aws logs tail /aws/lambda/serverless-saas-pipeline-lab5-deploytenantstackD22DC62B-* --since 30m
 ```
 
 2. **Verify exports match imports:**
@@ -181,7 +181,7 @@ grep -r "ImportValue.*Cognito" Lab5/server/tenant-template.yaml
 3. **Check CodeCommit content:**
 ```bash
 # Download packaged.yaml from S3
-aws s3 cp s3://serverless-saas-pipeline-artifactsbucket*/packaged.yaml - | grep -A2 "CognitoOperationUsersUserPoolClientId"
+aws s3 cp s3://serverless-saas-pipeline-lab5-artifactsbucket*/packaged.yaml - | grep -A2 "CognitoOperationUsersUserPoolClientId"
 ```
 
 4. **See [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) for complete solutions**
@@ -201,7 +201,7 @@ aws cloudformation delete-stack --stack-name stack-lab5-pooled
 aws cloudformation delete-stack --stack-name serverless-saas-workshop-shared-lab5
 
 # Delete pipeline
-aws cloudformation delete-stack --stack-name serverless-saas-pipeline
+aws cloudformation delete-stack --stack-name serverless-saas-pipeline-lab5
 
 # Wait for deletions, then redeploy
 ./deployment.sh -s -c

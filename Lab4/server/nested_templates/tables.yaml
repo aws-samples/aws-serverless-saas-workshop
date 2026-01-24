@@ -5,6 +5,23 @@ AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 Description: >
   Template to create dynamodb tables as part of bootstrap
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, staging, prod]
+    Description: Deployment environment for the workshop
+
+  Owner:
+    Type: String
+    Default: workshop-participant
+    Description: Owner identifier for resource tracking
+
+  CostCenter:
+    Type: String
+    Default: serverless-saas-workshop
+    Description: Cost center for billing allocation
+
 Resources:
   TenantDetailsTable:
     Type: AWS::DynamoDB::Table
@@ -30,6 +47,17 @@ Resources:
               - apiGatewayUrl
             ProjectionType: INCLUDE              
       TableName: ServerlessSaaS-TenantDetails-lab4
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab4
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
   TenantUserMappingTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -53,7 +81,18 @@ Resources:
             - AttributeName: tenantId
               KeyType: RANGE
           Projection:
-            ProjectionType: ALL          
+            ProjectionType: ALL
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab4
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter          
 Outputs:
   TenantDetailsTableArn: 
     Value: !GetAtt TenantDetailsTable.Arn

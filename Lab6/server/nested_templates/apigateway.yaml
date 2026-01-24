@@ -59,7 +59,16 @@ Parameters:
   ApiKeyStandardTierParameter:
     Type: String
   ApiKeyBasicTierParameter:
-    Type: String  
+    Type: String
+  Environment:
+    Type: String
+    Description: "Environment name (dev, staging, prod)"
+  Owner:
+    Type: String
+    Description: "Owner of the resources"
+  CostCenter:
+    Type: String
+    Description: "Cost center for billing"  
   
 Resources:
   ApiGatewayCloudWatchLogRole:
@@ -78,6 +87,17 @@ Resources:
                 - apigateway.amazonaws.com
             Action:
               - sts:AssumeRole
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab6
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
   ApiGatewayAttachCloudwatchLogArn:
     Type: AWS::ApiGateway::Account
     Properties:
@@ -87,7 +107,18 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub /aws/api-gateway/access-logs-serverless-saas-lab6-admin-api
-      RetentionInDays: 30
+      RetentionInDays: 60
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab6
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
   AdminApiGatewayApi:
     Type: AWS::Serverless::Api
     Properties:
@@ -955,6 +986,12 @@ Resources:
                 authorizerResultTtlInSeconds: 60
                 type: "token"
       StageName: prod
+      Tags:
+        Application: serverless-saas-workshop
+        Lab: lab6
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
   
  #Create API Keys and Usage Plans
   APIGatewayApiKeySystemAdmin:

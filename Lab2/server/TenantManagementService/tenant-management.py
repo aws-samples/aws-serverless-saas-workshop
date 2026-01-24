@@ -12,9 +12,10 @@ import logger
 import requests
 
 region = os.environ['AWS_REGION']
+tenant_details_table_name = os.environ.get('TENANT_DETAILS_TABLE', 'ServerlessSaaS-TenantDetails-lab2')
 
 dynamodb = boto3.resource('dynamodb')
-table_tenant_details = dynamodb.Table('ServerlessSaas-lab2-TenantDetails')
+table_tenant_details = dynamodb.Table(tenant_details_table_name)
 
 #This method has been locked down to be only called from tenant registration service
 def create_tenant(event, context):

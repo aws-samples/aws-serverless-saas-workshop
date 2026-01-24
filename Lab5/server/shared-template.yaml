@@ -29,7 +29,23 @@ Parameters:
   TenantUserPoolCallbackURLParameter:
     Type: String
     Default: "http://example.com"
-    Description: "Enter Tenant Management userpool call back url"   
+    Description: "Enter Tenant Management userpool call back url"
+  Environment:
+    Type: String
+    Default: "dev"
+    Description: "Environment name (dev, staging, prod)"
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+  Owner:
+    Type: String
+    Default: "workshop-team"
+    Description: "Owner of the resources"
+  CostCenter:
+    Type: String
+    Default: "engineering"
+    Description: "Cost center for billing"   
 Conditions:
   IsNotRunningInEventEngine: !Not [ !Equals [ !Ref EventEngineParameter, true] ]   
 Resources:
@@ -37,6 +53,10 @@ Resources:
     Type: AWS::Serverless::Application
     Properties:
       Location: nested_templates/tables.yaml
+      Parameters:
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
 
   #Create cloudfront and s3 for UI Cde
   UserInterface:
@@ -45,6 +65,9 @@ Resources:
       Location: nested_templates/userinterface.yaml
       Parameters:
         IsCloudFrontAndS3PreProvisioned: !Ref EventEngineParameter
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
       
   Cognito:
     Type: AWS::Serverless::Application
@@ -56,6 +79,9 @@ Resources:
         SystemAdminRoleNameParameter: !Ref SystemAdminRoleNameParameter
         AdminUserPoolCallbackURLParameter: !If [IsNotRunningInEventEngine, !GetAtt UserInterface.Outputs.AdminAppSite, !Ref AdminUserPoolCallbackURLParameter]
         TenantUserPoolCallbackURLParameter: !If [IsNotRunningInEventEngine, !GetAtt UserInterface.Outputs.ApplicationSite, !Ref TenantUserPoolCallbackURLParameter]
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
         
   LambdaFunctions:
     Type: AWS::Serverless::Application
@@ -72,7 +98,10 @@ Resources:
         TenantStackMappingTableArn: !GetAtt DynamoDBTables.Outputs.TenantStackMappingTableArn
         TenantUserMappingTableArn: !GetAtt DynamoDBTables.Outputs.TenantUserMappingTableArn
         TenantStackMappingTableName: !GetAtt DynamoDBTables.Outputs.TenantStackMappingTableName
-        TenantUserPoolCallbackURLParameter: !If [IsNotRunningInEventEngine, !GetAtt UserInterface.Outputs.ApplicationSite, !Ref TenantUserPoolCallbackURLParameter] 
+        TenantUserPoolCallbackURLParameter: !If [IsNotRunningInEventEngine, !GetAtt UserInterface.Outputs.ApplicationSite, !Ref TenantUserPoolCallbackURLParameter]
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter 
         
         
   APIs:
@@ -82,6 +111,9 @@ Resources:
       Location: nested_templates/apigateway.yaml
       Parameters:
         StageName: !Ref StageName
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
         RegisterTenantLambdaExecutionRoleArn: !GetAtt LambdaFunctions.Outputs.RegisterTenantLambdaExecutionRoleArn          
         TenantManagementLambdaExecutionRoleArn: !GetAtt LambdaFunctions.Outputs.TenantManagementLambdaExecutionRoleArn          
         RegisterTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.RegisterTenantFunctionArn

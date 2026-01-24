@@ -17,7 +17,23 @@ Parameters:
     Description: "Enter Admin Management userpool call back url" 
   TenantUserPoolCallbackURLParameter:
     Type: String
-    Description: "Enter Tenant Management userpool call back url"    
+    Description: "Enter Tenant Management userpool call back url"
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, staging, prod]
+    Description: Deployment environment for the workshop
+
+  Owner:
+    Type: String
+    Default: workshop-participant
+    Description: Owner identifier for resource tracking
+
+  CostCenter:
+    Type: String
+    Default: serverless-saas-workshop
+    Description: Cost center for billing allocation
+
 Resources:  
   CognitoUserPool:
     Type: "AWS::Cognito::UserPool"
@@ -51,7 +67,13 @@ Resources:
         - AttributeDataType: "String"
           Name: userRole
           Required: False
-          Mutable: True        
+          Mutable: True
+      UserPoolTags:
+        Application: serverless-saas-workshop
+        Lab: lab4
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter        
   CognitoUserPoolClient:
     Type: "AWS::Cognito::UserPoolClient"
     Properties:
@@ -114,6 +136,12 @@ Resources:
           Name: userRole
           Required: False
           Mutable: True
+      UserPoolTags:
+        Application: serverless-saas-workshop
+        Lab: lab4
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
   CognitoOperationUsersUserPoolClient:
     Type: "AWS::Cognito::UserPoolClient"
     Properties:

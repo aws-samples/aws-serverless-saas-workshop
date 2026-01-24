@@ -4,6 +4,22 @@
 # This prevents connection timeouts during long deployments
 
 SESSION_NAME="lab5-deployment"
+AWS_PROFILE=""
+
+# Parse command line arguments for --profile
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        --profile)
+            AWS_PROFILE=$2
+            shift 2
+            ;;
+        *)
+            echo "Unknown parameter: $1"
+            echo "Usage: $0 [--profile <profile>]"
+            exit 1
+            ;;
+    esac
+done
 
 # Check if screen session already exists
 screen -list | grep -q "$SESSION_NAME"
@@ -34,18 +50,29 @@ echo ""
 echo "Starting deployment in 3 seconds..."
 sleep 3
 
-# Get the current directory
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Get the absolute path to the script directory
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-# Create a new screen session and run the deployment
+# Build profile argument if provided
+PROFILE_ARG=""
+if [[ -n "$AWS_PROFILE" ]]; then
+    PROFILE_ARG="--profile $AWS_PROFILE"
+fi
+
+# Run deployment in detached screen session with logging
 screen -dmS "$SESSION_NAME" bash -c "
     cd '$SCRIPT_DIR'
-    echo '=========================================='
-    echo 'Lab5 Deployment Started'
-    echo 'Time: \$(date)'
-    echo '=========================================='
+    
+    # Redirect all output to log file and screen
+    exec > >(tee -a '$LOG_FILE') 2>&1
+    
+    echo '==================================================='
+    echo 'Lab5 Deployment Started: \$(date)'
+    echo 'Log file: $LOG_FILE'
+    echo '==================================================='
     echo ''
-    ./deployment.sh -s -c
+    
+    ./deployment.sh -s -c $AWS_PROFILE_ARG
     EXIT_CODE=\$?
     echo ''
     echo '=========================================='

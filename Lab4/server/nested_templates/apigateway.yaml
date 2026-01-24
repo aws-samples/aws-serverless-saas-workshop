@@ -44,12 +44,27 @@ Parameters:
     Type: String
   AuthorizerFunctionArn:
     Type: String
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, staging, prod]
+    Description: Deployment environment for the workshop
+
+  Owner:
+    Type: String
+    Default: workshop-participant
+    Description: Owner identifier for resource tracking
+
+  CostCenter:
+    Type: String
+    Default: serverless-saas-workshop
+    Description: Cost center for billing allocation
   
 Resources:
   ApiGatewayCloudWatchLogRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: apigateway-cloudwatch-publish-role-lab4
+      RoleName: !Sub apigateway-cloudwatch-publish-role-lab4-${AWS::Region}
       Path: "/"
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs
@@ -62,6 +77,17 @@ Resources:
                 - apigateway.amazonaws.com
             Action:
               - sts:AssumeRole
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab4
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
   ApiGatewayAttachCloudwatchLogArn:
     Type: AWS::ApiGateway::Account
     Properties:
@@ -71,7 +97,18 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub /aws/api-gateway/access-logs-serverless-saas-admin-api-lab4
-      RetentionInDays: 30
+      RetentionInDays: 60
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab4
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
   AdminApiGatewayApi:
     Type: AWS::Serverless::Api
     Properties:
@@ -135,6 +172,12 @@ Resources:
         DestinationArn: !GetAtt AdminApiGatewayAccessLogs.Arn
         Format: '{ "requestId":"$context.requestId", "ip": "$context.identity.sourceIp", "caller":"$context.identity.caller", "user":"$context.identity.user","requestTime":"$context.requestTime", "httpMethod":"$context.httpMethod","resourcePath":"$context.resourcePath", "status":"$context.status","protocol":"$context.protocol", "responseLength":"$context.responseLength" }'
       TracingEnabled: True
+      Tags:
+        Application: serverless-saas-workshop
+        Lab: lab4
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
       DefinitionBody:
         openapi: 3.0.1
         info:

@@ -17,12 +17,27 @@ Parameters:
     Description: "Enter Admin Management userpool call back url"
   TenantUserPoolCallbackURLParameter:
     Type: String
-    Description: "Enter Tenant Management userpool call back url"  
+    Description: "Enter Tenant Management userpool call back url"
+  Environment:
+    Type: String
+    Description: "Environment name (dev, staging, prod)"
+  Owner:
+    Type: String
+    Description: "Owner of the resources"
+  CostCenter:
+    Type: String
+    Description: "Cost center for billing"  
 Resources:
   CognitoUserPool:
     Type: "AWS::Cognito::UserPool"
     Properties:
       UserPoolName: PooledTenant-ServerlessSaaS-lab6-UserPool
+      UserPoolTags:
+        Application: serverless-saas-workshop
+        Lab: lab6
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
       AutoVerifiedAttributes:
         - "email"
       AccountRecoverySetting:
@@ -88,6 +103,12 @@ Resources:
     Type: "AWS::Cognito::UserPool"
     Properties:
       UserPoolName: OperationUsers-ServerlessSaas-lab6-UserPool
+      UserPoolTags:
+        Application: serverless-saas-workshop
+        Lab: lab6
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
       AutoVerifiedAttributes:
         - "email"
       AccountRecoverySetting:

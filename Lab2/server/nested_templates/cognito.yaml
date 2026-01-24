@@ -14,12 +14,35 @@ Parameters:
     Description: "Enter the role name for system admin"
   AdminUserPoolCallbackURLParameter: 
     Type: String
-    Description: "Enter Admin Management userpool call back url"  
+    Description: "Enter Admin Management userpool call back url"
+  
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+    Description: Deployment environment for the workshop
+
+  Owner:
+    Type: String
+    Default: workshop-participant
+    Description: Owner identifier for resource tracking
+
+  CostCenter:
+    Type: String
+    Default: serverless-saas-workshop
+    Description: Cost center for billing allocation  
+
+Conditions:
+  CreateAdminUserInCloudFormation: !Not [!Equals [!Ref AdminEmailParameter, ""]]
+
 Resources:  
   CognitoUserPool:
     Type: "AWS::Cognito::UserPool"
     Properties:
-      UserPoolName: PooledTenant-ServerlessSaas-lab2-UserPool
+      UserPoolName: PooledTenant-ServerlessSaaS-lab2-UserPool
       AutoVerifiedAttributes:
         - "email"
       AccountRecoverySetting:
@@ -35,6 +58,12 @@ Resources:
           EmailSubject: !Join 
             - "" 
             - - "Your temporary password for tenant UI application"
+      UserPoolTags:
+        Application: serverless-saas-workshop
+        Lab: lab2
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
       Schema:
         - AttributeDataType: "String"
           Name: email
@@ -49,7 +78,7 @@ Resources:
   CognitoUserPoolClient:
     Type: "AWS::Cognito::UserPoolClient"
     Properties:
-      ClientName: ServerlessSaas-lab2-Client
+      ClientName: ServerlessSaaS-lab2-Client
       GenerateSecret: false
       UserPoolId: !Ref CognitoUserPool
       AllowedOAuthFlowsUserPoolClient: True
@@ -73,12 +102,14 @@ Resources:
   CognitoUserPoolDomain:
     Type: AWS::Cognito::UserPoolDomain
     Properties:
-      Domain: !Join ["-", [pooledtenant-serverlesssaas-lab2,!Ref "AWS::AccountId"]]
+      Domain: !Sub 
+        - 'serverless-saas-lab2-pool-${ShortId}'
+        - ShortId: !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref 'AWS::StackId']]]]
       UserPoolId: !Ref CognitoUserPool
   CognitoOperationUsersUserPool:
     Type: "AWS::Cognito::UserPool"
     Properties:
-      UserPoolName: OperationUsers-ServerlessSaas-lab2-UserPool
+      UserPoolName: OperationUsers-ServerlessSaaS-lab2-UserPool
       AutoVerifiedAttributes:
         - "email"
       AccountRecoverySetting:
@@ -96,7 +127,13 @@ Resources:
               - " with username {username} and temporary password {####}"
           EmailSubject: !Join 
             - ""
-            - - "Your temporary password for admin UI application"  
+            - - "Your temporary password for admin UI application"
+      UserPoolTags:
+        Application: serverless-saas-workshop
+        Lab: lab2
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
       Schema:
         - AttributeDataType: "String"
           Name: email
@@ -111,7 +148,7 @@ Resources:
   CognitoOperationUsersUserPoolClient:
     Type: "AWS::Cognito::UserPoolClient"
     Properties:
-      ClientName: ServerlessSaas-lab2-OperationUsersPoolClient
+      ClientName: ServerlessSaaS-lab2-OperationUsersPoolClient
       GenerateSecret: false
       UserPoolId: !Ref CognitoOperationUsersUserPool
       AllowedOAuthFlowsUserPoolClient: True
@@ -135,7 +172,9 @@ Resources:
   CognitoOperationUsersUserPoolDomain:
     Type: AWS::Cognito::UserPoolDomain
     Properties:
-      Domain: !Join ["-", [operationsusers-serverlesssaas-lab2,!Ref "AWS::AccountId"]]
+      Domain: !Sub 
+        - 'serverless-saas-lab2-ops-${ShortId}'
+        - ShortId: !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref 'AWS::StackId']]]]
       UserPoolId: !Ref CognitoOperationUsersUserPool
   CognitoAdminUserGroup:
     Type: AWS::Cognito::UserPoolGroup
@@ -146,6 +185,7 @@ Resources:
       UserPoolId: !Ref CognitoOperationUsersUserPool
   CognitoAdminUser:
     Type: AWS::Cognito::UserPoolUser
+    Condition: CreateAdminUserInCloudFormation
     Properties:
       Username: admin
       DesiredDeliveryMediums:
@@ -161,6 +201,7 @@ Resources:
       UserPoolId: !Ref CognitoOperationUsersUserPool
   CognitoAddUserToGroup:
       Type: AWS::Cognito::UserPoolUserToGroupAttachment
+      Condition: CreateAdminUserInCloudFormation
       Properties:
         GroupName: !Ref CognitoAdminUserGroup
         Username: !Ref CognitoAdminUser

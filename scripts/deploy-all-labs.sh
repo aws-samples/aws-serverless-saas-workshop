@@ -32,8 +32,9 @@ echo "Log file: $LOG_FILE"
 echo ""
 
 # Default parameters
-LAB1_STACK_NAME="serverless-saas-workshop-lab1"
+LAB1_STACK_NAME="serverless-saas-lab1"
 LAB2_EMAIL=""
+PROFILE=""
 
 # Function to print colored messages
 print_message() {
@@ -66,6 +67,9 @@ deploy_lab() {
         case $lab_num in
             1)
                 deploy_cmd="./deployment.sh -s -c --stack-name $LAB1_STACK_NAME"
+                if [ -n "$PROFILE" ]; then
+                    deploy_cmd="$deploy_cmd --profile $PROFILE"
+                fi
                 print_message "$YELLOW" "Using stack name: $LAB1_STACK_NAME"
                 ;;
             2)
@@ -75,16 +79,28 @@ deploy_lab() {
                     return 1
                 fi
                 deploy_cmd="./deployment.sh -s -c --email $LAB2_EMAIL"
+                if [ -n "$PROFILE" ]; then
+                    deploy_cmd="$deploy_cmd --profile $PROFILE"
+                fi
                 print_message "$YELLOW" "Using email: $LAB2_EMAIL"
                 ;;
             3|4)
                 deploy_cmd="./deployment.sh -s -c"
+                if [ -n "$PROFILE" ]; then
+                    deploy_cmd="$deploy_cmd --profile $PROFILE"
+                fi
                 ;;
             5|6)
                 deploy_cmd="./deployment.sh -s -c"
+                if [ -n "$PROFILE" ]; then
+                    deploy_cmd="$deploy_cmd --profile $PROFILE"
+                fi
                 ;;
             7)
                 deploy_cmd="./deployment.sh"
+                if [ -n "$PROFILE" ]; then
+                    deploy_cmd="$deploy_cmd --profile $PROFILE"
+                fi
                 ;;
             *)
                 print_message "$RED" "Unknown lab number: $lab_num"
@@ -187,6 +203,10 @@ else
                 LAB2_EMAIL=$2
                 shift 2
                 ;;
+            --profile)
+                PROFILE=$2
+                shift 2
+                ;;
             --skip-verification)
                 SKIP_VERIFICATION=true
                 shift
@@ -201,8 +221,9 @@ else
                 echo "Options:"
                 echo "  --all                       Deploy all labs (default if no options provided)"
                 echo "  --lab <number>              Deploy specific lab (can be used multiple times)"
-                echo "  --lab1-stack-name <name>    Stack name for Lab1 (default: serverless-saas-workshop-lab1)"
+                echo "  --lab1-stack-name <name>    Stack name for Lab1 (default: serverless-saas-lab1)"
                 echo "  --email <email>             Email address for Lab2 (required if deploying Lab2)"
+                echo "  --profile <profile>         AWS profile to use (optional, uses default if not provided)"
                 echo "  --skip-verification         Skip prerequisite verification"
                 echo "  --continue-on-error         Continue deploying next lab even if current fails"
                 echo "  --help                      Show this help message"
@@ -214,8 +235,9 @@ else
                 echo ""
                 echo "Examples:"
                 echo "  $0 --all --email user@example.com"
+                echo "  $0 --all --email user@example.com --profile serverless-saas-demo"
                 echo "  $0 --lab 1 --lab1-stack-name my-stack"
-                echo "  $0 --lab 2 --email user@example.com"
+                echo "  $0 --lab 2 --email user@example.com --profile my-profile"
                 echo "  $0 --lab 5 --lab 6"
                 echo "  $0 --all --email user@example.com --continue-on-error"
                 exit 0
@@ -269,6 +291,9 @@ print_message "$YELLOW" "Configuration:"
 print_message "$YELLOW" "  Lab1 Stack Name: $LAB1_STACK_NAME"
 if [ -n "$LAB2_EMAIL" ]; then
     print_message "$YELLOW" "  Lab2 Email: $LAB2_EMAIL"
+fi
+if [ -n "$PROFILE" ]; then
+    print_message "$YELLOW" "  AWS Profile: $PROFILE"
 fi
 
 echo ""

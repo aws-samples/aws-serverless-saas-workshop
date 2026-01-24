@@ -1,0 +1,352 @@
+# AWS Serverless SaaS Workshop - Resource Tagging Template
+# This file provides reusable tagging patterns for all workshop resources
+
+# =============================================================================
+# TAGGING STRATEGY
+# =============================================================================
+# All AWS resources created by the workshop should include standardized tags
+# for cost tracking, resource management, and organizational purposes.
+#
+# Required Tags:
+# - Application: serverless-saas-workshop (constant across all labs)
+# - Lab: lab1, lab2, lab3, etc. (identifies which lab created the resource)
+# - Environment: dev, staging, prod (deployment environment)
+# - Owner: Email or identifier of resource owner
+# - CostCenter: Cost allocation identifier
+#
+# Optional Tags (for tenant-specific resources):
+# - TenantId: Unique identifier for the tenant
+# - TenantTier: Basic, Standard, Premium, Platinum
+#
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# PARAMETERS SECTION
+# Add these parameters to your SAM template to make tags configurable
+# -----------------------------------------------------------------------------
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+    Description: Deployment environment for the workshop
+
+  Owner:
+    Type: String
+    Default: workshop-participant
+    Description: Owner identifier for resource tracking
+
+  CostCenter:
+    Type: String
+    Default: serverless-saas-workshop
+    Description: Cost center for billing allocation
+
+# -----------------------------------------------------------------------------
+# TAGGING PATTERNS BY RESOURCE TYPE
+# -----------------------------------------------------------------------------
+
+# Pattern 1: Lambda Functions
+# Apply to: AWS::Serverless::Function, AWS::Lambda::Function
+# -----------------------------------------------------------------------------
+LambdaFunctionExample:
+  Type: AWS::Serverless::Function
+  Properties:
+    # ... other properties ...
+    Tags:
+      Application: serverless-saas-workshop
+      Lab: !Sub "lab${LabNumber}"  # Use parameter or hardcode: lab1, lab2, etc.
+      Environment: !Ref Environment
+      Owner: !Ref Owner
+      CostCenter: !Ref CostCenter
+      # For tenant-specific functions, add:
+      # TenantId: !Ref TenantId
+      # TenantTier: !Ref TenantTier
+
+# Pattern 2: DynamoDB Tables
+# Apply to: AWS::DynamoDB::Table
+# -----------------------------------------------------------------------------
+DynamoDBTableExample:
+  Type: AWS::DynamoDB::Table
+  Properties:
+    # ... other properties ...
+    Tags:
+      - Key: Application
+        Value: serverless-saas-workshop
+      - Key: Lab
+        Value: lab1  # Change per lab: lab1, lab2, lab3, etc.
+      - Key: Environment
+        Value: !Ref Environment
+      - Key: Owner
+        Value: !Ref Owner
+      - Key: CostCenter
+        Value: !Ref CostCenter
+      # For tenant-specific tables, add:
+      # - Key: TenantId
+      #   Value: !Ref TenantId
+      # - Key: TenantTier
+      #   Value: !Ref TenantTier
+
+# Pattern 3: API Gateway REST APIs
+# Apply to: AWS::Serverless::Api, AWS::ApiGateway::RestApi
+# -----------------------------------------------------------------------------
+ApiGatewayExample:
+  Type: AWS::Serverless::Api
+  Properties:
+    # ... other properties ...
+    Tags:
+      Application: serverless-saas-workshop
+      Lab: lab1  # Change per lab
+      Environment: !Ref Environment
+      Owner: !Ref Owner
+      CostCenter: !Ref CostCenter
+
+# Pattern 4: S3 Buckets
+# Apply to: AWS::S3::Bucket
+# -----------------------------------------------------------------------------
+S3BucketExample:
+  Type: AWS::S3::Bucket
+  Properties:
+    # ... other properties ...
+    Tags:
+      - Key: Application
+        Value: serverless-saas-workshop
+      - Key: Lab
+        Value: lab1  # Change per lab
+      - Key: Environment
+        Value: !Ref Environment
+      - Key: Owner
+        Value: !Ref Owner
+      - Key: CostCenter
+        Value: !Ref CostCenter
+
+# Pattern 5: Cognito User Pools
+# Apply to: AWS::Cognito::UserPool
+# -----------------------------------------------------------------------------
+CognitoUserPoolExample:
+  Type: AWS::Cognito::UserPool
+  Properties:
+    # ... other properties ...
+    UserPoolTags:
+      Application: serverless-saas-workshop
+      Lab: lab1  # Change per lab
+      Environment: !Ref Environment
+      Owner: !Ref Owner
+      CostCenter: !Ref CostCenter
+      # For tenant-specific pools:
+      # TenantId: !Ref TenantId
+      # TenantTier: !Ref TenantTier
+
+# Pattern 6: IAM Roles
+# Apply to: AWS::IAM::Role
+# Note: IAM roles support tags but they're applied differently
+# -----------------------------------------------------------------------------
+IAMRoleExample:
+  Type: AWS::IAM::Role
+  Properties:
+    # ... other properties ...
+    Tags:
+      - Key: Application
+        Value: serverless-saas-workshop
+      - Key: Lab
+        Value: lab1  # Change per lab
+      - Key: Environment
+        Value: !Ref Environment
+      - Key: Owner
+        Value: !Ref Owner
+      - Key: CostCenter
+        Value: !Ref CostCenter
+
+# Pattern 7: Lambda Layers
+# Apply to: AWS::Serverless::LayerVersion, AWS::Lambda::LayerVersion
+# Note: Lambda layers don't support tags directly, but the functions using them do
+# -----------------------------------------------------------------------------
+LambdaLayerExample:
+  Type: AWS::Serverless::LayerVersion
+  Properties:
+    # ... other properties ...
+    # Lambda layers don't support Tags property
+    # Tag the functions that use this layer instead
+
+# Pattern 8: CloudWatch Log Groups
+# Apply to: AWS::Logs::LogGroup
+# -----------------------------------------------------------------------------
+LogGroupExample:
+  Type: AWS::Logs::LogGroup
+  Properties:
+    # ... other properties ...
+    Tags:
+      - Key: Application
+        Value: serverless-saas-workshop
+      - Key: Lab
+        Value: lab1  # Change per lab
+      - Key: Environment
+        Value: !Ref Environment
+      - Key: Owner
+        Value: !Ref Owner
+      - Key: CostCenter
+        Value: !Ref CostCenter
+
+# Pattern 9: EventBridge Rules
+# Apply to: AWS::Events::Rule
+# -----------------------------------------------------------------------------
+EventBridgeRuleExample:
+  Type: AWS::Events::Rule
+  Properties:
+    # ... other properties ...
+    Tags:
+      - Key: Application
+        Value: serverless-saas-workshop
+      - Key: Lab
+        Value: lab1  # Change per lab
+      - Key: Environment
+        Value: !Ref Environment
+      - Key: Owner
+        Value: !Ref Owner
+      - Key: CostCenter
+        Value: !Ref CostCenter
+
+# Pattern 10: CodePipeline Pipelines
+# Apply to: AWS::CodePipeline::Pipeline
+# -----------------------------------------------------------------------------
+CodePipelineExample:
+  Type: AWS::CodePipeline::Pipeline
+  Properties:
+    # ... other properties ...
+    Tags:
+      - Key: Application
+        Value: serverless-saas-workshop
+      - Key: Lab
+        Value: lab5  # Typically Lab 5 for CI/CD
+      - Key: Environment
+        Value: !Ref Environment
+      - Key: Owner
+        Value: !Ref Owner
+      - Key: CostCenter
+        Value: !Ref CostCenter
+
+# Pattern 11: CodeCommit Repositories
+# Apply to: AWS::CodeCommit::Repository
+# -----------------------------------------------------------------------------
+CodeCommitRepoExample:
+  Type: AWS::CodeCommit::Repository
+  Properties:
+    # ... other properties ...
+    Tags:
+      - Key: Application
+        Value: serverless-saas-workshop
+      - Key: Lab
+        Value: lab5  # Typically Lab 5 for CI/CD
+      - Key: Environment
+        Value: !Ref Environment
+      - Key: Owner
+        Value: !Ref Owner
+      - Key: CostCenter
+        Value: !Ref CostCenter
+
+# Pattern 12: SQS Queues
+# Apply to: AWS::SQS::Queue
+# -----------------------------------------------------------------------------
+SQSQueueExample:
+  Type: AWS::SQS::Queue
+  Properties:
+    # ... other properties ...
+    Tags:
+      - Key: Application
+        Value: serverless-saas-workshop
+      - Key: Lab
+        Value: lab1  # Change per lab
+      - Key: Environment
+        Value: !Ref Environment
+      - Key: Owner
+        Value: !Ref Owner
+      - Key: CostCenter
+        Value: !Ref CostCenter
+
+# Pattern 13: SNS Topics
+# Apply to: AWS::SNS::Topic
+# -----------------------------------------------------------------------------
+SNSTopicExample:
+  Type: AWS::SNS::Topic
+  Properties:
+    # ... other properties ...
+    Tags:
+      - Key: Application
+        Value: serverless-saas-workshop
+      - Key: Lab
+        Value: lab1  # Change per lab
+      - Key: Environment
+        Value: !Ref Environment
+      - Key: Owner
+        Value: !Ref Owner
+      - Key: CostCenter
+        Value: !Ref CostCenter
+
+# -----------------------------------------------------------------------------
+# IMPLEMENTATION NOTES
+# -----------------------------------------------------------------------------
+# 1. Tag Format Variations:
+#    - Some resources use "Tags:" with key-value pairs (Lambda, API Gateway)
+#    - Some resources use "Tags:" with Key-Value array format (DynamoDB, S3, IAM)
+#    - Cognito User Pools use "UserPoolTags:" instead of "Tags:"
+#
+# 2. Resources That Don't Support Tags:
+#    - Lambda Layers (AWS::Lambda::LayerVersion)
+#    - IAM Policies (AWS::IAM::Policy, AWS::IAM::ManagedPolicy)
+#    - Cognito User Pool Clients (AWS::Cognito::UserPoolClient)
+#    - API Gateway Stages (AWS::ApiGateway::Stage) - use API-level tags
+#    - API Gateway Deployments (AWS::ApiGateway::Deployment)
+#
+# 3. Lab-Specific Tag Values:
+#    - Lab 1: Lab: lab1
+#    - Lab 2: Lab: lab2
+#    - Lab 3: Lab: lab3
+#    - Lab 4: Lab: lab4
+#    - Lab 5: Lab: lab5
+#    - Lab 6: Lab: lab6
+#    - Lab 7: Lab: lab7
+#
+# 4. Tenant-Specific Resources:
+#    - Add TenantId and TenantTier tags for resources dedicated to specific tenants
+#    - Pooled resources should NOT have TenantId tags
+#
+# 5. Parameter Usage:
+#    - Use !Ref for parameter values: !Ref Environment, !Ref Owner, !Ref CostCenter
+#    - Hardcode Application and Lab values as they're constant per template
+#
+# 6. Validation:
+#    - Use AWS CLI to verify tags: aws resourcegroupstaggingapi get-resources
+#    - Use AWS Cost Explorer to track costs by tag
+#    - Use AWS Resource Groups to organize resources by tags
+#
+# -----------------------------------------------------------------------------
+# QUICK REFERENCE: Tag Format by Resource Type
+# -----------------------------------------------------------------------------
+# Key-Value Format (Tags:):
+#   - AWS::Serverless::Function
+#   - AWS::Lambda::Function
+#   - AWS::Serverless::Api
+#   - AWS::ApiGateway::RestApi
+#
+# Key-Value Array Format (Tags: - Key/Value):
+#   - AWS::DynamoDB::Table
+#   - AWS::S3::Bucket
+#   - AWS::IAM::Role
+#   - AWS::Logs::LogGroup
+#   - AWS::Events::Rule
+#   - AWS::CodePipeline::Pipeline
+#   - AWS::CodeCommit::Repository
+#   - AWS::SQS::Queue
+#   - AWS::SNS::Topic
+#
+# Special Format (UserPoolTags:):
+#   - AWS::Cognito::UserPool
+#
+# No Tags Support:
+#   - AWS::Lambda::LayerVersion
+#   - AWS::IAM::Policy
+#   - AWS::Cognito::UserPoolClient
+#   - AWS::ApiGateway::Stage
+#   - AWS::ApiGateway::Deployment

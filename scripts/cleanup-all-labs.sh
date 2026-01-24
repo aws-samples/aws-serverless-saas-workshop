@@ -61,12 +61,18 @@ cleanup_lab() {
         case $lab_num in
             1)
                 # Lab1 requires --stack-name parameter
-                cleanup_cmd="./cleanup.sh --stack-name ${LAB1_STACK_NAME:-serverless-saas-workshop-lab1}"
-                print_message "$YELLOW" "Using stack name: ${LAB1_STACK_NAME:-serverless-saas-workshop-lab1}"
+                cleanup_cmd="./cleanup.sh --stack-name ${LAB1_STACK_NAME:-serverless-saas-lab1}"
+                if [ -n "$PROFILE" ]; then
+                    cleanup_cmd="$cleanup_cmd --profile $PROFILE"
+                fi
+                print_message "$YELLOW" "Using stack name: ${LAB1_STACK_NAME:-serverless-saas-lab1}"
                 ;;
             *)
                 # All other labs don't require parameters
                 cleanup_cmd="./cleanup.sh"
+                if [ -n "$PROFILE" ]; then
+                    cleanup_cmd="$cleanup_cmd --profile $PROFILE"
+                fi
                 ;;
         esac
         
@@ -101,18 +107,18 @@ cleanup_lab_manual() {
     local stacks=$(aws cloudformation list-stacks \
         --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE \
         --query "StackSummaries[?contains(StackName, 'lab${lab_num}')].StackName" \
-        --output text 2>/dev/null || echo "")
+        --output text ${PROFILE:+--profile "$PROFILE"} 2>/dev/null || echo "")
     
     if [ -n "$stacks" ]; then
         for stack in $stacks; do
             print_message "$YELLOW" "  Deleting stack: $stack"
-            aws cloudformation delete-stack --stack-name "$stack" 2>/dev/null || true
+            aws cloudformation delete-stack --stack-name "$stack" ${PROFILE:+--profile "$PROFILE"} 2>/dev/null || true
         done
         
         # Wait for stacks to delete
         for stack in $stacks; do
             print_message "$YELLOW" "  Waiting for $stack to be deleted..."
-            aws cloudformation wait stack-delete-complete --stack-name "$stack" 2>/dev/null || true
+            aws cloudformation wait stack-delete-complete --stack-name "$stack" ${PROFILE:+--profile "$PROFILE"} 2>/dev/null || true
         done
         print_message "$GREEN" "CloudFormation stacks deleted"
     else
@@ -123,13 +129,13 @@ cleanup_lab_manual() {
     print_message "$YELLOW" "Deleting S3 buckets for Lab${lab_num}..."
     local buckets=$(aws s3api list-buckets \
         --query "Buckets[?contains(Name, 'lab${lab_num}')].Name" \
-        --output text 2>/dev/null || echo "")
+        --output text ${PROFILE:+--profile "$PROFILE"} 2>/dev/null || echo "")
     
     if [ -n "$buckets" ]; then
         for bucket in $buckets; do
             print_message "$YELLOW" "  Emptying and deleting bucket: $bucket"
-            aws s3 rm "s3://$bucket" --recursive 2>/dev/null || true
-            aws s3api delete-bucket --bucket "$bucket" 2>/dev/null || true
+            aws s3 rm "s3://$bucket" --recursive ${PROFILE:+--profile "$PROFILE"} 2>/dev/null || true
+            aws s3api delete-bucket --bucket "$bucket" ${PROFILE:+--profile "$PROFILE"} 2>/dev/null || true
         done
         print_message "$GREEN" "S3 buckets deleted"
     else
@@ -140,12 +146,12 @@ cleanup_lab_manual() {
     print_message "$YELLOW" "Deleting CloudWatch Log Groups for Lab${lab_num}..."
     local log_groups=$(aws logs describe-log-groups \
         --query "logGroups[?contains(logGroupName, 'lab${lab_num}')].logGroupName" \
-        --output text 2>/dev/null || echo "")
+        --output text ${PROFILE:+--profile "$PROFILE"} 2>/dev/null || echo "")
     
     if [ -n "$log_groups" ]; then
         for log_group in $log_groups; do
             print_message "$YELLOW" "  Deleting log group: $log_group"
-            aws logs delete-log-group --log-group-name "$log_group" 2>/dev/null || true
+            aws logs delete-log-group --log-group-name "$log_group" ${PROFILE:+--profile "$PROFILE"} 2>/dev/null || true
         done
         print_message "$GREEN" "CloudWatch Log Groups deleted"
     else
@@ -158,7 +164,8 @@ cleanup_lab_manual() {
 # Parse command line arguments
 LABS_TO_CLEANUP=()
 CLEANUP_ALL=false
-LAB1_STACK_NAME="serverless-saas-workshop-lab1"
+LAB1_STACK_NAME="serverless-saas-lab1"
+PROFILE=""
 
 if [ $# -eq 0 ]; then
     CLEANUP_ALL=true
@@ -177,21 +184,28 @@ else
                 LAB1_STACK_NAME=$2
                 shift 2
                 ;;
+            --profile)
+                PROFILE=$2
+                shift 2
+                ;;
             --help)
                 echo "Usage: $0 [OPTIONS]"
                 echo ""
                 echo "Options:"
                 echo "  --all                    Cleanup all labs (default if no options provided)"
                 echo "  --lab <number>           Cleanup specific lab (can be used multiple times)"
-                echo "  --lab1-stack-name <name> Stack name for Lab1 (default: serverless-saas-workshop-lab1)"
+                echo "  --lab1-stack-name <name> Stack name for Lab1 (default: serverless-saas-lab1)"
+                echo "  --profile <profile>      AWS profile to use (optional, uses default if not provided)"
                 echo "  --help                   Show this help message"
                 echo ""
                 echo "Examples:"
                 echo "  $0                                      # Cleanup all labs"
                 echo "  $0 --all                                # Cleanup all labs"
+                echo "  $0 --all --profile serverless-saas-demo # Cleanup all labs with specific profile"
                 echo "  $0 --lab 5                              # Cleanup only Lab5"
                 echo "  $0 --lab 5 --lab 6                     # Cleanup Lab5 and Lab6"
                 echo "  $0 --lab 1 --lab1-stack-name my-stack  # Cleanup Lab1 with custom stack name"
+                echo "  $0 --lab 2 --profile my-profile        # Cleanup Lab2 with specific profile"
                 exit 0
                 ;;
             *)

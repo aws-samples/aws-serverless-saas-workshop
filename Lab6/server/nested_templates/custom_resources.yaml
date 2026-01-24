@@ -22,6 +22,15 @@ Parameters:
     Type: String
   CognitoUserPoolClientId:
     Type: String
+  Environment:
+    Type: String
+    Description: "Environment name (dev, staging, prod)"
+  Owner:
+    Type: String
+    Description: "Owner of the resources"
+  CostCenter:
+    Type: String
+    Description: "Cost center for billing"
 Resources:
   #Custom resources
   

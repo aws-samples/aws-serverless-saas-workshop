@@ -36,7 +36,7 @@ Before running these scripts, ensure you have:
 
 - `--all` - Deploy all labs (default if no options provided)
 - `--lab <number>` - Deploy specific lab (can be used multiple times)
-- `--lab1-stack-name <name>` - Stack name for Lab1 (default: `serverless-saas-workshop-lab1`)
+- `--lab1-stack-name <name>` - Stack name for Lab1 (default: `serverless-saas-lab1`)
 - `--email <email>` - Email address for Lab2 (required if deploying Lab2)
 - `--skip-verification` - Skip prerequisite verification
 - `--continue-on-error` - Continue deploying next lab even if current fails
@@ -158,10 +158,10 @@ Each lab also has its own deployment and cleanup scripts in `Lab{N}/scripts/`:
 ```bash
 # Deploy
 cd Lab1/scripts
-./deployment.sh -s -c --stack-name serverless-saas-workshop-lab1
+./deployment.sh -s -c --stack-name serverless-saas-lab1
 
 # Cleanup
-./cleanup.sh --stack-name serverless-saas-workshop-lab1
+./cleanup.sh --stack-name serverless-saas-lab1
 ```
 
 ### Lab2
@@ -257,7 +257,7 @@ chmod +x deploy-all-labs.sh cleanup-all-labs.sh
 All resources follow the pattern: `serverless-saas-lab{N}-{resource-type}-{optional-suffix}`
 
 Examples:
-- CloudFormation stacks: `serverless-saas-workshop-lab5`
+- CloudFormation stacks: `serverless-saas-lab5`
 - Lambda functions: `serverless-saas-lab5-create-tenant`
 - DynamoDB tables: `ServerlessSaaS-Settings-lab5`
 - S3 buckets: `serverless-saas-lab5-admin-{ShortId}`

@@ -6,6 +6,22 @@
 
 SESSION_NAME="lab6-deployment"
 LOG_FILE="deployment-$(date +%Y%m%d-%H%M%S).log"
+AWS_PROFILE=""
+
+# Parse command line arguments for --profile
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        --profile)
+            AWS_PROFILE=$2
+            shift 2
+            ;;
+        *)
+            echo "Unknown parameter: $1"
+            echo "Usage: $0 [--profile <profile>]"
+            exit 1
+            ;;
+    esac
+done
 
 # Check if screen session already exists
 if screen -list | grep -q "$SESSION_NAME"; then
@@ -43,6 +59,12 @@ echo ""
 # Get the absolute path to the script directory
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
+# Build profile argument if provided
+PROFILE_ARG=""
+if [[ -n "$AWS_PROFILE" ]]; then
+    PROFILE_ARG="--profile $AWS_PROFILE"
+fi
+
 # Run deployment in detached screen session with logging
 screen -dmS "$SESSION_NAME" bash -c "
     cd '$SCRIPT_DIR'
@@ -56,7 +78,7 @@ screen -dmS "$SESSION_NAME" bash -c "
     echo '==================================================='
     echo ''
     
-    ./deployment.sh -s -c
+    ./deployment.sh -s -c $PROFILE_ARG
     EXIT_CODE=\$?
     
     echo ''
@@ -65,9 +87,9 @@ screen -dmS "$SESSION_NAME" bash -c "
         echo '✓ Deployment completed successfully!'
         echo ''
         echo 'Access your applications:'
-        ADMIN_URL=\$(aws cloudformation describe-stacks --stack-name serverless-saas-workshop-shared-lab6 --query \"Stacks[0].Outputs[?OutputKey=='AdminAppSite'].OutputValue\" --output text 2>/dev/null)
-        LANDING_URL=\$(aws cloudformation describe-stacks --stack-name serverless-saas-workshop-shared-lab6 --query \"Stacks[0].Outputs[?OutputKey=='LandingApplicationSite'].OutputValue\" --output text 2>/dev/null)
-        APP_URL=\$(aws cloudformation describe-stacks --stack-name serverless-saas-workshop-shared-lab6 --query \"Stacks[0].Outputs[?OutputKey=='ApplicationSite'].OutputValue\" --output text 2>/dev/null)
+        ADMIN_URL=\$(aws cloudformation describe-stacks $PROFILE_ARG --stack-name serverless-saas-workshop-shared-lab6 --query \"Stacks[0].Outputs[?OutputKey=='AdminAppSite'].OutputValue\" --output text 2>/dev/null)
+        LANDING_URL=\$(aws cloudformation describe-stacks $PROFILE_ARG --stack-name serverless-saas-workshop-shared-lab6 --query \"Stacks[0].Outputs[?OutputKey=='LandingApplicationSite'].OutputValue\" --output text 2>/dev/null)
+        APP_URL=\$(aws cloudformation describe-stacks $PROFILE_ARG --stack-name serverless-saas-workshop-shared-lab6 --query \"Stacks[0].Outputs[?OutputKey=='ApplicationSite'].OutputValue\" --output text 2>/dev/null)
         echo \"  Admin: https://\$ADMIN_URL\"
         echo \"  Landing: https://\$LANDING_URL\"
         echo \"  App: https://\$APP_URL\"

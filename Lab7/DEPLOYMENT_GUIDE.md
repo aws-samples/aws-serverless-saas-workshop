@@ -73,7 +73,7 @@ After deployment completes, wait **5 minutes** for the EventBridge rules to trig
 
 ## Deployed Resources
 
-### Main Stack: `serverless-saas-workshop-lab7`
+### Main Stack: `serverless-saas-lab7`
 
 - **S3 Bucket**: `serverless-saas-lab7-cur-{ShortId}` - Stores CUR data
 - **Glue Database**: `costexplorerdb-lab7` - Catalogs CUR data

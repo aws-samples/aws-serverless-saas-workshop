@@ -1,41 +1,211 @@
 #!/bin/bash
 
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+
+set -e
+
+# Get the directory where this script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+LAB_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Default values
+AWS_REGION="us-west-2"
+AWS_PROFILE=""
+STACK_NAME="serverless-saas-lab2"
+DEPLOY_SERVER=0
+DEPLOY_CLIENT=0
+ADMIN_EMAIL=""
+
+# Function to print colored messages
+print_message() {
+    local color=$1
+    local message=$2
+    echo -e "${color}${message}${NC}"
+}
+
+# Function to print usage
+print_usage() {
+    echo "Usage: $0 [OPTIONS]"
+    echo ""
+    echo "Options:"
+    echo "  -s, --server              Deploy server code (Lambda functions, API Gateway, DynamoDB, Cognito)"
+    echo "  -c, --client              Deploy client code (Admin and Landing Angular applications)"
+    echo "  --email <email>           Admin user email address (required for client deployment)"
+    echo "  --stack-name <name>       CloudFormation stack name (default: serverless-saas-lab2)"
+    echo "  --region <region>         AWS region (default: us-west-2)"
+    echo "  --profile <profile>       AWS CLI profile name (optional, uses default profile if not specified)"
+    echo "  --help                    Show this help message"
+    echo ""
+    echo "Examples:"
+    echo "  $0 -s                                           # Deploy only server"
+    echo "  $0 -c --email admin@example.com                 # Deploy only client with admin user"
+    echo "  $0 -s -c --email admin@example.com              # Deploy both server and client"
+    echo "  $0 -s --stack-name my-stack --region us-east-1  # Deploy with custom stack name and region"
+    echo "  $0 -s --profile my-profile                      # Deploy with custom AWS profile"
+}
+
+# Parse command line arguments
 if [[ "$#" -eq 0 ]]; then
-  echo "Invalid parameters"
-  echo "Command to deploy client code: deployment.sh -c --email <email address>"
-  echo "Command to deploy server code: deployment.sh -s --email <email address>"
-  echo "Command to deploy server & client code: deployment.sh -s -c --email <email address>"
-  exit 1
+    print_message "$RED" "Error: No parameters provided"
+    echo ""
+    print_usage
+    exit 1
 fi
 
 while [[ "$#" -gt 0 ]]; do
-  case $1 in
-  -s) server=1 ;;
-  -c) client=1 ;;
-  --email)
-    email=$2
-    shift
-    ;;
-  *)
-    echo "Unknown parameter passed: $1"
-    exit 1
-    ;;
-  esac
-  shift
+    case $1 in
+        -s|--server)
+            DEPLOY_SERVER=1
+            shift
+            ;;
+        -c|--client)
+            DEPLOY_CLIENT=1
+            shift
+            ;;
+        --email)
+            ADMIN_EMAIL=$2
+            shift 2
+            ;;
+        --stack-name)
+            STACK_NAME=$2
+            shift 2
+            ;;
+        --region)
+            AWS_REGION=$2
+            shift 2
+            ;;
+        --profile)
+            AWS_PROFILE=$2
+            shift 2
+            ;;
+        --help)
+            print_usage
+            exit 0
+            ;;
+        *)
+            print_message "$RED" "Unknown parameter: $1"
+            echo ""
+            print_usage
+            exit 1
+            ;;
+    esac
 done
+
+# Validate at least one deployment option is selected
+if [[ $DEPLOY_SERVER -eq 0 ]] && [[ $DEPLOY_CLIENT -eq 0 ]]; then
+    print_message "$RED" "Error: Must specify at least one deployment option (-s or -c)"
+    echo ""
+    print_usage
+    exit 1
+fi
+
+# Set PROFILE_ARG based on AWS_PROFILE for use in AWS CLI and SAM CLI commands
+PROFILE_ARG=""
+if [[ -n "$AWS_PROFILE" ]]; then
+    PROFILE_ARG="--profile $AWS_PROFILE"
+fi
+
+# Validate email is provided if client deployment is requested
+if [[ $DEPLOY_CLIENT -eq 1 ]] && [[ -z "$ADMIN_EMAIL" ]]; then
+    print_message "$RED" "Error: --email parameter is required for client deployment"
+    echo ""
+    print_usage
+    exit 1
+fi
 
 # Create log directory and file
 LOG_DIR="logs"
 mkdir -p "$LOG_DIR"
 LOG_FILE="$LOG_DIR/deployment-$(date +%Y%m%d-%H%M%S).log"
 
+# AWS Profile should be passed via --profile parameter
+
 # Redirect all output to log file and console
 exec > >(tee -a "$LOG_FILE") 2>&1
 
-echo "=========================================="
-echo "Lab2 Deployment Script"
-echo "=========================================="
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Lab2 Deployment Script"
+print_message "$BLUE" "=========================================="
 echo "Log file: $LOG_FILE"
+if [[ -n "$AWS_PROFILE" ]]; then
+    echo "AWS Profile: $AWS_PROFILE"
+else
+    echo "AWS Profile: (using default)"
+fi
+echo "AWS Region: $AWS_REGION"
+echo "Stack Name: $STACK_NAME"
+echo ""
+
+# Record start time
+START_TIME=$(date +%s)
+
+# Pre-deployment validation
+print_message "$YELLOW" "Step 1: Validating prerequisites..."
+
+# Check AWS CLI
+if ! command -v aws &> /dev/null; then
+    print_message "$RED" "Error: AWS CLI is not installed"
+    print_message "$YELLOW" "Install from: https://aws.amazon.com/cli/"
+    exit 1
+fi
+print_message "$GREEN" "  ✓ AWS CLI installed"
+
+# Check SAM CLI
+if ! command -v sam &> /dev/null; then
+    print_message "$RED" "Error: SAM CLI is not installed"
+    print_message "$YELLOW" "Install from: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html"
+    exit 1
+fi
+print_message "$GREEN" "  ✓ SAM CLI installed"
+
+# Check Python 3.14
+if ! command -v python3 &> /dev/null; then
+    print_message "$RED" "Error: Python 3 is not installed"
+    exit 1
+fi
+PYTHON_VERSION=$(python3 --version 2>&1 | awk '{print $2}')
+print_message "$GREEN" "  ✓ Python installed (version: $PYTHON_VERSION)"
+
+# Check Node.js if client deployment is requested
+if [[ $DEPLOY_CLIENT -eq 1 ]]; then
+    if ! command -v npm &> /dev/null; then
+        print_message "$RED" "Error: npm is not installed"
+        print_message "$YELLOW" "Install Node.js from: https://nodejs.org/"
+        exit 1
+    fi
+    NODE_VERSION=$(node --version 2>&1)
+    print_message "$GREEN" "  ✓ Node.js installed (version: $NODE_VERSION)"
+fi
+
+# Validate AWS credentials
+print_message "$YELLOW" "  Validating AWS credentials..."
+if [[ -n "$AWS_PROFILE" ]]; then
+    if ! aws sts get-caller-identity --region "$AWS_REGION" --profile "$AWS_PROFILE" &> /dev/null; then
+        print_message "$RED" "Error: AWS credentials not configured for profile: $AWS_PROFILE"
+        print_message "$YELLOW" "Configure with: aws configure --profile $AWS_PROFILE"
+        exit 1
+    fi
+    ACCOUNT_ID=$(aws sts get-caller-identity --region "$AWS_REGION" --profile "$AWS_PROFILE" --query Account --output text)
+else
+    if ! aws sts get-caller-identity --region "$AWS_REGION" &> /dev/null; then
+        print_message "$RED" "Error: AWS credentials not configured"
+        print_message "$YELLOW" "Configure with: aws configure"
+        exit 1
+    fi
+    ACCOUNT_ID=$(aws sts get-caller-identity --region "$AWS_REGION" --query Account --output text)
+fi
+print_message "$GREEN" "  ✓ AWS credentials valid"
+print_message "$GREEN" "    Account: $ACCOUNT_ID"
+print_message "$GREEN" "    Region: $AWS_REGION"
+
 echo ""
 
 # During AWS hosted events using event engine tool
@@ -45,123 +215,329 @@ echo ""
 # pre-provisioned or not and then concludes if the workshop
 # is running in AWS hosted event through event engine tool or not.
 IS_RUNNING_IN_EVENT_ENGINE=false
-PREPROVISIONED_ADMIN_SITE=$(aws cloudformation list-exports --query "Exports[?Name=='Serverless-SaaS-AdminAppSite'].Value" --output text)
+if [[ -n "$AWS_PROFILE" ]]; then
+    PREPROVISIONED_ADMIN_SITE=$(aws cloudformation list-exports --profile "$AWS_PROFILE" --query "Exports[?Name=='Serverless-SaaS-AdminAppSite'].Value" --output text 2>/dev/null || echo "")
+else
+    PREPROVISIONED_ADMIN_SITE=$(aws cloudformation list-exports --query "Exports[?Name=='Serverless-SaaS-AdminAppSite'].Value" --output text 2>/dev/null || echo "")
+fi
 if [ ! -z "$PREPROVISIONED_ADMIN_SITE" ]; then
-  echo "Workshop is running in WorkshopStudio"
+  print_message "$YELLOW" "  Workshop is running in WorkshopStudio"
   IS_RUNNING_IN_EVENT_ENGINE=true
-  ADMIN_SITE_URL=$(aws cloudformation list-exports --query "Exports[?Name=='Serverless-SaaS-AdminAppSite'].Value" --output text)
-  LANDING_APP_SITE_URL=$(aws cloudformation list-exports --query "Exports[?Name=='Serverless-SaaS-LandingApplicationSite'].Value" --output text)
-  ADMIN_SITE_BUCKET=$(aws cloudformation list-exports --query "Exports[?Name=='Serverless-SaaS-AdminSiteBucket'].Value" --output text)
-  LANDING_APP_SITE_BUCKET=$(aws cloudformation list-exports --query "Exports[?Name=='Serverless-SaaS-LandingApplicationSiteBucket'].Value" --output text)
+  if [[ -n "$AWS_PROFILE" ]]; then
+      ADMIN_SITE_URL=$(aws cloudformation list-exports --profile "$AWS_PROFILE" --query "Exports[?Name=='Serverless-SaaS-AdminAppSite'].Value" --output text)
+      LANDING_APP_SITE_URL=$(aws cloudformation list-exports --profile "$AWS_PROFILE" --query "Exports[?Name=='Serverless-SaaS-LandingApplicationSite'].Value" --output text)
+      ADMIN_SITE_BUCKET=$(aws cloudformation list-exports --profile "$AWS_PROFILE" --query "Exports[?Name=='Serverless-SaaS-AdminSiteBucket'].Value" --output text)
+      LANDING_APP_SITE_BUCKET=$(aws cloudformation list-exports --profile "$AWS_PROFILE" --query "Exports[?Name=='Serverless-SaaS-LandingApplicationSiteBucket'].Value" --output text)
+  else
+      ADMIN_SITE_URL=$(aws cloudformation list-exports --query "Exports[?Name=='Serverless-SaaS-AdminAppSite'].Value" --output text)
+      LANDING_APP_SITE_URL=$(aws cloudformation list-exports --query "Exports[?Name=='Serverless-SaaS-LandingApplicationSite'].Value" --output text)
+      ADMIN_SITE_BUCKET=$(aws cloudformation list-exports --query "Exports[?Name=='Serverless-SaaS-AdminSiteBucket'].Value" --output text)
+      LANDING_APP_SITE_BUCKET=$(aws cloudformation list-exports --query "Exports[?Name=='Serverless-SaaS-LandingApplicationSiteBucket'].Value" --output text)
+  fi
 fi
 
-if [[ $server -eq 1 ]]; then
-  echo "Server code is getting deployed"
+if [[ $DEPLOY_SERVER -eq 1 ]]; then
+  print_message "$YELLOW" "Step 2: Deploying server infrastructure..."
+  
+  # Get the directory where this script is located
+  SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+  cd "$SCRIPT_DIR/../server" || exit
 
-  cd ../server || exit # stop execution if cd fails
-  REGION=$(aws configure get region)
-  DEFAULT_SAM_S3_BUCKET=$(grep s3_bucket samconfig.toml | cut -d'=' -f2 | cut -d \" -f2)
-  echo "aws s3 ls s3://$DEFAULT_SAM_S3_BUCKET"
-  if ! aws s3 ls "s3://${DEFAULT_SAM_S3_BUCKET}"; then
-    echo "S3 Bucket: $DEFAULT_SAM_S3_BUCKET specified in samconfig.toml is not readable.
-      So creating a new S3 bucket and will update samconfig.toml with new bucket name."
-
-    UUID=$(uuidgen | awk '{print tolower($0)}')
-    SAM_S3_BUCKET=sam-bootstrap-bucket-$UUID
-    aws s3 mb "s3://${SAM_S3_BUCKET}" --region "$REGION"
-    aws s3api put-bucket-encryption \
-      --bucket "$SAM_S3_BUCKET" \
-      --server-side-encryption-configuration '{"Rules": [{"ApplyServerSideEncryptionByDefault": {"SSEAlgorithm": "AES256"}}]}'
-    if [[ $? -ne 0 ]]; then
-      exit 1
+  # Check and create API Gateway CloudWatch Logs role if needed
+  print_message "$YELLOW" "  Checking API Gateway CloudWatch Logs role..."
+  if [[ -n "$AWS_PROFILE" ]]; then
+      ROLE_ARN=$(aws apigateway get-account --profile "$AWS_PROFILE" --region "$AWS_REGION" --query 'cloudwatchRoleArn' --output text 2>/dev/null || echo "")
+  else
+      ROLE_ARN=$(aws apigateway get-account --region "$AWS_REGION" --query 'cloudwatchRoleArn' --output text 2>/dev/null || echo "")
+  fi
+  
+  if [[ -z "$ROLE_ARN" ]] || [[ "$ROLE_ARN" == "None" ]]; then
+    print_message "$YELLOW" "  Creating API Gateway CloudWatch Logs role..."
+    
+    # Create trust policy
+    cat > /tmp/apigateway-trust-policy.json <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "apigateway.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+EOF
+    
+    # Create role
+    if [[ -n "$AWS_PROFILE" ]]; then
+        ROLE_ARN=$(aws iam create-role \
+          --profile "$AWS_PROFILE" \
+          --role-name apigateway-cloudwatch-publish-role \
+          --assume-role-policy-document file:///tmp/apigateway-trust-policy.json \
+          --query 'Role.Arn' \
+          --output text 2>/dev/null || echo "")
+    else
+        ROLE_ARN=$(aws iam create-role \
+          --role-name apigateway-cloudwatch-publish-role \
+          --assume-role-policy-document file:///tmp/apigateway-trust-policy.json \
+          --query 'Role.Arn' \
+          --output text 2>/dev/null || echo "")
     fi
-    # Updating all labs samconfig.toml with new bucket name
-    ex -sc '%s/s3_bucket = .*/s3_bucket = \"'$SAM_S3_BUCKET'\"/|x' samconfig.toml
-    ex -sc '%s/s3_bucket = .*/s3_bucket = \"'$SAM_S3_BUCKET'\"/|x' ../../Lab3/server/shared-samconfig.toml
-    ex -sc '%s/s3_bucket = .*/s3_bucket = \"'$SAM_S3_BUCKET'\"/|x' ../../Lab3/server/tenant-samconfig.toml
-    ex -sc '%s/s3_bucket = .*/s3_bucket = \"'$SAM_S3_BUCKET'\"/|x' ../../Lab4/server/shared-samconfig.toml
-    ex -sc '%s/s3_bucket = .*/s3_bucket = \"'$SAM_S3_BUCKET'\"/|x' ../../Lab4/server/tenant-samconfig.toml
-    ex -sc '%s/s3_bucket = .*/s3_bucket = \"'$SAM_S3_BUCKET'\"/|x' ../../Lab5/server/shared-samconfig.toml
-    ex -sc '%s/s3_bucket = .*/s3_bucket = \"'$SAM_S3_BUCKET'\"/|x' ../../Lab5/server/tenant-samconfig.toml
-    ex -sc '%s/s3_bucket = .*/s3_bucket = \"'$SAM_S3_BUCKET'\"/|x' ../../Lab6/server/shared-samconfig.toml
-    ex -sc '%s/s3_bucket = .*/s3_bucket = \"'$SAM_S3_BUCKET'\"/|x' ../../Lab6/server/tenant-samconfig.toml
-    ex -sc '%s/s3_bucket = .*/s3_bucket = \"'$SAM_S3_BUCKET'\"/|x' ../../Lab7/samconfig.toml
+    
+    if [[ -z "$ROLE_ARN" ]]; then
+      # Role might already exist, try to get it
+      if [[ -n "$AWS_PROFILE" ]]; then
+          ROLE_ARN=$(aws iam get-role --profile "$AWS_PROFILE" --role-name apigateway-cloudwatch-publish-role --query 'Role.Arn' --output text 2>/dev/null || echo "")
+      else
+          ROLE_ARN=$(aws iam get-role --role-name apigateway-cloudwatch-publish-role --query 'Role.Arn' --output text 2>/dev/null || echo "")
+      fi
+    fi
+    
+    # Attach policy
+    if [[ -n "$AWS_PROFILE" ]]; then
+        aws iam attach-role-policy \
+          --profile "$AWS_PROFILE" \
+          --role-name apigateway-cloudwatch-publish-role \
+          --policy-arn arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs \
+          2>/dev/null || true
+    else
+        aws iam attach-role-policy \
+          --role-name apigateway-cloudwatch-publish-role \
+          --policy-arn arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs \
+          2>/dev/null || true
+    fi
+    
+    # Wait a bit for IAM propagation
+    sleep 5
+    
+    # Set the role in API Gateway account settings
+    if [[ -n "$AWS_PROFILE" ]]; then
+        aws apigateway update-account \
+          --profile "$AWS_PROFILE" \
+          --region "$AWS_REGION" \
+          --patch-operations op=replace,path=/cloudwatchRoleArn,value="$ROLE_ARN" \
+          2>/dev/null || true
+    else
+        aws apigateway update-account \
+          --region "$AWS_REGION" \
+          --patch-operations op=replace,path=/cloudwatchRoleArn,value="$ROLE_ARN" \
+          2>/dev/null || true
+    fi
+    
+    print_message "$GREEN" "  ✓ API Gateway CloudWatch Logs role created"
+    rm -f /tmp/apigateway-trust-policy.json
+  else
+    print_message "$GREEN" "  ✓ API Gateway CloudWatch Logs role already configured"
   fi
 
-  echo "Validating server code using pylint"
-  python3 -m pylint -E -d E0401 $(find . -iname "*.py" -not -path "./.aws-sam/*")
-  if [[ $? -ne 0 ]]; then
-    echo "****ERROR: Please fix above code errors and then rerun script!!****"
+  # Check if samconfig.toml exists
+  if [[ ! -f samconfig.toml ]]; then
+      print_message "$RED" "Error: samconfig.toml not found in server directory"
+      exit 1
+  fi
+
+  # Get or create SAM S3 bucket from samconfig.toml
+  DEFAULT_SAM_S3_BUCKET=$(grep s3_bucket samconfig.toml | cut -d'=' -f2 | cut -d \" -f2 2>/dev/null || echo "")
+  
+  if [[ -z "$DEFAULT_SAM_S3_BUCKET" ]]; then
+    print_message "$RED" "Error: No SAM bucket specified in samconfig.toml"
     exit 1
   fi
-
-  sam build -t template.yaml --use-container
-
-  if [ "$IS_RUNNING_IN_EVENT_ENGINE" = true ]; then
-    sam deploy --config-file samconfig.toml --region="$REGION" --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE AdminUserPoolCallbackURLParameter=$ADMIN_SITE_URL
+  
+  print_message "$YELLOW" "  Checking SAM deployment bucket: $DEFAULT_SAM_S3_BUCKET"
+  if ! aws s3 ls "s3://${DEFAULT_SAM_S3_BUCKET}" $PROFILE_ARG --region "$AWS_REGION" &> /dev/null; then
+    print_message "$YELLOW" "  Bucket does not exist, creating: $DEFAULT_SAM_S3_BUCKET"
+    aws s3 mb "s3://${DEFAULT_SAM_S3_BUCKET}" $PROFILE_ARG --region "$AWS_REGION"
+    aws s3api put-bucket-encryption \
+      $PROFILE_ARG \
+      --bucket "$DEFAULT_SAM_S3_BUCKET" \
+      --region "$AWS_REGION" \
+      --server-side-encryption-configuration '{"Rules": [{"ApplyServerSideEncryptionByDefault": {"SSEAlgorithm": "AES256"}}]}'
+    print_message "$GREEN" "  ✓ Created SAM deployment bucket: $DEFAULT_SAM_S3_BUCKET"
   else
-    sam deploy --config-file samconfig.toml --region="$REGION" --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE
+    print_message "$GREEN" "  ✓ SAM deployment bucket exists: $DEFAULT_SAM_S3_BUCKET"
   fi
 
-  cd ../scripts || exit # stop execution if cd fails
+  # Validate Python code
+  print_message "$YELLOW" "  Validating Python code with pylint..."
+  if command -v pylint &> /dev/null; then
+    python3 -m pylint -E -d E0401 $(find . -iname "*.py" -not -path "./.aws-sam/*") || {
+      print_message "$RED" "Error: Code validation failed. Please fix errors and retry."
+      exit 1
+    }
+    print_message "$GREEN" "  ✓ Code validation passed"
+  else
+    print_message "$YELLOW" "  Warning: pylint not installed, skipping code validation"
+  fi
+
+  # Build SAM application
+  print_message "$YELLOW" "  Building SAM application..."
+  sam build -t template.yaml || {
+    print_message "$RED" "Error: SAM build failed"
+    exit 1
+  }
+  print_message "$GREEN" "  ✓ SAM build completed"
+
+  # Deploy SAM application
+  print_message "$YELLOW" "  Deploying SAM application to stack: $STACK_NAME"
+  if [ "$IS_RUNNING_IN_EVENT_ENGINE" = true ]; then
+    if [[ -n "$AWS_PROFILE" ]]; then
+      sam deploy --config-file samconfig.toml --profile "$AWS_PROFILE" --region="$AWS_REGION" --stack-name "$STACK_NAME" --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE AdminUserPoolCallbackURLParameter=$ADMIN_SITE_URL --no-fail-on-empty-changeset || {
+        print_message "$RED" "Error: SAM deployment failed"
+        exit 1
+      }
+    else
+      sam deploy --config-file samconfig.toml --region="$AWS_REGION" --stack-name "$STACK_NAME" --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE AdminUserPoolCallbackURLParameter=$ADMIN_SITE_URL --no-fail-on-empty-changeset || {
+        print_message "$RED" "Error: SAM deployment failed"
+        exit 1
+      }
+    fi
+  else
+    if [[ -n "$AWS_PROFILE" ]]; then
+      sam deploy --config-file samconfig.toml --profile "$AWS_PROFILE" --region="$AWS_REGION" --stack-name "$STACK_NAME" --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE --no-fail-on-empty-changeset || {
+        print_message "$RED" "Error: SAM deployment failed"
+        exit 1
+      }
+    else
+      sam deploy --config-file samconfig.toml --region="$AWS_REGION" --stack-name "$STACK_NAME" --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE --no-fail-on-empty-changeset || {
+        print_message "$RED" "Error: SAM deployment failed"
+        exit 1
+      }
+    fi
+  fi
+  print_message "$GREEN" "  ✓ Server infrastructure deployed successfully"
+
+  cd ../scripts || exit
+  echo ""
 fi
 
 if [ "$IS_RUNNING_IN_EVENT_ENGINE" = false ]; then
-  ADMIN_SITE_URL=$(aws cloudformation describe-stacks --stack-name serverless-saas-workshop-lab2 --query "Stacks[0].Outputs[?OutputKey=='AdminAppSite'].OutputValue" --output text)
-  LANDING_APP_SITE_URL=$(aws cloudformation describe-stacks --stack-name serverless-saas-workshop-lab2 --query "Stacks[0].Outputs[?OutputKey=='LandingApplicationSite'].OutputValue" --output text)
-  ADMIN_SITE_BUCKET=$(aws cloudformation describe-stacks --stack-name serverless-saas-workshop-lab2 --query "Stacks[0].Outputs[?OutputKey=='AdminSiteBucket'].OutputValue" --output text)
-  LANDING_APP_SITE_BUCKET=$(aws cloudformation describe-stacks --stack-name serverless-saas-workshop-lab2 --query "Stacks[0].Outputs[?OutputKey=='LandingApplicationSiteBucket'].OutputValue" --output text)
+  if [[ -n "$AWS_PROFILE" ]]; then
+    ADMIN_SITE_URL=$(aws cloudformation --profile "$AWS_PROFILE" describe-stacks --stack-name "$STACK_NAME" --region "$AWS_REGION" --query "Stacks[0].Outputs[?OutputKey=='AdminAppSite'].OutputValue" --output text 2>/dev/null || echo "")
+    LANDING_APP_SITE_URL=$(aws cloudformation --profile "$AWS_PROFILE" describe-stacks --stack-name "$STACK_NAME" --region "$AWS_REGION" --query "Stacks[0].Outputs[?OutputKey=='LandingApplicationSite'].OutputValue" --output text 2>/dev/null || echo "")
+    ADMIN_SITE_BUCKET=$(aws cloudformation --profile "$AWS_PROFILE" describe-stacks --stack-name "$STACK_NAME" --region "$AWS_REGION" --query "Stacks[0].Outputs[?OutputKey=='AdminSiteBucket'].OutputValue" --output text 2>/dev/null || echo "")
+    LANDING_APP_SITE_BUCKET=$(aws cloudformation --profile "$AWS_PROFILE" describe-stacks --stack-name "$STACK_NAME" --region "$AWS_REGION" --query "Stacks[0].Outputs[?OutputKey=='LandingApplicationSiteBucket'].OutputValue" --output text 2>/dev/null || echo "")
+  else
+    ADMIN_SITE_URL=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --region "$AWS_REGION" --query "Stacks[0].Outputs[?OutputKey=='AdminAppSite'].OutputValue" --output text 2>/dev/null || echo "")
+    LANDING_APP_SITE_URL=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --region "$AWS_REGION" --query "Stacks[0].Outputs[?OutputKey=='LandingApplicationSite'].OutputValue" --output text 2>/dev/null || echo "")
+    ADMIN_SITE_BUCKET=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --region "$AWS_REGION" --query "Stacks[0].Outputs[?OutputKey=='AdminSiteBucket'].OutputValue" --output text 2>/dev/null || echo "")
+    LANDING_APP_SITE_BUCKET=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --region "$AWS_REGION" --query "Stacks[0].Outputs[?OutputKey=='LandingApplicationSiteBucket'].OutputValue" --output text 2>/dev/null || echo "")
+  fi
 fi
 
-if [[ $client -eq 1 ]]; then
-  if [[ -z "$email" ]]; then
-    echo "Please provide email address to setup an admin user"
-    echo "Note: Invoke script without parameters to know the list of script parameters"
-    exit 1
-  fi
-  echo "Client code is getting deployed"
+if [[ $DEPLOY_CLIENT -eq 1 ]]; then
+  print_message "$YELLOW" "Step 3: Deploying client applications..."
 
   # Re-query stack outputs after deployment to ensure we have the latest values
   if [ "$IS_RUNNING_IN_EVENT_ENGINE" = false ]; then
-    ADMIN_SITE_URL=$(aws cloudformation describe-stacks --stack-name serverless-saas-workshop-lab2 --query "Stacks[0].Outputs[?OutputKey=='AdminAppSite'].OutputValue" --output text)
-    LANDING_APP_SITE_URL=$(aws cloudformation describe-stacks --stack-name serverless-saas-workshop-lab2 --query "Stacks[0].Outputs[?OutputKey=='LandingApplicationSite'].OutputValue" --output text)
-    ADMIN_SITE_BUCKET=$(aws cloudformation describe-stacks --stack-name serverless-saas-workshop-lab2 --query "Stacks[0].Outputs[?OutputKey=='AdminSiteBucket'].OutputValue" --output text)
-    LANDING_APP_SITE_BUCKET=$(aws cloudformation describe-stacks --stack-name serverless-saas-workshop-lab2 --query "Stacks[0].Outputs[?OutputKey=='LandingApplicationSiteBucket'].OutputValue" --output text)
+    if [[ -n "$AWS_PROFILE" ]]; then
+      ADMIN_SITE_URL=$(aws cloudformation --profile "$AWS_PROFILE" describe-stacks --stack-name "$STACK_NAME" --region "$AWS_REGION" --query "Stacks[0].Outputs[?OutputKey=='AdminAppSite'].OutputValue" --output text 2>/dev/null || echo "")
+      LANDING_APP_SITE_URL=$(aws cloudformation --profile "$AWS_PROFILE" describe-stacks --stack-name "$STACK_NAME" --region "$AWS_REGION" --query "Stacks[0].Outputs[?OutputKey=='LandingApplicationSite'].OutputValue" --output text 2>/dev/null || echo "")
+      ADMIN_SITE_BUCKET=$(aws cloudformation --profile "$AWS_PROFILE" describe-stacks --stack-name "$STACK_NAME" --region "$AWS_REGION" --query "Stacks[0].Outputs[?OutputKey=='AdminSiteBucket'].OutputValue" --output text 2>/dev/null || echo "")
+      LANDING_APP_SITE_BUCKET=$(aws cloudformation --profile "$AWS_PROFILE" describe-stacks --stack-name "$STACK_NAME" --region "$AWS_REGION" --query "Stacks[0].Outputs[?OutputKey=='LandingApplicationSiteBucket'].OutputValue" --output text 2>/dev/null || echo "")
+    else
+      ADMIN_SITE_URL=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --region "$AWS_REGION" --query "Stacks[0].Outputs[?OutputKey=='AdminAppSite'].OutputValue" --output text 2>/dev/null || echo "")
+      LANDING_APP_SITE_URL=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --region "$AWS_REGION" --query "Stacks[0].Outputs[?OutputKey=='LandingApplicationSite'].OutputValue" --output text 2>/dev/null || echo "")
+      ADMIN_SITE_BUCKET=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --region "$AWS_REGION" --query "Stacks[0].Outputs[?OutputKey=='AdminSiteBucket'].OutputValue" --output text 2>/dev/null || echo "")
+      LANDING_APP_SITE_BUCKET=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --region "$AWS_REGION" --query "Stacks[0].Outputs[?OutputKey=='LandingApplicationSiteBucket'].OutputValue" --output text 2>/dev/null || echo "")
+    fi
   fi
 
-  ADMIN_APIGATEWAYURL=$(aws cloudformation describe-stacks --stack-name serverless-saas-workshop-lab2 --query "Stacks[0].Outputs[?OutputKey=='AdminApi'].OutputValue" --output text)
-  ADMIN_APPCLIENTID=$(aws cloudformation describe-stacks --stack-name serverless-saas-workshop-lab2 --query "Stacks[0].Outputs[?OutputKey=='CognitoOperationUsersUserPoolClientId'].OutputValue" --output text)
-  ADMIN_USERPOOL_ID=$(aws cloudformation describe-stacks --stack-name serverless-saas-workshop-lab2 --query "Stacks[0].Outputs[?OutputKey=='CognitoOperationUsersUserPoolId'].OutputValue" --output text)
-  ADMIN_USER_GROUP_NAME=$(aws cloudformation describe-stacks --stack-name serverless-saas-workshop-lab2 --query "Stacks[0].Outputs[?OutputKey=='CognitoAdminUserGroupName'].OutputValue" --output text)
-
-  # Create admin-user in OperationUsers userpool with given input email address
-  CREATE_ADMIN_USER=$(aws cognito-idp admin-create-user \
-  --user-pool-id "$ADMIN_USERPOOL_ID" \
-  --username admin-user \
-  --user-attributes Name=email,Value="$email" Name=email_verified,Value="True" Name=phone_number,Value="+11234567890" Name="custom:userRole",Value="SystemAdmin" Name="custom:tenantId",Value="system_admins" \
-  --desired-delivery-mediums EMAIL)
-
-  echo "$CREATE_ADMIN_USER"
-
-  # Add admin-user to admin user group
-  ADD_ADMIN_USER_TO_GROUP=$(aws cognito-idp admin-add-user-to-group \
-    --user-pool-id "$ADMIN_USERPOOL_ID" \
-    --username admin-user \
-    --group-name "$ADMIN_USER_GROUP_NAME")
-
-  echo "$ADD_ADMIN_USER_TO_GROUP"
-
-  # Configuring admin UI
-
-  echo "aws s3 ls s3://$ADMIN_SITE_BUCKET"
-  if ! aws s3 ls "s3://${ADMIN_SITE_BUCKET}"; then
-    echo "Error! S3 Bucket: $ADMIN_SITE_BUCKET not readable"
+  if [[ -z "$ADMIN_SITE_BUCKET" ]] || [[ "$ADMIN_SITE_BUCKET" == "None" ]]; then
+    print_message "$RED" "Error: Could not retrieve Admin S3 bucket from CloudFormation stack"
+    print_message "$YELLOW" "Make sure the server infrastructure is deployed first with -s flag"
     exit 1
   fi
 
-  cd ../client/Admin || exit # stop execution if cd fails
+  if [[ -n "$AWS_PROFILE" ]]; then
+    ADMIN_APIGATEWAYURL=$(aws cloudformation --profile "$AWS_PROFILE" describe-stacks --stack-name "$STACK_NAME" --region "$AWS_REGION" --query "Stacks[0].Outputs[?OutputKey=='AdminApi'].OutputValue" --output text 2>/dev/null || echo "")
+    ADMIN_APPCLIENTID=$(aws cloudformation --profile "$AWS_PROFILE" describe-stacks --stack-name "$STACK_NAME" --region "$AWS_REGION" --query "Stacks[0].Outputs[?OutputKey=='CognitoOperationUsersUserPoolClientId'].OutputValue" --output text 2>/dev/null || echo "")
+    ADMIN_USERPOOL_ID=$(aws cloudformation --profile "$AWS_PROFILE" describe-stacks --stack-name "$STACK_NAME" --region "$AWS_REGION" --query "Stacks[0].Outputs[?OutputKey=='CognitoOperationUsersUserPoolId'].OutputValue" --output text 2>/dev/null || echo "")
+    ADMIN_USER_GROUP_NAME=$(aws cloudformation --profile "$AWS_PROFILE" describe-stacks --stack-name "$STACK_NAME" --region "$AWS_REGION" --query "Stacks[0].Outputs[?OutputKey=='CognitoAdminUserGroupName'].OutputValue" --output text 2>/dev/null || echo "")
+  else
+    ADMIN_APIGATEWAYURL=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --region "$AWS_REGION" --query "Stacks[0].Outputs[?OutputKey=='AdminApi'].OutputValue" --output text 2>/dev/null || echo "")
+    ADMIN_APPCLIENTID=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --region "$AWS_REGION" --query "Stacks[0].Outputs[?OutputKey=='CognitoOperationUsersUserPoolClientId'].OutputValue" --output text 2>/dev/null || echo "")
+    ADMIN_USERPOOL_ID=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --region "$AWS_REGION" --query "Stacks[0].Outputs[?OutputKey=='CognitoOperationUsersUserPoolId'].OutputValue" --output text 2>/dev/null || echo "")
+    ADMIN_USER_GROUP_NAME=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" --region "$AWS_REGION" --query "Stacks[0].Outputs[?OutputKey=='CognitoAdminUserGroupName'].OutputValue" --output text 2>/dev/null || echo "")
+  fi
 
-  echo "Configuring environment for Admin Client"
+  if [[ -z "$ADMIN_APIGATEWAYURL" ]] || [[ "$ADMIN_APIGATEWAYURL" == "None" ]]; then
+    print_message "$RED" "Error: Could not retrieve API Gateway URL from CloudFormation stack"
+    exit 1
+  fi
+
+  # Create admin-user in OperationUsers userpool with given input email address
+  print_message "$YELLOW" "  Creating admin user in Cognito..."
+  if [[ -n "$AWS_PROFILE" ]]; then
+    CREATE_ADMIN_USER=$(aws cognito-idp --profile "$AWS_PROFILE" admin-create-user \
+      --user-pool-id "$ADMIN_USERPOOL_ID" \
+      --username admin-user \
+      --user-attributes Name=email,Value="$ADMIN_EMAIL" Name=email_verified,Value="True" Name=phone_number,Value="+11234567890" Name="custom:userRole",Value="SystemAdmin" Name="custom:tenantId",Value="system_admins" \
+      --desired-delivery-mediums EMAIL \
+      --region "$AWS_REGION" 2>&1)
+  else
+    CREATE_ADMIN_USER=$(aws cognito-idp admin-create-user \
+      --user-pool-id "$ADMIN_USERPOOL_ID" \
+      --username admin-user \
+      --user-attributes Name=email,Value="$ADMIN_EMAIL" Name=email_verified,Value="True" Name=phone_number,Value="+11234567890" Name="custom:userRole",Value="SystemAdmin" Name="custom:tenantId",Value="system_admins" \
+      --desired-delivery-mediums EMAIL \
+      --region "$AWS_REGION" 2>&1)
+  fi
+
+  if [[ $? -eq 0 ]]; then
+    print_message "$GREEN" "  ✓ Admin user created successfully"
+  else
+    if echo "$CREATE_ADMIN_USER" | grep -q "UsernameExistsException"; then
+      print_message "$YELLOW" "  Warning: Admin user already exists"
+    else
+      print_message "$RED" "  Error creating admin user: $CREATE_ADMIN_USER"
+      exit 1
+    fi
+  fi
+
+  # Add admin-user to admin user group
+  print_message "$YELLOW" "  Adding admin user to admin group..."
+  if [[ -n "$AWS_PROFILE" ]]; then
+    ADD_ADMIN_USER_TO_GROUP=$(aws cognito-idp --profile "$AWS_PROFILE" admin-add-user-to-group \
+      --user-pool-id "$ADMIN_USERPOOL_ID" \
+      --username admin-user \
+      --group-name "$ADMIN_USER_GROUP_NAME" \
+      --region "$AWS_REGION" 2>&1)
+  else
+    ADD_ADMIN_USER_TO_GROUP=$(aws cognito-idp admin-add-user-to-group \
+      --user-pool-id "$ADMIN_USERPOOL_ID" \
+      --username admin-user \
+      --group-name "$ADMIN_USER_GROUP_NAME" \
+      --region "$AWS_REGION" 2>&1)
+  fi
+
+  if [[ $? -eq 0 ]]; then
+    print_message "$GREEN" "  ✓ Admin user added to group"
+  else
+    print_message "$YELLOW" "  Warning: Could not add user to group (may already be member)"
+  fi
+
+  # Configuring admin UI
+  print_message "$YELLOW" "  Configuring Admin UI..."
+
+  # Verify S3 bucket is accessible
+  if [[ -n "$AWS_PROFILE" ]]; then
+    if ! aws s3 --profile "$AWS_PROFILE" ls "s3://${ADMIN_SITE_BUCKET}" --region "$AWS_REGION" &> /dev/null; then
+      print_message "$RED" "Error: S3 Bucket $ADMIN_SITE_BUCKET not accessible"
+      exit 1
+    fi
+  else
+    if ! aws s3 ls "s3://${ADMIN_SITE_BUCKET}" --region "$AWS_REGION" &> /dev/null; then
+      print_message "$RED" "Error: S3 Bucket $ADMIN_SITE_BUCKET not accessible"
+      exit 1
+    fi
+  fi
+
+  cd "$SCRIPT_DIR/../client/Admin" || exit
+
+  print_message "$YELLOW" "  Configuring environment for Admin Client"
   cat <<EoF >./src/environments/environment.prod.ts
 export const environment = {
   production: true,
@@ -178,8 +554,8 @@ EoF
 
   cat <<EoF >./src/aws-exports.ts
 const awsmobile = {
-    "aws_project_region": "$REGION",
-    "aws_cognito_region": "$REGION",
+    "aws_project_region": "$AWS_REGION",
+    "aws_cognito_region": "$AWS_REGION",
     "aws_user_pools_id": "$ADMIN_USERPOOL_ID",
     "aws_user_pools_web_client_id": "$ADMIN_APPCLIENTID",
 };
@@ -187,30 +563,55 @@ const awsmobile = {
 export default awsmobile;
 EoF
 
-  npm install && npm run build
+  print_message "$YELLOW" "  Cleaning previous npm installation for Admin Client..."
+  rm -rf node_modules package-lock.json || true
 
-  echo "aws s3 sync --delete --cache-control no-store dist s3://${ADMIN_SITE_BUCKET}"
-  aws s3 sync --delete --cache-control no-store dist "s3://${ADMIN_SITE_BUCKET}"
-
-  if [[ $? -ne 0 ]]; then
+  print_message "$YELLOW" "  Installing npm dependencies for Admin Client..."
+  npm install || {
+    print_message "$RED" "Error: npm install failed for Admin Client"
     exit 1
-  fi
+  }
+  
+  print_message "$YELLOW" "  Building Admin Client..."
+  npm run build || {
+    print_message "$RED" "Error: npm build failed for Admin Client"
+    exit 1
+  }
+  print_message "$GREEN" "  ✓ Admin Client built successfully"
 
-  echo "Completed configuring environment for Admin Client"
+  print_message "$YELLOW" "  Uploading Admin Client to S3..."
+  if [[ -n "$AWS_PROFILE" ]]; then
+    aws s3 --profile "$AWS_PROFILE" sync --delete --cache-control no-store dist "s3://${ADMIN_SITE_BUCKET}" --region "$AWS_REGION" || {
+      print_message "$RED" "Error: Failed to upload Admin Client to S3"
+      exit 1
+    }
+  else
+    aws s3 sync --delete --cache-control no-store dist "s3://${ADMIN_SITE_BUCKET}" --region "$AWS_REGION" || {
+      print_message "$RED" "Error: Failed to upload Admin Client to S3"
+      exit 1
+    }
+  fi
+  print_message "$GREEN" "  ✓ Admin Client deployed successfully"
 
   # Configuring landing UI
+  print_message "$YELLOW" "  Configuring Landing UI..."
 
-  echo "aws s3 ls s3://${LANDING_APP_SITE_BUCKET}"
-  if ! aws s3 ls "s3://${LANDING_APP_SITE_BUCKET}"; then
-    echo "Error! S3 Bucket: $LANDING_APP_SITE_BUCKET not readable"
-    exit 1
+  # Verify S3 bucket is accessible
+  if [[ -n "$AWS_PROFILE" ]]; then
+    if ! aws s3 --profile "$AWS_PROFILE" ls "s3://${LANDING_APP_SITE_BUCKET}" --region "$AWS_REGION" &> /dev/null; then
+      print_message "$RED" "Error: S3 Bucket $LANDING_APP_SITE_BUCKET not accessible"
+      exit 1
+    fi
+  else
+    if ! aws s3 ls "s3://${LANDING_APP_SITE_BUCKET}" --region "$AWS_REGION" &> /dev/null; then
+      print_message "$RED" "Error: S3 Bucket $LANDING_APP_SITE_BUCKET not accessible"
+      exit 1
+    fi
   fi
 
-  cd ../
+  cd "$SCRIPT_DIR/../client/Landing" || exit
 
-  cd Landing || exit # stop execution if cd fails
-
-  echo "Configuring environment for Landing Client"
+  print_message "$YELLOW" "  Configuring environment for Landing Client"
 
   cat <<EoF >./src/environments/environment.prod.ts
 export const environment = {
@@ -225,17 +626,74 @@ export const environment = {
 };
 EoF
 
-  npm install && npm run build
+  print_message "$YELLOW" "  Cleaning previous npm installation for Landing Client..."
+  rm -rf node_modules package-lock.json || true
 
-  echo "aws s3 sync --delete --cache-control no-store dist s3://${LANDING_APP_SITE_BUCKET}"
-  aws s3 sync --delete --cache-control no-store dist "s3://${LANDING_APP_SITE_BUCKET}"
-
-  if [[ $? -ne 0 ]]; then
+  print_message "$YELLOW" "  Installing npm dependencies for Landing Client..."
+  npm install || {
+    print_message "$RED" "Error: npm install failed for Landing Client"
     exit 1
-  fi
+  }
+  
+  print_message "$YELLOW" "  Building Landing Client..."
+  npm run build || {
+    print_message "$RED" "Error: npm build failed for Landing Client"
+    exit 1
+  }
+  print_message "$GREEN" "  ✓ Landing Client built successfully"
 
-  echo "Completed configuring environment for Landing Client"
-  echo "Successfully completed deploying Admin UI and Landing UI"
+  print_message "$YELLOW" "  Uploading Landing Client to S3..."
+  if [[ -n "$AWS_PROFILE" ]]; then
+    aws s3 --profile "$AWS_PROFILE" sync --delete --cache-control no-store dist "s3://${LANDING_APP_SITE_BUCKET}" --region "$AWS_REGION" || {
+      print_message "$RED" "Error: Failed to upload Landing Client to S3"
+      exit 1
+    }
+  else
+    aws s3 sync --delete --cache-control no-store dist "s3://${LANDING_APP_SITE_BUCKET}" --region "$AWS_REGION" || {
+      print_message "$RED" "Error: Failed to upload Landing Client to S3"
+      exit 1
+    }
+  fi
+  print_message "$GREEN" "  ✓ Landing Client deployed successfully"
+
+  cd ../../scripts || exit
+  echo ""
 fi
-echo "Admin site URL: https://$ADMIN_SITE_URL"
-echo "Landing site URL: https://$LANDING_APP_SITE_URL"
+
+# Calculate duration
+END_TIME=$(date +%s)
+DURATION=$((END_TIME - START_TIME))
+
+# Display deployment summary
+print_message "$GREEN" "=========================================="
+print_message "$GREEN" "Lab2 Deployment Complete!"
+print_message "$GREEN" "=========================================="
+print_message "$GREEN" "Duration: ${DURATION} seconds"
+echo ""
+
+# Output URLs
+if [[ -n "$ADMIN_SITE_URL" ]] && [[ "$ADMIN_SITE_URL" != "None" ]]; then
+  print_message "$BLUE" "Application URLs:"
+  print_message "$BLUE" "  Admin Site: https://${ADMIN_SITE_URL}"
+  print_message "$BLUE" "  Landing Site: https://${LANDING_APP_SITE_URL}"
+  if [[ -n "$ADMIN_APIGATEWAYURL" ]]; then
+    print_message "$BLUE" "  Admin API: ${ADMIN_APIGATEWAYURL}"
+  fi
+  echo ""
+fi
+
+print_message "$YELLOW" "Next Steps:"
+if [[ $DEPLOY_SERVER -eq 1 ]] && [[ $DEPLOY_CLIENT -eq 0 ]]; then
+  print_message "$YELLOW" "  1. Deploy the client applications: ./deployment.sh -c --email <your-email>"
+  print_message "$YELLOW" "  2. Check your email for temporary password"
+  print_message "$YELLOW" "  3. Access the Admin Site using the URL above"
+elif [[ $DEPLOY_CLIENT -eq 1 ]]; then
+  print_message "$YELLOW" "  1. Check your email ($ADMIN_EMAIL) for temporary password"
+  print_message "$YELLOW" "  2. Open the Admin Site URL in your browser"
+  print_message "$YELLOW" "  3. Log in with username: admin-user"
+  print_message "$YELLOW" "  4. Follow the lab instructions to create tenants"
+fi
+print_message "$YELLOW" "  5. To retrieve URLs later: ./geturl.sh --stack-name $STACK_NAME"
+print_message "$YELLOW" "  6. To clean up resources: ./cleanup.sh --stack-name $STACK_NAME"
+echo ""
+print_message "$GREEN" "Log file: $LOG_FILE"

@@ -11,6 +11,22 @@ Parameters:
     Default: false    
     Description: "Tells if cloudfront and s3 buckets are pre-provisioned or not. 
     They get pre-provisioned when the workshop is running as a part of AWS Event through AWS event engine tool."
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, staging, prod]
+    Description: Deployment environment for the workshop
+
+  Owner:
+    Type: String
+    Default: workshop-participant
+    Description: Owner identifier for resource tracking
+
+  CostCenter:
+    Type: String
+    Default: serverless-saas-workshop
+    Description: Cost center for billing allocation
+
 Conditions:
   IsNotRunningInEventEngine: !Not [ !Equals [ !Ref IsCloudFrontAndS3PreProvisioned, true] ]  
 Resources:
@@ -25,7 +41,7 @@ Resources:
     Condition: IsNotRunningInEventEngine
     DeletionPolicy : Retain
     Properties:
-      BucketName: !Sub 'serverless-saas-workshop-lab4-adminappbucket'
+      BucketName: !Sub 'serverless-saas-workshop-lab4-adminappbucket-${AWS::AccountId}'
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
@@ -35,6 +51,17 @@ Resources:
         BlockPublicPolicy: True
         IgnorePublicAcls: True
         RestrictPublicBuckets: True
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab4
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
   AdminAppSiteReadPolicy:
     Type: AWS::S3::BucketPolicy
     Condition: IsNotRunningInEventEngine
@@ -89,13 +116,24 @@ Resources:
           Id: adminapp-s3origin
           S3OriginConfig:
             OriginAccessIdentity: !Join ["", ["origin-access-identity/cloudfront/", !Ref CloudFrontOriginAccessIdentity]] 
-        PriceClass: 'PriceClass_All'  
+        PriceClass: 'PriceClass_All'
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab4
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter  
   LandingAppBucket:
     Type: AWS::S3::Bucket
     Condition: IsNotRunningInEventEngine
     DeletionPolicy : Retain
     Properties:
-      BucketName: !Sub 'serverless-saas-workshop-lab4-landingappbucket'
+      BucketName: !Sub 'serverless-saas-workshop-lab4-landingappbucket-${AWS::AccountId}'
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
@@ -105,6 +143,17 @@ Resources:
         BlockPublicPolicy: True
         IgnorePublicAcls: True
         RestrictPublicBuckets: True
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab4
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
   
   LandingAppSiteReadPolicy:
     Type: AWS::S3::BucketPolicy
@@ -158,13 +207,24 @@ Resources:
           Id: landingapp-s3origin
           S3OriginConfig:
             OriginAccessIdentity: !Join ["", ["origin-access-identity/cloudfront/", !Ref CloudFrontOriginAccessIdentity]] 
-        PriceClass: 'PriceClass_All' 
+        PriceClass: 'PriceClass_All'
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab4
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter 
   AppBucket:
     Type: AWS::S3::Bucket
     Condition: IsNotRunningInEventEngine
     DeletionPolicy : Retain
     Properties:
-      BucketName: !Sub 'serverless-saas-workshop-lab4-appbucket'
+      BucketName: !Sub 'serverless-saas-workshop-lab4-appbucket-${AWS::AccountId}'
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
@@ -174,6 +234,17 @@ Resources:
         BlockPublicPolicy: True
         IgnorePublicAcls: True
         RestrictPublicBuckets: True
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab4
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
   AppSiteReadPolicy:
     Type: AWS::S3::BucketPolicy
     Condition: IsNotRunningInEventEngine
@@ -226,7 +297,18 @@ Resources:
           Id: tenantapp-s3origin
           S3OriginConfig:
             OriginAccessIdentity: !Join ["", ["origin-access-identity/cloudfront/", !Ref CloudFrontOriginAccessIdentity]] 
-        PriceClass: 'PriceClass_All'          
+        PriceClass: 'PriceClass_All'
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab4
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter          
 Outputs:
   AdminBucket:
     Description: The name of the bucket for uploading the Admin Management site to

@@ -143,11 +143,14 @@ Domain: !Sub
 - `ops` - Operations/admin user pool domain
 
 ### 9. CloudFormation Stacks
-**Pattern:** `serverless-saas-workshop-{stack-type}-lab{N}`
+**Pattern:** `serverless-saas-lab{N}` (main stack)
+**Pattern:** `serverless-saas-{stack-type}-lab{N}` (additional stacks)
 
 **Examples:**
-- `serverless-saas-workshop-shared-lab5`
-- `serverless-saas-workshop-tenant-lab5`
+- `serverless-saas-lab1` (main stack for Lab 1)
+- `serverless-saas-lab2` (main stack for Lab 2)
+- `serverless-saas-shared-lab5` (shared resources stack)
+- `serverless-saas-tenant-lab5` (tenant-specific stack)
 
 ### 10. CloudFormation Exports
 **Pattern:** `Serverless-SaaS-{ExportName}-lab{N}`
@@ -287,8 +290,8 @@ IAM Policies:
 - create-user-lambda-execution-policy-lab5
 
 CloudFormation Stacks:
-- serverless-saas-workshop-shared-lab5
-- serverless-saas-workshop-tenant-lab5
+- serverless-saas-lab5 (or serverless-saas-shared-lab5 for shared resources)
+- serverless-saas-tenant-lab5
 
 CloudFormation Exports:
 - Serverless-SaaS-CognitoOperationUsersUserPoolId-lab5

@@ -17,11 +17,154 @@ Globals:
           POWERTOOLS_METRICS_NAMESPACE: "ServerlessSaaS"
           
 Parameters:
+  TenantId:
+    Type: String
+    Description: Tenant identifier for multi-tenant tracking
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+    Description: Deployment environment for the workshop
+  Owner:
+    Type: String
+    Default: workshop-participant
+    Description: Owner identifier for resource tracking
+  CostCenter:
+    Type: String
+    Default: serverless-saas-workshop
+    Description: Cost center for billing allocation
   StageName:
     Type: String
     Default: "prod"
     Description: "Stage Name for the api"
 Resources: 
+
+
+  # CloudWatch Log Groups with 60-day retention
+  GetProductFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-GetProductFunction
+      RetentionInDays: 60
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab4
+
+  GetProductsFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-GetProductsFunction
+      RetentionInDays: 60
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab4
+
+  CreateProductFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-CreateProductFunction
+      RetentionInDays: 60
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab4
+
+  UpdateProductFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-UpdateProductFunction
+      RetentionInDays: 60
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab4
+
+  DeleteProductFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-DeleteProductFunction
+      RetentionInDays: 60
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab4
+
+  GetOrdersFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-GetOrdersFunction
+      RetentionInDays: 60
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab4
+
+  GetOrderFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-GetOrderFunction
+      RetentionInDays: 60
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab4
+
+  CreateOrderFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-CreateOrderFunction
+      RetentionInDays: 60
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab4
+
+  UpdateOrderFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-UpdateOrderFunction
+      RetentionInDays: 60
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab4
+
+  DeleteOrderFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-DeleteOrderFunction
+      RetentionInDays: 60
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab4
+
+  BusinessServicesAuthorizerFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-BusinessServicesAuthorizerFunction
+      RetentionInDays: 60
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab4
+
   ServerlessSaaSLayers:
     Type: AWS::Serverless::LayerVersion
     Properties:
@@ -29,11 +172,11 @@ Resources:
       Description: Utilities for project
       ContentUri: layers/
       CompatibleRuntimes:
-        - python3.9          
+        - python3.14          
       LicenseInfo: 'MIT'
       RetentionPolicy: Retain      
     Metadata:
-      BuildMethod: python3.9   
+      BuildMethod: python3.14   
   
   ProductTable:
     Type: AWS::DynamoDB::Table
@@ -52,6 +195,19 @@ Resources:
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
       TableName: Product-pooled-lab4
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: TenantId
+          Value: !Ref TenantId
+        - Key: Lab
+          Value: lab4
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
 
   OrderTable:
     Type: AWS::DynamoDB::Table
@@ -70,6 +226,19 @@ Resources:
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
       TableName: Order-pooled-lab4
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: TenantId
+          Value: !Ref TenantId
+        - Key: Lab
+          Value: lab4
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
 
   ProductFunctionExecutionRole:
     Type: AWS::IAM::Role     
@@ -103,6 +272,19 @@ Resources:
                   - dynamodb:Query
                 Resource:
                   - !GetAtt ProductTable.Arn
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: TenantId
+          Value: !Ref TenantId
+        - Key: Lab
+          Value: lab4
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
              
   GetProductFunction:
     Type: AWS::Serverless::Function 
@@ -111,15 +293,24 @@ Resources:
       FunctionName: serverless-saas-lab4-get-product
       CodeUri: ProductService/
       Handler: product_service.get_product
-      Runtime: python3.9  
+      Runtime: python3.14  
       Tracing: Active
       Role: !GetAtt ProductFunctionExecutionRole.Arn
       Layers: 
         - !Ref ServerlessSaaSLayers
+      LoggingConfig:
+        LogGroup: !Ref GetProductFunctionLogGroup
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "ProductService"
-          PRODUCT_TABLE_NAME: !Ref ProductTable      
+          PRODUCT_TABLE_NAME: !Ref ProductTable
+      Tags:
+        Application: serverless-saas-workshop
+        TenantId: !Ref TenantId
+        Lab: lab4
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter      
   
   GetProductsFunction:
     Type: AWS::Serverless::Function 
@@ -128,15 +319,24 @@ Resources:
       FunctionName: serverless-saas-lab4-get-products
       CodeUri: ProductService/
       Handler: product_service.get_products
-      Runtime: python3.9  
+      Runtime: python3.14  
       Tracing: Active
       Role: !GetAtt ProductFunctionExecutionRole.Arn
       Layers: 
         - !Ref ServerlessSaaSLayers
+      LoggingConfig:
+        LogGroup: !Ref GetProductsFunctionLogGroup
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "ProductService"
           PRODUCT_TABLE_NAME: !Ref ProductTable
+      Tags:
+        Application: serverless-saas-workshop
+        TenantId: !Ref TenantId
+        Lab: lab4
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
       
   CreateProductFunction:
     Type: AWS::Serverless::Function
@@ -145,15 +345,24 @@ Resources:
       FunctionName: serverless-saas-lab4-create-product
       CodeUri: ProductService/
       Handler: product_service.create_product
-      Runtime: python3.9  
+      Runtime: python3.14  
       Tracing: Active 
       Role: !GetAtt ProductFunctionExecutionRole.Arn 
       Layers: 
         - !Ref ServerlessSaaSLayers
+      LoggingConfig:
+        LogGroup: !Ref CreateProductFunctionLogGroup
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "ProductService"
           PRODUCT_TABLE_NAME: !Ref ProductTable
+      Tags:
+        Application: serverless-saas-workshop
+        TenantId: !Ref TenantId
+        Lab: lab4
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
 
   UpdateProductFunction:
     Type: AWS::Serverless::Function
@@ -162,15 +371,24 @@ Resources:
       FunctionName: serverless-saas-lab4-update-product
       CodeUri: ProductService/
       Handler: product_service.update_product
-      Runtime: python3.9 
+      Runtime: python3.14 
       Tracing: Active
       Role: !GetAtt ProductFunctionExecutionRole.Arn 
       Layers: 
         - !Ref ServerlessSaaSLayers
+      LoggingConfig:
+        LogGroup: !Ref UpdateProductFunctionLogGroup
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "ProductService"
           PRODUCT_TABLE_NAME: !Ref ProductTable
+      Tags:
+        Application: serverless-saas-workshop
+        TenantId: !Ref TenantId
+        Lab: lab4
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
 
   DeleteProductFunction:
     Type: AWS::Serverless::Function
@@ -179,15 +397,24 @@ Resources:
       FunctionName: serverless-saas-lab4-delete-product
       CodeUri: ProductService/
       Handler: product_service.delete_product
-      Runtime: python3.9 
+      Runtime: python3.14 
       Tracing: Active
       Role: !GetAtt ProductFunctionExecutionRole.Arn 
       Layers: 
         - !Ref ServerlessSaaSLayers
+      LoggingConfig:
+        LogGroup: !Ref DeleteProductFunctionLogGroup
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "ProductService"
           PRODUCT_TABLE_NAME: !Ref ProductTable
+      Tags:
+        Application: serverless-saas-workshop
+        TenantId: !Ref TenantId
+        Lab: lab4
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
 
   OrderFunctionExecutionRole:
     Type: AWS::IAM::Role     
@@ -221,6 +448,19 @@ Resources:
                   - dynamodb:Query
                 Resource:
                   - !GetAtt OrderTable.Arn
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: TenantId
+          Value: !Ref TenantId
+        - Key: Lab
+          Value: lab4
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
                 
   GetOrdersFunction:
     Type: AWS::Serverless::Function 
@@ -229,15 +469,24 @@ Resources:
       FunctionName: serverless-saas-lab4-get-orders
       CodeUri: OrderService/
       Handler: order_service.get_orders
-      Runtime: python3.9  
+      Runtime: python3.14  
       Tracing: Active
       Role: !GetAtt OrderFunctionExecutionRole.Arn
       Layers: 
         - !Ref ServerlessSaaSLayers
+      LoggingConfig:
+        LogGroup: !Ref GetOrdersFunctionLogGroup
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "OrderService"
           ORDER_TABLE_NAME: !Ref OrderTable
+      Tags:
+        Application: serverless-saas-workshop
+        TenantId: !Ref TenantId
+        Lab: lab4
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
       
   GetOrderFunction:
     Type: AWS::Serverless::Function 
@@ -246,15 +495,24 @@ Resources:
       FunctionName: serverless-saas-lab4-get-order
       CodeUri: OrderService/
       Handler: order_service.get_order
-      Runtime: python3.9  
+      Runtime: python3.14  
       Tracing: Active
       Role: !GetAtt OrderFunctionExecutionRole.Arn
       Layers: 
         - !Ref ServerlessSaaSLayers
+      LoggingConfig:
+        LogGroup: !Ref GetOrderFunctionLogGroup
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "OrderService"
           ORDER_TABLE_NAME: !Ref OrderTable
+      Tags:
+        Application: serverless-saas-workshop
+        TenantId: !Ref TenantId
+        Lab: lab4
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
       
   CreateOrderFunction:
     Type: AWS::Serverless::Function
@@ -263,15 +521,24 @@ Resources:
       FunctionName: serverless-saas-lab4-create-order
       CodeUri: OrderService/
       Handler: order_service.create_order
-      Runtime: python3.9  
+      Runtime: python3.14  
       Tracing: Active 
       Role: !GetAtt OrderFunctionExecutionRole.Arn 
       Layers: 
         - !Ref ServerlessSaaSLayers
+      LoggingConfig:
+        LogGroup: !Ref CreateOrderFunctionLogGroup
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "OrderService"
           ORDER_TABLE_NAME: !Ref OrderTable
+      Tags:
+        Application: serverless-saas-workshop
+        TenantId: !Ref TenantId
+        Lab: lab4
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
   
   UpdateOrderFunction:
     Type: AWS::Serverless::Function
@@ -280,15 +547,24 @@ Resources:
       FunctionName: serverless-saas-lab4-update-order
       CodeUri: OrderService/
       Handler: order_service.update_order
-      Runtime: python3.9 
+      Runtime: python3.14 
       Tracing: Active
       Role: !GetAtt OrderFunctionExecutionRole.Arn 
       Layers: 
         - !Ref ServerlessSaaSLayers
+      LoggingConfig:
+        LogGroup: !Ref UpdateOrderFunctionLogGroup
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "OrderService"
           ORDER_TABLE_NAME: !Ref OrderTable
+      Tags:
+        Application: serverless-saas-workshop
+        TenantId: !Ref TenantId
+        Lab: lab4
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
   
   DeleteOrderFunction:
     Type: AWS::Serverless::Function
@@ -297,38 +573,70 @@ Resources:
       FunctionName: serverless-saas-lab4-delete-order
       CodeUri: OrderService/
       Handler: order_service.delete_order
-      Runtime: python3.9 
+      Runtime: python3.14 
       Tracing: Active
       Role: !GetAtt OrderFunctionExecutionRole.Arn 
       Layers: 
         - !Ref ServerlessSaaSLayers
+      LoggingConfig:
+        LogGroup: !Ref DeleteOrderFunctionLogGroup
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "OrderService"
           ORDER_TABLE_NAME: !Ref OrderTable
+      Tags:
+        Application: serverless-saas-workshop
+        TenantId: !Ref TenantId
+        Lab: lab4
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
   
   BusinessServicesAuthorizerFunction:
+    DependsOn: BusinessServicesAuthorizerFunctionLogGroup
     Type: AWS::Serverless::Function 
     Properties:
       FunctionName: serverless-saas-lab4-business-services-authorizer
       CodeUri: Resources/
       Handler: tenant_authorizer.lambda_handler
-      Runtime: python3.9
+      Runtime: python3.14
       Role: !ImportValue Serverless-SaaS-AuthorizerExecutionRoleArn-lab4
       MemorySize: 256
       Tracing: Active
       Layers: 
         - !Ref ServerlessSaaSLayers
+      LoggingConfig:
+        LogGroup: !Ref BusinessServicesAuthorizerFunctionLogGroup
       Environment:
         Variables:
           TENANT_USER_POOL: !ImportValue Serverless-SaaS-CognitoTenantUserPoolId-lab4
           TENANT_APP_CLIENT: !ImportValue Serverless-SaaS-CognitoTenantAppClientId-lab4
+      Tags:
+        Application: serverless-saas-workshop
+        TenantId: !Ref TenantId
+        Lab: lab4
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
           
   ApiGatewayAccessLogs:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: /aws/api-gateway/access-logs-serverless-saas-tenant-api-pooled-lab4
-      RetentionInDays: 30
+      LogGroupName: !Sub /aws/api-gateway/access-logs-serverless-saas-tenant-api-pooled-lab4-${TenantId}
+      RetentionInDays: 60
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: TenantId
+          Value: !Ref TenantId
+        - Key: Lab
+          Value: lab4
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
   ApiGatewayTenantApi:
     Type: AWS::Serverless::Api
     Properties:
@@ -719,6 +1027,13 @@ Resources:
                 authorizerResultTtlInSeconds: 30
                 type: "token"
       StageName: !Ref StageName
+      Tags:
+        Application: serverless-saas-workshop
+        TenantId: !Ref TenantId
+        Lab: lab4
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
   
   GetProductsLambdaApiGatewayExecutionPermission:
     Type: AWS::Lambda::Permission

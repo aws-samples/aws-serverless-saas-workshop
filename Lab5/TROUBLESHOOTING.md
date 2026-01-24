@@ -21,7 +21,7 @@ aws dynamodb list-tables --query 'TableNames[?contains(@, `lab5`)]'
 aws dynamodb wait table-exists --table-name ServerlessSaaS-TenantStackMapping-lab5
 
 # Retry the pipeline
-aws codepipeline start-pipeline-execution --name serverless-saas-pipeline
+aws codepipeline start-pipeline-execution --name serverless-saas-pipeline-lab5
 ```
 
 ### 2. Stack ROLLBACK_COMPLETE: Missing CloudFormation Exports
@@ -46,7 +46,7 @@ git log cc/main --oneline -5
 git push cc HEAD:main --force
 
 # Trigger the pipeline to rebuild with new code
-aws codepipeline start-pipeline-execution --name serverless-saas-pipeline
+aws codepipeline start-pipeline-execution --name serverless-saas-pipeline-lab5
 ```
 
 ### 3. Checking Stack Failure Details
@@ -84,7 +84,7 @@ aws dynamodb delete-item \
   --key '{"tenantId": {"S": "pooled"}}'
 
 # Trigger pipeline to recreate
-aws codepipeline start-pipeline-execution --name serverless-saas-pipeline
+aws codepipeline start-pipeline-execution --name serverless-saas-pipeline-lab5
 ```
 
 ### 5. Pipeline Not Picking Up Code Changes
@@ -102,7 +102,7 @@ git diff cc/main
 git push cc HEAD:main --force
 
 # Manually trigger pipeline
-aws codepipeline start-pipeline-execution --name serverless-saas-pipeline
+aws codepipeline start-pipeline-execution --name serverless-saas-pipeline-lab5
 ```
 
 ### 6. Checking Lambda Function Logs
@@ -154,8 +154,8 @@ aws cloudformation delete-stack --stack-name serverless-saas-workshop-shared-lab
 aws cloudformation wait stack-delete-complete --stack-name serverless-saas-workshop-shared-lab5
 
 # 4. Delete the pipeline stack
-aws cloudformation delete-stack --stack-name serverless-saas-pipeline
-aws cloudformation wait stack-delete-complete --stack-name serverless-saas-pipeline
+aws cloudformation delete-stack --stack-name serverless-saas-pipeline-lab5
+aws cloudformation wait stack-delete-complete --stack-name serverless-saas-pipeline-lab5
 
 # 5. Redeploy everything
 cd Lab5/scripts
@@ -178,7 +178,7 @@ The updated `deployment.sh` script handles this order automatically.
 
 ```bash
 # Watch pipeline execution
-aws codepipeline get-pipeline-state --name serverless-saas-pipeline
+aws codepipeline get-pipeline-state --name serverless-saas-pipeline-lab5
 
 # Watch CloudFormation stack creation
 watch -n 5 'aws cloudformation list-stacks --stack-status-filter CREATE_IN_PROGRESS UPDATE_IN_PROGRESS --query "StackSummaries[?contains(StackName, \"stack-\")].[StackName,StackStatus]" --output table'

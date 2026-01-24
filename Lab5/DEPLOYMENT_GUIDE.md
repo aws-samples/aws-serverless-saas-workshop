@@ -30,7 +30,7 @@ If you encounter errors during deployment, see [TROUBLESHOOTING.md](./TROUBLESHO
 ```bash
 # The script now auto-pushes, but if needed manually:
 git push cc HEAD:main --force
-aws codepipeline start-pipeline-execution --name serverless-saas-pipeline
+aws codepipeline start-pipeline-execution --name serverless-saas-pipeline-lab5
 ```
 
 **Stack in ROLLBACK_COMPLETE?**

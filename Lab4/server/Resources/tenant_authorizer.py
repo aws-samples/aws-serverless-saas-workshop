@@ -71,7 +71,7 @@ def lambda_handler(event, context):
     iam_policy = auth_manager.getPolicyForUser(user_role, utils.Service_Identifier.BUSINESS_SERVICES.value, tenant_id, region, aws_account_id)
     logger.info(iam_policy)
     
-    role_arn = "arn:aws:iam::{}:role/authorizer-access-role-lab4".format(aws_account_id)
+    role_arn = "arn:aws:iam::{}:role/authorizer-access-role-lab4-{}".format(aws_account_id, region)
     
     assumed_role = sts_client.assume_role(
         RoleArn=role_arn,
@@ -153,7 +153,7 @@ class AuthPolicy(object):
     """The principal used for the policy, this should be a unique identifier for the end user."""
     version = "2012-10-17"
     """The policy version used for the evaluation. This should always be '2012-10-17'"""
-    pathRegex = "^[/.a-zA-Z0-9-\*]+$"
+    pathRegex = r"^[/.a-zA-Z0-9-\*]+$"
     """The regular expression used to validate resource paths for the policy"""
 
     """these are the internal lists of allowed and denied methods. These are lists
