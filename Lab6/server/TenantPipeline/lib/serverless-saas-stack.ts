@@ -9,6 +9,7 @@ import * as codecommit from 'aws-cdk-lib/aws-codecommit';
 import * as codepipeline from 'aws-cdk-lib/aws-codepipeline';
 import * as codepipeline_actions from 'aws-cdk-lib/aws-codepipeline-actions';
 import * as codebuild from 'aws-cdk-lib/aws-codebuild';
+import * as logs from 'aws-cdk-lib/aws-logs';
 
 import { Function, Runtime, AssetCode } from 'aws-cdk-lib/aws-lambda';
 import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
@@ -32,7 +33,7 @@ export class ServerlessSaaSStack extends cdk.Stack {
     const lambdaFunction = new Function(this, "deploy-tenant-stack-lab6", {
         functionName: 'serverless-saas-lab6-deploy-tenant-stack',
         handler: "lambda-deploy-tenant-stack.lambda_handler",
-        runtime: Runtime.PYTHON_3_9,
+        runtime: Runtime.PYTHON_3_14,
         code: new AssetCode(`./resources`),
         memorySize: 512,
         timeout: Duration.seconds(10),
@@ -84,6 +85,15 @@ export class ServerlessSaaSStack extends cdk.Stack {
       environmentVariables: {
         'PACKAGE_BUCKET': {
           value: artifactsBucket.bucketName
+        }
+      },
+      logging: {
+        cloudWatch: {
+          logGroup: new logs.LogGroup(this, 'BuildLogGroup', {
+            logGroupName: '/aws/codebuild/serverless-saas-pipeline-lab6-build',
+            retention: logs.RetentionDays.TWO_MONTHS,
+            removalPolicy: cdk.RemovalPolicy.DESTROY
+          })
         }
       }
     });

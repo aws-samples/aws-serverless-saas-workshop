@@ -13,6 +13,7 @@ import * as codebuild from 'aws-cdk-lib/aws-codebuild';
 import { Function, Runtime, AssetCode } from 'aws-cdk-lib/aws-lambda';
 import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import { Duration } from 'aws-cdk-lib';
+import * as logs from 'aws-cdk-lib/aws-logs';
 
 
 export class ServerlessSaaSStack extends cdk.Stack {
@@ -29,6 +30,13 @@ export class ServerlessSaaSStack extends cdk.Stack {
         lambdaPolicy.addActions("*")
         lambdaPolicy.addResources("*")
 
+    // Create CloudWatch Log Group for Lambda function
+    const lambdaLogGroup = new logs.LogGroup(this, 'DeployTenantStackLogGroup', {
+      logGroupName: '/aws/lambda/serverless-saas-pipeline-lab5-deploytenantstackD22DC62',
+      retention: logs.RetentionDays.TWO_MONTHS,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
     const lambdaFunction = new Function(this, "deploy-tenant-stack", {
         handler: "lambda-deploy-tenant-stack.lambda_handler",
         runtime: Runtime.PYTHON_3_14,
@@ -39,6 +47,7 @@ export class ServerlessSaaSStack extends cdk.Stack {
             BUCKET: artifactsBucket.bucketName,
         },
         initialPolicy: [lambdaPolicy],
+        logGroup: lambdaLogGroup,
     })
 
     // Pipeline creation starts

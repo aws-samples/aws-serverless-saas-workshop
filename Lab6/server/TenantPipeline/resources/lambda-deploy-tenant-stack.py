@@ -347,6 +347,11 @@ def get_tenant_params(tenantId):
     param_tenantid['ParameterKey'] = 'TenantIdParameter'
     param_tenantid['ParameterValue'] = tenantId
     params.append(param_tenantid)
+    
+    # Add required CloudFormation parameters
+    add_parameter(params, 'Environment', 'prod')
+    add_parameter(params, 'Owner', 'serverless-saas-lab6')
+    add_parameter(params, 'CostCenter', 'serverless-saas-lab6')
 
     return params
 

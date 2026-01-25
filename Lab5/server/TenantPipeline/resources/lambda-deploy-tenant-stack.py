@@ -348,6 +348,11 @@ def get_tenant_params(tenantId):
     param_tenantid['ParameterValue'] = tenantId
     params.append(param_tenantid)
 
+    # Add required CloudFormation parameters
+    add_parameter(params, 'Environment', 'prod')
+    add_parameter(params, 'Owner', 'serverless-saas-lab5')
+    add_parameter(params, 'CostCenter', 'serverless-saas-lab5')
+
     return params
 
 def add_parameter(params, parameter_key, parameter_value):
@@ -413,6 +418,12 @@ def lambda_handler(event, context):
         # Get all the stacks for each tenant to be updated/created from tenant stack mapping table
         mappings = table_tenant_stack_mapping.scan()
         print (mappings)
+        
+        # Check if there are any tenants to process
+        if mappings['Count'] == 0:
+            put_job_success(job_id, 'No tenants found in TenantStackMapping table')
+            return "Complete."
+        
         #Update/Create stacks for all tenants
         for mapping in mappings['Items']:
             stack = mapping['stackName']

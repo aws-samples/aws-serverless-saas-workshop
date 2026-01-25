@@ -194,9 +194,6 @@ Resources:
         EnableUsersByTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.EnableUsersByTenantFunctionArn          
         AuthorizerFunctionArn: !GetAtt LambdaFunctions.Outputs.SharedServicesAuthorizerFunctionArn         
         AdminApiGatewayApi: !GetAtt APIs.Outputs.AdminApiGatewayApi
-        Environment: !Ref Environment
-        Owner: !Ref Owner
-        CostCenter: !Ref CostCenter
   #setup custom resources
   CustomResources:
     Type: AWS::Serverless::Application
