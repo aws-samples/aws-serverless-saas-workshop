@@ -246,8 +246,8 @@ if [[ $server -eq 1 ]] || [[ $pipeline -eq 1 ]]; then
   print_message "$YELLOW" "  Cleaning previous npm installation for TenantPipeline..."
   rm -rf node_modules package-lock.json || true
   npm install && npm run build 
-  cdk bootstrap  
-  cdk deploy --require-approval never
+  cdk bootstrap --profile "$AWS_PROFILE"
+  cdk deploy --require-approval never --profile "$AWS_PROFILE"
 
   cd ../../scripts
   
