@@ -5,7 +5,7 @@
 **Deployment Time:** ~10-15 minutes | **Cleanup Time:** ~15-20 minutes
 
 ### Quick Start
-```bash
+```
 # Deploy
 cd workshop/Lab1/scripts
 ./deployment.sh -s -c --profile serverless-saas-demo

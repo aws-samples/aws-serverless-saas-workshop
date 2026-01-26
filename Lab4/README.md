@@ -5,7 +5,7 @@
 **Deployment Time:** ~18-20 minutes | **Cleanup Time:** ~15-20 minutes
 
 ### Quick Start
-```bash
+```
 # Deploy
 cd workshop/Lab4/scripts
 ./deployment.sh -s -c --email your-email@example.com --tenant-email your-email@example.com --profile serverless-saas-demo
