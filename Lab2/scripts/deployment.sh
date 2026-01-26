@@ -17,7 +17,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Default values
-AWS_REGION="us-west-2"
+AWS_REGION="us-east-1"
 AWS_PROFILE=""
 STACK_NAME="serverless-saas-lab2"
 DEPLOY_SERVER=0
@@ -40,7 +40,7 @@ print_usage() {
     echo "  -c, --client              Deploy client code (Admin and Landing Angular applications)"
     echo "  --email <email>           Admin user email address (required for client deployment)"
     echo "  --stack-name <name>       CloudFormation stack name (default: serverless-saas-lab2)"
-    echo "  --region <region>         AWS region (default: us-west-2)"
+    echo "  --region <region>         AWS region (default: us-east-1)"
     echo "  --profile <profile>       AWS CLI profile name (optional, uses default profile if not specified)"
     echo "  --help                    Show this help message"
     echo ""

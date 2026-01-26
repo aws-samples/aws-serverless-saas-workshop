@@ -15,13 +15,13 @@ When the user mentions "deploy", "deployment", "cleanup", "clean up", or asks ab
 This is a CRITICAL requirement that must ALWAYS be followed. All workshop scripts have proper shebang lines (`#!/bin/bash`) and MUST be executed directly:
 
 ✅ **CORRECT:**
-```bash
+```
 ./scripts/deployment.sh -s -c --profile serverless-saas-demo
 ./scripts/cleanup.sh --stack-name serverless-saas-lab1 --profile serverless-saas-demo
 ```
 
 ❌ **ABSOLUTELY WRONG - NEVER DO THIS:**
-```bash
+```
 bash scripts/deployment.sh -s -c --profile serverless-saas-demo
 bash scripts/cleanup.sh --stack-name serverless-saas-lab1 --profile serverless-saas-demo
 ```
@@ -57,56 +57,56 @@ All scripts have been updated to accept the AWS profile via the `--profile` para
 **IMPORTANT: All commands MUST include `--profile serverless-saas-demo`**
 
 ### Lab 1 Deployment
-```bash
+```
 cd workshop/Lab1/scripts
 ./deployment.sh -s -c --profile serverless-saas-demo
 ```
 
 ### Lab 1 Cleanup
-```bash
+```
 cd workshop/Lab1/scripts
 ./cleanup.sh --stack-name serverless-saas-lab1 --profile serverless-saas-demo
 ```
 
 ### Lab 2 Deployment
-```bash
+```
 cd workshop/Lab2/scripts
 ./deployment.sh -s -c --email lancdieg@amazon.com --profile serverless-saas-demo
 ```
 
 ### Lab 3 Deployment
-```bash
+```
 cd workshop/Lab3/scripts
 ./deployment.sh -s -c --email lancdieg@amazon.com --tenant-email lancdieg@amazon.com --profile serverless-saas-demo
 ```
 
 ### Lab 4 Deployment
-```bash
+```
 cd workshop/Lab4/scripts
 ./deployment.sh -s -c --email lancdieg@amazon.com --tenant-email lancdieg@amazon.com --profile serverless-saas-demo
 ```
 
 ### Lab 5 Deployment
-```bash
+```
 cd workshop/Lab5/scripts
 ./deployment.sh -s -c --profile serverless-saas-demo
 ```
 
 ### Lab 6 Deployment
-```bash
+```
 cd workshop/Lab6/scripts
 ./deployment.sh -s -c --profile serverless-saas-demo
 ```
 
 ### Lab 7 Deployment
-```bash
+```
 cd workshop/Lab7
 sam build -t template.yaml
 sam deploy --config-file samconfig.toml --profile serverless-saas-demo
 ```
 
 ### Global Cleanup
-```bash
+```
 cd workshop/scripts
 ./cleanup.sh --profile serverless-saas-demo
 # Runs automatically without prompts

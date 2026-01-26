@@ -5,7 +5,7 @@
 # Default values
 AWS_PROFILE=""
 STACK_NAME="serverless-saas-lab6"  # Default stack name
-AWS_REGION="us-west-2"  # Default region
+AWS_REGION="us-east-1"  # Default region
 
 # Function to print usage
 print_usage() {
@@ -13,7 +13,7 @@ print_usage() {
     echo ""
     echo "Options:"
     echo "  --stack-name <name>       CloudFormation stack name (default: serverless-saas-lab6)"
-    echo "  --region <region>         AWS region (default: us-west-2)"
+    echo "  --region <region>         AWS region (default: us-east-1)"
     echo "  --profile <name>          AWS CLI profile name (optional, uses machine's default if not provided)"
     echo "  --help                    Show this help message"
     echo ""

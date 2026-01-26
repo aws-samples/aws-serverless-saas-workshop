@@ -30,7 +30,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Default values
-AWS_REGION="us-west-2"
+AWS_REGION="us-east-1"
 SHARED_STACK_NAME="serverless-saas-shared-lab5"
 PIPELINE_STACK_NAME="serverless-saas-pipeline-lab5"
 SKIP_CONFIRMATION=0
@@ -62,7 +62,7 @@ print_usage() {
     echo "                            Sets both shared and pipeline stack names automatically"
     echo "  --shared-stack <name>     Shared stack name (default: serverless-saas-shared-lab5)"
     echo "  --pipeline-stack <name>   Pipeline stack name (default: serverless-saas-pipeline-lab5)"
-    echo "  --region <region>         AWS region (default: us-west-2)"
+    echo "  --region <region>         AWS region (default: us-east-1)"
     echo "  --profile <profile>       AWS CLI profile to use (optional, uses default if not specified)"
     echo "  -y, --yes                 Skip confirmation prompt"
     echo "  --help                    Show this help message"
@@ -207,6 +207,102 @@ delete_stack() {
   print_message "$YELLOW" "  Deleting stack: $stack"
   aws cloudformation $PROFILE_ARG delete-stack --stack-name $stack --region "$AWS_REGION" 2>/dev/null
   if [[ $? -eq 0 ]]; then
+    print_message "$GREEN" "  ✓ Delete initiated: $stack"
+    return 0
+  else
+    print_message "$YELLOW" "  ⚠ Could not delete: $stack (may not exist)"
+    return 1
+  fi
+}
+
+# Function to delete stack with CDK role handling
+delete_stack_with_cdk_role() {
+  local stack=$1
+  local role_created=false
+  PROFILE_ARG=$(get_profile_arg)
+  
+  print_message "$YELLOW" "  Deleting stack: $stack"
+  
+  # Try to delete the stack normally first
+  local delete_output=$(aws cloudformation $PROFILE_ARG delete-stack --stack-name $stack --region "$AWS_REGION" 2>&1)
+  local delete_status=$?
+  
+  # Check if deletion failed due to missing CDK role
+  if [[ $delete_status -ne 0 ]] && echo "$delete_output" | grep -q "is invalid or cannot be assumed"; then
+    print_message "$YELLOW" "  ⚠ Stack requires CDK execution role that was deleted"
+    print_message "$YELLOW" "  Creating temporary CDK execution role..."
+    
+    # Extract account ID from the error message or use current account
+    local account_id=$(aws sts $PROFILE_ARG get-caller-identity --query Account --output text 2>/dev/null)
+    local role_name="cdk-hnb659fds-cfn-exec-role-${account_id}-${AWS_REGION}"
+    
+    # Create temporary role
+    aws iam $PROFILE_ARG create-role \
+      --role-name "$role_name" \
+      --assume-role-policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"cloudformation.amazonaws.com"},"Action":"sts:AssumeRole"}]}' \
+      --region "$AWS_REGION" >/dev/null 2>&1
+    
+    if [[ $? -eq 0 ]]; then
+      role_created=true
+      print_message "$GREEN" "  ✓ Temporary role created: $role_name"
+      
+      # Attach admin policy
+      aws iam $PROFILE_ARG attach-role-policy \
+        --role-name "$role_name" \
+        --policy-arn arn:aws:iam::aws:policy/AdministratorAccess \
+        --region "$AWS_REGION" >/dev/null 2>&1
+      
+      # Wait a moment for role to propagate
+      sleep 3
+      
+      # Try deletion again
+      aws cloudformation $PROFILE_ARG delete-stack --stack-name $stack --region "$AWS_REGION" 2>/dev/null
+      if [[ $? -eq 0 ]]; then
+        print_message "$GREEN" "  ✓ Delete initiated: $stack"
+        
+        # Wait for deletion to complete before cleaning up role
+        print_message "$YELLOW" "  Waiting for stack deletion to complete..."
+        aws cloudformation $PROFILE_ARG wait stack-delete-complete --stack-name $stack --region "$AWS_REGION" 2>/dev/null
+        
+        # Clean up temporary role
+        print_message "$YELLOW" "  Cleaning up temporary CDK role..."
+        aws iam $PROFILE_ARG detach-role-policy \
+          --role-name "$role_name" \
+          --policy-arn arn:aws:iam::aws:policy/AdministratorAccess \
+          --region "$AWS_REGION" >/dev/null 2>&1
+        
+        aws iam $PROFILE_ARG delete-role \
+          --role-name "$role_name" \
+          --region "$AWS_REGION" >/dev/null 2>&1
+        
+        if [[ $? -eq 0 ]]; then
+          print_message "$GREEN" "  ✓ Temporary CDK role deleted"
+        else
+          print_message "$YELLOW" "  ⚠ Could not delete temporary role: $role_name"
+          print_message "$YELLOW" "    You may need to delete it manually"
+        fi
+        
+        return 0
+      else
+        print_message "$RED" "  ✗ Failed to delete stack even with temporary role"
+        
+        # Try to clean up role even if stack deletion failed
+        aws iam $PROFILE_ARG detach-role-policy \
+          --role-name "$role_name" \
+          --policy-arn arn:aws:iam::aws:policy/AdministratorAccess \
+          --region "$AWS_REGION" >/dev/null 2>&1
+        aws iam $PROFILE_ARG delete-role \
+          --role-name "$role_name" \
+          --region "$AWS_REGION" >/dev/null 2>&1
+        
+        return 1
+      fi
+    else
+      print_message "$RED" "  ✗ Failed to create temporary CDK role"
+      print_message "$YELLOW" "    Please run the cleanup script again or delete the stack manually"
+      return 1
+    fi
+  elif [[ $delete_status -eq 0 ]]; then
     print_message "$GREEN" "  ✓ Delete initiated: $stack"
     return 0
   else
@@ -388,9 +484,8 @@ print_message "$BLUE" "=========================================="
 print_message "$BLUE" "Step 7: Deleting pipeline"
 print_message "$BLUE" "=========================================="
 
-if delete_stack "$PIPELINE_STACK_NAME"; then
-  wait_for_deletion "$PIPELINE_STACK_NAME"
-fi
+# Use the CDK role-aware deletion function for pipeline stack
+delete_stack_with_cdk_role "$PIPELINE_STACK_NAME"
 
 print_message "$GREEN" "✓ Pipeline cleanup complete"
 echo ""
@@ -431,9 +526,9 @@ echo "=========================================="
 echo "Step 9: Cleaning up SAM build artifacts"
 echo "=========================================="
 
-# Find Lab5 SAM buckets
+# Find Lab5 SAM buckets (including bootstrap and pipeline artifacts)
 PROFILE_ARG=$(get_profile_arg)
-LAB5_SAM_BUCKETS=$(aws s3 $PROFILE_ARG ls | grep -E "aws-sam-cli-managed.*lab5|serverless-saas.*lab5" | awk '{print $3}')
+LAB5_SAM_BUCKETS=$(aws s3 $PROFILE_ARG ls | grep -E "aws-sam-cli-managed.*lab5|serverless-saas.*lab5|sam-bootstrap-bucket.*lab5|serverless-saas-pipeline-l-artifactsbucket" | awk '{print $3}')
 
 if [[ ! -z "$LAB5_SAM_BUCKETS" ]]; then
   echo "Found Lab5 SAM buckets:"

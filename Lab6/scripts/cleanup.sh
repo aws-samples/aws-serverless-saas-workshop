@@ -23,7 +23,8 @@
 # Default values
 AWS_PROFILE=""
 STACK_NAME_PREFIX="serverless-saas-lab6"  # Default prefix for stack names
-AWS_REGION="us-west-2"  # Default region
+AWS_REGION="us-east-1"  # Default region
+SKIP_CONFIRMATION=0
 
 # Function to print usage
 print_usage() {
@@ -31,8 +32,9 @@ print_usage() {
     echo ""
     echo "Options:"
     echo "  --stack-name <name>       Stack name prefix (default: serverless-saas-lab6)"
-    echo "  --region <region>         AWS region (default: us-west-2)"
+    echo "  --region <region>         AWS region (default: us-east-1)"
     echo "  --profile <name>          AWS CLI profile name (optional, uses machine's default if not provided)"
+    echo "  -y, --yes                 Skip confirmation prompt"
     echo "  --help                    Show this help message"
     echo ""
     echo "Examples:"
@@ -40,6 +42,7 @@ print_usage() {
     echo "  $0 --stack-name serverless-saas-lab6            # Clean up specific lab"
     echo "  $0 --profile serverless-saas-demo               # Use specific AWS profile"
     echo "  $0 --stack-name my-lab --profile my-profile     # Clean up with custom stack name and profile"
+    echo "  $0 -y                                           # Skip confirmation prompt"
 }
 
 # Parse command line arguments
@@ -56,6 +59,10 @@ while [[ "$#" -gt 0 ]]; do
         --profile)
             AWS_PROFILE=$2
             shift 2
+            ;;
+        -y|--yes)
+            SKIP_CONFIRMATION=1
+            shift
             ;;
         --help)
             print_usage
@@ -98,11 +105,13 @@ echo "  - S3 buckets (will be emptied first)"
 echo "  - Cognito User Pools"
 echo "  - SAM and CDK resources"
 echo ""
-read -p "Are you sure you want to continue? (yes/no): " confirm
 
-if [[ "$confirm" != "yes" ]]; then
-  echo "Cleanup cancelled"
-  exit 0
+if [ $SKIP_CONFIRMATION -eq 0 ]; then
+    read -p "Are you sure you want to continue? (yes/no): " confirm
+    if [[ "$confirm" != "yes" ]]; then
+      echo "Cleanup cancelled"
+      exit 0
+    fi
 fi
 
 echo ""
@@ -158,6 +167,101 @@ delete_stack() {
   echo "  Deleting stack: $stack"
   aws cloudformation $PROFILE_ARG delete-stack --stack-name $stack 2>/dev/null
   if [[ $? -eq 0 ]]; then
+    echo "  ✓ Delete initiated: $stack"
+    return 0
+  else
+    echo "  ⚠ Could not delete: $stack (may not exist)"
+    return 1
+  fi
+}
+
+# Function to delete stack with CDK role handling
+delete_stack_with_cdk_role() {
+  local stack=$1
+  local role_created=false
+  
+  echo "  Deleting stack: $stack"
+  
+  # Try to delete the stack normally first
+  local delete_output=$(aws cloudformation $PROFILE_ARG delete-stack --stack-name $stack 2>&1)
+  local delete_status=$?
+  
+  # Check if deletion failed due to missing CDK role
+  if [[ $delete_status -ne 0 ]] && echo "$delete_output" | grep -q "is invalid or cannot be assumed"; then
+    echo "  ⚠ Stack requires CDK execution role that was deleted"
+    echo "  Creating temporary CDK execution role..."
+    
+    # Extract account ID from the error message or use current account
+    local account_id=$(aws sts $PROFILE_ARG get-caller-identity --query Account --output text 2>/dev/null)
+    local role_name="cdk-hnb659fds-cfn-exec-role-${account_id}-${AWS_REGION}"
+    
+    # Create temporary role
+    aws iam $PROFILE_ARG create-role \
+      --role-name "$role_name" \
+      --assume-role-policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"cloudformation.amazonaws.com"},"Action":"sts:AssumeRole"}]}' \
+      >/dev/null 2>&1
+    
+    if [[ $? -eq 0 ]]; then
+      role_created=true
+      echo "  ✓ Temporary role created: $role_name"
+      
+      # Attach admin policy
+      aws iam $PROFILE_ARG attach-role-policy \
+        --role-name "$role_name" \
+        --policy-arn arn:aws:iam::aws:policy/AdministratorAccess \
+        >/dev/null 2>&1
+      
+      # Wait a moment for role to propagate
+      sleep 3
+      
+      # Try deletion again
+      aws cloudformation $PROFILE_ARG delete-stack --stack-name $stack 2>/dev/null
+      if [[ $? -eq 0 ]]; then
+        echo "  ✓ Delete initiated: $stack"
+        
+        # Wait for deletion to complete before cleaning up role
+        echo "  Waiting for stack deletion to complete..."
+        aws cloudformation $PROFILE_ARG wait stack-delete-complete --stack-name $stack 2>/dev/null
+        
+        # Clean up temporary role
+        echo "  Cleaning up temporary CDK role..."
+        aws iam $PROFILE_ARG detach-role-policy \
+          --role-name "$role_name" \
+          --policy-arn arn:aws:iam::aws:policy/AdministratorAccess \
+          >/dev/null 2>&1
+        
+        aws iam $PROFILE_ARG delete-role \
+          --role-name "$role_name" \
+          >/dev/null 2>&1
+        
+        if [[ $? -eq 0 ]]; then
+          echo "  ✓ Temporary CDK role deleted"
+        else
+          echo "  ⚠ Could not delete temporary role: $role_name"
+          echo "    You may need to delete it manually"
+        fi
+        
+        return 0
+      else
+        echo "  ✗ Failed to delete stack even with temporary role"
+        
+        # Try to clean up role even if stack deletion failed
+        aws iam $PROFILE_ARG detach-role-policy \
+          --role-name "$role_name" \
+          --policy-arn arn:aws:iam::aws:policy/AdministratorAccess \
+          >/dev/null 2>&1
+        aws iam $PROFILE_ARG delete-role \
+          --role-name "$role_name" \
+          >/dev/null 2>&1
+        
+        return 1
+      fi
+    else
+      echo "  ✗ Failed to create temporary CDK role"
+      echo "    Please run the cleanup script again or delete the stack manually"
+      return 1
+    fi
+  elif [[ $delete_status -eq 0 ]]; then
     echo "  ✓ Delete initiated: $stack"
     return 0
   else
@@ -365,9 +469,8 @@ echo "=========================================="
 echo "Step 9: Deleting pipeline"
 echo "=========================================="
 
-if delete_stack "serverless-saas-pipeline-lab6"; then
-  wait_for_deletion "serverless-saas-pipeline-lab6"
-fi
+# Use the CDK role-aware deletion function for pipeline stack
+delete_stack_with_cdk_role "serverless-saas-pipeline-lab6"
 
 echo "✓ Pipeline cleanup complete"
 echo ""
@@ -377,8 +480,8 @@ echo "=========================================="
 echo "Step 10: Cleaning up SAM build artifacts"
 echo "=========================================="
 
-# Find Lab6 SAM buckets
-LAB6_SAM_BUCKETS=$(aws s3 $PROFILE_ARG ls | grep -E "aws-sam-cli-managed.*lab6|serverless-saas.*lab6" | awk '{print $3}')
+# Find Lab6 SAM buckets (including bootstrap and pipeline artifacts)
+LAB6_SAM_BUCKETS=$(aws s3 $PROFILE_ARG ls | grep -E "aws-sam-cli-managed.*lab6|serverless-saas.*lab6|sam-bootstrap-bucket.*lab6|serverless-saas-pipeline-l-artifactsbucket" | awk '{print $3}')
 
 if [[ ! -z "$LAB6_SAM_BUCKETS" ]]; then
   echo "Found Lab6 SAM buckets:"

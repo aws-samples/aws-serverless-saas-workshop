@@ -34,7 +34,9 @@ echo ""
 # Default parameters
 LAB1_STACK_NAME="serverless-saas-lab1"
 LAB2_EMAIL=""
+TENANT_EMAIL=""
 PROFILE=""
+PARALLEL=false
 
 # Function to print colored messages
 print_message() {
@@ -85,10 +87,20 @@ deploy_lab() {
                 print_message "$YELLOW" "Using email: $LAB2_EMAIL"
                 ;;
             3|4)
-                deploy_cmd="./deployment.sh -s -c"
+                if [ -z "$LAB2_EMAIL" ]; then
+                    print_message "$RED" "Lab${lab_num} requires --email parameter"
+                    cd "$WORKSHOP_ROOT"
+                    return 1
+                fi
+                deploy_cmd="./deployment.sh -s -c --email $LAB2_EMAIL"
+                if [ -n "$TENANT_EMAIL" ]; then
+                    deploy_cmd="$deploy_cmd --tenant-email $TENANT_EMAIL"
+                    print_message "$YELLOW" "Using tenant email: $TENANT_EMAIL (auto-tenant creation enabled)"
+                fi
                 if [ -n "$PROFILE" ]; then
                     deploy_cmd="$deploy_cmd --profile $PROFILE"
                 fi
+                print_message "$YELLOW" "Using email: $LAB2_EMAIL"
                 ;;
             5|6)
                 deploy_cmd="./deployment.sh -s -c"
@@ -125,6 +137,71 @@ deploy_lab() {
     fi
     
     echo ""
+}
+
+# Function to deploy labs in parallel
+deploy_labs_parallel() {
+    print_message "$YELLOW" "Starting parallel deployment of Lab1 and Lab2..."
+    
+    # Create temporary files to capture exit codes
+    local lab1_status_file=$(mktemp)
+    local lab2_status_file=$(mktemp)
+    
+    # Deploy Lab1 in background
+    (
+        if deploy_lab 1; then
+            echo "0" > "$lab1_status_file"
+        else
+            echo "1" > "$lab1_status_file"
+        fi
+    ) &
+    local lab1_pid=$!
+    
+    # Deploy Lab2 in background
+    (
+        if deploy_lab 2; then
+            echo "0" > "$lab2_status_file"
+        else
+            echo "1" > "$lab2_status_file"
+        fi
+    ) &
+    local lab2_pid=$!
+    
+    # Wait for both deployments to complete
+    print_message "$YELLOW" "Waiting for Lab1 and Lab2 to complete..."
+    wait $lab1_pid
+    wait $lab2_pid
+    
+    # Check results
+    local lab1_status=$(cat "$lab1_status_file")
+    local lab2_status=$(cat "$lab2_status_file")
+    
+    # Cleanup temp files
+    rm -f "$lab1_status_file" "$lab2_status_file"
+    
+    # Track results
+    if [ "$lab1_status" -eq 0 ]; then
+        SUCCESSFUL_LABS+=(1)
+        print_message "$GREEN" "Lab1 parallel deployment completed successfully!"
+    else
+        FAILED_LABS+=(1)
+        print_message "$RED" "Lab1 parallel deployment failed!"
+    fi
+    
+    if [ "$lab2_status" -eq 0 ]; then
+        SUCCESSFUL_LABS+=(2)
+        print_message "$GREEN" "Lab2 parallel deployment completed successfully!"
+    else
+        FAILED_LABS+=(2)
+        print_message "$RED" "Lab2 parallel deployment failed!"
+    fi
+    
+    # Return failure if either lab failed
+    if [ "$lab1_status" -ne 0 ] || [ "$lab2_status" -ne 0 ]; then
+        return 1
+    fi
+    
+    return 0
 }
 
 # Function to verify prerequisites
@@ -203,9 +280,17 @@ else
                 LAB2_EMAIL=$2
                 shift 2
                 ;;
+            --tenant-email)
+                TENANT_EMAIL=$2
+                shift 2
+                ;;
             --profile)
                 PROFILE=$2
                 shift 2
+                ;;
+            --parallel)
+                PARALLEL=true
+                shift
                 ;;
             --skip-verification)
                 SKIP_VERIFICATION=true
@@ -222,22 +307,33 @@ else
                 echo "  --all                       Deploy all labs (default if no options provided)"
                 echo "  --lab <number>              Deploy specific lab (can be used multiple times)"
                 echo "  --lab1-stack-name <name>    Stack name for Lab1 (default: serverless-saas-lab1)"
-                echo "  --email <email>             Email address for Lab2 (required if deploying Lab2)"
+                echo "  --email <email>             Email address for Lab2-4 (required if deploying these labs)"
+                echo "  --tenant-email <email>      Tenant admin email for Lab3-4 (optional, enables auto-tenant creation)"
                 echo "  --profile <profile>         AWS profile to use (optional, uses default if not provided)"
+                echo "  --parallel                  Enable parallel deployment of independent labs (experimental)"
                 echo "  --skip-verification         Skip prerequisite verification"
                 echo "  --continue-on-error         Continue deploying next lab even if current fails"
                 echo "  --help                      Show this help message"
                 echo ""
                 echo "Lab-Specific Requirements:"
                 echo "  Lab1: Requires --lab1-stack-name (default provided)"
-                echo "  Lab2: Requires --email parameter"
-                echo "  Lab3-7: No additional parameters required"
+                echo "  Lab2-4: Requires --email parameter"
+                echo "  Lab3-4: Optional --tenant-email parameter (enables auto-tenant creation)"
+                echo "  Lab5-7: No additional parameters required"
+                echo ""
+                echo "Parallel Deployment:"
+                echo "  When --parallel is enabled, Lab1 and Lab2 deploy concurrently (independent)"
+                echo "  Lab3-7 deploy sequentially after Lab2 completes (due to dependencies)"
+                echo "  This can reduce total deployment time but requires more AWS API capacity"
                 echo ""
                 echo "Examples:"
                 echo "  $0 --all --email user@example.com"
+                echo "  $0 --all --email user@example.com --tenant-email tenant@example.com"
                 echo "  $0 --all --email user@example.com --profile serverless-saas-demo"
+                echo "  $0 --all --email user@example.com --parallel"
                 echo "  $0 --lab 1 --lab1-stack-name my-stack"
                 echo "  $0 --lab 2 --email user@example.com --profile my-profile"
+                echo "  $0 --lab 3 --email user@example.com --tenant-email tenant@example.com"
                 echo "  $0 --lab 5 --lab 6"
                 echo "  $0 --all --email user@example.com --continue-on-error"
                 exit 0
@@ -265,7 +361,7 @@ if [ "$DEPLOY_ALL" = true ]; then
     
     # Validate required parameters for all labs
     if [ -z "$LAB2_EMAIL" ]; then
-        print_message "$RED" "Error: --email parameter is required for Lab2"
+        print_message "$RED" "Error: --email parameter is required for Lab2-4"
         print_message "$YELLOW" "Please provide email with: --email user@example.com"
         exit 1
     fi
@@ -277,8 +373,8 @@ else
     
     # Validate required parameters for selected labs
     for lab in "${LABS_TO_DEPLOY[@]}"; do
-        if [ "$lab" == "2" ] && [ -z "$LAB2_EMAIL" ]; then
-            print_message "$RED" "Error: --email parameter is required for Lab2"
+        if [[ "$lab" =~ ^[234]$ ]] && [ -z "$LAB2_EMAIL" ]; then
+            print_message "$RED" "Error: --email parameter is required for Lab${lab}"
             print_message "$YELLOW" "Please provide email with: --email user@example.com"
             exit 1
         fi
@@ -290,11 +386,18 @@ echo ""
 print_message "$YELLOW" "Configuration:"
 print_message "$YELLOW" "  Lab1 Stack Name: $LAB1_STACK_NAME"
 if [ -n "$LAB2_EMAIL" ]; then
-    print_message "$YELLOW" "  Lab2 Email: $LAB2_EMAIL"
+    print_message "$YELLOW" "  Admin Email: $LAB2_EMAIL"
+fi
+if [ -n "$TENANT_EMAIL" ]; then
+    print_message "$YELLOW" "  Tenant Email: $TENANT_EMAIL (auto-tenant creation enabled)"
 fi
 if [ -n "$PROFILE" ]; then
     print_message "$YELLOW" "  AWS Profile: $PROFILE"
 fi
+if [ "$PARALLEL" = true ]; then
+    print_message "$YELLOW" "  Parallel Mode: Enabled (Lab1 and Lab2 will deploy concurrently)"
+fi
+print_message "$YELLOW" "  Stop on Error: $STOP_ON_ERROR"
 
 echo ""
 
@@ -305,18 +408,54 @@ START_TIME=$(date +%s)
 SUCCESSFUL_LABS=()
 FAILED_LABS=()
 
-# Deploy each lab
-for lab in "${LABS_TO_DEPLOY[@]}"; do
-    if deploy_lab "$lab"; then
-        SUCCESSFUL_LABS+=("$lab")
-    else
-        FAILED_LABS+=("$lab")
+# Deploy labs based on mode
+if [ "$DEPLOY_ALL" = true ] && [ "$PARALLEL" = true ]; then
+    # Parallel mode: Deploy Lab1 and Lab2 concurrently, then Lab3-7 sequentially
+    print_message "$BLUE" "========================================"
+    print_message "$BLUE" "Parallel Deployment Mode"
+    print_message "$BLUE" "========================================"
+    
+    # Deploy Lab1 and Lab2 in parallel
+    if ! deploy_labs_parallel; then
         if [ "$STOP_ON_ERROR" = true ]; then
-            print_message "$RED" "Stopping deployment due to Lab${lab} failure"
-            break
+            print_message "$RED" "Stopping deployment due to parallel deployment failure"
+            # Skip to summary
+            LABS_TO_DEPLOY=()
+        else
+            # Remove Lab1 and Lab2 from list since they're already processed
+            LABS_TO_DEPLOY=(3 4 5 6 7)
         fi
+    else
+        # Remove Lab1 and Lab2 from list since they're already processed
+        LABS_TO_DEPLOY=(3 4 5 6 7)
     fi
-done
+    
+    # Deploy remaining labs sequentially
+    for lab in "${LABS_TO_DEPLOY[@]}"; do
+        if deploy_lab "$lab"; then
+            SUCCESSFUL_LABS+=("$lab")
+        else
+            FAILED_LABS+=("$lab")
+            if [ "$STOP_ON_ERROR" = true ]; then
+                print_message "$RED" "Stopping deployment due to Lab${lab} failure"
+                break
+            fi
+        fi
+    done
+else
+    # Sequential mode: Deploy all labs one by one
+    for lab in "${LABS_TO_DEPLOY[@]}"; do
+        if deploy_lab "$lab"; then
+            SUCCESSFUL_LABS+=("$lab")
+        else
+            FAILED_LABS+=("$lab")
+            if [ "$STOP_ON_ERROR" = true ]; then
+                print_message "$RED" "Stopping deployment due to Lab${lab} failure"
+                break
+            fi
+        fi
+    done
+fi
 
 # Calculate duration
 END_TIME=$(date +%s)

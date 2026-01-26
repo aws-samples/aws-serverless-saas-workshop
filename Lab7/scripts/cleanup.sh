@@ -13,10 +13,11 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Default values
-AWS_REGION="us-west-2"
+AWS_REGION="us-east-1"
 AWS_PROFILE=""  # Optional, will use default profile if not provided
 MAIN_STACK="serverless-saas-lab7"
 TENANT_STACK="stack-pooled-lab7"
+SKIP_CONFIRMATION=0
 
 # Function to print colored messages
 print_message() {
@@ -31,9 +32,10 @@ print_usage() {
     echo ""
     echo "Options:"
     echo "  --profile <profile>            AWS CLI profile name (optional, uses default if not provided)"
-    echo "  --region <region>              AWS region (default: us-west-2)"
+    echo "  --region <region>              AWS region (default: us-east-1)"
     echo "  --main-stack <name>            Main stack name (default: serverless-saas-lab7)"
     echo "  --tenant-stack <name>          Tenant stack name (default: stack-pooled-lab7)"
+    echo "  -y, --yes                      Skip confirmation prompt"
     echo "  --help                         Show this help message"
     echo ""
     echo "Examples:"
@@ -41,6 +43,7 @@ print_usage() {
     echo "  $0 --profile serverless-saas-demo              # Use specific AWS profile"
     echo "  $0 --region us-east-1                           # Use custom region"
     echo "  $0 --main-stack my-lab7-stack                   # Use custom main stack name"
+    echo "  $0 -y                                           # Skip confirmation prompt"
 }
 
 # Parse command line arguments
@@ -61,6 +64,10 @@ while [[ "$#" -gt 0 ]]; do
         --tenant-stack)
             TENANT_STACK=$2
             shift 2
+            ;;
+        -y|--yes)
+            SKIP_CONFIRMATION=1
+            shift
             ;;
         --help)
             print_usage
@@ -101,11 +108,13 @@ echo "Tenant Stack: $TENANT_STACK"
 echo ""
 
 # Confirmation prompt
-print_message "$YELLOW" "WARNING: This will delete all Lab7 resources in region $AWS_REGION"
-read -p "Are you sure you want to continue? (yes/no): " CONFIRM
-if [[ "$CONFIRM" != "yes" ]]; then
-    print_message "$YELLOW" "Cleanup cancelled"
-    exit 0
+if [ $SKIP_CONFIRMATION -eq 0 ]; then
+    print_message "$YELLOW" "WARNING: This will delete all Lab7 resources in region $AWS_REGION"
+    read -p "Are you sure you want to continue? (yes/no): " CONFIRM
+    if [[ "$CONFIRM" != "yes" ]]; then
+        print_message "$YELLOW" "Cleanup cancelled"
+        exit 0
+    fi
 fi
 echo ""
 
@@ -311,7 +320,7 @@ fi
 echo ""
 
 # Step 9: Clean up SAM bootstrap bucket from samconfig.toml
-print_message "$YELLOW" "Step 9: Cleaning up SAM bootstrap bucket from samconfig.toml..."
+print_message "$YELLOW" "Step 9: Cleaning up SAM bootstrap buckets from samconfig.toml files..."
 
 # Get the bucket name from samconfig.toml
 SAM_BUCKET=$(grep s3_bucket ../samconfig.toml 2>/dev/null | cut -d'=' -f2 | cut -d \" -f2 || echo "")
@@ -329,6 +338,24 @@ if [ -n "$SAM_BUCKET" ]; then
     fi
 else
     print_message "$YELLOW" "  No SAM bucket found in samconfig.toml"
+fi
+
+# Get the bucket name from tenant-samconfig.toml
+TENANT_SAM_BUCKET=$(grep s3_bucket ../tenant-samconfig.toml 2>/dev/null | cut -d'=' -f2 | cut -d \" -f2 || echo "")
+
+if [ -n "$TENANT_SAM_BUCKET" ]; then
+    print_message "$YELLOW" "  Found SAM bucket in tenant-samconfig.toml: $TENANT_SAM_BUCKET"
+    if aws s3 ls "s3://$TENANT_SAM_BUCKET" $PROFILE_ARG --region "$AWS_REGION" &> /dev/null; then
+        print_message "$YELLOW" "  Emptying bucket: $TENANT_SAM_BUCKET"
+        aws s3 rm "s3://$TENANT_SAM_BUCKET" --recursive $PROFILE_ARG --region "$AWS_REGION" 2>/dev/null || true
+        print_message "$YELLOW" "  Deleting bucket: $TENANT_SAM_BUCKET"
+        aws s3api delete-bucket --bucket $TENANT_SAM_BUCKET $PROFILE_ARG --region "$AWS_REGION" 2>/dev/null || true
+        print_message "$GREEN" "  Tenant SAM bootstrap bucket deleted"
+    else
+        print_message "$YELLOW" "  Tenant SAM bucket not found or already deleted"
+    fi
+else
+    print_message "$YELLOW" "  No SAM bucket found in tenant-samconfig.toml"
 fi
 echo ""
 

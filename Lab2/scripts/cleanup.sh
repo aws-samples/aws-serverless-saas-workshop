@@ -28,8 +28,9 @@ NC='\033[0m' # No Color
 
 # Default values
 STACK_NAME="serverless-saas-lab2"
-AWS_REGION="us-west-2"
+AWS_REGION="us-east-1"
 AWS_PROFILE=""  # Empty by default - will use machine's default profile if not specified
+SKIP_CONFIRMATION=0
 
 # Create log directory and file
 LOG_DIR="logs"
@@ -77,19 +78,25 @@ while [[ "$#" -gt 0 ]]; do
             AWS_PROFILE=$2
             shift 2
             ;;
+        -y|--yes)
+            SKIP_CONFIRMATION=1
+            shift
+            ;;
         --help)
             echo "Usage: $0 [OPTIONS]"
             echo ""
             echo "Options:"
             echo "  --stack-name <name>  CloudFormation stack name to cleanup (default: serverless-saas-lab2)"
-            echo "  --region <region>    AWS region (default: us-west-2)"
+            echo "  --region <region>    AWS region (default: us-east-1)"
             echo "  --profile <profile>  AWS CLI profile name (optional, uses default profile if not specified)"
+            echo "  -y, --yes            Skip confirmation prompt"
             echo "  --help               Show this help message"
             echo ""
             echo "Example:"
             echo "  $0 --stack-name serverless-saas-lab2"
             echo "  $0 --stack-name my-stack --region us-east-1"
             echo "  $0 --stack-name my-stack --profile my-profile"
+            echo "  $0 --stack-name serverless-saas-lab2 -y"
             exit 0
             ;;
         *)
@@ -111,14 +118,16 @@ fi
 echo ""
 
 # Confirmation prompt
-print_message "$YELLOW" "⚠️  WARNING: This will permanently delete all Lab2 resources!"
-print_message "$YELLOW" "Stack: $STACK_NAME"
-echo ""
-read -p "Are you sure you want to continue? (yes/no): " -r
-echo ""
-if [[ ! $REPLY =~ ^[Yy][Ee][Ss]$ ]]; then
-    print_message "$YELLOW" "Cleanup cancelled"
-    exit 0
+if [ $SKIP_CONFIRMATION -eq 0 ]; then
+    print_message "$YELLOW" "⚠️  WARNING: This will permanently delete all Lab2 resources!"
+    print_message "$YELLOW" "Stack: $STACK_NAME"
+    echo ""
+    read -p "Are you sure you want to continue? (yes/no): " -r
+    echo ""
+    if [[ ! $REPLY =~ ^[Yy][Ee][Ss]$ ]]; then
+        print_message "$YELLOW" "Cleanup cancelled"
+        exit 0
+    fi
 fi
 
 # Record start time

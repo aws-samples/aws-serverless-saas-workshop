@@ -28,7 +28,7 @@ Before running these scripts, ensure you have:
 
 ### Usage
 
-```bash
+```
 ./deploy-all-labs.sh [OPTIONS]
 ```
 
@@ -51,12 +51,12 @@ Before running these scripts, ensure you have:
 ### Examples
 
 **Deploy all labs:**
-```bash
+```
 ./deploy-all-labs.sh --all --email user@example.com
 ```
 
 **Deploy specific labs:**
-```bash
+```
 # Deploy only Lab5
 ./deploy-all-labs.sh --lab 5
 
@@ -71,7 +71,7 @@ Before running these scripts, ensure you have:
 ```
 
 **Deploy all labs with error handling:**
-```bash
+```
 # Continue deploying even if a lab fails
 ./deploy-all-labs.sh --all --email user@example.com --continue-on-error
 ```
@@ -102,7 +102,7 @@ Before running these scripts, ensure you have:
 
 ### Usage
 
-```bash
+```
 ./cleanup-all-labs.sh [OPTIONS]
 ```
 
@@ -115,14 +115,14 @@ Before running these scripts, ensure you have:
 ### Examples
 
 **Cleanup all labs:**
-```bash
+```
 ./cleanup-all-labs.sh
 # or
 ./cleanup-all-labs.sh --all
 ```
 
 **Cleanup specific labs:**
-```bash
+```
 # Cleanup only Lab5
 ./cleanup-all-labs.sh --lab 5
 
@@ -155,7 +155,7 @@ For each lab, the cleanup script removes:
 Each lab also has its own deployment and cleanup scripts in `Lab{N}/scripts/`:
 
 ### Lab1
-```bash
+```
 # Deploy
 cd Lab1/scripts
 ./deployment.sh -s -c --stack-name serverless-saas-lab1
@@ -165,7 +165,7 @@ cd Lab1/scripts
 ```
 
 ### Lab2
-```bash
+```
 # Deploy
 cd Lab2/scripts
 ./deployment.sh -s -c --email user@example.com
@@ -175,7 +175,7 @@ cd Lab2/scripts
 ```
 
 ### Lab3-6
-```bash
+```
 # Deploy
 cd Lab{N}/scripts
 ./deployment.sh -s -c
@@ -185,7 +185,7 @@ cd Lab{N}/scripts
 ```
 
 ### Lab7
-```bash
+```
 # Deploy
 cd Lab7/scripts
 ./deployment.sh
@@ -222,14 +222,14 @@ All scripts create timestamped log files:
 ### Common Issues
 
 **Lab2 email requirement:**
-```bash
+```
 # Error: Lab2 requires --email parameter
 # Solution: Provide email address
 ./deploy-all-labs.sh --lab 2 --email admin@example.com
 ```
 
 **Stack already exists:**
-```bash
+```
 # Error: Stack already exists
 # Solution: Run cleanup first
 ./cleanup-all-labs.sh --lab 5
@@ -237,7 +237,7 @@ All scripts create timestamped log files:
 ```
 
 **Permission denied:**
-```bash
+```
 # Error: Permission denied
 # Solution: Make scripts executable
 chmod +x deploy-all-labs.sh cleanup-all-labs.sh

@@ -16,6 +16,7 @@ print_message() {
 
 # Default values
 AWS_PROFILE=""
+AWS_REGION="us-east-1"
 server=0
 bootstrap=0
 pipeline=0
@@ -31,10 +32,11 @@ print_usage() {
     echo "  -p                Deploy only CI/CD pipeline code"
     echo "  -c                Deploy client code"
     echo "  --profile <name>  AWS CLI profile name (optional, uses machine's default if not provided)"
+    echo "  --region <region> AWS region (default: us-east-1)"
     echo ""
     echo "Examples:"
     echo "  $0 -s -c --profile serverless-saas-demo"
-    echo "  $0 -b --profile serverless-saas-demo"
+    echo "  $0 -b --profile serverless-saas-demo --region us-east-1"
     echo "  $0 -c --profile serverless-saas-demo"
     echo "  $0 -s -c    # Uses machine's default AWS profile"
 }
@@ -52,6 +54,10 @@ while [[ "$#" -gt 0 ]]; do
         -c) client=1 ;;
         --profile)
             AWS_PROFILE=$2
+            shift
+            ;;
+        --region)
+            AWS_REGION=$2
             shift
             ;;
         --help)
@@ -112,7 +118,7 @@ if [[ $server -eq 1 ]] || [[ $bootstrap -eq 1 ]]; then
   echo "Bootstrap server code is getting deployed"
   echo "=========================================="
   cd ../server
-  REGION=$(aws configure get region $PROFILE_ARG)
+  REGION="$AWS_REGION"
   
   # Get SAM S3 bucket from shared-samconfig.toml
   SHARED_SAM_BUCKET=$(grep s3_bucket shared-samconfig.toml | cut -d'=' -f2 | cut -d \" -f2 2>/dev/null || echo "")

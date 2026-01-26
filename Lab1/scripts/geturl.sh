@@ -13,7 +13,7 @@ RED='\033[0;31m'
 NC='\033[0m' # No Color
 
 # Default values
-AWS_REGION="us-west-2"
+AWS_REGION="us-east-1"
 STACK_NAME="serverless-saas-lab1"
 
 # Function to print colored messages
@@ -29,7 +29,7 @@ print_usage() {
     echo ""
     echo "Options:"
     echo "  --stack-name <name>       CloudFormation stack name (default: serverless-saas-lab1)"
-    echo "  --region <region>         AWS region (default: us-west-2)"
+    echo "  --region <region>         AWS region (default: us-east-1)"
     echo "  --profile <profile>       AWS profile (optional, uses machine's default if not provided)"
     echo "  --help                    Show this help message"
     echo ""

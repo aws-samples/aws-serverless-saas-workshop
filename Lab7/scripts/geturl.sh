@@ -15,7 +15,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Default values
-AWS_REGION="us-west-2"
+AWS_REGION="us-east-1"
 AWS_PROFILE=""  # Optional, will use default profile if not provided
 STACK_NAME="serverless-saas-lab7"
 
@@ -33,7 +33,7 @@ print_usage() {
     echo "Options:"
     echo "  --profile <profile>       AWS CLI profile name (optional, uses default if not provided)"
     echo "  --stack-name <name>       CloudFormation stack name (default: serverless-saas-lab7)"
-    echo "  --region <region>         AWS region (default: us-west-2)"
+    echo "  --region <region>         AWS region (default: us-east-1)"
     echo "  --help                    Show this help message"
     echo ""
     echo "Examples:"

@@ -29,9 +29,10 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Default values
-AWS_REGION="us-west-2"
+AWS_REGION="us-east-1"
 AWS_PROFILE=""
 STACK_NAME=""
+SKIP_CONFIRMATION=0
 
 # Function to print colored messages
 print_message() {
@@ -47,12 +48,14 @@ print_usage() {
     echo "Options:"
     echo "  --stack-name <name>       CloudFormation stack name prefix (required, e.g., serverless-saas-lab3)"
     echo "  --profile <profile>       AWS CLI profile name (optional, uses default profile if not specified)"
-    echo "  --region <region>         AWS region (default: us-west-2)"
+    echo "  --region <region>         AWS region (default: us-east-1)"
+    echo "  -y, --yes                 Skip confirmation prompt"
     echo "  --help                    Show this help message"
     echo ""
     echo "Examples:"
     echo "  $0 --stack-name serverless-saas-lab3"
     echo "  $0 --stack-name serverless-saas-lab3 --profile serverless-saas-demo"
+    echo "  $0 --stack-name serverless-saas-lab3 --profile serverless-saas-demo -y"
     echo "  $0 --stack-name my-stack --profile my-profile --region us-east-1"
     echo ""
     echo "Note: This will clean up both shared and tenant stacks:"
@@ -82,6 +85,10 @@ while [[ "$#" -gt 0 ]]; do
         --region)
             AWS_REGION=$2
             shift 2
+            ;;
+        -y|--yes)
+            SKIP_CONFIRMATION=1
+            shift
             ;;
         --help)
             print_usage
@@ -143,6 +150,24 @@ echo ""
 
 print_message "$YELLOW" "Starting cleanup of Lab3 resources..."
 echo ""
+
+# Confirmation prompt (unless -y/--yes flag is used)
+if [[ $SKIP_CONFIRMATION -eq 0 ]]; then
+    print_message "$YELLOW" "⚠️  WARNING: This will delete all Lab3 resources including:"
+    echo "  - CloudFormation stacks: $SHARED_STACK_NAME, $TENANT_STACK_NAME"
+    echo "  - S3 buckets and their contents"
+    echo "  - DynamoDB tables"
+    echo "  - CloudWatch log groups"
+    echo "  - SAM deployment buckets"
+    echo ""
+    read -p "Are you sure you want to continue? (yes/no): " confirm
+    
+    if [[ "$confirm" != "yes" ]]; then
+        print_message "$YELLOW" "Cleanup cancelled by user"
+        exit 0
+    fi
+    echo ""
+fi
 
 # Record start time
 START_TIME=$(date +%s)

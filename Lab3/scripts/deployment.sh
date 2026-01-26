@@ -14,7 +14,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Default values
-AWS_REGION="us-west-2"
+AWS_REGION="us-east-1"
 AWS_PROFILE=""
 SHARED_STACK_NAME="serverless-saas-shared-lab3"
 TENANT_STACK_NAME="serverless-saas-tenant-lab3"
@@ -43,7 +43,7 @@ print_usage() {
     echo "  -c, --client              Deploy client code (Application UI)"
     echo "  -e, --email <email>       Admin user email address"
     echo "  -te, --tenant-email <email>  Tenant admin email address (enables auto-tenant creation)"
-    echo "  --region <region>         AWS region (default: us-west-2)"
+    echo "  --region <region>         AWS region (default: us-east-1)"
     echo "  --profile <profile>       AWS CLI profile name (optional)"
     echo "  --help                    Show this help message"
     echo ""

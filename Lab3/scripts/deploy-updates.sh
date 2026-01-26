@@ -2,7 +2,7 @@
 
 # AWS Profile should be passed via --profile parameter
 AWS_PROFILE=""
-AWS_REGION="us-west-2"
+AWS_REGION="us-east-1"
 SHARED_STACK_NAME="serverless-saas-shared-lab3"
 TENANT_STACK_NAME="serverless-saas-tenant-lab3"
 
@@ -23,7 +23,7 @@ show_help() {
     echo ""
     echo "Options:"
     echo "  --profile PROFILE    AWS profile to use (optional, uses default if not specified)"
-    echo "  --region REGION      AWS region (default: us-west-2)"
+    echo "  --region REGION      AWS region (default: us-east-1)"
     echo "  --help              Show this help message"
     exit 0
 }

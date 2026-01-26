@@ -13,7 +13,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Default values
-AWS_REGION="us-west-2"
+AWS_REGION="us-east-1"
 AWS_PROFILE=""
 STACK_NAME_PREFIX="serverless-saas-lab3"  # Default prefix for stack names
 SHARED_STACK_NAME=""  # Will be set based on stack name prefix
@@ -32,7 +32,7 @@ print_usage() {
     echo "Options:"
     echo "  --stack-name <name>       Stack name prefix (default: serverless-saas-lab3)"
     echo "  --profile <profile>       AWS CLI profile name (optional, uses default profile if not specified)"
-    echo "  --region <region>         AWS region (default: us-west-2)"
+    echo "  --region <region>         AWS region (default: us-east-1)"
     echo "  --help                    Show this help message"
     echo ""
     echo "Examples:"

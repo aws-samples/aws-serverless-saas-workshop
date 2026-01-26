@@ -29,11 +29,12 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Default values
-AWS_REGION="us-west-2"
+AWS_REGION="us-east-1"
 AWS_PROFILE=""  # Empty by default - will use machine's default profile if not specified
 STACK_NAME_PREFIX="serverless-saas-lab4"  # Default prefix for stack names
 SHARED_STACK_NAME=""  # Will be set based on stack name prefix
 TENANT_STACK_NAME=""  # Will be set based on stack name prefix
+SKIP_CONFIRMATION=0
 
 # Function to print colored messages
 print_message() {
@@ -58,8 +59,9 @@ print_usage() {
     echo ""
     echo "Options:"
     echo "  --stack-name <name>       Stack name prefix (default: serverless-saas-lab4)"
-    echo "  --region <region>         AWS region (default: us-west-2)"
+    echo "  --region <region>         AWS region (default: us-east-1)"
     echo "  --profile <profile>       AWS profile to use (optional, uses machine's default if not specified)"
+    echo "  -y, --yes                 Skip confirmation prompt"
     echo "  --help                    Show this help message"
     echo ""
     echo "Examples:"
@@ -67,7 +69,7 @@ print_usage() {
     echo "  $0 --stack-name serverless-saas-lab4            # Clean up specific lab"
     echo "  $0 --region us-east-1                           # Clean up in specific region"
     echo "  $0 --profile my-profile                         # Clean up with specific AWS profile"
-    echo "  $0 --stack-name my-lab --profile my-profile     # Clean up with custom stack name and profile"
+    echo "  $0 --stack-name my-lab --profile my-profile -y  # Clean up with custom stack name and profile, skip confirmation"
 }
 
 # Parse command line arguments
@@ -84,6 +86,10 @@ while [[ "$#" -gt 0 ]]; do
         --profile)
             AWS_PROFILE=$2
             shift 2
+            ;;
+        -y|--yes)
+            SKIP_CONFIRMATION=1
+            shift
             ;;
         --help)
             print_usage
@@ -135,6 +141,25 @@ echo ""
 
 print_message "$YELLOW" "Starting cleanup of Lab4 resources..."
 echo ""
+
+# Confirmation prompt (unless -y/--yes flag is used)
+if [[ $SKIP_CONFIRMATION -eq 0 ]]; then
+    print_message "$YELLOW" "⚠️  WARNING: This will delete all Lab4 resources including:"
+    echo "  - CloudFormation stacks: $SHARED_STACK_NAME, $TENANT_STACK_NAME"
+    echo "  - S3 buckets and their contents"
+    echo "  - DynamoDB tables"
+    echo "  - CloudWatch log groups"
+    echo "  - SAM deployment buckets"
+    echo "  - IAM roles and policies"
+    echo ""
+    read -p "Are you sure you want to continue? (yes/no): " confirm
+    
+    if [[ "$confirm" != "yes" ]]; then
+        print_message "$YELLOW" "Cleanup cancelled by user"
+        exit 0
+    fi
+    echo ""
+fi
 
 # Record start time
 START_TIME=$(date +%s)

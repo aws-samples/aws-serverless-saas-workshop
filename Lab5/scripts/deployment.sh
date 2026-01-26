@@ -14,7 +14,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Default values
-AWS_REGION="us-west-2"
+AWS_REGION="us-east-1"
 AWS_PROFILE=""  # Empty by default - will use machine's default profile if not specified
 SHARED_STACK_NAME="serverless-saas-shared-lab5"
 PIPELINE_STACK_NAME="serverless-saas-pipeline-lab5"
@@ -51,7 +51,7 @@ print_usage() {
     echo "  -c, --client              Deploy client code (Admin, Landing, and App UIs)"
     echo "  --shared-stack <name>     Shared stack name (default: serverless-saas-shared-lab5)"
     echo "  --pipeline-stack <name>   Pipeline stack name (default: serverless-saas-pipeline-lab5)"
-    echo "  --region <region>         AWS region (default: us-west-2)"
+    echo "  --region <region>         AWS region (default: us-east-1)"
     echo "  --profile <profile>       AWS profile to use (optional, uses machine's default if not specified)"
     echo "  --help                    Show this help message"
     echo ""

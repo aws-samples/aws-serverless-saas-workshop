@@ -13,7 +13,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Default values
-AWS_REGION="us-west-2"
+AWS_REGION="us-east-1"
 STACK_NAME="serverless-saas-lab1"
 DEPLOY_SERVER=0
 DEPLOY_CLIENT=0
@@ -38,7 +38,7 @@ print_usage() {
     echo "  -s, --server              Deploy server code (Lambda functions, API Gateway, DynamoDB)"
     echo "  -c, --client              Deploy client code (Angular application to S3/CloudFront)"
     echo "  --stack-name <name>       CloudFormation stack name (default: serverless-saas-lab1)"
-    echo "  --region <region>         AWS region (default: us-west-2)"
+    echo "  --region <region>         AWS region (default: us-east-1)"
     echo "  --profile <profile>       AWS profile to use (optional, uses machine's default if not specified)"
     echo "  --help                    Show this help message"
     echo ""

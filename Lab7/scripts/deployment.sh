@@ -13,7 +13,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Default values
-AWS_REGION="us-west-2"
+AWS_REGION="us-east-1"
 AWS_PROFILE=""  # Optional, will use default profile if not provided
 MAIN_STACK_NAME="serverless-saas-lab7"
 TENANT_STACK_NAME="stack-pooled-lab7"
@@ -34,7 +34,7 @@ print_usage() {
     echo ""
     echo "Options:"
     echo "  --profile <profile>            AWS CLI profile name (optional, uses default if not provided)"
-    echo "  --region <region>              AWS region (default: us-west-2)"
+    echo "  --region <region>              AWS region (default: us-east-1)"
     echo "  --main-stack <name>            Main stack name (default: serverless-saas-lab7)"
     echo "  --tenant-stack <name>          Tenant stack name (default: stack-pooled-lab7)"
     echo "  --help                         Show this help message"
@@ -151,11 +151,12 @@ if [[ -z "$SAM_BUCKET" ]]; then
   exit 1
 fi
 
-# Check if bucket exists, create if needed
 print_message "$YELLOW" "  Checking SAM deployment bucket: $SAM_BUCKET"
 if ! aws s3 ls "s3://${SAM_BUCKET}" $PROFILE_ARG --region "$AWS_REGION" &> /dev/null; then
   print_message "$YELLOW" "  Bucket does not exist, creating: $SAM_BUCKET"
   aws s3 mb "s3://${SAM_BUCKET}" $PROFILE_ARG --region "$AWS_REGION"
+  
+  # Add encryption to the bucket
   aws s3api put-bucket-encryption \
     $PROFILE_ARG \
     --bucket "$SAM_BUCKET" \
@@ -192,6 +193,55 @@ rm -f "$LAB_DIR/lambdaoutput.json"
 print_message "$GREEN" "✓ CUR crawler initialized"
 echo ""
 
+# Step 3.5: Wait for Glue Crawler to complete
+print_message "$YELLOW" "Step 3.5: Waiting for Glue Crawler to complete..."
+echo "The Glue Crawler needs to catalog the CUR data before Athena can query it."
+echo "This typically takes 2-5 minutes. Checking crawler status..."
+
+CRAWLER_NAME="AWSCURCrawler-Multi-tenant-lab7"
+MAX_WAIT_TIME=600  # 10 minutes max
+WAIT_INTERVAL=15   # Check every 15 seconds
+ELAPSED_TIME=0
+
+while [ $ELAPSED_TIME -lt $MAX_WAIT_TIME ]; do
+  CRAWLER_STATE=$(aws glue get-crawler --name "$CRAWLER_NAME" --region="$AWS_REGION" $PROFILE_ARG --query 'Crawler.State' --output text 2>/dev/null || echo "UNKNOWN")
+  
+  if [ "$CRAWLER_STATE" == "READY" ]; then
+    # Check if crawler has run at least once
+    LAST_CRAWL=$(aws glue get-crawler --name "$CRAWLER_NAME" --region="$AWS_REGION" $PROFILE_ARG --query 'Crawler.LastCrawl.Status' --output text 2>/dev/null || echo "NONE")
+    
+    if [ "$LAST_CRAWL" == "SUCCEEDED" ]; then
+      print_message "$GREEN" "✓ Glue Crawler completed successfully"
+      
+      # Verify the table was created
+      TABLE_EXISTS=$(aws glue get-table --database-name costexplorerdb-lab7 --name curoutput --region="$AWS_REGION" $PROFILE_ARG --query 'Table.Name' --output text 2>/dev/null || echo "")
+      
+      if [ -n "$TABLE_EXISTS" ]; then
+        print_message "$GREEN" "✓ Athena table 'curoutput' created successfully"
+        break
+      else
+        print_message "$YELLOW" "  Waiting for Athena table to be available..."
+      fi
+    elif [ "$LAST_CRAWL" == "FAILED" ]; then
+      print_message "$RED" "Error: Glue Crawler failed"
+      print_message "$YELLOW" "Check CloudWatch logs for crawler: $CRAWLER_NAME"
+      exit 1
+    fi
+  fi
+  
+  echo "  Crawler state: $CRAWLER_STATE (elapsed: ${ELAPSED_TIME}s)"
+  sleep $WAIT_INTERVAL
+  ELAPSED_TIME=$((ELAPSED_TIME + WAIT_INTERVAL))
+done
+
+if [ $ELAPSED_TIME -ge $MAX_WAIT_TIME ]; then
+  print_message "$RED" "Warning: Glue Crawler did not complete within $MAX_WAIT_TIME seconds"
+  print_message "$YELLOW" "The crawler may still be running. Attribution Lambdas may fail until it completes."
+  print_message "$YELLOW" "You can check crawler status with:"
+  print_message "$YELLOW" "  aws glue get-crawler --name $CRAWLER_NAME --region $AWS_REGION $PROFILE_ARG"
+fi
+echo ""
+
 # Step 4: Deploy tenant stack for cost attribution demo
 print_message "$YELLOW" "Step 4: Deploying tenant stack ($TENANT_STACK_NAME)..."
 
@@ -204,11 +254,12 @@ if [[ -z "$TENANT_SAM_BUCKET" ]]; then
   exit 1
 fi
 
-# Check if bucket exists, create if needed
 print_message "$YELLOW" "  Checking SAM deployment bucket: $TENANT_SAM_BUCKET"
 if ! aws s3 ls "s3://${TENANT_SAM_BUCKET}" $PROFILE_ARG --region "$AWS_REGION" &> /dev/null; then
   print_message "$YELLOW" "  Bucket does not exist, creating: $TENANT_SAM_BUCKET"
   aws s3 mb "s3://${TENANT_SAM_BUCKET}" $PROFILE_ARG --region "$AWS_REGION"
+  
+  # Add encryption to the bucket
   aws s3api put-bucket-encryption \
     $PROFILE_ARG \
     --bucket "$TENANT_SAM_BUCKET" \
