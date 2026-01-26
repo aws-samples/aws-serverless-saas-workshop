@@ -1,5 +1,51 @@
 # Lab 5: Applying Tier-Based Deployment Strategies
 
+## Quick Reference
+
+**Deployment Time:** ~20-25 minutes | **Cleanup Time:** ~15-20 minutes
+
+### Quick Start
+```bash
+# Deploy
+cd workshop/Lab5/scripts
+./deployment.sh -s -c --profile serverless-saas-demo
+
+# Get URLs
+./geturl.sh --profile serverless-saas-demo
+
+# Cleanup
+echo "yes" | ./cleanup.sh --stack-name serverless-saas-lab5 --profile serverless-saas-demo
+```
+
+### What You'll Deploy
+
+**Shared Stack (serverless-saas-shared-lab5):**
+- **16 Lambda Functions** - Tenant/user management (Python 3.14)
+- **2 DynamoDB Tables** - TenantDetails-lab5, TenantUserMapping-lab5
+- **2 Cognito User Pools** - PooledTenant, OperationUsers
+- **1 Admin API Gateway** - Tenant/user management
+- **3 CloudFront Distributions** - Admin, Landing, Application UIs
+- **3 S3 Buckets** - Static website hosting
+
+**Pipeline Stack (CDK):**
+- **1 CodePipeline** - Automated deployment pipeline for tenant infrastructure
+- **1 CodeBuild Project** - Builds and deploys tenant-specific stacks
+- **1 CodeCommit Repository** - Source repository for tenant templates
+- **1 Lambda Function** - Triggers pipeline on tenant creation
+- **1 S3 Bucket** - Pipeline artifacts (`serverless-saas-pipeline-lab5-artifacts-${ShortId}`)
+- **CloudWatch Logs** - Pipeline execution logs with 60-day retention
+
+### Key Features
+- **Tier-Based Deployment** - Different infrastructure for Basic, Standard, Premium, Platinum tiers
+- **Automated Pipeline** - CodePipeline automatically deploys tenant stacks on creation
+- **CDK Infrastructure** - Pipeline stack defined using AWS CDK
+- **Predictable S3 Naming** - Artifacts bucket with ShortId suffix
+- **Python 3.14 Runtime** - All Lambda functions use latest Python runtime
+- CloudWatch log groups with 60-day retention
+- Resource tagging for cost tracking
+
+---
+
 ## Overview
 
 Lab 5 introduces tier-based deployment strategies for multi-tenant SaaS applications. This lab demonstrates how to deploy different infrastructure configurations based on tenant tiers, implementing both pooled and siloed architectures. You'll learn how to use AWS CodePipeline to automate tenant provisioning and deploy dedicated infrastructure for premium (Platinum) tier tenants.

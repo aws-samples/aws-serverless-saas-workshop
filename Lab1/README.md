@@ -1,5 +1,37 @@
 # Lab 1: Introducing a Basic Serverless Web Application
 
+## Quick Reference
+
+**Deployment Time:** ~10-15 minutes | **Cleanup Time:** ~15-20 minutes
+
+### Quick Start
+```bash
+# Deploy
+cd workshop/Lab1/scripts
+./deployment.sh -s -c --profile serverless-saas-demo
+
+# Get URLs
+./geturl.sh --profile serverless-saas-demo
+
+# Cleanup
+echo "yes" | ./cleanup.sh --stack-name serverless-saas-lab1 --profile serverless-saas-demo
+```
+
+### What You'll Deploy
+- **10 Lambda Functions** - Product and order management (Python 3.14)
+- **2 DynamoDB Tables** - Product-Lab1, Order-Lab1
+- **1 API Gateway** - REST API with product/order endpoints
+- **1 CloudFront Distribution** - Global content delivery
+- **1 S3 Bucket** - Static website hosting
+
+### Key Features
+- Basic CRUD operations for products and orders
+- Serverless architecture with no server management
+- CloudWatch log groups with 60-day retention
+- Resource tagging for cost tracking
+
+---
+
 ## Overview
 
 Lab 1 introduces the foundational concepts of serverless architecture by building a basic web application for product and order management. This lab demonstrates how to create a fully functional serverless application using AWS Lambda, API Gateway, DynamoDB, and CloudFront without managing any servers.

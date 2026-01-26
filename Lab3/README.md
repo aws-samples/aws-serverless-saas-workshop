@@ -1,5 +1,48 @@
 # Lab 3: Adding Multi-Tenancy to Microservices
 
+## Quick Reference
+
+**Deployment Time:** ~13-15 minutes | **Cleanup Time:** ~15-20 minutes
+
+### Quick Start
+```bash
+# Deploy
+cd workshop/Lab3/scripts
+./deployment.sh -s -c --email your-email@example.com --tenant-email your-email@example.com --profile serverless-saas-demo
+
+# Get URLs
+./geturl.sh --profile serverless-saas-demo
+
+# Cleanup
+echo "yes" | ./cleanup.sh --stack-name serverless-saas-lab3 --profile serverless-saas-demo
+```
+
+### What You'll Deploy
+
+**Shared Stack (serverless-saas-shared-lab3):**
+- **16 Lambda Functions** - Tenant/user management (Python 3.14)
+- **2 DynamoDB Tables** - TenantDetails-lab3, TenantUserMapping-lab3
+- **2 Cognito User Pools** - PooledTenant, OperationUsers
+- **1 Admin API Gateway** - Tenant/user management
+- **3 CloudFront Distributions** - Admin, Landing, Application UIs
+- **3 S3 Buckets** - Static website hosting
+
+**Tenant Stack (serverless-saas-tenant-lab3):**
+- **10 Lambda Functions** - Product/order operations (Python 3.14)
+- **2 DynamoDB Tables** - Product-lab3, Order-lab3 (pooled)
+- **1 Tenant API Gateway** - Product/order operations
+- **1 Business Services Authorizer** - Tenant context propagation
+
+### Key Features
+- **Pooled Multi-Tenant Architecture** - Single set of resources shared across tenants
+- **Two API Gateways** - Admin API (tenant/user) + Tenant API (products/orders)
+- **Tenant Isolation** - Data partitioned by tenant ID in pooled DynamoDB tables
+- **Sample Tenants** - Automatically creates 3 tenants for testing
+- CloudWatch log groups with 60-day retention
+- Resource tagging for cost tracking
+
+---
+
 ## Overview
 
 This lab introduces multi-tenancy capabilities to the serverless web application. You'll add authentication, authorization, tenant-aware logging and metrics, and data partitioning to support multiple tenants in a pooled architecture.

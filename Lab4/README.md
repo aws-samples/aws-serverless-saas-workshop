@@ -1,5 +1,51 @@
 # Lab 4: Isolating Tenant Data in a Pooled Model
 
+## Quick Reference
+
+**Deployment Time:** ~18-20 minutes | **Cleanup Time:** ~15-20 minutes
+
+### Quick Start
+```bash
+# Deploy
+cd workshop/Lab4/scripts
+./deployment.sh -s -c --email your-email@example.com --tenant-email your-email@example.com --profile serverless-saas-demo
+
+# Get URLs
+./geturl.sh --profile serverless-saas-demo
+
+# Cleanup
+echo "yes" | ./cleanup.sh --stack-name serverless-saas-lab4 --profile serverless-saas-demo
+```
+
+### What You'll Deploy
+
+**Shared Stack (serverless-saas-shared-lab4):**
+- **16 Lambda Functions** - Tenant/user management (Python 3.14)
+- **2 DynamoDB Tables** - TenantDetails-lab4, TenantUserMapping-lab4
+- **2 Cognito User Pools** - PooledTenant, OperationUsers
+- **1 Admin API Gateway** - Tenant/user management
+- **3 CloudFront Distributions** - Admin, Landing, Application UIs
+- **3 S3 Buckets** - Static website hosting
+
+**Tenant Stack (serverless-saas-tenant-lab4):**
+- **11 Lambda Functions** - Including Business Services Authorizer (Python 3.14)
+- **2 DynamoDB Tables** - Product-lab4, Order-lab4 (pooled with tenant isolation)
+- **1 Tenant API Gateway** - Product/order operations
+- **3 IAM Roles** - Tenant data isolation
+  - AuthorizerAccessRole: Generates tenant-scoped STS credentials
+  - ProductFunctionRole: Scoped access to Product table
+  - OrderFunctionRole: Scoped access to Order table
+
+### Key Features
+- **Tenant Data Isolation** - IAM policies enforce row-level security in DynamoDB
+- **STS Credentials** - Business Services Authorizer generates temporary credentials scoped to tenant ID
+- **Pooled Architecture** - Single set of resources with fine-grained access control
+- **Cross-Tenant Protection** - IAM policies prevent access to other tenants' data
+- CloudWatch log groups with 60-day retention
+- Resource tagging for cost tracking
+
+---
+
 ## Overview
 
 Lab 4 demonstrates how to implement tenant data isolation in a pooled multi-tenant architecture using IAM policies and AWS Security Token Service (STS). Building upon Lab 3's multi-tenant foundation, this lab adds fine-grained access control mechanisms to ensure that tenants can only access their own data, even though all tenant data resides in shared DynamoDB tables.

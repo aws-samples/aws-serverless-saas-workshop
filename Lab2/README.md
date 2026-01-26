@@ -1,5 +1,40 @@
 # Lab 2: Introducing SaaS Shared Services
 
+## Quick Reference
+
+**Deployment Time:** ~10-15 minutes | **Cleanup Time:** ~15-20 minutes
+
+### Quick Start
+```bash
+# Deploy
+cd workshop/Lab2/scripts
+./deployment.sh -s -c --email your-email@example.com --profile serverless-saas-demo
+
+# Get URLs
+./geturl.sh --profile serverless-saas-demo
+
+# Cleanup
+echo "yes" | ./cleanup.sh --stack-name serverless-saas-lab2 --profile serverless-saas-demo
+```
+
+### What You'll Deploy
+- **16 Lambda Functions** - Tenant/user management (Python 3.14)
+- **2 DynamoDB Tables** - TenantDetails, TenantUserMapping
+- **2 Cognito User Pools** - PooledTenant (tenants), OperationUsers (admins)
+- **1 API Gateway** - Admin API for tenant/user operations
+- **2 CloudFront Distributions** - Admin UI, Landing UI
+- **2 S3 Buckets** - Static website hosting
+
+### Key Features
+- Tenant registration and management
+- User management with Cognito authentication
+- Admin portal for tenant operations
+- Landing page for tenant sign-up
+- CloudWatch log groups with 60-day retention
+- Resource tagging for cost tracking
+
+---
+
 ## Overview
 
 Lab 2 builds upon Lab 1 by introducing multi-tenancy infrastructure and shared services. This lab demonstrates how to implement tenant management, user authentication, and administrative capabilities in a SaaS application using AWS Cognito, Lambda, and DynamoDB.

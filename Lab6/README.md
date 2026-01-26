@@ -1,5 +1,51 @@
 # Lab 6: Tenant Throttling and API Quotas
 
+## Quick Reference
+
+**Deployment Time:** ~20-25 minutes | **Cleanup Time:** ~15-20 minutes
+
+### Quick Start
+```bash
+# Deploy
+cd workshop/Lab6/scripts
+./deployment.sh -s -c --profile serverless-saas-demo
+
+# Get URLs
+./geturl.sh --profile serverless-saas-demo
+
+# Cleanup
+echo "yes" | ./cleanup.sh --stack-name serverless-saas-lab6 --profile serverless-saas-demo
+```
+
+### What You'll Deploy
+
+**Shared Stack (serverless-saas-shared-lab6):**
+- **16 Lambda Functions** - Tenant/user management (Python 3.14)
+- **2 DynamoDB Tables** - TenantDetails-lab6, TenantUserMapping-lab6
+- **2 Cognito User Pools** - PooledTenant, OperationUsers
+- **1 Admin API Gateway** - Tenant/user management
+- **3 CloudFront Distributions** - Admin, Landing, Application UIs
+- **3 S3 Buckets** - Static website hosting
+
+**Pipeline Stack (CDK):**
+- **1 CodePipeline** - Automated deployment pipeline with throttling
+- **1 CodeBuild Project** - Builds and deploys tenant-specific stacks
+- **1 CodeCommit Repository** - Source repository for tenant templates
+- **1 Lambda Function** - Triggers pipeline and handles empty tenant table
+- **1 S3 Bucket** - Pipeline artifacts (`serverless-saas-pipeline-lab6-artifacts-${ShortId}`)
+- **CloudWatch Logs** - Pipeline execution logs with 60-day retention
+
+### Key Features
+- **Tenant-Based Throttling** - Different rate limits for Basic, Standard, Premium, Platinum tiers
+- **API Gateway Usage Plans** - Enforces throttling at API Gateway level
+- **Automated Pipeline** - CodePipeline deploys tenant stacks with tier-specific throttling
+- **Python 3.14 Runtime** - All Lambda functions use latest Python runtime
+- **Predictable S3 Naming** - Artifacts bucket with ShortId suffix
+- CloudWatch log groups with 60-day retention
+- Resource tagging for cost tracking
+
+---
+
 ## Overview
 
 Lab 6 introduces tenant throttling and API quota management for multi-tenant SaaS applications. This lab demonstrates how to implement tier-based rate limiting using AWS API Gateway usage plans and API keys. You'll learn how to configure different throttling limits for each tenant tier, test throttling behavior, and ensure fair resource allocation across tenants.

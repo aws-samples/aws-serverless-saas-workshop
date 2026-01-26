@@ -1,5 +1,46 @@
 # Lab 7: Cost Attribution in a Pooled Model
 
+## Quick Reference
+
+**Deployment Time:** ~10-15 minutes | **Cleanup Time:** ~10-15 minutes
+
+### Quick Start
+```bash
+# Deploy
+cd workshop/Lab7/scripts
+./deployment.sh --profile serverless-saas-demo
+
+# Cleanup
+echo "yes" | ./cleanup.sh --profile serverless-saas-demo
+```
+
+**Important:** Wait 5-10 minutes after cleanup before redeploying due to S3 eventual consistency.
+
+### What You'll Deploy
+
+**Main Stack (serverless-saas-lab7):**
+- **Lambda Functions** - Product service functions (Python 3.14)
+- **1 DynamoDB Table** - Product table for sample data
+- **1 Lambda Layer** - Metrics publishing layer for cost tracking
+- **CloudWatch Metrics** - Custom metrics for tenant usage tracking
+- **1 S3 Bucket** - Sample CUR data storage
+
+**Tenant Stack (serverless-saas-tenant-lab7):**
+- **Lambda Functions** - Tenant-specific product operations
+- **CloudWatch Metrics** - Tenant-level usage metrics
+- **Cost Attribution** - Tracks Lambda invocations, duration, and DynamoDB operations per tenant
+
+### Key Features
+- **Cost Attribution** - Track costs per tenant in pooled architecture
+- **Custom Metrics** - CloudWatch metrics for tenant usage patterns
+- **Lambda Layers** - Reusable metrics publishing layer
+- **Sample CUR Data** - Pre-populated Cost and Usage Report data
+- **Tenant Usage Analysis** - Analyze tenant-level resource consumption
+- CloudWatch log groups with 60-day retention
+- Resource tagging for cost tracking
+
+---
+
 ## Overview
 
 Lab 7 demonstrates how to implement cost attribution in a pooled multi-tenant SaaS architecture. In a pooled model, multiple tenants share the same infrastructure resources (Lambda functions, DynamoDB tables, etc.), making it challenging to determine the cost per tenant. This lab shows you how to:
