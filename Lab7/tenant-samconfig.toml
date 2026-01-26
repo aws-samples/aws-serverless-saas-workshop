@@ -3,8 +3,8 @@ version = 0.1
 [default.deploy]
 [default.deploy.parameters]
 stack_name = "stack-pooled-lab7"
-resolve_s3 = true
+s3_bucket = "sam-bootstrap-bucket-tenant-lab7"
 capabilities = "CAPABILITY_NAMED_IAM"
-region = "us-west-2"
+region = "us-east-1"
 confirm_changeset = false
 fail_on_empty_changeset = false

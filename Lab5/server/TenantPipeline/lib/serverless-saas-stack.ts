@@ -21,6 +21,7 @@ export class ServerlessSaaSStack extends cdk.Stack {
     super(scope, id, props);
 
     const artifactsBucket = new s3.Bucket(this, "ArtifactsBucket", {
+      bucketName: `serverless-saas-pipeline-lab5-artifacts-${cdk.Fn.select(0, cdk.Fn.split('-', cdk.Fn.select(2, cdk.Fn.split('/', cdk.Aws.STACK_ID))))}`,
       encryption: s3.BucketEncryption.S3_MANAGED,
     });
 
@@ -32,12 +33,13 @@ export class ServerlessSaaSStack extends cdk.Stack {
 
     // Create CloudWatch Log Group for Lambda function
     const lambdaLogGroup = new logs.LogGroup(this, 'DeployTenantStackLogGroup', {
-      logGroupName: '/aws/lambda/serverless-saas-pipeline-lab5-deploytenantstackD22DC62',
+      logGroupName: '/aws/lambda/serverless-saas-lab5-deploy-tenant-stack',
       retention: logs.RetentionDays.TWO_MONTHS,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
     const lambdaFunction = new Function(this, "deploy-tenant-stack", {
+        functionName: 'serverless-saas-lab5-deploy-tenant-stack',
         handler: "lambda-deploy-tenant-stack.lambda_handler",
         runtime: Runtime.PYTHON_3_14,
         code: new AssetCode(`./resources`),
@@ -92,6 +94,15 @@ export class ServerlessSaaSStack extends cdk.Stack {
       environmentVariables: {
         'PACKAGE_BUCKET': {
           value: artifactsBucket.bucketName
+        }
+      },
+      logging: {
+        cloudWatch: {
+          logGroup: new logs.LogGroup(this, 'BuildLogGroup', {
+            logGroupName: '/aws/codebuild/serverless-saas-pipeline-lab5-build',
+            retention: logs.RetentionDays.TWO_MONTHS,
+            removalPolicy: cdk.RemovalPolicy.DESTROY
+          })
         }
       }
     });

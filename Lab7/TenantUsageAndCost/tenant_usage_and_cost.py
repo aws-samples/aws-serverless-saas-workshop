@@ -29,6 +29,11 @@ def calculate_daily_dynamodb_attribution_by_tenant(event, context):
 
     log_group_names = __get_list_of_log_group_names()
     print( log_group_names)
+    
+    # Check if log groups exist before querying
+    if not log_group_names or len(log_group_names) == 0:
+        print("No log groups found. Skipping DynamoDB cost attribution.")
+        return
         
     #TODO: Write the query to get the DynamoDB WCU and RCUs consumption grouped by TenantId
     # Query logs for exact consumed_rcu and consumed_wcu values logged by Lambda functions
@@ -49,7 +54,13 @@ def calculate_daily_dynamodb_attribution_by_tenant(event, context):
     print(total_usage_by_day)  
     
     total_RCU = Decimal('0.0') 
-    total_WCU = Decimal('0.0') 
+    total_WCU = Decimal('0.0')
+    
+    # Check if results exist before accessing
+    if not total_usage_by_day.get('results') or len(total_usage_by_day['results']) == 0:
+        print("No DynamoDB usage data found in CloudWatch Logs. Skipping DynamoDB cost attribution.")
+        return
+    
     for result in total_usage_by_day['results'][0]:
         if 'ReadCapacityUnits' in result['field']:
             total_RCU = Decimal(result['value'])
@@ -120,6 +131,11 @@ def calculate_daily_lambda_attribution_by_tenant(event, context):
 
     log_group_names = __get_list_of_log_group_names()
     
+    # Check if log groups exist before querying
+    if not log_group_names or len(log_group_names) == 0:
+        print("No log groups found. Skipping Lambda cost attribution.")
+        return
+    
     #TODO: Write the below query to get the total lambda invocations grouped by tenants
     usage_by_tenant_by_day_query='filter @message like /Request completed/ \
         | fields tenant_id as TenantId , CountLambdaInvocations.0 As LambdaInvocations\
@@ -137,6 +153,12 @@ def calculate_daily_lambda_attribution_by_tenant(event, context):
     print(total_usage_by_day) 
     
     total_invocations = 1 #to avoid divide by zero
+    
+    # Check if results exist before accessing
+    if not total_usage_by_day.get('results') or len(total_usage_by_day['results']) == 0:
+        print("No Lambda invocation data found in CloudWatch Logs. Skipping Lambda cost attribution.")
+        return
+    
     for result in total_usage_by_day['results'][0]:
         if 'LambdaInvocations' in result['field']:
             total_invocations = Decimal(result['value'])
@@ -269,21 +291,50 @@ def __get_list_of_log_group_names():
     log_group_names = []
     log_group_prefix = '/aws/lambda/'
     cloudformation_paginator = cloudformation.get_paginator('list_stack_resources')
-    response_iterator = cloudformation_paginator.paginate(StackName='stack-pooled-lab7')
-    for stack_resources in response_iterator:
-        for resource in stack_resources['StackResourceSummaries']:
-            if (resource["LogicalResourceId"] == "CreateProductFunction"):
-                __add_log_group_name(logs, ''.join([log_group_prefix,resource["PhysicalResourceId"]]), 
-                 log_group_names)
-                continue    
-            if (resource["LogicalResourceId"] == "UpdateProductFunction"):
-                __add_log_group_name(logs, ''.join([log_group_prefix,resource["PhysicalResourceId"]]), 
-                 log_group_names) 
-                continue
-            if (resource["LogicalResourceId"] == "GetProductsFunction"):
-                __add_log_group_name(logs, ''.join([log_group_prefix,resource["PhysicalResourceId"]]), 
-                 log_group_names)
-                continue
+    
+    # Implement exponential backoff retry logic for race condition
+    # where tenant stack might not exist yet when Lambda first executes
+    max_retries = 3  # Total wait time: 9 minutes (1min + 3min + 5min)
+    wait_times = [60, 180, 300]  # 1 minute, 3 minutes, 5 minutes
+    retry_count = 0
+    
+    while retry_count <= max_retries:
+        try:
+            response_iterator = cloudformation_paginator.paginate(StackName='stack-pooled-lab7')
+            for stack_resources in response_iterator:
+                for resource in stack_resources['StackResourceSummaries']:
+                    if (resource["LogicalResourceId"] == "CreateProductFunction"):
+                        __add_log_group_name(logs, ''.join([log_group_prefix,resource["PhysicalResourceId"]]), 
+                         log_group_names)
+                        continue    
+                    if (resource["LogicalResourceId"] == "UpdateProductFunction"):
+                        __add_log_group_name(logs, ''.join([log_group_prefix,resource["PhysicalResourceId"]]), 
+                         log_group_names) 
+                        continue
+                    if (resource["LogicalResourceId"] == "GetProductsFunction"):
+                        __add_log_group_name(logs, ''.join([log_group_prefix,resource["PhysicalResourceId"]]), 
+                         log_group_names)
+                        continue
+            
+            # Success - break out of retry loop
+            break
+            
+        except ClientError as e:
+            if e.response['Error']['Code'] == 'ValidationException':
+                # Stack doesn't exist yet - this is expected during initial deployment
+                if retry_count < max_retries:
+                    wait_time = wait_times[retry_count]
+                    wait_minutes = wait_time / 60
+                    print(f"Stack 'stack-pooled-lab7' not found. Retry {retry_count + 1}/{max_retries} after {wait_minutes:.0f} minute(s)...")
+                    time.sleep(wait_time)
+                    retry_count += 1
+                else:
+                    # All retries exhausted - return empty list for graceful degradation
+                    print(f"Stack 'stack-pooled-lab7' still not found after {max_retries} retries. Returning empty log group list.")
+                    return []
+            else:
+                # Different error - re-raise it
+                raise
 
     return log_group_names          
 

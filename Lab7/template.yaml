@@ -65,6 +65,17 @@ Resources:
         - Key: Lab
           Value: lab7
 
+  AWSCURCrawlerLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws-glue/crawlers/AWSCURCrawler-Multi-tenant-lab7
+      RetentionInDays: 60
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab7
+
   CURBucket:
     Type: AWS::S3::Bucket
     DeletionPolicy : Retain
@@ -210,6 +221,7 @@ Resources:
     DependsOn:
       - AWSCURDatabase
       - AWSCURCrawlerComponentFunction
+      - AWSCURCrawlerLogGroup
     Properties:
       Name: AWSCURCrawler-Multi-tenant-lab7
       Description: A recurring crawler that keeps your CUR table in Athena up-to-date.
@@ -238,72 +250,58 @@ Resources:
     Properties:
       FunctionName: serverless-saas-lab7-aws-cur-initializer
       Tags:
-        Application: serverless-saas-workshop
-        Lab: lab7
-        Environment: !Ref Environment
-        Owner: !Ref Owner
-        CostCenter: !Ref CostCenter
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Lab
+          Value: lab7
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
       Code:
         ZipFile: |
           import json
           import boto3
-          import urllib3
-          
-          def send_response(event, context, response_status, response_data=None):
-              """Send response to CloudFormation"""
-              if 'ResponseURL' not in event:
-                  return
-              
-              response_body = {
-                  'Status': response_status,
-                  'Reason': f'See CloudWatch Log Stream: {context.log_stream_name}',
-                  'PhysicalResourceId': context.log_stream_name,
-                  'StackId': event['StackId'],
-                  'RequestId': event['RequestId'],
-                  'LogicalResourceId': event['LogicalResourceId'],
-                  'Data': response_data or {}
-              }
-              
-              http = urllib3.PoolManager()
-              try:
-                  http.request(
-                      'PUT',
-                      event['ResponseURL'],
-                      body=json.dumps(response_body).encode('utf-8'),
-                      headers={'Content-Type': 'application/json'}
-                  )
-              except Exception as e:
-                  print(f"Failed to send response: {e}")
           
           def handler(event, context):
-              """Lambda handler for CUR initializer"""
+              """Lambda handler for CUR initializer - starts Glue Crawler"""
+              print(f"Received event: {json.dumps(event)}")
+              
+              glue = boto3.client('glue')
+              crawler_name = 'AWSCURCrawler-Multi-tenant-lab7'
+              
               try:
-                  if event['RequestType'] == 'Delete':
-                      send_response(event, context, 'SUCCESS')
-                      return {'statusCode': 200, 'body': 'Success'}
-                  
-                  glue = boto3.client('glue')
-                  
-                  try:
-                      response = glue.start_crawler(Name='AWSCURCrawler-Multi-tenant-lab7')
-                      send_response(event, context, 'SUCCESS')
-                      return {'statusCode': 200, 'body': 'Crawler started successfully'}
-                  except glue.exceptions.CrawlerRunningException as e:
-                      # Crawler is already running, this is not an error
-                      print(f"Crawler already running: {e}")
-                      send_response(event, context, 'SUCCESS')
-                      return {'statusCode': 200, 'body': str(e)}
-                  except Exception as e:
-                      error_msg = f"Error starting crawler: {str(e)}"
-                      print(error_msg)
-                      send_response(event, context, 'FAILED', {'Message': error_msg})
-                      return {'statusCode': 500, 'body': error_msg}
-                      
+                  response = glue.start_crawler(Name=crawler_name)
+                  print(f"Successfully started crawler: {crawler_name}")
+                  return {
+                      'statusCode': 200,
+                      'body': json.dumps({
+                          'message': 'Crawler started successfully',
+                          'crawler': crawler_name
+                      })
+                  }
+              except glue.exceptions.CrawlerRunningException as e:
+                  # Crawler is already running - this is not an error
+                  print(f"Crawler already running: {e}")
+                  return {
+                      'statusCode': 200,
+                      'body': json.dumps({
+                          'message': 'Crawler is already running',
+                          'crawler': crawler_name
+                      })
+                  }
               except Exception as e:
-                  error_msg = f"Unexpected error: {str(e)}"
+                  error_msg = f"Error starting crawler: {str(e)}"
                   print(error_msg)
-                  send_response(event, context, 'FAILED', {'Message': error_msg})
-                  return {'statusCode': 500, 'body': error_msg}
+                  return {
+                      'statusCode': 500,
+                      'body': json.dumps({
+                          'error': error_msg,
+                          'crawler': crawler_name
+                      })
+                  }
       Handler: 'index.handler'
       Timeout: 30
       Runtime: python3.14

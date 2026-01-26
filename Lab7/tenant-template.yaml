@@ -10,12 +10,19 @@ Parameters:
     Description: Tenant ID for the stack
   Environment:
     Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - staging
+      - prod
     Description: "Environment name (dev, staging, prod)"
   Owner:
     Type: String
+    Default: workshop-participant
     Description: "Owner of the resources"
   CostCenter:
     Type: String
+    Default: serverless-saas-workshop
     Description: "Cost center for billing"
 
 Resources:

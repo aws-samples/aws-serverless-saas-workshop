@@ -6,7 +6,7 @@ To run End-to-End (e2e) tests against the Sample Application, take the following
 
 1. Make a copy of the example env file (`cypress.env.json.example`):
 
-```bash
+```
 cp cypress.env.json.example cypress.env.json
 ```
 
@@ -24,7 +24,7 @@ cp cypress.env.json.example cypress.env.json
 
 3. Navigate to the root of the Application project (`aws-saas-factory-ref-solution-serverless-saas/clients/Application/`) and run the following:
 
-```bash
+```
 npx cypress run
 ```
 
@@ -34,6 +34,6 @@ The documentation [here](https://docs.cypress.io/guides/guides/command-line#cypr
 
 For example, running the following will show the Cypress UI and what is happening as each of the tests are run:
 
-```bash
+```
 npx cypress run --headed
 ```

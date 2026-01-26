@@ -21,6 +21,7 @@ export class ServerlessSaaSStack extends cdk.Stack {
     super(scope, id, props);
 
     const artifactsBucket = new s3.Bucket(this, "ArtifactsBucket", {
+      bucketName: `serverless-saas-pipeline-lab6-artifacts-${cdk.Fn.select(0, cdk.Fn.split('-', cdk.Fn.select(2, cdk.Fn.split('/', cdk.Aws.STACK_ID))))}`,
       encryption: s3.BucketEncryption.S3_MANAGED,
     });
 
