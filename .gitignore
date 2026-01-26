@@ -24,13 +24,20 @@ __pycache__/
 venv/
 ENV/
 env/
+.hypothesis/
+.pytest_cache/
 
 # IDE
 .vscode/
 .idea/
+.kiro/
 *.swp
 *.swo
 *~
+
+# Kiro specific
+.kiro/specs/
+.kiro/steering/
 
 # OS
 .DS_Store
