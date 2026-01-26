@@ -171,11 +171,22 @@ if [[ $server -eq 1 ]] || [[ $bootstrap -eq 1 ]]; then
   echo "✓ SAM build completed"
   echo ""
   
+  # Check if API Gateway CloudWatch role already exists
+  echo "Checking for existing API Gateway CloudWatch role..."
+  CREATE_CLOUDWATCH_ROLE="true"
+  if aws iam get-role --role-name apigateway-cloudwatch-publish-role $PROFILE_ARG --region "$REGION" >/dev/null 2>&1; then
+    CREATE_CLOUDWATCH_ROLE="false"
+    echo "✓ API Gateway CloudWatch role already exists, skipping creation"
+  else
+    echo "API Gateway CloudWatch role does not exist, will create it"
+  fi
+  echo ""
+  
   echo "Deploying shared infrastructure stack..."
   if [ "$IS_RUNNING_IN_EVENT_ENGINE" = true ]; then
-    sam deploy $PROFILE_ARG --config-file shared-samconfig.toml --region=$REGION --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE AdminUserPoolCallbackURLParameter=$ADMIN_SITE_URL TenantUserPoolCallbackURLParameter=$APP_SITE_URL
+    sam deploy $PROFILE_ARG --config-file shared-samconfig.toml --region=$REGION --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE CreateCloudWatchRole=$CREATE_CLOUDWATCH_ROLE AdminUserPoolCallbackURLParameter=$ADMIN_SITE_URL TenantUserPoolCallbackURLParameter=$APP_SITE_URL
   else
-    sam deploy $PROFILE_ARG --config-file shared-samconfig.toml --region=$REGION --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE
+    sam deploy $PROFILE_ARG --config-file shared-samconfig.toml --region=$REGION --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE CreateCloudWatchRole=$CREATE_CLOUDWATCH_ROLE
   fi
   
   if [[ $? -ne 0 ]]; then

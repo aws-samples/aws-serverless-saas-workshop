@@ -309,8 +309,27 @@ if [[ $DEPLOY_BOOTSTRAP -eq 1 ]]; then
   }
   print_message "$GREEN" "  ✓ SAM build completed"
   
+  # Check if API Gateway CloudWatch role already exists
+  print_message "$YELLOW" "  Checking for existing API Gateway CloudWatch role..."
+  CREATE_CLOUDWATCH_ROLE="true"
+  if [[ -n "$AWS_PROFILE" ]]; then
+    if aws iam get-role --role-name apigateway-cloudwatch-publish-role --profile "$AWS_PROFILE" --region "$AWS_REGION" >/dev/null 2>&1; then
+      CREATE_CLOUDWATCH_ROLE="false"
+      print_message "$GREEN" "  ✓ API Gateway CloudWatch role already exists, skipping creation"
+    else
+      print_message "$YELLOW" "  API Gateway CloudWatch role does not exist, will create it"
+    fi
+  else
+    if aws iam get-role --role-name apigateway-cloudwatch-publish-role --region "$AWS_REGION" >/dev/null 2>&1; then
+      CREATE_CLOUDWATCH_ROLE="false"
+      print_message "$GREEN" "  ✓ API Gateway CloudWatch role already exists, skipping creation"
+    else
+      print_message "$YELLOW" "  API Gateway CloudWatch role does not exist, will create it"
+    fi
+  fi
+  
   # Build parameter overrides
-  PARAM_OVERRIDES="EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE"
+  PARAM_OVERRIDES="EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE CreateCloudWatchRole=$CREATE_CLOUDWATCH_ROLE"
   if [ ! -z "$ADMIN_EMAIL" ]; then
     PARAM_OVERRIDES="$PARAM_OVERRIDES AdminEmailParameter=$ADMIN_EMAIL"
     print_message "$YELLOW" "  Using admin email: $ADMIN_EMAIL"

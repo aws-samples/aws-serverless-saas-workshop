@@ -45,7 +45,14 @@ Parameters:
   TenantUserPoolCallbackURLParameter:
     Type: String
     Default: "http://example.com"
-    Description: "Enter Tenant Management userpool call back url"   
+    Description: "Enter Tenant Management userpool call back url"
+  CreateCloudWatchRole:
+    Type: String
+    Default: "true"
+    AllowedValues:
+      - "true"
+      - "false"
+    Description: "Whether to create the API Gateway CloudWatch role (set to false if role already exists)"
 Conditions:
   IsNotRunningInEventEngine: !Not [ !Equals [ !Ref EventEngineParameter, true] ]   
 Resources:
@@ -126,7 +133,8 @@ Resources:
         CreateUserFunctionArn: !GetAtt LambdaFunctions.Outputs.CreateUserFunctionArn
         DisableUsersByTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.DisableUsersByTenantFunctionArn
         EnableUsersByTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.EnableUsersByTenantFunctionArn                  
-        AuthorizerFunctionArn: !GetAtt LambdaFunctions.Outputs.SharedServicesAuthorizerFunctionArn  
+        AuthorizerFunctionArn: !GetAtt LambdaFunctions.Outputs.SharedServicesAuthorizerFunctionArn
+        CreateCloudWatchRole: !Ref CreateCloudWatchRole  
         
   APIGatewayLambdaPermissions:
     Type: AWS::Serverless::Application

@@ -66,13 +66,14 @@ The Application client uses **TWO different API URLs**:
 
 Before starting this lab, ensure you have:
 
-1. **Completed Lab 2** - This lab builds on the shared services infrastructure from Lab 2
+1. **AWS Account**: With appropriate permissions to create Lambda, DynamoDB, API Gateway, Cognito, CloudFront, and S3 resources
 2. **AWS CLI configured** with appropriate credentials and the `serverless-saas-demo` profile
 3. **AWS SAM CLI installed** (version 1.70.0 or later)
 4. **Docker installed and running** (required for SAM builds)
 5. **Node.js and npm installed** (for Angular applications)
 6. **Python 3.14 or later** installed
-7. **At least two tenants onboarded** in Lab 2 (tenant1 and tenant2 recommended)
+
+**Lab Independence**: This lab is completely self-contained and does NOT require Lab 2 or any other lab to be deployed first. Lab 3 creates its own complete infrastructure including Cognito user pools, tenant management, API Gateways, and DynamoDB tables. The deployment script automatically creates sample tenants for testing.
 
 **Verify Prerequisites:**
 ```

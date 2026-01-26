@@ -65,7 +65,14 @@ Parameters:
   TenantUserPoolCallbackURLParameter:
     Type: String
     Default: "http://example.com"
-    Description: "Enter Tenant Management userpool call back url"   
+    Description: "Enter Tenant Management userpool call back url"
+  CreateCloudWatchRole:
+    Type: String
+    Default: "true"
+    AllowedValues:
+      - "true"
+      - "false"
+    Description: "Whether to create the API Gateway CloudWatch role (set to false if role already exists)"
 Conditions:
   IsNotRunningInEventEngine: !Not [ !Equals [ !Ref EventEngineParameter, true] ]
 Resources:
@@ -164,7 +171,8 @@ Resources:
         ApiKeyBasicTierParameter: !Ref ApiKeyBasicTierParameter
         Environment: !Ref Environment
         Owner: !Ref Owner
-        CostCenter: !Ref CostCenter 
+        CostCenter: !Ref CostCenter
+        CreateCloudWatchRole: !Ref CreateCloudWatchRole 
         
   APIGatewayLambdaPermissions:
     Type: AWS::Serverless::Application

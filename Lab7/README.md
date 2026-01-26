@@ -70,9 +70,13 @@ Before starting this lab, ensure you have:
 - **SAM CLI**: Version 1.70.0 or later
 - **Python 3.14**: Installed on your local machine
 - **Docker**: Running (required for SAM local testing)
-- **Completed Lab 3**: This lab builds on the tenant-level metrics captured in Lab 3
 
-**Important**: This lab uses tenant consumption data generated in Lab 3. If you're running Lab 7 on a different day than Lab 3, you may need to generate fresh data by adding/updating products and orders, or modify the aggregation code to broaden the date range.
+**Lab Independence**: This lab is completely independent and does NOT require Lab 3 or any other lab to be deployed first. The deployment script automatically generates sample data in two ways:
+
+1. **Sample CUR Data**: The AWSCURInitializer Lambda function creates sample Cost and Usage Report (CUR) data in S3
+2. **Sample Lambda Invocations**: The deployment script runs 30 Lambda invocations (10 create + 10 update + 10 get) to generate CloudWatch Logs for cost attribution analysis
+
+While Lab 7's cost attribution analysis is more meaningful with real tenant activity from Lab 3, it works independently with its own generated sample data.
 
 ## Architecture
 
@@ -103,17 +107,20 @@ Lab 7 deploys a cost attribution system that consists of:
 │                     Cost Attribution Process                     │
 └─────────────────────────────────────────────────────────────────┘
 
-Step 1: Capture Tenant Metrics (Lab 3)
+Step 1: Generate Sample Data (Automatic)
 ┌──────────────────────────────────────┐
-│  Application Services                │
-│  ├─ Product Service (Lambda)         │
-│  ├─ Order Service (Lambda)           │
-│  └─ DynamoDB Tables                  │
+│  Deployment Script                   │
+│  ├─ AWSCURInitializer Lambda         │
+│  │  └─ Creates sample CUR data       │
+│  └─ 30 Lambda Invocations            │
+│     ├─ 10 create-product calls       │
+│     ├─ 10 update-product calls       │
+│     └─ 10 get-products calls         │
 │                                      │
-│  Metrics Published:                  │
-│  • DynamoDB Read/Write Capacity      │
-│  • Lambda Invocations                │
-│  • Tenant Context in Logs            │
+│  Generates:                          │
+│  • Sample Cost and Usage Reports     │
+│  • CloudWatch Logs with tenant data  │
+│  • DynamoDB capacity unit metrics    │
 └──────────────────────────────────────┘
            │
            ▼
@@ -124,7 +131,7 @@ Step 1: Capture Tenant Metrics (Lab 3)
 │  • Capacity unit consumption         │
 └──────────────────────────────────────┘
 
-Step 2: Aggregate Usage (Lab 7)
+Step 2: Aggregate Usage
 ┌──────────────────────────────────────┐
 │  Lambda Functions (Scheduled)        │
 │  ├─ GetDynamoDBUsageAndCostByTenant  │
@@ -305,6 +312,10 @@ The deployment script will:
 4. Deploy Lambda functions for cost attribution
 5. Create DynamoDB table for storing attribution results
 6. Set up EventBridge rules to run Lambda functions every 5 minutes
+7. **Generate sample data automatically**:
+   - Upload sample CUR data via AWSCURInitializer Lambda
+   - Run 30 Lambda invocations (10 create + 10 update + 10 get) to generate CloudWatch Logs
+   - Wait 4 minutes for CloudWatch Logs ingestion and indexing
 
 Wait for the deployment to complete successfully before proceeding.
 
@@ -435,7 +446,7 @@ aws dynamodb query \
 
 ### How DynamoDB Cost Attribution Works
 
-1. **Capture Metrics**: In Lab 3, we instrumented the application to log DynamoDB capacity units consumed per request
+1. **Generate Sample Data**: The deployment script automatically generates sample tenant usage data through Lambda invocations
 2. **Aggregate Usage**: CloudWatch Logs Insights queries aggregate Read/Write Capacity Units by tenant per day
 3. **Get Service Cost**: Athena queries the CUR to get total DynamoDB cost for the day
 4. **Calculate Attribution**:
@@ -448,7 +459,7 @@ aws dynamodb query \
 
 ### How Lambda Cost Attribution Works
 
-1. **Capture Metrics**: Application logs "Request completed" messages with tenant context
+1. **Generate Sample Data**: The deployment script automatically runs Lambda invocations with tenant context
 2. **Aggregate Usage**: CloudWatch Logs Insights counts Lambda invocations per tenant per day
 3. **Get Service Cost**: Athena queries the CUR to get total Lambda cost for the day
 4. **Calculate Attribution**:
@@ -489,16 +500,16 @@ aws dynamodb query \
 **Symptom**: The `TenantCostAndUsageAttributionTable` is empty after 10+ minutes.
 
 **Possible Causes**:
-1. No tenant usage data from Lab 3
-2. Lambda functions failing to execute
-3. CloudWatch Logs Insights queries returning no results
+1. Lambda functions failing to execute
+2. CloudWatch Logs Insights queries returning no results
+3. EventBridge rules not triggering
 
 **Solutions**:
 
-1. **Generate Fresh Usage Data**:
-   - If you completed Lab 3 on a previous day, the current day has no usage data
-   - Go back to Lab 3 and add/update some products and orders
-   - Wait 5 minutes for the attribution Lambda to run again
+1. **Wait for Scheduled Execution**:
+   - The deployment script generates sample data automatically
+   - EventBridge rules run every 5 minutes
+   - Wait at least 10 minutes after deployment for initial results
 
 2. **Check Lambda Function Logs**:
    ```
@@ -533,16 +544,16 @@ aws dynamodb query \
 1. **Verify Log Groups Exist**:
    ```
    aws logs describe-log-groups \
-     --log-group-name-prefix "/aws/lambda/serverless-saas-lab3" \
+     --log-group-name-prefix "/aws/lambda/serverless-saas-lab7" \
      --profile serverless-saas-demo
    ```
 
 2. **Check IAM Permissions**:
    - Lambda execution role needs `logs:StartQuery` and `logs:GetQueryResults` permissions
-   - Verify the role has access to Lab 3 log groups
+   - Verify the role has access to Lab 7 log groups
 
 3. **Adjust Date Range**:
-   - If running Lab 7 days after Lab 3, modify the date range in the Lambda function
+   - If running Lab 7 days after initial deployment, modify the date range in the Lambda function
    - Update `start_date_time` and `end_date_time` variables
 
 ### Athena Query Failures

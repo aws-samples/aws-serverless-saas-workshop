@@ -278,10 +278,12 @@ All cleanup scripts follow secure deletion order:
 
 ### Lab Progression
 - **Lab 1**: Standalone - no dependencies
-- **Lab 2**: Builds on Lab 1 concepts
-- **Lab 3**: Requires understanding of Lab 2 (tenant management)
-- **Lab 4**: Extends Lab 3 with IAM-based isolation
-- **Lab 5**: Extends Lab 4 with automated deployment
+- **Lab 2**: Standalone - no dependencies
+- **Lab 3**: Standalone - creates its own complete infrastructure (Cognito, tenant management, shared services)
+- **Lab 4**: Standalone - self-contained with IAM-based isolation
+- **Lab 5**: Standalone - self-contained with tier-based deployment
+- **Lab 6**: Standalone - self-contained with tenant throttling
+- **Lab 7**: Standalone - generates its own sample data for cost attribution
 - **Lab 6**: Extends Lab 5 with throttling
 - **Lab 7**: Standalone - demonstrates cost attribution
 

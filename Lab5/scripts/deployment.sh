@@ -434,16 +434,26 @@ if [[ $DEPLOY_BOOTSTRAP -eq 1 ]]; then
   }
   print_message "$GREEN" "  ✓ SAM build completed"
   
+  # Check if API Gateway CloudWatch role already exists
+  print_message "$YELLOW" "  Checking for existing API Gateway CloudWatch role..."
+  CREATE_CLOUDWATCH_ROLE="true"
+  PROFILE_ARG=$(get_profile_arg)
+  if aws iam get-role --role-name apigateway-cloudwatch-publish-role $PROFILE_ARG --region "$AWS_REGION" >/dev/null 2>&1; then
+    CREATE_CLOUDWATCH_ROLE="false"
+    print_message "$GREEN" "  ✓ API Gateway CloudWatch role already exists, skipping creation"
+  else
+    print_message "$YELLOW" "  API Gateway CloudWatch role does not exist, will create it"
+  fi
+  
   # Deploy SAM application
   print_message "$YELLOW" "  Deploying shared infrastructure stack: $SHARED_STACK_NAME"
-  PROFILE_ARG=$(get_profile_arg)
   if [ "$IS_RUNNING_IN_EVENT_ENGINE" = true ]; then
     sam deploy \
         $PROFILE_ARG \
         --config-file shared-samconfig.toml \
         --region "$AWS_REGION" \
         --stack-name "$SHARED_STACK_NAME" \
-        --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE AdminUserPoolCallbackURLParameter=$ADMIN_SITE_URL TenantUserPoolCallbackURLParameter=$APP_SITE_URL \
+        --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE CreateCloudWatchRole=$CREATE_CLOUDWATCH_ROLE AdminUserPoolCallbackURLParameter=$ADMIN_SITE_URL TenantUserPoolCallbackURLParameter=$APP_SITE_URL \
         --no-fail-on-empty-changeset || {
         print_message "$RED" "Error: SAM deployment failed"
         exit 1
@@ -454,7 +464,7 @@ if [[ $DEPLOY_BOOTSTRAP -eq 1 ]]; then
         --config-file shared-samconfig.toml \
         --region "$AWS_REGION" \
         --stack-name "$SHARED_STACK_NAME" \
-        --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE \
+        --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE CreateCloudWatchRole=$CREATE_CLOUDWATCH_ROLE \
         --no-fail-on-empty-changeset || {
         print_message "$RED" "Error: SAM deployment failed"
         exit 1

@@ -380,28 +380,47 @@ EOF
   }
   print_message "$GREEN" "  ✓ SAM build completed"
 
+  # Check if API Gateway CloudWatch role already exists
+  print_message "$YELLOW" "  Checking for existing API Gateway CloudWatch role..."
+  CREATE_CLOUDWATCH_ROLE="true"
+  if [[ -n "$AWS_PROFILE" ]]; then
+    if aws iam get-role --role-name apigateway-cloudwatch-publish-role --profile "$AWS_PROFILE" --region "$AWS_REGION" >/dev/null 2>&1; then
+      CREATE_CLOUDWATCH_ROLE="false"
+      print_message "$GREEN" "  ✓ API Gateway CloudWatch role already exists, skipping creation"
+    else
+      print_message "$YELLOW" "  API Gateway CloudWatch role does not exist, will create it"
+    fi
+  else
+    if aws iam get-role --role-name apigateway-cloudwatch-publish-role --region "$AWS_REGION" >/dev/null 2>&1; then
+      CREATE_CLOUDWATCH_ROLE="false"
+      print_message "$GREEN" "  ✓ API Gateway CloudWatch role already exists, skipping creation"
+    else
+      print_message "$YELLOW" "  API Gateway CloudWatch role does not exist, will create it"
+    fi
+  fi
+
   # Deploy SAM application
   print_message "$YELLOW" "  Deploying SAM application to stack: $STACK_NAME"
   if [ "$IS_RUNNING_IN_EVENT_ENGINE" = true ]; then
     if [[ -n "$AWS_PROFILE" ]]; then
-      sam deploy --config-file samconfig.toml --profile "$AWS_PROFILE" --region="$AWS_REGION" --stack-name "$STACK_NAME" --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE AdminUserPoolCallbackURLParameter=$ADMIN_SITE_URL --no-fail-on-empty-changeset || {
+      sam deploy --config-file samconfig.toml --profile "$AWS_PROFILE" --region="$AWS_REGION" --stack-name "$STACK_NAME" --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE CreateCloudWatchRole=$CREATE_CLOUDWATCH_ROLE AdminUserPoolCallbackURLParameter=$ADMIN_SITE_URL --no-fail-on-empty-changeset || {
         print_message "$RED" "Error: SAM deployment failed"
         exit 1
       }
     else
-      sam deploy --config-file samconfig.toml --region="$AWS_REGION" --stack-name "$STACK_NAME" --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE AdminUserPoolCallbackURLParameter=$ADMIN_SITE_URL --no-fail-on-empty-changeset || {
+      sam deploy --config-file samconfig.toml --region="$AWS_REGION" --stack-name "$STACK_NAME" --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE CreateCloudWatchRole=$CREATE_CLOUDWATCH_ROLE AdminUserPoolCallbackURLParameter=$ADMIN_SITE_URL --no-fail-on-empty-changeset || {
         print_message "$RED" "Error: SAM deployment failed"
         exit 1
       }
     fi
   else
     if [[ -n "$AWS_PROFILE" ]]; then
-      sam deploy --config-file samconfig.toml --profile "$AWS_PROFILE" --region="$AWS_REGION" --stack-name "$STACK_NAME" --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE --no-fail-on-empty-changeset || {
+      sam deploy --config-file samconfig.toml --profile "$AWS_PROFILE" --region="$AWS_REGION" --stack-name "$STACK_NAME" --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE CreateCloudWatchRole=$CREATE_CLOUDWATCH_ROLE --no-fail-on-empty-changeset || {
         print_message "$RED" "Error: SAM deployment failed"
         exit 1
       }
     else
-      sam deploy --config-file samconfig.toml --region="$AWS_REGION" --stack-name "$STACK_NAME" --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE --no-fail-on-empty-changeset || {
+      sam deploy --config-file samconfig.toml --region="$AWS_REGION" --stack-name "$STACK_NAME" --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE CreateCloudWatchRole=$CREATE_CLOUDWATCH_ROLE --no-fail-on-empty-changeset || {
         print_message "$RED" "Error: SAM deployment failed"
         exit 1
       }
