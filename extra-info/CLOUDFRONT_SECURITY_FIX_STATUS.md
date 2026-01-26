@@ -33,7 +33,7 @@ All lab cleanup scripts were deleting S3 buckets BEFORE CloudFormation stacks (w
 - [x] Tested and verified
 
 **Changes Made**:
-```bash
+```
 # OLD (VULNERABLE):
 # Step 1: Clean up S3 buckets (aws s3 rm...)
 # Step 2: Delete CloudFormation stack
@@ -52,7 +52,7 @@ All lab cleanup scripts were deleting S3 buckets BEFORE CloudFormation stacks (w
 - [x] Tested and verified
 
 **Changes Made**:
-```bash
+```
 # OLD (VULNERABLE):
 # Step 1: Clean up S3 buckets (aws s3 rm...)
 # Step 2: Delete CloudFormation stack
@@ -71,7 +71,7 @@ All lab cleanup scripts were deleting S3 buckets BEFORE CloudFormation stacks (w
 - [x] All 3 buckets (AdminAppSite, LandingApplicationSite, ApplicationSite) deleted after CloudFront
 
 **Changes Made**:
-```bash
+```
 # OLD (VULNERABLE):
 # Step 1: Clean up S3 buckets (aws s3 rm...)
 # Step 2: Delete tenant stack
@@ -92,7 +92,7 @@ All lab cleanup scripts were deleting S3 buckets BEFORE CloudFormation stacks (w
 - [x] All 3 buckets (AdminAppSite, LandingApplicationSite, ApplicationSite) deleted after CloudFront
 
 **Changes Made**:
-```bash
+```
 # OLD (VULNERABLE):
 # Step 1: Clean up S3 buckets (aws s3 rm...)
 # Step 2: Delete tenant stack
@@ -114,7 +114,7 @@ All lab cleanup scripts were deleting S3 buckets BEFORE CloudFormation stacks (w
 - [x] All 3 buckets (AdminAppSite, ApplicationSite, LandingApplicationSite) deleted after CloudFront
 
 **Changes Made**:
-```bash
+```
 # OLD (VULNERABLE):
 # Step 2: Identify S3 buckets
 # Step 3: Empty S3 buckets ❌ DANGEROUS - CloudFront still exists!
@@ -134,7 +134,7 @@ All lab cleanup scripts were deleting S3 buckets BEFORE CloudFormation stacks (w
 - [x] All 3 buckets (AdminAppSite, ApplicationSite, LandingApplicationSite) deleted after CloudFront
 
 **Changes Made**:
-```bash
+```
 # OLD (VULNERABLE):
 # Step 2: Identify S3 buckets
 # Step 4: Empty S3 buckets ❌ DANGEROUS - CloudFront still exists!

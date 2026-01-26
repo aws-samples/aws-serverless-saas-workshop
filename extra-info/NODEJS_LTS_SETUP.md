@@ -22,25 +22,25 @@ NVM allows you to install and switch between multiple Node.js versions easily.
 
 #### Install nvm (macOS/Linux)
 
-```bash
+```
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
 ```
 
 Or using wget:
 
-```bash
+```
 wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
 ```
 
 Restart your terminal or run:
 
-```bash
+```
 source ~/.bashrc  # or ~/.zshrc for zsh
 ```
 
 #### Install Node.js LTS
 
-```bash
+```
 # Install latest LTS version
 nvm install --lts
 
@@ -57,7 +57,7 @@ nvm alias default 20
 
 #### Switch Between Versions
 
-```bash
+```
 # List installed versions
 nvm list
 
@@ -75,7 +75,7 @@ node --version
 
 Using Homebrew:
 
-```bash
+```
 # Install Node.js 20 (LTS)
 brew install node@20
 
@@ -98,7 +98,7 @@ node --version
 
 #### Linux (Ubuntu/Debian)
 
-```bash
+```
 # Install Node.js 20 LTS
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt-get install -y nodejs
@@ -111,7 +111,7 @@ node --version
 
 After installation, verify you have an LTS version:
 
-```bash
+```
 node --version
 ```
 
@@ -128,7 +128,7 @@ NOT odd-numbered versions like:
 
 Once you have Node.js LTS installed, you can deploy the workshop labs:
 
-```bash
+```
 cd workshop/Lab1/scripts
 ./deployment.sh -s -c --region us-west-2
 ```
@@ -144,7 +144,7 @@ The deployment script will:
 
 Make sure Node.js is in your PATH. If using nvm:
 
-```bash
+```
 nvm use --lts
 ```
 
@@ -152,7 +152,7 @@ nvm use --lts
 
 This usually indicates a non-LTS Node.js version. Switch to LTS:
 
-```bash
+```
 nvm use 20
 ```
 
@@ -160,7 +160,7 @@ nvm use 20
 
 Use nvm to manage versions:
 
-```bash
+```
 # List all installed versions
 nvm list
 

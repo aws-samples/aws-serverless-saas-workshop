@@ -44,7 +44,7 @@ Lambda functions use AWS Lambda PowerTools for structured JSON logging with:
 
 ### Step 1: Navigate to Lab7 Directory
 
-```bash
+```
 cd aws-serverless-saas-workshop/Lab7
 ```
 
@@ -52,7 +52,7 @@ cd aws-serverless-saas-workshop/Lab7
 
 The deployment script handles everything needed for the workshop:
 
-```bash
+```
 cd scripts
 ./deployment.sh
 ```
@@ -176,7 +176,7 @@ tenant_cost = tenant_percentage * total_service_cost
 
 Wait 90 seconds after deployment, then run:
 
-```bash
+```
 aws dynamodb scan --table-name TenantCostAndUsageAttribution-lab7
 ```
 
@@ -196,7 +196,7 @@ You should see items with:
 
 View logs from tenant Lambda functions:
 
-```bash
+```
 # Create Product Function logs
 aws logs tail /aws/lambda/create-product-pooled-lab7 --follow
 
@@ -215,7 +215,7 @@ You should see PowerTools structured JSON log entries with fields like:
 
 View logs from cost attribution functions:
 
-```bash
+```
 # DynamoDB cost attribution
 aws logs tail /aws/lambda/serverless-saas-lab7-get-dynamodb-usage-and-cost-by-tenant --follow
 
@@ -227,7 +227,7 @@ aws logs tail /aws/lambda/serverless-saas-lab7-get-lambda-usage-and-cost-by-tena
 
 Check that EventBridge rules are enabled and triggering:
 
-```bash
+```
 aws events list-rules --name-prefix "Calculate" --query "Rules[?contains(Name, 'lab7')]"
 ```
 
@@ -237,7 +237,7 @@ Both rules should show `State: "ENABLED"` and `ScheduleExpression: "rate(5 minut
 
 Get cost attribution for a specific tenant and service:
 
-```bash
+```
 aws dynamodb query \
   --table-name TenantCostAndUsageAttribution-lab7 \
   --key-condition-expression "TenantId#ServiceName = :pk" \
@@ -250,7 +250,7 @@ aws dynamodb query \
 
 To generate more tenant activity and see cost attribution update:
 
-```bash
+```
 # Generate 10 more product creations
 for i in {100..110}; do
   aws lambda invoke \
@@ -323,7 +323,7 @@ Use QuickSight or CloudWatch Dashboards to visualize tenant costs over time.
 
 To remove all Lab7 resources:
 
-```bash
+```
 cd scripts
 ./cleanup.sh
 ```
@@ -344,34 +344,34 @@ This will delete:
 ### Cost Attribution Data Not Appearing
 
 1. **Check EventBridge Rules are enabled:**
-   ```bash
+   ```
    aws events list-rules --query "Rules[?contains(Name, 'lab7')]"
    ```
 
 2. **Check Lambda function logs for errors:**
-   ```bash
+   ```
    aws logs tail /aws/lambda/serverless-saas-lab7-get-dynamodb-usage-and-cost-by-tenant
    ```
 
 3. **Verify CloudWatch Logs contain usage data:**
-   ```bash
+   ```
    aws logs tail /aws/lambda/create-product-pooled-lab7
    ```
 
 ### Athena Query Failures
 
 1. **Check Glue Database exists:**
-   ```bash
+   ```
    aws glue get-database --name costexplorerdb-lab7
    ```
 
 2. **Check Glue Crawler has run:**
-   ```bash
+   ```
    aws glue get-crawler --name AWSCURCrawler-Multi-tenant-lab7
    ```
 
 3. **Manually trigger crawler if needed:**
-   ```bash
+   ```
    aws lambda invoke \
      --function-name serverless-saas-lab7-aws-cur-initializer \
      output.json
@@ -381,7 +381,7 @@ This will delete:
 
 Re-run the invocation generation:
 
-```bash
+```
 for i in {1..10}; do
   aws lambda invoke \
     --function-name create-product-pooled-lab7 \
@@ -400,14 +400,14 @@ done
 **Solutions**:
 
 1. **Wait for next attribution run** (recommended):
-   ```bash
+   ```
    # Attribution runs every 5 minutes, wait and check again
    sleep 300
    aws dynamodb scan --table-name TenantCostAndUsageAttribution-lab7 --region us-east-1
    ```
 
 2. **Verify all logs exist** (they should):
-   ```bash
+   ```
    # Check actual log count (should be 30)
    aws logs filter-log-events \
      --log-group-name /aws/lambda/create-product-pooled-lab7 \

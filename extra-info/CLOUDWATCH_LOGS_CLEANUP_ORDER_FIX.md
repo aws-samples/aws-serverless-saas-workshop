@@ -95,7 +95,7 @@ SetExecutionLogsRetention:
 ### Option 3: Manual Post-Deployment Script
 Create a script to set retention after deployment:
 
-```bash
+```
 #!/bin/bash
 # set-execution-log-retention.sh
 
@@ -168,7 +168,7 @@ Status: ✅ Auto-created by AWS (expected behavior due to technical limitation)
 
 ✅ **Already Fixed** - The cleanup script properly deletes API Gateway execution logs:
 
-```bash
+```
 # From workshop/Lab2/scripts/cleanup.sh (and all other lab cleanup scripts)
 echo "Deleting API Gateway execution logs..."
 if [ -n "$ADMIN_API_GATEWAY_ID" ]; then

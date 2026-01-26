@@ -23,7 +23,7 @@
 
 The deployment script references Lab5 pre-built files as a **fallback only**:
 
-```bash
+```
 if [ -d "../../Lab5/client/Landing/dist" ] && [ -d "../../Lab5/client/Admin/dist" ] && [ -d "../../Lab5/client/Application/dist" ]; then
   USE_PREBUILT=true
 fi
@@ -100,7 +100,7 @@ All Lab6 resources follow the naming convention from `RESOURCE_NAMING_CONVENTION
 
 ## Deployment Commands
 
-```bash
+```
 # Standard deployment (server + client)
 cd Lab6/scripts
 ./deployment.sh
@@ -111,7 +111,7 @@ cd Lab6/scripts
 
 ## Cleanup Commands
 
-```bash
+```
 # Interactive cleanup with confirmation
 cd Lab6/scripts
 ./cleanup.sh

@@ -19,7 +19,7 @@ This caused deployments to use the wrong AWS account even when `--profile` was s
 ## Example of Bug Impact
 
 When running:
-```bash
+```
 ./deployment.sh -s --profile serverless-saas-demo
 ```
 
@@ -30,7 +30,7 @@ Actual account: `775183867997` (default profile)
 
 Missing code to set `PROFILE_ARG` based on `AWS_PROFILE`:
 
-```bash
+```
 # This code was missing:
 PROFILE_ARG=""
 if [[ -n "$AWS_PROFILE" ]]; then

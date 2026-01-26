@@ -85,13 +85,13 @@ For our crawler named `AWSCURCrawler-Multi-tenant-lab7`, the log group is:
 To verify the changes work correctly:
 
 1. Deploy Lab7:
-   ```bash
+   ```
    cd workshop/Lab7/scripts
    ./deployment.sh --profile serverless-saas-demo
    ```
 
 2. Verify the log group was created with correct retention:
-   ```bash
+   ```
    aws logs describe-log-groups \
      --log-group-name-prefix /aws-glue/crawlers/AWSCURCrawler-Multi-tenant-lab7 \
      --region us-east-1 \
@@ -111,7 +111,7 @@ To verify the changes work correctly:
    ```
 
 3. Run cleanup and verify log group is deleted:
-   ```bash
+   ```
    cd workshop/Lab7/scripts
    echo "yes" | ./cleanup.sh --profile serverless-saas-demo
    ```

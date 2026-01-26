@@ -17,7 +17,7 @@ This manual provides step-by-step instructions for deploying and cleaning up eac
 All workshop scripts have proper shebang lines (`#!/bin/bash`) and MUST be executed directly:
 
 ✅ **CORRECT:**
-```bash
+```
 ./scripts/deployment.sh --profile <your-profile-name>
 ./scripts/cleanup.sh --profile <your-profile-name>
 cd workshop/Lab1/scripts
@@ -25,7 +25,7 @@ cd workshop/Lab1/scripts
 ```
 
 ❌ **ABSOLUTELY WRONG - NEVER DO THIS:**
-```bash
+```
 bash scripts/deployment.sh --profile <your-profile-name>
 bash scripts/cleanup.sh --profile <your-profile-name>
 bash deployment.sh -s -c --profile <your-profile-name>
@@ -38,7 +38,7 @@ bash deployment.sh -s -c --profile <your-profile-name>
 - This is NOT optional - using `bash` WILL cause errors
 
 **If you get "Permission denied" errors:**
-```bash
+```
 chmod +x scripts/*.sh
 ```
 
@@ -54,7 +54,7 @@ chmod +x scripts/*.sh
 
 ### AWS Credentials
 Ensure your AWS credentials are configured with your profile:
-```bash
+```
 aws configure --profile <your-profile-name>
 # Or verify existing profile:
 aws sts get-caller-identity --profile <your-profile-name>
@@ -108,7 +108,7 @@ curl <API_URL>/products
 ### Cleanup
 
 **Option 1: Using cleanup script**:
-```bash
+```
 cd workshop/scripts
 ./cleanup.sh
 # Select 'Y' when prompted to delete serverless-saas-workshop-lab1
@@ -141,7 +141,7 @@ aws logs describe-log-groups \
 **Location**: `workshop/Lab2/server/`
 
 **Commands**:
-```bash
+```
 cd workshop/Lab2/server
 
 # Deploy using the deployment script
@@ -176,7 +176,7 @@ Admin User:
 
 ### Cleanup
 
-```bash
+```
 cd workshop/scripts
 ./cleanup.sh
 # Select 'Y' when prompted to delete stack-pooled
@@ -191,7 +191,7 @@ cd workshop/scripts
 **Location**: `workshop/Lab3/server/`
 
 **Commands**:
-```bash
+```
 cd workshop/Lab3/server
 
 # Deploy server and client
@@ -219,7 +219,7 @@ Tenant Admin:
 
 ### Cleanup
 
-```bash
+```
 cd workshop/scripts
 ./cleanup.sh
 # Script will automatically find and delete all tenant stacks (stack-*)
@@ -235,7 +235,7 @@ cd workshop/scripts
 **Location**: `workshop/Lab4/server/`
 
 **Commands**:
-```bash
+```
 cd workshop/Lab4/server
 
 # Deploy server and client
@@ -255,7 +255,7 @@ cd workshop/Lab4/server
 
 ### Cleanup
 
-```bash
+```
 cd workshop/scripts
 ./cleanup.sh
 # Script will delete all tenant stacks and shared services
@@ -270,7 +270,7 @@ cd workshop/scripts
 **Location**: `workshop/Lab5/server/`
 
 **Commands**:
-```bash
+```
 cd workshop/Lab5/server
 
 # Deploy server and client
@@ -311,7 +311,7 @@ This is expected behavior and won't affect pipeline functionality, as the pipeli
 
 ### Cleanup
 
-```bash
+```
 cd workshop/scripts
 ./cleanup.sh
 # Deletes pipeline stack, serverless-saas stack, and CodeCommit repo
@@ -326,7 +326,7 @@ cd workshop/scripts
 **Location**: `workshop/Lab6/server/`
 
 **Commands**:
-```bash
+```
 cd workshop/Lab6/server
 
 # Deploy in background with screen
@@ -365,7 +365,7 @@ All CodePipeline-related resources follow consistent naming patterns:
 - **Lambda Log Group**: `/aws/lambda/serverless-saas-lab6-deploy-tenant-stack`
 
 **Testing Throttling**:
-```bash
+```
 cd workshop/Lab6/server
 ./test-basic-tier-throttling.sh [JWT_TOKEN]
 # Expected: ~50% requests return 429 (throttled)
@@ -380,7 +380,7 @@ Admin User:
 
 ### Cleanup
 
-```bash
+```
 cd workshop/Lab6/server
 ./cleanup.sh
 # Runs parallel cleanup operations with timestamped logs
@@ -395,7 +395,7 @@ cd workshop/Lab6/server
 **Location**: `workshop/Lab7/scripts/`
 
 **Commands**:
-```bash
+```
 cd workshop/Lab7/scripts
 
 # Deploy using the deployment script
@@ -445,7 +445,7 @@ aws events list-rules \
 
 ### Cleanup
 
-```bash
+```
 cd workshop/Lab7/scripts
 
 # Run cleanup script
@@ -788,7 +788,7 @@ This ensures:
 **All scripts MUST be executed directly with `./` prefix - NEVER use `bash` command:**
 
 ✅ **CORRECT:**
-```bash
+```
 ./scripts/deployment.sh --profile serverless-saas-demo
 ./scripts/cleanup.sh --profile serverless-saas-demo
 cd workshop/Lab1/scripts
@@ -796,7 +796,7 @@ cd workshop/Lab1/scripts
 ```
 
 ❌ **WRONG - WILL CAUSE FAILURES:**
-```bash
+```
 bash scripts/deployment.sh --profile serverless-saas-demo
 bash scripts/cleanup.sh --profile serverless-saas-demo
 bash deployment.sh -s -c --profile serverless-saas-demo
@@ -807,7 +807,7 @@ bash deployment.sh -s -c --profile serverless-saas-demo
 ### Make Scripts Executable
 
 If you get "Permission denied" errors:
-```bash
+```
 chmod +x scripts/*.sh
 cd workshop/Lab1/scripts && chmod +x *.sh
 cd workshop/Lab2/scripts && chmod +x *.sh
@@ -817,7 +817,7 @@ cd workshop/Lab2/scripts && chmod +x *.sh
 ### Use Profile Parameter
 
 All scripts support `--profile` parameter:
-```bash
+```
 ./deployment.sh --profile <your-profile-name>
 ./cleanup.sh --profile <your-profile-name>
 ```

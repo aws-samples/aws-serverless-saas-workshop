@@ -65,7 +65,7 @@ All resources follow `RESOURCE_NAMING_CONVENTION.md`:
 ## 📋 Deployment Commands
 
 ### Full Deployment (Recommended)
-```bash
+```
 cd Lab6/scripts
 ./deployment.sh -s -c
 ```
@@ -79,22 +79,22 @@ This deploys:
 ### Partial Deployments
 
 **Server Only (Pipeline + Infrastructure):**
-```bash
+```
 ./deployment.sh -s
 ```
 
 **Pipeline Only:**
-```bash
+```
 ./deployment.sh -p
 ```
 
 **Bootstrap Only:**
-```bash
+```
 ./deployment.sh -b
 ```
 
 **Client Only:**
-```bash
+```
 ./deployment.sh -c
 ```
 
@@ -102,7 +102,7 @@ This deploys:
 
 ## 🧹 Cleanup Command
 
-```bash
+```
 cd Lab6/scripts
 ./cleanup.sh
 ```
@@ -176,13 +176,13 @@ Lab6 is now **100% complete** with:
 ## 🚀 Next Steps
 
 1. Run cleanup (if needed):
-   ```bash
+   ```
    cd Lab6/scripts
    ./cleanup.sh
    ```
 
 2. Deploy Lab6:
-   ```bash
+   ```
    ./deployment.sh -s -c
    ```
 

@@ -46,7 +46,7 @@ Secure Cleanup (FIXED):
 
 All cleanup scripts now follow this order:
 
-```bash
+```
 # Step 1: Identify S3 buckets (but don't delete yet)
 APP_SITE_BUCKET=$(aws cloudformation describe-stacks ...)
 
@@ -96,7 +96,7 @@ aws s3api delete-bucket --bucket $APP_SITE_BUCKET
 ### Code Changes
 
 **Before (INSECURE):**
-```bash
+```
 # Step 1: Empty S3 buckets ❌ DANGEROUS
 aws s3 rm "s3://$APP_SITE_BUCKET" --recursive
 
@@ -105,7 +105,7 @@ aws cloudformation delete-stack --stack-name "$STACK_NAME"
 ```
 
 **After (SECURE):**
-```bash
+```
 # Step 1: Identify S3 buckets (don't delete)
 APP_SITE_BUCKET=$(aws cloudformation describe-stacks ...)
 
@@ -122,7 +122,7 @@ aws s3 rm "s3://$APP_SITE_BUCKET" --recursive
 ### Verification Steps
 
 1. **Run cleanup script**:
-   ```bash
+   ```
    cd workshop/Lab1/scripts
    ./cleanup.sh --stack-name serverless-saas-lab1 --profile serverless-saas-demo
    ```
@@ -139,7 +139,7 @@ aws s3 rm "s3://$APP_SITE_BUCKET" --recursive
 
 ### Manual Verification
 
-```bash
+```
 # Check CloudFront distributions
 aws cloudfront list-distributions --profile serverless-saas-demo
 

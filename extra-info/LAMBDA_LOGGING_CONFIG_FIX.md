@@ -155,7 +155,7 @@ Create test to validate:
 - **Result**: SUCCESS - No auto-created log groups appeared
 - **Log Groups Created**: 10 (all with 60-day retention)
 - **Verification Command**:
-  ```bash
+  ```
   aws logs describe-log-groups \
     --log-group-name-prefix /aws/lambda/serverless-saas-lab1 \
     --profile serverless-saas-demo \
@@ -184,7 +184,7 @@ Create test to validate:
 - **Log Groups Created**: 16 (all with 60-day retention)
 - **Lambda Function Test**: Invoked serverless-saas-lab2-get-tenants successfully
 - **Verification Commands**:
-  ```bash
+  ```
   # Check all log groups have 60-day retention
   aws logs describe-log-groups \
     --log-group-name-prefix /aws/lambda/serverless-saas-lab2 \

@@ -30,14 +30,14 @@ Lab6 implements **tier-based throttling** using AWS API Gateway Usage Plans. Thi
 
 ### Option 1: Standard Deployment (15-25 minutes)
 
-```bash
+```
 cd aws-serverless-saas-workshop/Lab6/scripts
 ./deployment.sh
 ```
 
 ### Option 2: Screen Session Deployment (Recommended for Remote Connections)
 
-```bash
+```
 cd aws-serverless-saas-workshop/Lab6/scripts
 ./deploy-with-screen.sh
 
@@ -78,7 +78,7 @@ App site URL: https://d2sip2r3llji1l.cloudfront.net
 
 Use the provided test script to verify tier-based throttling:
 
-```bash
+```
 cd aws-serverless-saas-workshop/Lab6/scripts
 
 # Get a JWT token for a basic tier tenant
@@ -97,7 +97,7 @@ Expected behavior:
 
 To remove all Lab6 resources:
 
-```bash
+```
 cd aws-serverless-saas-workshop/Lab6/scripts
 ./cleanup.sh
 ```
@@ -115,7 +115,7 @@ This will delete:
 ### Build Failures
 
 If SAM build fails:
-```bash
+```
 # Check Docker is running
 docker ps
 
@@ -127,7 +127,7 @@ sam build -t shared-template.yaml
 ### Deployment Failures
 
 Check CloudFormation console for detailed error messages:
-```bash
+```
 aws cloudformation describe-stack-events \
   --stack-name serverless-saas-workshop-shared-lab6 \
   --max-items 20
@@ -140,7 +140,7 @@ If throttling isn't working:
 2. Verify API key is associated with the correct usage plan
 3. Check API Gateway stage has usage plan attached
 
-```bash
+```
 # List usage plans
 aws apigateway get-usage-plans
 

@@ -22,7 +22,7 @@ Each lab is now self-contained with its own SAM bootstrap bucket:
 
 ### For Labs with Single samconfig.toml (Lab1, Lab2, Lab7)
 
-```bash
+```
 # Clean up SAM bootstrap bucket from samconfig.toml
 print_message "$YELLOW" "Cleaning up SAM bootstrap bucket from samconfig.toml..."
 
@@ -49,7 +49,7 @@ fi
 
 These labs have both `shared-samconfig.toml` and `tenant-samconfig.toml`, so they clean up both buckets:
 
-```bash
+```
 # Step 5.5: Clean up SAM bootstrap buckets from samconfig.toml files
 print_message "$YELLOW" "Step 5.5: Cleaning up SAM bootstrap buckets from samconfig.toml files..."
 
@@ -98,7 +98,7 @@ print_message "$GREEN" "SAM bootstrap bucket cleanup complete"
 
 Deployment scripts also follow the simple pattern of creating the bucket from samconfig.toml if it doesn't exist:
 
-```bash
+```
 # Get or create SAM S3 bucket from samconfig.toml
 DEFAULT_SAM_S3_BUCKET=$(grep s3_bucket samconfig.toml | cut -d'=' -f2 | cut -d \" -f2 2>/dev/null || echo "")
 

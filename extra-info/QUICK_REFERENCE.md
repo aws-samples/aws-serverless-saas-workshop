@@ -9,7 +9,7 @@
 - [ ] Valid AWS credentials configured
 
 ## Verify AWS Profile
-```bash
+```
 aws sts get-caller-identity --profile <your-profile-name>
 ```
 
@@ -40,7 +40,7 @@ cd workshop/Lab7/scripts && ./deployment.sh --profile <your-profile-name>
 
 ## One-Line Cleanup
 
-```bash
+```
 # All Labs (automatic - no prompts)
 cd workshop/scripts && ./cleanup.sh
 
@@ -74,7 +74,7 @@ Tenant Admin:
 
 ## Quick Verification
 
-```bash
+```
 # List all workshop stacks
 aws cloudformation list-stacks \
   --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE \
@@ -115,7 +115,7 @@ aws s3 ls --profile <your-profile-name> | grep serverless-saas
 
 ## Support Commands
 
-```bash
+```
 # Get stack outputs
 aws cloudformation describe-stacks \
   --stack-name <stack-name> \

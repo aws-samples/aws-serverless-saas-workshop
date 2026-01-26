@@ -31,7 +31,7 @@ This document provides a consolidated overview of all labs in the Serverless Saa
 - CloudWatch logs with 60-day retention
 
 **Deployment**:
-```bash
+```
 cd workshop/Lab1/scripts
 ./deployment.sh -s -c --profile serverless-saas-demo
 ```
@@ -59,7 +59,7 @@ cd workshop/Lab1/scripts
 5. **API Gateway Execution Logs Retention**: Documented technical limitation (circular dependency)
 
 **Deployment**:
-```bash
+```
 cd workshop/Lab2/scripts
 ./deployment.sh -s -c --email lancdieg@amazon.com --profile serverless-saas-demo
 ```
@@ -91,7 +91,7 @@ cd workshop/Lab2/scripts
 4. **Automatic Tenant Creation**: Updated condition to prevent errors
 
 **Deployment**:
-```bash
+```
 cd workshop/Lab3/scripts
 ./deployment.sh -s -c --email lancdieg@amazon.com --tenant-email lancdieg@amazon.com --profile serverless-saas-demo
 ```
@@ -122,7 +122,7 @@ cd workshop/Lab3/scripts
 3. **Region Configuration Consistency**: Updated all labs to use consistent region
 
 **Deployment**:
-```bash
+```
 cd workshop/Lab4/scripts
 ./deployment.sh -s -c --email lancdieg@amazon.com --tenant-email lancdieg@amazon.com --profile serverless-saas-demo
 ```
@@ -155,7 +155,7 @@ cd workshop/Lab4/scripts
 5. **Empty Tenant Handling**: Lambda handles empty tenant table
 
 **Deployment**:
-```bash
+```
 cd workshop/Lab5/scripts
 ./deployment.sh -s -c --profile serverless-saas-demo
 ```
@@ -187,7 +187,7 @@ cd workshop/Lab5/scripts
 5. **Deploy Stage Parameter Fix**: Added required CloudFormation parameters
 
 **Deployment**:
-```bash
+```
 cd workshop/Lab6/scripts
 ./deployment.sh -s -c --profile serverless-saas-demo
 ```
@@ -220,7 +220,7 @@ cd workshop/Lab6/scripts
 5. **Retry Logic Removed**: Simplified deployment script
 
 **Deployment**:
-```bash
+```
 cd workshop/Lab7/scripts
 ./deployment.sh --profile serverless-saas-demo
 ```

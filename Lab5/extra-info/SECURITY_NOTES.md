@@ -136,7 +136,7 @@ All authentication events are logged to CloudWatch:
 
 ### Audit Trail
 Track user activities:
-```bash
+```
 # View Cognito events
 aws logs tail /aws/cognito/userpools/POOL_ID --follow
 

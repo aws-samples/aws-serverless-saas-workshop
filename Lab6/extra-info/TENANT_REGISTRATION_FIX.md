@@ -38,7 +38,7 @@ The `lambda-deploy-tenant-stack.py` function had a logic issue:
 
 ### Immediate Fix
 Manually triggered the pipeline to run again:
-```bash
+```
 aws codepipeline start-pipeline-execution --name serverless-saas-pipeline-lab6 --region us-east-1
 ```
 

@@ -4,7 +4,7 @@
 
 Run the deployment in a persistent screen session:
 
-```bash
+```
 cd aws-serverless-saas-workshop/Lab5/scripts
 ./deploy-with-screen.sh
 ```
@@ -27,14 +27,14 @@ If you encounter errors during deployment, see [TROUBLESHOOTING.md](./TROUBLESHO
 ### Quick Fixes
 
 **Pipeline deploying old code?**
-```bash
+```
 # The script now auto-pushes, but if needed manually:
 git push cc HEAD:main --force
 aws codepipeline start-pipeline-execution --name serverless-saas-pipeline-lab5
 ```
 
 **Stack in ROLLBACK_COMPLETE?**
-```bash
+```
 # Check the failure reason
 aws cloudformation describe-stack-events --stack-name stack-lab5-pooled \
   --query 'StackEvents[?contains(ResourceStatus, `FAILED`)].[ResourceStatusReason]' \
@@ -54,13 +54,13 @@ See [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) for complete solutions.
 ### If You Get Disconnected
 
 Simply reconnect:
-```bash
+```
 screen -r lab5-deployment
 ```
 
 ### To Stop a Running Deployment
 
-```bash
+```
 # First, reconnect to the session
 screen -r lab5-deployment
 
@@ -74,7 +74,7 @@ screen -X -S lab5-deployment quit
 
 If you prefer to run the deployment directly:
 
-```bash
+```
 cd aws-serverless-saas-workshop/Lab5/scripts
 
 # Full deployment (server + client)

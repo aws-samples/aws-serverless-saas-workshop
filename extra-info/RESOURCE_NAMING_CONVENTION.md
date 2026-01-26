@@ -531,7 +531,7 @@ CostAttributionLogGroup:
 
 Use this AWS CLI command to verify tags on deployed resources:
 
-```bash
+```
 # List all resources with workshop tags
 aws resourcegroupstaggingapi get-resources \
   --tag-filters Key=Workshop,Values=serverless-saas \

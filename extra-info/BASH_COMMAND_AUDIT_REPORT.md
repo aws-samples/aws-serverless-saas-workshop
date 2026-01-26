@@ -4,7 +4,7 @@
 
 This audit identifies all markdown files in the workshop that contain bash command references in two forms:
 1. Direct bash command usage (e.g., `bash scripts/deployment.sh`, `bash ./scripts/cleanup.sh`)
-2. Markdown code blocks using ```bash language identifier for script execution commands
+2. Markdown code blocks using ``` language identifier for script execution commands
 
 These references violate the workshop's script execution guidelines, which require direct script execution (e.g., `./scripts/deployment.sh`) to ensure proper path resolution.
 
@@ -38,11 +38,11 @@ bash scripts/deployment.sh --profile serverless-saas-demo
 
 ### Why Bash Language Identifiers Are Problematic
 
-Markdown code blocks that show script execution commands should NOT use ```bash as the language identifier. This creates confusion because:
+Markdown code blocks that show script execution commands should NOT use ``` as the language identifier. This creates confusion because:
 
-1. The ```bash identifier suggests bash syntax highlighting is needed
+1. The ``` identifier suggests bash syntax highlighting is needed
 2. Script execution commands are not bash syntax examples - they're commands to run
-3. Using ```bash reinforces the incorrect pattern of running scripts with `bash` command
+3. Using ``` reinforces the incorrect pattern of running scripts with `bash` command
 4. Code blocks showing script execution should have no language identifier or use `sh`
 
 **Correct Code Block (no language identifier):**
@@ -51,7 +51,7 @@ Markdown code blocks that show script execution commands should NOT use ```bash 
 ```
 
 **Incorrect Code Block (bash language identifier):**
-```bash
+```
 ./scripts/deployment.sh --profile serverless-saas-demo
 ```
 
@@ -94,7 +94,7 @@ These files contain explicit `bash scripts/` or `bash ./scripts/` commands that 
 | 268 | Lab 7 deployment | `bash deployment.sh` | `./deployment.sh` |
 
 **Example from Line 136-139:**
-```bash
+```
 # CURRENT (INCORRECT):
 cd Lab{N}/scripts
 bash deployment.sh
@@ -120,7 +120,7 @@ cd Lab{N}/scripts
 | 466 | Lab 7 cleanup | `cd ../../Lab7/scripts && bash cleanup.sh` | `cd ../../Lab7/scripts && ./cleanup.sh` |
 
 **Example from Lines 447-468:**
-```bash
+```
 # CURRENT (INCORRECT):
 # Lab 1
 cd Lab1/scripts && bash cleanup.sh
@@ -145,7 +145,7 @@ cd ../../Lab2/scripts && ./cleanup.sh
 | 530 | Screen session deployment | `bash deploy-with-screen.sh` | `./deploy-with-screen.sh` |
 
 **Example from Lines 529-532:**
-```bash
+```
 # CURRENT (INCORRECT):
 cd Lab{N}/scripts
 bash deploy-with-screen.sh
@@ -174,9 +174,9 @@ cd Lab{N}/scripts
 | 758 | Example of wrong usage | `bash scripts/deployment.sh --profile serverless-saas-demo` | This is intentionally showing incorrect usage |
 
 **Example from Lines 757-760:**
-```bash
+```
 **❌ WRONG**:
-```bash
+```
 bash scripts/deployment.sh --profile serverless-saas-demo
 ```
 ```
@@ -187,7 +187,7 @@ bash scripts/deployment.sh --profile serverless-saas-demo
 
 ### Category 2: Markdown Code Blocks with Bash Language Identifiers
 
-These files contain markdown code blocks using ```bash as the language identifier. For code blocks that show script execution commands (not bash syntax examples), the language identifier should be removed.
+These files contain markdown code blocks using ``` as the language identifier. For code blocks that show script execution commands (not bash syntax examples), the language identifier should be removed.
 
 #### 3. workshop/DEPLOYMENT_CLEANUP_MANUAL.md
 
@@ -201,39 +201,39 @@ These files contain markdown code blocks using ```bash as the language identifie
 
 | Line Range | Context | Contains Script Execution | Action Required |
 |------------|---------|--------------------------|-----------------|
-| 23-26 | AWS credentials setup | No (AWS CLI) | Keep ```bash (AWS CLI example) |
-| 40-43 | Lab 1 deployment | Yes (cd commands) | Remove ```bash |
-| 62-65 | Lab 1 verification | No (AWS CLI) | Keep ```bash (AWS CLI example) |
-| 77-80 | Lab 1 cleanup option 1 | Yes (./cleanup.sh) | Remove ```bash |
-| 84-87 | Lab 1 cleanup option 2 | No (AWS CLI) | Keep ```bash (AWS CLI example) |
-| 110-113 | Lab 2 deployment | Yes (cd commands) | Remove ```bash |
-| 145-148 | Lab 2 cleanup | Yes (./cleanup.sh) | Remove ```bash |
-| 160-163 | Lab 3 deployment | Yes (cd commands) | Remove ```bash |
-| 188-191 | Lab 3 cleanup | Yes (./cleanup.sh) | Remove ```bash |
-| 204-207 | Lab 4 deployment | Yes (cd commands) | Remove ```bash |
-| 224-227 | Lab 4 cleanup | Yes (./cleanup.sh) | Remove ```bash |
-| 239-242 | Lab 5 deployment | Yes (cd commands) | Remove ```bash |
-| 280-283 | Lab 5 cleanup | Yes (./cleanup.sh) | Remove ```bash |
-| 295-298 | Lab 6 deployment | Yes (cd commands) | Remove ```bash |
-| 334-337 | Lab 6 testing | Yes (./test script) | Remove ```bash |
-| 349-352 | Lab 6 cleanup | Yes (./cleanup.sh) | Remove ```bash |
-| 364-367 | Lab 7 deployment | Yes (cd commands) | Remove ```bash |
-| 398-401 | Lab 7 verification | No (AWS CLI) | Keep ```bash (AWS CLI example) |
-| 416-419 | Lab 7 cleanup | Yes (cd commands) | Remove ```bash |
-| 439-442 | Global cleanup automatic | Yes (./cleanup.sh) | Remove ```bash |
-| 446-449 | Global cleanup interactive | Yes (./cleanup.sh) | Remove ```bash |
-| 479-482 | Verification after cleanup | No (AWS CLI) | Keep ```bash (AWS CLI example) |
-| 510-513 | S3 bucket cleanup | No (AWS CLI) | Keep ```bash (AWS CLI example) |
-| 517-520 | Cognito cleanup | No (AWS CLI) | Keep ```bash (AWS CLI example) |
-| 645-649 | Troubleshooting S3 | No (AWS CLI) | Keep ```bash (AWS CLI example) |
-| 650-652 | Troubleshooting CFN | No (AWS CLI) | Keep ```bash (AWS CLI example) |
-| 757-760 | Educational wrong example | Yes (bash command) | Keep ```bash (shows wrong usage) |
-| 763-765 | Educational correct example | Yes (./scripts/) | Remove ```bash |
+| 23-26 | AWS credentials setup | No (AWS CLI) | Keep ``` (AWS CLI example) |
+| 40-43 | Lab 1 deployment | Yes (cd commands) | Remove ``` |
+| 62-65 | Lab 1 verification | No (AWS CLI) | Keep ``` (AWS CLI example) |
+| 77-80 | Lab 1 cleanup option 1 | Yes (./cleanup.sh) | Remove ``` |
+| 84-87 | Lab 1 cleanup option 2 | No (AWS CLI) | Keep ``` (AWS CLI example) |
+| 110-113 | Lab 2 deployment | Yes (cd commands) | Remove ``` |
+| 145-148 | Lab 2 cleanup | Yes (./cleanup.sh) | Remove ``` |
+| 160-163 | Lab 3 deployment | Yes (cd commands) | Remove ``` |
+| 188-191 | Lab 3 cleanup | Yes (./cleanup.sh) | Remove ``` |
+| 204-207 | Lab 4 deployment | Yes (cd commands) | Remove ``` |
+| 224-227 | Lab 4 cleanup | Yes (./cleanup.sh) | Remove ``` |
+| 239-242 | Lab 5 deployment | Yes (cd commands) | Remove ``` |
+| 280-283 | Lab 5 cleanup | Yes (./cleanup.sh) | Remove ``` |
+| 295-298 | Lab 6 deployment | Yes (cd commands) | Remove ``` |
+| 334-337 | Lab 6 testing | Yes (./test script) | Remove ``` |
+| 349-352 | Lab 6 cleanup | Yes (./cleanup.sh) | Remove ``` |
+| 364-367 | Lab 7 deployment | Yes (cd commands) | Remove ``` |
+| 398-401 | Lab 7 verification | No (AWS CLI) | Keep ``` (AWS CLI example) |
+| 416-419 | Lab 7 cleanup | Yes (cd commands) | Remove ``` |
+| 439-442 | Global cleanup automatic | Yes (./cleanup.sh) | Remove ``` |
+| 446-449 | Global cleanup interactive | Yes (./cleanup.sh) | Remove ``` |
+| 479-482 | Verification after cleanup | No (AWS CLI) | Keep ``` (AWS CLI example) |
+| 510-513 | S3 bucket cleanup | No (AWS CLI) | Keep ``` (AWS CLI example) |
+| 517-520 | Cognito cleanup | No (AWS CLI) | Keep ``` (AWS CLI example) |
+| 645-649 | Troubleshooting S3 | No (AWS CLI) | Keep ``` (AWS CLI example) |
+| 650-652 | Troubleshooting CFN | No (AWS CLI) | Keep ``` (AWS CLI example) |
+| 757-760 | Educational wrong example | Yes (bash command) | Keep ``` (shows wrong usage) |
+| 763-765 | Educational correct example | Yes (./scripts/) | Remove ``` |
 
 **Summary:**
-- 29 total code blocks with ```bash
-- 16 should have ```bash removed (script execution commands)
-- 13 should keep ```bash (AWS CLI examples, educational examples)
+- 29 total code blocks with ```
+- 16 should have ``` removed (script execution commands)
+- 13 should keep ``` (AWS CLI examples, educational examples)
 
 #### 4. workshop/WORKSHOP_DEPLOYMENT_GUIDE.md
 
@@ -247,35 +247,35 @@ These files contain markdown code blocks using ```bash as the language identifie
 
 | Line Range | Context | Contains Script Execution | Action Required |
 |------------|---------|--------------------------|-----------------|
-| 82-85 | AWS CLI version check | No (AWS CLI) | Keep ```bash (version check) |
-| 87-90 | SAM CLI version check | No (SAM CLI) | Keep ```bash (version check) |
-| 92-95 | Python version check | No (python) | Keep ```bash (version check) |
-| 97-100 | Node.js version check | No (node) | Keep ```bash (version check) |
-| 102-105 | Git version check | No (git) | Keep ```bash (version check) |
-| 109-112 | AWS configure | No (AWS CLI) | Keep ```bash (AWS CLI) |
-| 114-117 | AWS verify access | No (AWS CLI) | Keep ```bash (AWS CLI) |
-| 119-122 | SAM bootstrap | No (SAM CLI) | Keep ```bash (SAM CLI) |
-| 135-138 | General deployment pattern | Yes (bash deployment.sh) | Remove ```bash |
-| 151-154 | Lab 1 deployment | Yes (bash deployment.sh) | Remove ```bash |
-| 168-171 | Lab 2 deployment | Yes (bash deployment.sh) | Remove ```bash |
-| 185-188 | Lab 3 deployment | Yes (bash deployment.sh) | Remove ```bash |
-| 202-205 | Lab 4 deployment | Yes (bash deployment.sh) | Remove ```bash |
-| 220-223 | Lab 5 deployment | Yes (bash deployment.sh) | Remove ```bash |
-| 242-245 | Lab 6 deployment | Yes (bash deployment.sh) | Remove ```bash |
-| 266-269 | Lab 7 deployment | Yes (bash deployment.sh) | Remove ```bash |
-| 386-389 | Troubleshooting CFN events | No (AWS CLI) | Keep ```bash (AWS CLI) |
-| 394-397 | Delete failed stack | No (AWS CLI) | Keep ```bash (AWS CLI) |
-| 428-431 | General cleanup pattern | Yes (bash cleanup.sh) | Remove ```bash |
-| 446-474 | All labs cleanup | Yes (bash cleanup.sh) | Remove ```bash |
-| 475-478 | Delete API Gateway role | No (AWS CLI) | Keep ```bash (AWS CLI) |
-| 481-484 | Delete pipeline stack | No (AWS CLI) | Keep ```bash (AWS CLI) |
-| 489-492 | Delete CDK toolkit | No (AWS CLI) | Keep ```bash (AWS CLI) |
-| 497-500 | Verify cleanup | No (AWS CLI) | Keep ```bash (AWS CLI) |
+| 82-85 | AWS CLI version check | No (AWS CLI) | Keep ``` (version check) |
+| 87-90 | SAM CLI version check | No (SAM CLI) | Keep ``` (version check) |
+| 92-95 | Python version check | No (python) | Keep ``` (version check) |
+| 97-100 | Node.js version check | No (node) | Keep ``` (version check) |
+| 102-105 | Git version check | No (git) | Keep ``` (version check) |
+| 109-112 | AWS configure | No (AWS CLI) | Keep ``` (AWS CLI) |
+| 114-117 | AWS verify access | No (AWS CLI) | Keep ``` (AWS CLI) |
+| 119-122 | SAM bootstrap | No (SAM CLI) | Keep ``` (SAM CLI) |
+| 135-138 | General deployment pattern | Yes (bash deployment.sh) | Remove ``` |
+| 151-154 | Lab 1 deployment | Yes (bash deployment.sh) | Remove ``` |
+| 168-171 | Lab 2 deployment | Yes (bash deployment.sh) | Remove ``` |
+| 185-188 | Lab 3 deployment | Yes (bash deployment.sh) | Remove ``` |
+| 202-205 | Lab 4 deployment | Yes (bash deployment.sh) | Remove ``` |
+| 220-223 | Lab 5 deployment | Yes (bash deployment.sh) | Remove ``` |
+| 242-245 | Lab 6 deployment | Yes (bash deployment.sh) | Remove ``` |
+| 266-269 | Lab 7 deployment | Yes (bash deployment.sh) | Remove ``` |
+| 386-389 | Troubleshooting CFN events | No (AWS CLI) | Keep ``` (AWS CLI) |
+| 394-397 | Delete failed stack | No (AWS CLI) | Keep ``` (AWS CLI) |
+| 428-431 | General cleanup pattern | Yes (bash cleanup.sh) | Remove ``` |
+| 446-474 | All labs cleanup | Yes (bash cleanup.sh) | Remove ``` |
+| 475-478 | Delete API Gateway role | No (AWS CLI) | Keep ``` (AWS CLI) |
+| 481-484 | Delete pipeline stack | No (AWS CLI) | Keep ``` (AWS CLI) |
+| 489-492 | Delete CDK toolkit | No (AWS CLI) | Keep ``` (AWS CLI) |
+| 497-500 | Verify cleanup | No (AWS CLI) | Keep ``` (AWS CLI) |
 
 **Summary:**
-- 31 total code blocks with ```bash
-- 10 should have ```bash removed (script execution with bash command)
-- 21 should keep ```bash (AWS CLI, version checks, troubleshooting)
+- 31 total code blocks with ```
+- 10 should have ``` removed (script execution with bash command)
+- 21 should keep ``` (AWS CLI, version checks, troubleshooting)
 
 #### 5. workshop/QUICK_REFERENCE.md
 
@@ -289,16 +289,16 @@ These files contain markdown code blocks using ```bash as the language identifie
 
 | Line Range | Context | Contains Script Execution | Action Required |
 |------------|---------|--------------------------|-----------------|
-| 12-15 | Verify AWS profile | No (AWS CLI) | Keep ```bash (AWS CLI) |
-| 18-21 | One-line deploy Lab 1 | No (sam commands) | Keep ```bash (SAM CLI) |
-| 43-46 | One-line cleanup | Yes (./cleanup.sh) | Remove ```bash |
-| 77-80 | List stacks | No (AWS CLI) | Keep ```bash (AWS CLI) |
-| 118-121 | Get stack outputs | No (AWS CLI) | Keep ```bash (AWS CLI) |
+| 12-15 | Verify AWS profile | No (AWS CLI) | Keep ``` (AWS CLI) |
+| 18-21 | One-line deploy Lab 1 | No (sam commands) | Keep ``` (SAM CLI) |
+| 43-46 | One-line cleanup | Yes (./cleanup.sh) | Remove ``` |
+| 77-80 | List stacks | No (AWS CLI) | Keep ``` (AWS CLI) |
+| 118-121 | Get stack outputs | No (AWS CLI) | Keep ``` (AWS CLI) |
 
 **Summary:**
-- 5 total code blocks with ```bash
-- 1 should have ```bash removed (./cleanup.sh execution)
-- 4 should keep ```bash (AWS CLI, SAM CLI examples)
+- 5 total code blocks with ```
+- 1 should have ``` removed (./cleanup.sh execution)
+- 4 should keep ``` (AWS CLI, SAM CLI examples)
 
 #### 6. workshop/API_GATEWAY_LOGS_CLEANUP_UPDATE.md
 
@@ -312,15 +312,15 @@ These files contain markdown code blocks using ```bash as the language identifie
 
 | Line Range | Context | Contains Script Execution | Action Required |
 |------------|---------|--------------------------|-----------------|
-| 18-21 | Cleanup script expectation | No (AWS CLI) | Keep ```bash (AWS CLI) |
-| 63-66 | Verify output exists | No (AWS CLI) | Keep ```bash (AWS CLI) |
-| 74-77 | Test cleanup script | Yes (./cleanup.sh) | Remove ```bash |
-| 81-84 | Verify logs deleted | No (AWS CLI) | Keep ```bash (AWS CLI) |
+| 18-21 | Cleanup script expectation | No (AWS CLI) | Keep ``` (AWS CLI) |
+| 63-66 | Verify output exists | No (AWS CLI) | Keep ``` (AWS CLI) |
+| 74-77 | Test cleanup script | Yes (./cleanup.sh) | Remove ``` |
+| 81-84 | Verify logs deleted | No (AWS CLI) | Keep ``` (AWS CLI) |
 
 **Summary:**
-- 4 total code blocks with ```bash
-- 1 should have ```bash removed (./cleanup.sh execution)
-- 3 should keep ```bash (AWS CLI examples)
+- 4 total code blocks with ```
+- 1 should have ``` removed (./cleanup.sh execution)
+- 3 should keep ``` (AWS CLI examples)
 
 #### 7. workshop/CLEANUP_SAM_BUCKET_FIX.md
 
@@ -334,14 +334,14 @@ These files contain markdown code blocks using ```bash as the language identifie
 
 | Line Range | Context | Contains Script Execution | Action Required |
 |------------|---------|--------------------------|-----------------|
-| 25-28 | Cleanup script code | No (script internals) | Keep ```bash (showing script code) |
-| 52-55 | Cleanup script code | No (script internals) | Keep ```bash (showing script code) |
-| 101-104 | Deployment script code | No (script internals) | Keep ```bash (showing script code) |
+| 25-28 | Cleanup script code | No (script internals) | Keep ``` (showing script code) |
+| 52-55 | Cleanup script code | No (script internals) | Keep ``` (showing script code) |
+| 101-104 | Deployment script code | No (script internals) | Keep ``` (showing script code) |
 
 **Summary:**
-- 3 total code blocks with ```bash
-- 0 should have ```bash removed
-- 3 should keep ```bash (showing internal script code)
+- 3 total code blocks with ```
+- 0 should have ``` removed
+- 3 should keep ``` (showing internal script code)
 
 #### 8. workshop/CLOUDFRONT_SECURITY_FIX_STATUS.md
 
@@ -355,17 +355,17 @@ These files contain markdown code blocks using ```bash as the language identifie
 
 | Line Range | Context | Contains Script Execution | Action Required |
 |------------|---------|--------------------------|-----------------|
-| 36-39 | Lab 1 changes | No (script internals) | Keep ```bash (showing script code) |
-| 55-58 | Lab 2 changes | No (script internals) | Keep ```bash (showing script code) |
-| 74-77 | Lab 3 changes | No (script internals) | Keep ```bash (showing script code) |
-| 95-98 | Lab 4 changes | No (script internals) | Keep ```bash (showing script code) |
-| 117-120 | Lab 5 changes | No (script internals) | Keep ```bash (showing script code) |
-| 137-140 | Lab 6 changes | No (script internals) | Keep ```bash (showing script code) |
+| 36-39 | Lab 1 changes | No (script internals) | Keep ``` (showing script code) |
+| 55-58 | Lab 2 changes | No (script internals) | Keep ``` (showing script code) |
+| 74-77 | Lab 3 changes | No (script internals) | Keep ``` (showing script code) |
+| 95-98 | Lab 4 changes | No (script internals) | Keep ``` (showing script code) |
+| 117-120 | Lab 5 changes | No (script internals) | Keep ``` (showing script code) |
+| 137-140 | Lab 6 changes | No (script internals) | Keep ``` (showing script code) |
 
 **Summary:**
-- 6 total code blocks with ```bash
-- 0 should have ```bash removed
-- 6 should keep ```bash (showing internal script code)
+- 6 total code blocks with ```
+- 0 should have ``` removed
+- 6 should keep ``` (showing internal script code)
 
 #### 9. workshop/PROFILE_FLAG_IMPLEMENTATION.md
 
@@ -379,17 +379,17 @@ These files contain markdown code blocks using ```bash as the language identifie
 
 | Line Range | Context | Contains Script Execution | Action Required |
 |------------|---------|--------------------------|-----------------|
-| 17-20 | Cleanup usage | Yes (./cleanup.sh) | Remove ```bash |
-| 40-43 | Lab 2 deployment usage | Yes (./deployment.sh) | Remove ```bash |
-| 53-56 | Lab 3 deployment usage | Yes (./deployment.sh) | Remove ```bash |
-| 66-69 | Lab 4 deployment usage | Yes (./deployment.sh) | Remove ```bash |
-| 109-112 | Before example | No (export command) | Keep ```bash (showing old pattern) |
-| 115-118 | After example | Yes (./deployment.sh) | Remove ```bash |
+| 17-20 | Cleanup usage | Yes (./cleanup.sh) | Remove ``` |
+| 40-43 | Lab 2 deployment usage | Yes (./deployment.sh) | Remove ``` |
+| 53-56 | Lab 3 deployment usage | Yes (./deployment.sh) | Remove ``` |
+| 66-69 | Lab 4 deployment usage | Yes (./deployment.sh) | Remove ``` |
+| 109-112 | Before example | No (export command) | Keep ``` (showing old pattern) |
+| 115-118 | After example | Yes (./deployment.sh) | Remove ``` |
 
 **Summary:**
-- 6 total code blocks with ```bash
-- 5 should have ```bash removed (script execution commands)
-- 1 should keep ```bash (showing old export pattern)
+- 6 total code blocks with ```
+- 5 should have ``` removed (script execution commands)
+- 1 should keep ``` (showing old export pattern)
 
 #### 10. workshop/LAMBDA_LOG_GROUP_NAMING_FIX_COMPLETE.md
 
@@ -403,13 +403,13 @@ These files contain markdown code blocks using ```bash as the language identifie
 
 | Line Range | Context | Contains Script Execution | Action Required |
 |------------|---------|--------------------------|-----------------|
-| 96-99 | Verify log groups | No (AWS CLI) | Keep ```bash (AWS CLI) |
-| 103-106 | Confirm no old log groups | No (AWS CLI) | Keep ```bash (AWS CLI) |
+| 96-99 | Verify log groups | No (AWS CLI) | Keep ``` (AWS CLI) |
+| 103-106 | Confirm no old log groups | No (AWS CLI) | Keep ``` (AWS CLI) |
 
 **Summary:**
-- 2 total code blocks with ```bash
-- 0 should have ```bash removed
-- 2 should keep ```bash (AWS CLI examples)
+- 2 total code blocks with ```
+- 0 should have ``` removed
+- 2 should keep ``` (AWS CLI examples)
 
 ---
 
@@ -417,11 +417,11 @@ These files contain markdown code blocks using ```bash as the language identifie
 
 **Total Files:** 8 files (excluding WORKSHOP_DEPLOYMENT_GUIDE.md which has direct bash commands)
 
-**Total Code Blocks with ```bash:** 87 instances
+**Total Code Blocks with ```:** 87 instances
 
 **Breakdown by Action Required:**
-- **Remove ```bash:** 33 instances (script execution commands)
-- **Keep ```bash:** 54 instances (AWS CLI, version checks, script internals, educational examples)
+- **Remove ```:** 33 instances (script execution commands)
+- **Keep ```:** 54 instances (AWS CLI, version checks, script internals, educational examples)
 
 **Files Requiring Most Updates:**
 1. DEPLOYMENT_CLEANUP_MANUAL.md: 16 removals needed
@@ -467,79 +467,79 @@ The following files already document the correct approach and include warnings:
    - Replaced 8 instances of `bash deployment.sh` → `./deployment.sh`
    - Replaced 8 instances of `bash cleanup.sh` → `./cleanup.sh`
    - Replaced 1 instance of `bash deploy-with-screen.sh` → `./deploy-with-screen.sh`
-   - Removed ```bash from 10 code blocks showing script execution
+   - Removed ``` from 10 code blocks showing script execution
 
 2. **workshop/DEPLOYMENT_CLEANUP_MANUAL.md** - 13 updates
-   - Removed ```bash from 13 code blocks showing script execution
-   - Kept ```bash for 13 code blocks showing AWS CLI examples
+   - Removed ``` from 13 code blocks showing script execution
+   - Kept ``` for 13 code blocks showing AWS CLI examples
    - Kept educational example showing incorrect usage (clearly marked as wrong)
 
 3. **workshop/PROFILE_FLAG_IMPLEMENTATION.md** - 5 updates
-   - Removed ```bash from 5 code blocks showing script execution
-   - Kept ```bash for 1 code block showing old export pattern
+   - Removed ``` from 5 code blocks showing script execution
+   - Kept ``` for 1 code block showing old export pattern
 
 4. **workshop/QUICK_REFERENCE.md** - 1 update
-   - Removed ```bash from 1 code block showing ./cleanup.sh execution
-   - Kept ```bash for 4 code blocks showing AWS CLI/SAM CLI examples
+   - Removed ``` from 1 code block showing ./cleanup.sh execution
+   - Kept ``` for 4 code blocks showing AWS CLI/SAM CLI examples
 
 5. **workshop/API_GATEWAY_LOGS_CLEANUP_UPDATE.md** - 1 update
-   - Removed ```bash from 1 code block showing ./cleanup.sh execution
-   - Kept ```bash for 3 code blocks showing AWS CLI examples
+   - Removed ``` from 1 code block showing ./cleanup.sh execution
+   - Kept ``` for 3 code blocks showing AWS CLI examples
 
 #### Lab Summary Files (7 files, 22 changes)
 
 6. **workshop/Lab1/LAB1_SUMMARY.md** - 4 updates
-   - Removed ```bash from Deployment section
-   - Removed ```bash from Verification section
-   - Removed ```bash from Testing section (curl command)
-   - Removed ```bash from Cleanup section
+   - Removed ``` from Deployment section
+   - Removed ``` from Verification section
+   - Removed ``` from Testing section (curl command)
+   - Removed ``` from Cleanup section
 
 7. **workshop/Lab2/LAB2_SUMMARY.md** - 3 updates
-   - Removed ```bash from Deployment section
-   - Removed ```bash from Verification section
-   - Removed ```bash from Cleanup section
+   - Removed ``` from Deployment section
+   - Removed ``` from Verification section
+   - Removed ``` from Cleanup section
 
 8. **workshop/Lab3/LAB3_SUMMARY.md** - 3 updates
-   - Removed ```bash from Deployment section
-   - Removed ```bash from Verification section
-   - Removed ```bash from Cleanup section
+   - Removed ``` from Deployment section
+   - Removed ``` from Verification section
+   - Removed ``` from Cleanup section
 
 9. **workshop/Lab4/LAB4_SUMMARY.md** - 3 updates
-   - Removed ```bash from Deployment section
-   - Removed ```bash from Verification section
-   - Removed ```bash from Cleanup section
+   - Removed ``` from Deployment section
+   - Removed ``` from Verification section
+   - Removed ``` from Cleanup section
 
 10. **workshop/Lab5/LAB5_SUMMARY.md** - 3 updates
-    - Removed ```bash from Deployment section
-    - Removed ```bash from Verification section
-    - Removed ```bash from Cleanup section
+    - Removed ``` from Deployment section
+    - Removed ``` from Verification section
+    - Removed ``` from Cleanup section
 
 11. **workshop/Lab6/LAB6_SUMMARY.md** - 3 updates
-    - Removed ```bash from Deployment section
-    - Removed ```bash from Verification section
-    - Removed ```bash from Cleanup section
+    - Removed ``` from Deployment section
+    - Removed ``` from Verification section
+    - Removed ``` from Cleanup section
 
 12. **workshop/Lab7/LAB7_SUMMARY.md** - 3 updates
-    - Removed ```bash from Deployment section
-    - Removed ```bash from Verification section (AWS CLI command)
-    - Removed ```bash from Cleanup section
+    - Removed ``` from Deployment section
+    - Removed ``` from Verification section (AWS CLI command)
+    - Removed ``` from Cleanup section
 
 ### Files Not Updated (Correct As-Is)
 
 The following files were reviewed and determined to be correct:
 
-1. **workshop/CLEANUP_SAM_BUCKET_FIX.md** - All ```bash kept (showing script internals)
-2. **workshop/CLOUDFRONT_SECURITY_FIX_STATUS.md** - All ```bash kept (showing script internals)
-3. **workshop/LAMBDA_LOG_GROUP_NAMING_FIX_COMPLETE.md** - All ```bash kept (AWS CLI examples)
-4. **workshop/Lab*/README.md** - No ```bash code blocks found
+1. **workshop/CLEANUP_SAM_BUCKET_FIX.md** - All ``` kept (showing script internals)
+2. **workshop/CLOUDFRONT_SECURITY_FIX_STATUS.md** - All ``` kept (showing script internals)
+3. **workshop/LAMBDA_LOG_GROUP_NAMING_FIX_COMPLETE.md** - All ``` kept (AWS CLI examples)
+4. **workshop/Lab*/README.md** - No ``` code blocks found
 
 ### Verification Results
 
 ✅ All direct bash command references removed (19 instances)
 ✅ All script execution code blocks updated (33 instances)
-✅ AWS CLI examples preserved with ```bash (54 instances)
-✅ Script internal examples preserved with ```bash (9 instances)
-✅ Educational examples preserved with ```bash (1 instance)
+✅ AWS CLI examples preserved with ``` (54 instances)
+✅ Script internal examples preserved with ``` (9 instances)
+✅ Educational examples preserved with ``` (1 instance)
 
 ---
 
@@ -557,7 +557,7 @@ The following files were reviewed and determined to be correct:
 1. Replace `bash deployment.sh` → `./deployment.sh` (8 instances)
 2. Replace `bash cleanup.sh` → `./cleanup.sh` (9 instances)
 3. Replace `bash deploy-with-screen.sh` → `./deploy-with-screen.sh` (1 instance)
-4. Remove ```bash language identifier from 10 code blocks showing script execution
+4. Remove ``` language identifier from 10 code blocks showing script execution
 
 **Additional Recommendations:**
 - Add a prominent warning section at the beginning of the guide
@@ -570,13 +570,13 @@ The following files were reviewed and determined to be correct:
 
 **Changes Required:**
 - Review 1 educational example (line 758)
-- Remove ```bash from 16 code blocks showing script execution
-- Keep ```bash for 13 code blocks showing AWS CLI examples
+- Remove ``` from 16 code blocks showing script execution
+- Keep ``` for 13 code blocks showing AWS CLI examples
 
 **Action Items:**
 1. Verify the example at line 758 is clearly marked as incorrect usage
-2. Remove ```bash from all code blocks showing ./cleanup.sh or ./deployment.sh execution
-3. Keep ```bash for AWS CLI examples (aws cloudformation, aws s3, etc.)
+2. Remove ``` from all code blocks showing ./cleanup.sh or ./deployment.sh execution
+3. Keep ``` for AWS CLI examples (aws cloudformation, aws s3, etc.)
 4. Consider adding a reference to the steering guide for more details
 
 ### Priority 3: Update PROFILE_FLAG_IMPLEMENTATION.md
@@ -584,33 +584,33 @@ The following files were reviewed and determined to be correct:
 **File:** `workshop/PROFILE_FLAG_IMPLEMENTATION.md`
 
 **Changes Required:**
-- Remove ```bash from 5 code blocks showing script execution
-- Keep ```bash for 1 code block showing old export pattern
+- Remove ``` from 5 code blocks showing script execution
+- Keep ``` for 1 code block showing old export pattern
 
 ### Priority 4: Update QUICK_REFERENCE.md
 
 **File:** `workshop/QUICK_REFERENCE.md`
 
 **Changes Required:**
-- Remove ```bash from 1 code block showing ./cleanup.sh execution
-- Keep ```bash for 4 code blocks showing AWS CLI/SAM CLI examples
+- Remove ``` from 1 code block showing ./cleanup.sh execution
+- Keep ``` for 4 code blocks showing AWS CLI/SAM CLI examples
 
 ### Priority 5: Update API_GATEWAY_LOGS_CLEANUP_UPDATE.md
 
 **File:** `workshop/API_GATEWAY_LOGS_CLEANUP_UPDATE.md`
 
 **Changes Required:**
-- Remove ```bash from 1 code block showing ./cleanup.sh execution
-- Keep ```bash for 3 code blocks showing AWS CLI examples
+- Remove ``` from 1 code block showing ./cleanup.sh execution
+- Keep ``` for 3 code blocks showing AWS CLI examples
 
 ### Priority 6: Review Technical Documentation
 
 **Files:** 
-- `workshop/CLEANUP_SAM_BUCKET_FIX.md` (keep all ```bash - showing script internals)
-- `workshop/CLOUDFRONT_SECURITY_FIX_STATUS.md` (keep all ```bash - showing script internals)
-- `workshop/LAMBDA_LOG_GROUP_NAMING_FIX_COMPLETE.md` (keep all ```bash - AWS CLI examples)
+- `workshop/CLEANUP_SAM_BUCKET_FIX.md` (keep all ``` - showing script internals)
+- `workshop/CLOUDFRONT_SECURITY_FIX_STATUS.md` (keep all ``` - showing script internals)
+- `workshop/LAMBDA_LOG_GROUP_NAMING_FIX_COMPLETE.md` (keep all ``` - AWS CLI examples)
 
-**Action:** No changes needed - these files correctly use ```bash for showing script internals or AWS CLI examples
+**Action:** No changes needed - these files correctly use ``` for showing script internals or AWS CLI examples
 
 ---
 
@@ -619,18 +619,18 @@ The following files were reviewed and determined to be correct:
 After remediation, verify the following:
 
 1. **No bash command references remain:**
-   ```bash
+   ```
    grep -r "bash scripts/" workshop/*.md
    grep -r "bash ./scripts/" workshop/*.md
    ```
 
 2. **All script examples use direct execution:**
-   ```bash
+   ```
    grep -r "\./scripts/" workshop/*.md
    ```
 
 3. **Scripts have proper shebang lines:**
-   ```bash
+   ```
    head -1 workshop/Lab*/scripts/*.sh | grep "#!/bin/bash"
    ```
 
@@ -676,7 +676,7 @@ This audit identified **106 total bash-related issues** across **9 markdown file
 - All require replacement with `./scripts/` pattern
 
 **Category 2: Bash Language Identifiers in Code Blocks**
-- 87 code blocks using ```bash language identifier
+- 87 code blocks using ``` language identifier
 - Found in 8 files
 - 33 require removal (script execution commands)
 - 54 should be kept (AWS CLI examples, script internals, educational examples)
@@ -692,8 +692,8 @@ This audit identified **106 total bash-related issues** across **9 markdown file
 
 The remediation work involves:
 1. Replacing `bash <script>` with `./<script>` (19 instances)
-2. Removing ```bash language identifier from script execution code blocks (33 instances)
-3. Keeping ```bash for AWS CLI examples and script internals (54 instances - no change)
+2. Removing ``` language identifier from script execution code blocks (33 instances)
+3. Keeping ``` for AWS CLI examples and script internals (54 instances - no change)
 
 This will ensure consistency with the workshop's script execution guidelines and prevent path resolution issues.
 

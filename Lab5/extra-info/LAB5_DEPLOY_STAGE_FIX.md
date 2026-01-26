@@ -97,13 +97,13 @@ const lambdaFunction = new Function(this, "deploy-tenant-stack", {
 After applying the fixes:
 
 1. Rebuilt and redeployed the CDK stack:
-   ```bash
+   ```
    cd workshop/Lab5/server/TenantPipeline
    cdk deploy --require-approval never --profile serverless-saas-demo
    ```
 
 2. Triggered a pipeline execution:
-   ```bash
+   ```
    aws codepipeline start-pipeline-execution \
      --name serverless-saas-pipeline-lab5 \
      --profile serverless-saas-demo

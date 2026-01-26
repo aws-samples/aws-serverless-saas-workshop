@@ -19,7 +19,7 @@ Fixed 4 critical bugs in the Lab 5 deployment script that were preventing succes
 **Issue**: Script has `set -e` which exits on any error. CodeCommit repository check `aws codecommit get-repository` returns exit code 254 when repo doesn't exist, causing script to exit before checking `if [[ $? -ne 0 ]]` condition
 **Location**: Lines 267-270 in deployment.sh
 **Fix**: 
-```bash
+```
 set +e  # Temporarily disable exit on error for repository check
 REPO=$(aws codecommit $PROFILE_ARG get-repository --repository-name aws-serverless-saas-workshop --region "$AWS_REGION" 2>&1)
 REPO_CHECK_EXIT_CODE=$?
@@ -37,7 +37,7 @@ fi
 
 **Location**: Lines 295-310 in deployment.sh
 **Fix**:
-```bash
+```
 # Navigate to git repository root (workshop directory)
 GIT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
 if [[ -z "$GIT_ROOT" ]]; then

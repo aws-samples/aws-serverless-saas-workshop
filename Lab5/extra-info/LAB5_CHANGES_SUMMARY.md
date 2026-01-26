@@ -153,7 +153,7 @@ Lab 5 is now completely self-contained with:
 
 Lab 5 can now be deployed independently using:
 
-```bash
+```
 cd Lab5/scripts
 ./deployment.sh -s    # Deploy server (pipeline + bootstrap)
 ./deployment.sh -c    # Deploy client

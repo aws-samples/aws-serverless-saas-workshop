@@ -13,7 +13,7 @@ An error occurred (ResourceNotFoundException) when calling the Scan operation: R
 
 **Solution:** The deployment script now includes automatic waits for DynamoDB tables. If you still encounter this:
 
-```bash
+```
 # Manually verify tables exist
 aws dynamodb list-tables --query 'TableNames[?contains(@, `lab5`)]'
 
@@ -37,7 +37,7 @@ No export named Serverless-SaaS-CognitoOperationUsersUserPoolClientId found
 
 **Solution:** The deployment script now automatically pushes your current branch to CodeCommit. If you need to manually fix:
 
-```bash
+```
 # Check what's in CodeCommit
 git fetch cc
 git log cc/main --oneline -5
@@ -53,7 +53,7 @@ aws codepipeline start-pipeline-execution --name serverless-saas-pipeline-lab5
 
 To see why a tenant stack failed:
 
-```bash
+```
 # List failed stacks
 aws cloudformation list-stacks --stack-status-filter ROLLBACK_COMPLETE --query 'StackSummaries[?contains(StackName, `stack-`)].StackName'
 
@@ -73,7 +73,7 @@ aws cloudformation describe-stack-events \
 
 If you need to clean up and redeploy:
 
-```bash
+```
 # Delete failed tenant stacks
 aws cloudformation delete-stack --stack-name stack-lab5-pooled
 aws cloudformation wait stack-delete-complete --stack-name stack-lab5-pooled
@@ -93,7 +93,7 @@ aws codepipeline start-pipeline-execution --name serverless-saas-pipeline-lab5
 
 **Solution:**
 
-```bash
+```
 # Verify what's in CodeCommit
 git fetch cc
 git diff cc/main
@@ -109,7 +109,7 @@ aws codepipeline start-pipeline-execution --name serverless-saas-pipeline-lab5
 
 To debug Lambda function issues:
 
-```bash
+```
 # Find the Lambda function name
 aws lambda list-functions --query 'Functions[?contains(FunctionName, `deploytenantstack`)].FunctionName'
 
@@ -124,7 +124,7 @@ aws logs tail /aws/lambda/FUNCTION_NAME --since 1h --format short | grep -i erro
 
 Check if all required exports exist:
 
-```bash
+```
 # List all Lab5 exports
 aws cloudformation list-exports --query 'Exports[?contains(Name, `lab5`)].[Name,Value]' --output table
 
@@ -136,7 +136,7 @@ aws cloudformation list-exports --query 'Exports[?Name==`Serverless-SaaS-Cognito
 
 If everything is broken and you want to start fresh:
 
-```bash
+```
 # 1. Delete all tenant stacks
 for stack in $(aws cloudformation list-stacks --stack-status-filter CREATE_COMPLETE ROLLBACK_COMPLETE UPDATE_COMPLETE --query 'StackSummaries[?contains(StackName, `stack-`)].StackName' --output text); do
   echo "Deleting $stack"
@@ -176,7 +176,7 @@ The updated `deployment.sh` script handles this order automatically.
 
 ## Monitoring Deployment Progress
 
-```bash
+```
 # Watch pipeline execution
 aws codepipeline get-pipeline-state --name serverless-saas-pipeline-lab5
 

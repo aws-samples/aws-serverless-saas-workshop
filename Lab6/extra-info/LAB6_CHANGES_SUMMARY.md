@@ -160,7 +160,7 @@ The `test-basic-tier-throttling.sh` script:
 - Shows 429 (Too Many Requests) responses when limits are exceeded
 
 Usage:
-```bash
+```
 ./test-basic-tier-throttling.sh <JWT_TOKEN>
 ```
 

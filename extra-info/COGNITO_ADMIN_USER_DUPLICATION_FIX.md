@@ -40,7 +40,7 @@ CognitoAdminUser:
 ### 3. Deployment Script Creates Second User
 **File**: `workshop/Lab2/scripts/deployment.sh`
 
-```bash
+```
 # Creates "admin-user" with provided email
 aws cognito-idp admin-create-user \
   --username admin-user \
@@ -106,7 +106,7 @@ Resources:
 ## Verification Steps
 
 ### Before Fix
-```bash
+```
 # List users in Cognito pool
 aws cognito-idp list-users \
   --user-pool-id <pool-id> \
@@ -118,7 +118,7 @@ aws cognito-idp list-users \
 ```
 
 ### After Fix
-```bash
+```
 # Deploy with fix
 cd workshop/Lab2/scripts
 ./deployment.sh -s -c --email your-email@example.com --profile <your-profile-name>

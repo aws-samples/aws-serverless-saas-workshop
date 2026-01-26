@@ -184,7 +184,7 @@ ShortId: !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref 'AWS::StackId']]
 6. ✅ Final deployment summary
 
 **DynamoDB Wait Tables:**
-```bash
+```
 ServerlessSaaS-Settings-lab6
 ServerlessSaaS-TenantStackMapping-lab6
 ServerlessSaaS-TenantDetails-lab6
@@ -246,7 +246,7 @@ Lab6 is now fully configured with:
 - ✅ Comprehensive deployment and cleanup scripts
 
 **Deploy Command:**
-```bash
+```
 cd Lab6/scripts
 ./deployment.sh -s -c
 ```

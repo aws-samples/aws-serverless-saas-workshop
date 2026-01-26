@@ -196,7 +196,7 @@ Updated all DynamoDB table references to include `-lab6` suffix:
 
 To verify compliance after deployment:
 
-```bash
+```
 # List all Lab6 Lambda functions
 aws lambda list-functions --query "Functions[?contains(FunctionName, 'lab6')].FunctionName"
 

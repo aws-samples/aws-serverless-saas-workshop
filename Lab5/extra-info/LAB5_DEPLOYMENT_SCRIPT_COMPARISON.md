@@ -38,7 +38,7 @@
 
 ### 4. **Git/CodeCommit Push** ⚠️ POTENTIAL ISSUE
 **Old Script:**
-```bash
+```
 REPO_URL="codecommit::${REGION}://aws-serverless-saas-workshop"
 git remote add cc $REPO_URL
 if [[ $? -ne 0 ]]; then
@@ -50,7 +50,7 @@ git push cc $CURRENT_BRANCH:main --force
 ```
 
 **New Script:**
-```bash
+```
 REPO_URL="codecommit::${AWS_REGION}://aws-serverless-saas-workshop"
 git remote add cc $REPO_URL 2>/dev/null || git remote set-url cc $REPO_URL
 # ... later ...
@@ -65,7 +65,7 @@ git push cc $CURRENT_BRANCH:main --force
 
 ### 5. **CDK Deployment** ✅ IMPROVED
 **Old Script:**
-```bash
+```
 cd ../server/TenantPipeline/
 npm install && npm run build 
 cdk bootstrap  
@@ -73,7 +73,7 @@ cdk deploy --require-approval never
 ```
 
 **New Script:**
-```bash
+```
 cd ../server/TenantPipeline/ || exit
 
 print_message "$YELLOW" "  Cleaning previous npm installation for TenantPipeline..."
@@ -124,13 +124,13 @@ fi
 
 ### 6. **SAM Deployment** ✅ IMPROVED
 **Old Script:**
-```bash
+```
 sam build -t shared-template.yaml
 sam deploy --config-file shared-samconfig.toml --region=$REGION --parameter-overrides ...
 ```
 
 **New Script:**
-```bash
+```
 sam build -t shared-template.yaml --use-container || {
     print_message "$RED" "Error: SAM build failed"
     exit 1
@@ -161,7 +161,7 @@ sam deploy \
 - Basic error checking
 
 **New Script:**
-```bash
+```
 print_message "$YELLOW" "  Cleaning previous npm installation for Admin UI..."
 rm -rf node_modules package-lock.json || true
 
@@ -181,7 +181,7 @@ npm install --legacy-peer-deps || {
 The deployment is hanging at "Checking CodeCommit repository..." because:
 
 1. **REGION MISMATCH**: The git remote `cc` is configured with `us-east-1` but the script uses `us-west-2`
-   ```bash
+   ```
    # Current remote (WRONG):
    cc codecommit::us-east-1://aws-serverless-saas-workshop
    
@@ -196,7 +196,7 @@ The deployment is hanging at "Checking CodeCommit repository..." because:
 
 Fix the git remote URL to use the correct region:
 
-```bash
+```
 # Remove the old remote with wrong region
 git -C workshop/Lab5 remote remove cc
 
@@ -205,7 +205,7 @@ git -C workshop/Lab5 remote remove cc
 
 OR manually update the remote URL:
 
-```bash
+```
 git -C workshop/Lab5 remote set-url cc codecommit::us-west-2://aws-serverless-saas-workshop
 ```
 

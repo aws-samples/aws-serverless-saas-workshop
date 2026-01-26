@@ -27,7 +27,7 @@ This guide provides comprehensive deployment instructions for Lab6 (Tenant Throt
 
 Verify all tools are installed and at the correct versions:
 
-```bash
+```
 # AWS CLI (v2.x or later)
 aws --version
 
@@ -60,7 +60,7 @@ screen --version
 ### AWS Account Setup
 
 1. **Configure AWS Credentials:**
-   ```bash
+   ```
    aws configure
    # Enter your AWS Access Key ID
    # Enter your AWS Secret Access Key
@@ -69,7 +69,7 @@ screen --version
    ```
 
 2. **Verify Access:**
-   ```bash
+   ```
    aws sts get-caller-identity
    ```
 
@@ -85,7 +85,7 @@ screen --version
 
 ### Python Virtual Environment (Recommended)
 
-```bash
+```
 # Create virtual environment
 python3 -m venv .venv_py313
 
@@ -165,7 +165,7 @@ The deployment order is critical to avoid race conditions:
 
 For long-running deployments (15-25 minutes), use the screen session wrapper:
 
-```bash
+```
 cd Lab6/scripts
 ./deploy-with-screen.sh
 ```
@@ -177,7 +177,7 @@ cd Lab6/scripts
 - Shows application URLs on completion
 
 **Monitor Progress:**
-```bash
+```
 # Reconnect to screen session
 screen -r lab6-deployment
 
@@ -192,7 +192,7 @@ tail -f Lab6/scripts/deployment-*.log
 
 For interactive deployment with immediate feedback:
 
-```bash
+```
 cd Lab6/scripts
 ./deployment.sh -s -c
 ```
@@ -266,7 +266,7 @@ Next steps:
 
 ### Step 3: Run Throttling Test
 
-```bash
+```
 cd Lab6/scripts
 ./test-basic-tier-throttling.sh <YOUR_JWT_TOKEN>
 ```
@@ -298,7 +298,7 @@ Throttling is working correctly!
 
 Register tenants with different tiers and compare throttling behavior:
 
-```bash
+```
 # Standard tier (100 req/sec, 1000 req/day)
 ./test-basic-tier-throttling.sh <STANDARD_TENANT_JWT>
 
@@ -333,7 +333,7 @@ This is now fixed in the deployment script. The script:
 3. Then deploys pipeline
 
 If you still encounter this:
-```bash
+```
 # Manually trigger the pipeline
 aws codepipeline start-pipeline-execution \
   --name serverless-saas-pipeline-lab6 \
@@ -354,7 +354,7 @@ Pooled stack (`stack-lab6-pooled`) was not created yet, so Settings table doesn'
 **Solution:**
 Wait for pipeline to complete and create the pooled stack:
 
-```bash
+```
 # Check pipeline status
 aws codepipeline get-pipeline-state \
   --name serverless-saas-pipeline-lab6 \
@@ -389,7 +389,7 @@ TenantDetails table is missing the `apiKey` field for the tenant.
 This should not happen with the current code. If it does:
 
 1. Check if tenant was registered correctly:
-   ```bash
+   ```
    aws dynamodb get-item \
      --table-name ServerlessSaaS-TenantDetails-lab6 \
      --key '{"tenantId": {"S": "<TENANT_ID>"}}' \
@@ -414,13 +414,13 @@ Tenant ID in JWT token doesn't match any tenant in TenantDetails table. This hap
 
 **Solution:**
 1. Extract tenant ID from JWT token:
-   ```bash
+   ```
    # Decode JWT token (use jwt.io or)
    echo "<JWT_TOKEN>" | cut -d'.' -f2 | base64 -d | jq '.["custom:tenantId"]'
    ```
 
 2. Check if tenant exists in database:
-   ```bash
+   ```
    aws dynamodb get-item \
      --table-name ServerlessSaaS-TenantDetails-lab6 \
      --key '{"tenantId": {"S": "<TENANT_ID_FROM_JWT>"}}' \
@@ -463,7 +463,7 @@ Node.js v20+ has compatibility issues with Angular dependencies.
 **Solution:**
 Lab6 includes pre-built client files as a fallback:
 
-```bash
+```
 # Check if pre-built files exist
 ls -la Lab6/client/Admin/dist
 ls -la Lab6/client/Landing/dist
@@ -473,7 +473,7 @@ ls -la Lab6/client/Application/dist
 The deployment script automatically uses pre-built files if build fails.
 
 **Recommended:** Use Node.js v18.x for best compatibility:
-```bash
+```
 # Using nvm
 nvm install 18
 nvm use 18
@@ -491,7 +491,7 @@ Client applications show old content after redeployment.
 CloudFront invalidations are triggered automatically but take 5-10 minutes to complete.
 
 **Manual Invalidation:**
-```bash
+```
 # Get distribution IDs
 aws cloudfront list-distributions \
   --query 'DistributionList.Items[*].[Id,Origins.Items[0].DomainName]' \
@@ -511,7 +511,7 @@ aws cloudfront create-invalidation \
 
 ### Option 1: Automated Cleanup (Recommended)
 
-```bash
+```
 cd Lab6/scripts
 ./cleanup.sh
 ```
@@ -536,7 +536,7 @@ cd Lab6/scripts
 
 ### Option 2: Manual Cleanup
 
-```bash
+```
 # Delete tenant stacks
 aws cloudformation delete-stack --stack-name stack-<TENANT_ID>
 
@@ -555,7 +555,7 @@ aws s3 rb s3://<BUCKET_NAME>
 
 After cleanup, verify all resources are deleted:
 
-```bash
+```
 # Check CloudFormation stacks
 aws cloudformation list-stacks \
   --query 'StackSummaries[?contains(StackName, `lab6`) && StackStatus!=`DELETE_COMPLETE`].StackName'
@@ -625,13 +625,13 @@ The deployment script handles this automatically.
 
 Long deployments (15-25 minutes) can be interrupted by network issues. Use screen:
 
-```bash
+```
 ./deploy-with-screen.sh
 ```
 
 ### 2. Save Deployment Outputs
 
-```bash
+```
 # Save stack outputs
 aws cloudformation describe-stacks \
   --stack-name serverless-saas-workshop-shared-lab6 \
@@ -643,7 +643,7 @@ grep "site URL" deployment-*.log > lab6-urls.txt
 
 ### 3. Monitor Pipeline Execution
 
-```bash
+```
 # Watch pipeline status
 watch -n 10 'aws codepipeline get-pipeline-state \
   --name serverless-saas-pipeline-lab6 \

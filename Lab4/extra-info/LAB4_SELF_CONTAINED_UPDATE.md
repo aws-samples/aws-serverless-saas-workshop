@@ -61,7 +61,7 @@ From `serverless-saas-tenant-lab4`:
 
 ## Deployment Command
 
-```bash
+```
 cd workshop/Lab4/scripts
 ./deployment.sh -s -c --email lancdieg@amazon.com --tenant-email lancdieg@amazon.com --profile serverless-saas-demo
 ```

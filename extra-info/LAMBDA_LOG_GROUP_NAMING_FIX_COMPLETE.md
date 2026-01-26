@@ -93,14 +93,14 @@ Replaced all dynamic log group names with hardcoded names that match the Lambda 
 After deploying with these changes:
 
 1. Verify log groups are created with correct names:
-   ```bash
+   ```
    aws logs describe-log-groups \
      --log-group-name-prefix /aws/lambda/serverless-saas-lab4 \
      --profile <your-profile-name>
    ```
 
 2. Confirm no log groups with CloudFormation resource IDs exist:
-   ```bash
+   ```
    aws logs describe-log-groups \
      --log-group-name-prefix /aws/lambda/serverless-saas \
      --profile <your-profile-name> | grep "LambdaFunctions-"

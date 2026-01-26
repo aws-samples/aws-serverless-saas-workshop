@@ -12,12 +12,12 @@
 - `workshop/Lab1/server/README.md`
 
 **Before**:
-```bash
+```
 sam build -t template.yaml --use-container
 ```
 
 **After**:
-```bash
+```
 sam build -t template.yaml
 ```
 
@@ -36,7 +36,7 @@ sam build -t template.yaml
 - `workshop/Lab1/server/README.md`
 
 **Example Changes**:
-```bash
+```
 # Before
 aws cloudformation describe-stacks --stack-name serverless-saas-workshop-lab1
 
@@ -47,14 +47,14 @@ aws cloudformation describe-stacks \
 ```
 
 **Cleanup Script**:
-```bash
+```
 # Removed export, added profile to each command
 # Example:
 aws cloudformation delete-stack --stack-name "$1" --profile serverless-saas-demo
 ```
 
 **Deployment Scripts** (Labs 2, 3, 5, 6):
-```bash
+```
 # Removed export, kept AWS_PROFILE variable with default
 AWS_PROFILE="serverless-saas-demo"
 
@@ -76,7 +76,7 @@ aws cloudformation describe-stacks --stack-name "$STACK_NAME" --profile "$AWS_PR
 - **Removed `export AWS_PROFILE`** and added `--profile serverless-saas-demo` to each AWS CLI command
 
 **Before**:
-```bash
+```
 # Default: Interactive mode with prompts
 ./cleanup.sh
 
@@ -85,7 +85,7 @@ aws cloudformation describe-stacks --stack-name "$STACK_NAME" --profile "$AWS_PR
 ```
 
 **After**:
-```bash
+```
 # Default: Automatic mode (no prompts)
 ./cleanup.sh
 
@@ -94,7 +94,7 @@ aws cloudformation describe-stacks --stack-name "$STACK_NAME" --profile "$AWS_PR
 ```
 
 **Implementation**:
-```bash
+```
 skip_flag='true'
 interactive_flag=''
 while getopts 'i' flag; do
@@ -154,12 +154,12 @@ done
 ## Verification Commands
 
 ### Verify AWS Profile
-```bash
+```
 aws sts get-caller-identity --profile serverless-saas-demo
 ```
 
 ### Test Cleanup Script (Dry Run)
-```bash
+```
 # Interactive mode to see what would be deleted
 cd workshop/scripts
 ./cleanup.sh -i
@@ -167,7 +167,7 @@ cd workshop/scripts
 ```
 
 ### Deploy Lab1 with New Commands
-```bash
+```
 cd workshop/Lab1/server
 sam build -t template.yaml
 sam deploy --config-file samconfig.toml --profile serverless-saas-demo
@@ -180,24 +180,24 @@ sam deploy --config-file samconfig.toml --profile serverless-saas-demo
 ### If You Have Existing Deployments
 
 1. **Configure the new profile**:
-   ```bash
+   ```
    aws configure --profile serverless-saas-demo
    ```
 
 2. **Verify profile works**:
-   ```bash
+   ```
    aws sts get-caller-identity --profile serverless-saas-demo
    ```
 
 3. **Use cleanup script to remove old resources**:
-   ```bash
+   ```
    cd workshop/scripts
    ./cleanup.sh
    # Runs automatically with new profile
    ```
 
 4. **Redeploy with new commands**:
-   ```bash
+   ```
    cd workshop/Lab1/server
    sam build -t template.yaml
    sam deploy --config-file samconfig.toml --profile serverless-saas-demo
@@ -206,7 +206,7 @@ sam deploy --config-file samconfig.toml --profile serverless-saas-demo
 ### If You're Starting Fresh
 
 1. **Configure AWS profile**:
-   ```bash
+   ```
    aws configure --profile serverless-saas-demo
    ```
 
@@ -277,18 +277,18 @@ sam deploy --config-file samconfig.toml --profile serverless-saas-demo
 If you need to revert these changes:
 
 1. **Restore cleanup script**:
-   ```bash
+   ```
    git checkout HEAD -- workshop/scripts/cleanup.sh
    ```
 
 2. **Restore documentation**:
-   ```bash
+   ```
    git checkout HEAD -- workshop/DEPLOYMENT_CLEANUP_MANUAL.md
    git checkout HEAD -- workshop/QUICK_REFERENCE.md
    ```
 
 3. **Use old commands**:
-   ```bash
+   ```
    sam build --use-container
    sam deploy --config-file samconfig.toml
    # Without --profile flag
@@ -331,13 +331,13 @@ If you need to revert these changes:
 - User can still override by changing the `AWS_PROFILE` variable at the top of deployment scripts
 
 **Before**:
-```bash
+```
 export AWS_PROFILE="serverless-saas-demo"
 aws cloudformation describe-stacks --stack-name my-stack
 ```
 
 **After**:
-```bash
+```
 AWS_PROFILE="serverless-saas-demo"
 aws cloudformation describe-stacks --stack-name my-stack --profile "$AWS_PROFILE"
 ```

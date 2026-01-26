@@ -320,7 +320,7 @@ UserPoolTags:
 ## Validation
 
 After completing all labs, run the property test:
-```bash
+```
 pytest workshop/tests/test_resource_tagging.py -v
 ```
 

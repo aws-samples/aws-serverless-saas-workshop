@@ -11,7 +11,7 @@ The initial deployment was failing because the pipeline was being deployed **bef
 
 The `deployment.sh` script had the wrong deployment order:
 
-```bash
+```
 # OLD ORDER (WRONG)
 1. Deploy pipeline (triggers on CodeCommit push)
 2. Deploy shared stack (creates DynamoDB tables)
@@ -28,7 +28,7 @@ When the pipeline was deployed first:
 
 We fixed the deployment order in `deployment.sh`:
 
-```bash
+```
 # NEW ORDER (CORRECT)
 1. Deploy shared stack (creates DynamoDB tables)
 2. Wait for DynamoDB tables to be ACTIVE
@@ -41,7 +41,7 @@ We fixed the deployment order in `deployment.sh`:
 
 Moved the pipeline deployment block to execute **after** the shared stack deployment and DynamoDB table verification:
 
-```bash
+```
 # Deploy shared stack first
 if [[ $server -eq 1 ]] || [[ $bootstrap -eq 1 ]]; then
   # ... deploy shared stack ...

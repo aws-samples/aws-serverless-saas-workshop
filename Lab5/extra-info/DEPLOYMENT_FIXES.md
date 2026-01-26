@@ -12,7 +12,7 @@ An error occurred (ResourceNotFoundException) when calling the Scan operation: R
 **Root Cause:** Race condition - pipeline could trigger before DynamoDB tables were fully active.
 
 **Fix:** Added automatic wait for DynamoDB tables in `deployment.sh`:
-```bash
+```
 # Wait for DynamoDB tables to be fully active before proceeding
 for table in "ServerlessSaaS-Settings-lab5" "ServerlessSaaS-TenantStackMapping-lab5" \
              "ServerlessSaaS-TenantDetails-lab5" "ServerlessSaaS-TenantUserMapping-lab5"; do
@@ -34,7 +34,7 @@ No export named Serverless-SaaS-CognitoOperationUsersUserPoolClientId found
 - Pipeline was building from CodeCommit main branch, not your local changes
 
 **Fix:** Added automatic code push to CodeCommit in `deployment.sh`:
-```bash
+```
 # Push current branch changes to CodeCommit main branch
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 git push cc $CURRENT_BRANCH:main --force
@@ -51,7 +51,7 @@ git push cc $CURRENT_BRANCH:main --force
 - Added deployment summary with next steps
 
 **Key Sections:**
-```bash
+```
 # Pipeline deployment section
 - Auto-commits any uncommitted changes
 - Pushes current branch to CodeCommit main
@@ -116,19 +116,19 @@ Comprehensive troubleshooting guide covering:
 ### Before Running
 
 1. Ensure you're on the correct branch with Lab5 changes:
-```bash
+```
 git branch  # Should show your current branch
 git log --oneline -5  # Should show Lab5 commits
 ```
 
 2. Check for uncommitted changes:
-```bash
+```
 git status
 ```
 
 ### Run Deployment
 
-```bash
+```
 cd Lab5/scripts
 ./deployment.sh -s -c
 ```
@@ -144,7 +144,7 @@ The script will now:
 
 ### Verify Success
 
-```bash
+```
 # Check DynamoDB tables exist
 aws dynamodb list-tables --query 'TableNames[?contains(@, `lab5`)]'
 
@@ -165,12 +165,12 @@ aws cloudformation describe-stacks --stack-name stack-lab5-pooled --query 'Stack
 ## What to Do If Issues Persist
 
 1. **Check the logs:**
-```bash
+```
 aws logs tail /aws/lambda/serverless-saas-pipeline-lab5-deploytenantstackD22DC62B-* --since 30m
 ```
 
 2. **Verify exports match imports:**
-```bash
+```
 # List exports
 aws cloudformation list-exports --query 'Exports[?contains(Name, `Cognito`)].[Name]'
 
@@ -179,7 +179,7 @@ grep -r "ImportValue.*Cognito" Lab5/server/tenant-template.yaml
 ```
 
 3. **Check CodeCommit content:**
-```bash
+```
 # Download packaged.yaml from S3
 aws s3 cp s3://serverless-saas-pipeline-lab5-artifactsbucket*/packaged.yaml - | grep -A2 "CognitoOperationUsersUserPoolClientId"
 ```
@@ -190,7 +190,7 @@ aws s3 cp s3://serverless-saas-pipeline-lab5-artifactsbucket*/packaged.yaml - | 
 
 If you need to start fresh:
 
-```bash
+```
 # See TROUBLESHOOTING.md section "Complete Cleanup and Redeploy"
 # Or run these commands:
 

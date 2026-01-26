@@ -1,14 +1,14 @@
 ## Deployment Instructions
 
 ### Standard Deployment
-```bash
+```
 sam build -t template.yaml
 sam deploy --config-file samconfig.toml --profile serverless-saas-demo
 ```
 
 ### Event Engine Deployment
 If using AWS Event Engine with a pre-configured S3 bucket:
-```bash
+```
 sam build && sam package \
   --output-template-file packaged.yaml \
   --s3-bucket aws-sam-cli-managed-default-samclisourcebucket-8tf6bmi4rdcx \
