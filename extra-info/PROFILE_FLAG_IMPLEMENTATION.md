@@ -14,12 +14,12 @@ All deployment and cleanup scripts have been updated to accept AWS profile as a 
 - Added validation to ensure profile is provided
 
 **Usage:**
-```bash
+```
 # Required profile parameter
-./cleanup.sh --profile serverless-saas-demo
+./cleanup.sh --profile <your-profile-name>
 
 # With interactive mode
-./cleanup.sh --profile serverless-saas-demo -i
+./cleanup.sh --profile <your-profile-name> -i
 ```
 
 ### 2. Lab2 Deployment Script (`workshop/Lab2/scripts/deployment.sh`)
@@ -37,8 +37,8 @@ All deployment and cleanup scripts have been updated to accept AWS profile as a 
 - Updated help text to include `--profile` parameter
 
 **Usage:**
-```bash
-./deployment.sh -s -c --email admin@example.com --profile serverless-saas-demo
+```
+./deployment.sh -s -c --email admin@example.com --profile <your-profile-name>
 ```
 
 ### 4. Lab5 Deployment Script (`workshop/Lab5/scripts/deployment.sh`)
@@ -50,8 +50,8 @@ All deployment and cleanup scripts have been updated to accept AWS profile as a 
 - Updated help text to include `--profile` parameter
 
 **Usage:**
-```bash
-./deployment.sh -s -c --profile serverless-saas-demo
+```
+./deployment.sh -s -c --profile <your-profile-name>
 ```
 
 ### 5. Lab6 Deployment Script (`workshop/Lab6/scripts/deployment.sh`)
@@ -63,16 +63,16 @@ All deployment and cleanup scripts have been updated to accept AWS profile as a 
 - All AWS CLI commands already use `--profile "$AWS_PROFILE"`
 
 **Usage:**
-```bash
-./deployment.sh -s -c --profile serverless-saas-demo
+```
+./deployment.sh -s -c --profile <your-profile-name>
 ```
 
 ### 6. Steering Document (`workshop/.kiro/steering/deployment-cleanup-guide.md`)
 **Changes:**
-- Updated all command examples to include `--profile serverless-saas-demo`
+- Updated all command examples to include `--profile <your-profile-name>`
 - Added emphasis that `--profile` is REQUIRED for all commands
 - Updated "Important Notes" section to clarify profile usage
-- Maintained that documentation always uses `serverless-saas-demo` as the example profile
+- Maintained that documentation always uses `<your-profile-name>` as the example profile
 
 ## Implementation Pattern
 
@@ -106,14 +106,14 @@ All scripts now follow this consistent pattern:
 ## Migration Notes
 
 **Before:**
-```bash
-export AWS_PROFILE=serverless-saas-demo
+```
+export AWS_PROFILE=<your-profile-name>
 ./deployment.sh -s -c
 ```
 
 **After:**
-```bash
-./deployment.sh -s -c --profile serverless-saas-demo
+```
+./deployment.sh -s -c --profile <your-profile-name>
 ```
 
 ## Files Modified

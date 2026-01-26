@@ -309,8 +309,261 @@ DynamoDB GSI:
 - ServerlessSaas-TenantConfig-lab5
 ```
 
+## Resource Tagging Strategy
+
+All AWS resources created in the workshop must be tagged with a standardized set of tags for cost tracking, resource management, and organization.
+
+### Required Tags
+
+Every resource MUST include these tags:
+
+| Tag Key | Description | Example Values |
+|---------|-------------|----------------|
+| `Environment` | Deployment environment | `workshop`, `dev`, `prod` |
+| `Lab` | Lab number | `lab1`, `lab2`, `lab3`, `lab4`, `lab5`, `lab6`, `lab7` |
+| `Workshop` | Workshop identifier | `serverless-saas` |
+| `Owner` | Resource owner/creator | `workshop-participant`, `admin` |
+| `CostCenter` | Cost allocation identifier | `workshop`, `training` |
+
+### Tag Implementation in CloudFormation
+
+#### Global Tags (Applied to All Resources)
+
+Use CloudFormation's `Tags` property at the stack level:
+
+```yaml
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Lab 1 - Basic Serverless Application
+
+# Global tags applied to all resources
+Tags:
+  Environment: workshop
+  Lab: lab1
+  Workshop: serverless-saas
+  Owner: workshop-participant
+  CostCenter: workshop
+```
+
+#### Resource-Specific Tags
+
+For resources that need additional tags:
+
+```yaml
+Resources:
+  ProductTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ServerlessSaaS-Product-lab1
+      Tags:
+        - Key: Environment
+          Value: workshop
+        - Key: Lab
+          Value: lab1
+        - Key: Workshop
+          Value: serverless-saas
+        - Key: Owner
+          Value: workshop-participant
+        - Key: CostCenter
+          Value: workshop
+        - Key: ResourceType
+          Value: database
+        - Key: DataClassification
+          Value: demo
+```
+
+### Tagged Resource Examples
+
+#### Example 1: Lambda Function (Lab 1)
+
+```yaml
+ProductServiceFunction:
+  Type: AWS::Serverless::Function
+  Properties:
+    FunctionName: serverless-saas-lab1-product-service
+    Handler: product_service.lambda_handler
+    Runtime: python3.14
+    Tags:
+      Environment: workshop
+      Lab: lab1
+      Workshop: serverless-saas
+      Owner: workshop-participant
+      CostCenter: workshop
+      Service: product-service
+```
+
+#### Example 2: DynamoDB Table (Lab 3)
+
+```yaml
+ProductTable:
+  Type: AWS::DynamoDB::Table
+  Properties:
+    TableName: Product-pooled-lab3
+    BillingMode: PAY_PER_REQUEST
+    Tags:
+      - Key: Environment
+        Value: workshop
+      - Key: Lab
+        Value: lab3
+      - Key: Workshop
+        Value: serverless-saas
+      - Key: Owner
+        Value: workshop-participant
+      - Key: CostCenter
+        Value: workshop
+      - Key: TenantModel
+        Value: pooled
+      - Key: DataType
+        Value: product-catalog
+```
+
+#### Example 3: S3 Bucket (Lab 2)
+
+```yaml
+AdminAppBucket:
+  Type: AWS::S3::Bucket
+  Properties:
+    BucketName: !Sub 
+      - 'serverless-saas-lab2-admin-${ShortId}'
+      - ShortId: !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref 'AWS::StackId']]]]
+    Tags:
+      - Key: Environment
+        Value: workshop
+      - Key: Lab
+        Value: lab2
+      - Key: Workshop
+        Value: serverless-saas
+      - Key: Owner
+        Value: workshop-participant
+      - Key: CostCenter
+        Value: workshop
+      - Key: Application
+        Value: admin-ui
+      - Key: ContentType
+        Value: static-website
+```
+
+#### Example 4: API Gateway (Lab 4)
+
+```yaml
+TenantAPI:
+  Type: AWS::Serverless::Api
+  Properties:
+    Name: serverless-saas-tenant-api-lab4
+    StageName: prod
+    Tags:
+      Environment: workshop
+      Lab: lab4
+      Workshop: serverless-saas
+      Owner: workshop-participant
+      CostCenter: workshop
+      APIType: tenant-api
+      IsolationModel: scoped-credentials
+```
+
+#### Example 5: Cognito User Pool (Lab 5)
+
+```yaml
+TenantUserPool:
+  Type: AWS::Cognito::UserPool
+  Properties:
+    UserPoolName: PooledTenant-ServerlessSaaS-lab5-UserPool
+    UserPoolTags:
+      Environment: workshop
+      Lab: lab5
+      Workshop: serverless-saas
+      Owner: workshop-participant
+      CostCenter: workshop
+      UserType: tenant-users
+      TenantModel: pooled
+```
+
+#### Example 6: IAM Role (Lab 6)
+
+```yaml
+AuthorizerExecutionRole:
+  Type: AWS::IAM::Role
+  Properties:
+    RoleName: authorizer-execution-role-lab6
+    Tags:
+      - Key: Environment
+        Value: workshop
+      - Key: Lab
+        Value: lab6
+      - Key: Workshop
+        Value: serverless-saas
+      - Key: Owner
+        Value: workshop-participant
+      - Key: CostCenter
+        Value: workshop
+      - Key: Purpose
+        Value: lambda-authorizer
+      - Key: SecurityLevel
+        Value: high
+```
+
+#### Example 7: CloudWatch Log Group (Lab 7)
+
+```yaml
+CostAttributionLogGroup:
+  Type: AWS::Logs::LogGroup
+  Properties:
+    LogGroupName: /aws/lambda/serverless-saas-lab7-cost-attribution
+    RetentionInDays: 60
+    Tags:
+      - Key: Environment
+        Value: workshop
+      - Key: Lab
+        Value: lab7
+      - Key: Workshop
+        Value: serverless-saas
+      - Key: Owner
+        Value: workshop-participant
+      - Key: CostCenter
+        Value: workshop
+      - Key: LogType
+        Value: application
+      - Key: RetentionPolicy
+        Value: 60-days
+```
+
+### Tag Validation
+
+Use this AWS CLI command to verify tags on deployed resources:
+
+```bash
+# List all resources with workshop tags
+aws resourcegroupstaggingapi get-resources \
+  --tag-filters Key=Workshop,Values=serverless-saas \
+  --profile serverless-saas-demo
+
+# List resources for a specific lab
+aws resourcegroupstaggingapi get-resources \
+  --tag-filters Key=Lab,Values=lab1 \
+  --profile serverless-saas-demo
+
+# Get cost allocation by lab
+aws ce get-cost-and-usage \
+  --time-period Start=2025-01-01,End=2025-01-31 \
+  --granularity MONTHLY \
+  --metrics BlendedCost \
+  --group-by Type=TAG,Key=Lab \
+  --profile serverless-saas-demo
+```
+
+### Benefits of Consistent Tagging
+
+1. **Cost Tracking**: Track costs per lab, environment, or cost center
+2. **Resource Management**: Easily identify and manage resources by lab
+3. **Automation**: Enable automated cleanup and resource lifecycle management
+4. **Compliance**: Meet organizational tagging requirements
+5. **Reporting**: Generate reports on resource usage and costs
+6. **Multi-Tenant Attribution**: Track costs per tenant in pooled models (Lab 7)
+
 ## Notes
 
 - Resources using `${AWS::StackName}` in their names should NOT add additional `-lab{N}` suffix since the stack name already includes it
 - Tenant-specific resources should include both tenant ID and lab number
 - Always verify resource names don't exceed AWS service limits (e.g., S3 bucket names: 63 characters)
+- All resources MUST be tagged with the required tags: Environment, Lab, Workshop, Owner, CostCenter
+- Additional tags can be added for specific resource types or use cases

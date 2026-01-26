@@ -79,44 +79,44 @@ ApiGatewayAttachCloudwatchLogArn:
 ### Required Tools
 
 1. **AWS CLI** (v2.x or later)
-   ```bash
+   ```
    aws --version
    ```
 
 2. **AWS SAM CLI** (v1.x or later)
-   ```bash
+   ```
    sam --version
    ```
 
 3. **Python** (3.9 or later)
-   ```bash
+   ```
    python3 --version
    ```
 
 4. **Node.js** (v18.x or later)
-   ```bash
+   ```
    node --version
    ```
 
 5. **Git**
-   ```bash
+   ```
    git --version
    ```
 
 ### AWS Account Setup
 
 1. **Configure AWS Credentials:**
-   ```bash
-   aws configure
+   ```
+   aws configure --profile <your-profile-name>
    ```
 
 2. **Verify Access:**
-   ```bash
-   aws sts get-caller-identity
+   ```
+   aws sts get-caller-identity --profile <your-profile-name>
    ```
 
 3. **Bootstrap SAM (if not already done):**
-   ```bash
+   ```
    sam init --bootstrap
    ```
 
@@ -132,9 +132,9 @@ If this is your first lab deployment, the `apigateway-cloudwatch-publish-role` w
 
 Each lab follows this standard deployment pattern:
 
-```bash
+```
 cd Lab{N}/scripts
-bash deployment.sh
+./deployment.sh
 ```
 
 ### Lab 1: Basic Multi-Tenant Architecture
@@ -148,9 +148,9 @@ bash deployment.sh
 - Cognito pools: `*-ServerlessSaaS-lab1-UserPool`
 
 **Deployment:**
-```bash
+```
 cd Lab1/scripts
-bash deployment.sh
+./deployment.sh
 ```
 
 **Estimated Time:** 15-20 minutes
@@ -165,9 +165,9 @@ bash deployment.sh
 - IAM roles: `*-lab2-${AWS::Region}`
 
 **Deployment:**
-```bash
+```
 cd Lab2/scripts
-bash deployment.sh
+./deployment.sh
 ```
 
 **Estimated Time:** 15-20 minutes
@@ -182,9 +182,9 @@ bash deployment.sh
 - Tenant stacks: `stack-{tenantId}`
 
 **Deployment:**
-```bash
+```
 cd Lab3/scripts
-bash deployment.sh
+./deployment.sh
 ```
 
 **Estimated Time:** 15-20 minutes
@@ -199,9 +199,9 @@ bash deployment.sh
 - DynamoDB tables: `ServerlessSaaS-*-lab4`
 
 **Deployment:**
-```bash
+```
 cd Lab4/scripts
-bash deployment.sh
+./deployment.sh
 ```
 
 **Estimated Time:** 20-25 minutes
@@ -217,9 +217,9 @@ bash deployment.sh
 - DynamoDB tables: `ServerlessSaaS-*-lab5`
 
 **Deployment:**
-```bash
+```
 cd Lab5/scripts
-bash deployment.sh
+./deployment.sh
 ```
 
 **Estimated Time:** 15-20 minutes
@@ -239,9 +239,9 @@ bash deployment.sh
 - DynamoDB tables: `ServerlessSaaS-*-lab6`
 
 **Deployment:**
-```bash
+```
 cd Lab6/scripts
-bash deployment.sh
+./deployment.sh
 ```
 
 **Estimated Time:** 15-20 minutes
@@ -263,9 +263,9 @@ bash deployment.sh
 - DynamoDB tables: `ServerlessSaaS-*-lab7`
 
 **Deployment:**
-```bash
+```
 cd Lab7/scripts
-bash deployment.sh
+./deployment.sh
 ```
 
 **Estimated Time:** 15-20 minutes
@@ -383,7 +383,7 @@ ROLLBACK_IN_PROGRESS: The following resource(s) failed to create
 
 **Solution:**
 1. Check CloudFormation events for specific error:
-   ```bash
+   ```
    aws cloudformation describe-stack-events \
      --stack-name serverless-saas-workshop-shared-lab{N} \
      --region us-east-1 \
@@ -391,7 +391,7 @@ ROLLBACK_IN_PROGRESS: The following resource(s) failed to create
    ```
 
 2. Delete the failed stack:
-   ```bash
+   ```
    aws cloudformation delete-stack \
      --stack-name serverless-saas-workshop-shared-lab{N} \
      --region us-east-1
@@ -425,9 +425,9 @@ ERROR: Syntax error in {file}.py
 
 Each lab includes a cleanup script:
 
-```bash
+```
 cd Lab{N}/scripts
-bash cleanup.sh
+./cleanup.sh
 ```
 
 **What Gets Deleted:**
@@ -443,27 +443,27 @@ bash cleanup.sh
 
 To clean up all labs at once:
 
-```bash
+```
 # Lab 1
-cd Lab1/scripts && bash cleanup.sh
+cd Lab1/scripts && ./cleanup.sh
 
 # Lab 2
-cd ../../Lab2/scripts && bash cleanup.sh
+cd ../../Lab2/scripts && ./cleanup.sh
 
 # Lab 3
-cd ../../Lab3/scripts && bash cleanup.sh
+cd ../../Lab3/scripts && ./cleanup.sh
 
 # Lab 4
-cd ../../Lab4/scripts && bash cleanup.sh
+cd ../../Lab4/scripts && ./cleanup.sh
 
 # Lab 5
-cd ../../Lab5/scripts && bash cleanup.sh
+cd ../../Lab5/scripts && ./cleanup.sh
 
 # Lab 6
-cd ../../Lab6/scripts && bash cleanup.sh
+cd ../../Lab6/scripts && ./cleanup.sh
 
 # Lab 7
-cd ../../Lab7/scripts && bash cleanup.sh
+cd ../../Lab7/scripts && ./cleanup.sh
 ```
 
 ### Cleaning Up Shared Resources
@@ -472,13 +472,13 @@ cd ../../Lab7/scripts && bash cleanup.sh
 
 #### Delete API Gateway CloudWatch Role
 
-```bash
+```
 aws iam delete-role --role-name apigateway-cloudwatch-publish-role
 ```
 
 #### Delete CI/CD Pipeline Stack
 
-```bash
+```
 aws cloudformation delete-stack --stack-name serverless-saas-pipeline
 ```
 
@@ -486,7 +486,7 @@ aws cloudformation delete-stack --stack-name serverless-saas-pipeline
 
 **WARNING:** Only delete if you're not using CDK for other projects!
 
-```bash
+```
 aws cloudformation delete-stack --stack-name CDKToolkit
 ```
 
@@ -494,7 +494,7 @@ aws cloudformation delete-stack --stack-name CDKToolkit
 
 Verify all resources are deleted:
 
-```bash
+```
 # Check CloudFormation stacks
 aws cloudformation list-stacks \
   --query 'StackSummaries[?contains(StackName, `serverless-saas`) && StackStatus!=`DELETE_COMPLETE`].StackName'
@@ -525,16 +525,16 @@ Deploy labs in order (Lab 1 → Lab 2 → Lab 3, etc.) to understand the progres
 
 ### 2. Use Screen Sessions for Long Deployments
 
-```bash
+```
 cd Lab{N}/scripts
-bash deploy-with-screen.sh
+./deploy-with-screen.sh
 ```
 
 This allows deployments to continue even if your terminal disconnects.
 
 ### 3. Monitor CloudFormation Events
 
-```bash
+```
 aws cloudformation describe-stack-events \
   --stack-name serverless-saas-workshop-shared-lab{N} \
   --region us-east-1 \
@@ -545,7 +545,7 @@ aws cloudformation describe-stack-events \
 
 Each lab deployment outputs important values (API URLs, Cognito pool IDs, etc.). Save these for reference:
 
-```bash
+```
 aws cloudformation describe-stacks \
   --stack-name serverless-saas-workshop-shared-lab{N} \
   --region us-east-1 \
@@ -601,7 +601,7 @@ UpdateTenantStackMap:
 
 ### Check Stack Status
 
-```bash
+```
 aws cloudformation describe-stacks \
   --stack-name serverless-saas-workshop-shared-lab{N} \
   --region us-east-1 \
@@ -610,7 +610,7 @@ aws cloudformation describe-stacks \
 
 ### View Stack Events
 
-```bash
+```
 aws cloudformation describe-stack-events \
   --stack-name serverless-saas-workshop-shared-lab{N} \
   --region us-east-1 \
@@ -619,20 +619,20 @@ aws cloudformation describe-stack-events \
 
 ### Check Lambda Function Logs
 
-```bash
+```
 aws logs tail /aws/lambda/serverless-saas-lab{N}-{function-name} --follow
 ```
 
 ### Test API Gateway Endpoint
 
-```bash
+```
 curl -X GET https://{api-id}.execute-api.us-east-1.amazonaws.com/prod/tenants \
   -H "x-api-key: {api-key}"
 ```
 
 ### Check DynamoDB Table
 
-```bash
+```
 aws dynamodb scan --table-name ServerlessSaaS-TenantDetails-lab{N} --limit 10
 ```
 

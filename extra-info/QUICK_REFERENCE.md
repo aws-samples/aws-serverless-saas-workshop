@@ -2,7 +2,7 @@
 
 ## Prerequisites Checklist
 - [ ] AWS CLI installed and configured
-- [ ] AWS profile `serverless-saas-demo` configured
+- [ ] AWS profile configured
 - [ ] AWS SAM CLI installed
 - [ ] Python 3.14 installed
 - [ ] Node.js installed (for Labs 2-6)
@@ -10,14 +10,14 @@
 
 ## Verify AWS Profile
 ```bash
-aws sts get-caller-identity --profile serverless-saas-demo
+aws sts get-caller-identity --profile <your-profile-name>
 ```
 
 ## One-Line Deploy Commands
 
-```bash
+```
 # Lab 1
-cd workshop/Lab1/server && sam build && sam deploy --config-file samconfig.toml --profile serverless-saas-demo
+cd workshop/Lab1/server && sam build && sam deploy --config-file samconfig.toml --profile <your-profile-name>
 
 # Lab 2
 cd workshop/Lab2/server && ./deployment.sh -s -c -e admin@example.com -te tenant-admin@example.com
@@ -35,7 +35,7 @@ cd workshop/Lab5/server && ./deployment.sh -s -c
 cd workshop/Lab6/server && ./deploy-with-screen.sh
 
 # Lab 7
-cd workshop/Lab7 && sam build && sam deploy --config-file samconfig.toml --profile serverless-saas-demo
+cd workshop/Lab7/scripts && ./deployment.sh --profile <your-profile-name>
 ```
 
 ## One-Line Cleanup
@@ -78,15 +78,15 @@ Tenant Admin:
 # List all workshop stacks
 aws cloudformation list-stacks \
   --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE \
-  --profile serverless-saas-demo | grep -E "serverless-saas|stack-"
+  --profile <your-profile-name> | grep -E "serverless-saas|stack-"
 
 # Check log groups
 aws logs describe-log-groups \
   --log-group-name-prefix /aws/lambda/serverless-saas \
-  --profile serverless-saas-demo
+  --profile <your-profile-name>
 
 # List S3 buckets
-aws s3 ls --profile serverless-saas-demo | grep serverless-saas
+aws s3 ls --profile <your-profile-name> | grep serverless-saas
 ```
 
 ## Common Issues
@@ -119,19 +119,19 @@ aws s3 ls --profile serverless-saas-demo | grep serverless-saas
 # Get stack outputs
 aws cloudformation describe-stacks \
   --stack-name <stack-name> \
-  --profile serverless-saas-demo \
+  --profile <your-profile-name> \
   --query 'Stacks[0].Outputs'
 
 # Get stack events (for troubleshooting)
 aws cloudformation describe-stack-events \
   --stack-name <stack-name> \
-  --profile serverless-saas-demo \
+  --profile <your-profile-name> \
   --max-items 20
 
 # Tail Lambda logs
 sam logs -n <function-name> \
   --stack-name <stack-name> \
-  --profile serverless-saas-demo \
+  --profile <your-profile-name> \
   --tail
 
 # Check SAM version
@@ -141,5 +141,5 @@ sam --version
 aws --version
 
 # Verify AWS profile
-aws sts get-caller-identity --profile serverless-saas-demo
+aws sts get-caller-identity --profile <your-profile-name>
 ```

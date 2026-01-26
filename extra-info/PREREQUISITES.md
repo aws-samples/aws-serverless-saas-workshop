@@ -14,7 +14,7 @@ The AWS Command Line Interface is required for deploying and managing AWS resour
 - Linux: https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
 
 **Verify installation:**
-```bash
+```
 aws --version
 ```
 
@@ -27,7 +27,7 @@ AWS Serverless Application Model CLI is used to build and deploy serverless appl
 - Windows/Linux: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html
 
 **Verify installation:**
-```bash
+```
 sam --version
 ```
 
@@ -41,7 +41,7 @@ Python 3.14 is required for Lambda functions and deployment scripts.
 - Linux: Use your package manager or build from source
 
 **Verify installation:**
-```bash
+```
 python3 --version
 ```
 
@@ -59,7 +59,7 @@ python3 --version
 **Installation:**
 
 **Option A: Using Homebrew (macOS)**
-```bash
+```
 # Install Node.js v22 LTS
 brew install node@22
 
@@ -69,7 +69,7 @@ source ~/.zshrc
 ```
 
 **Option B: Using nvm (Recommended for managing multiple versions)**
-```bash
+```
 # Install nvm
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
 
@@ -83,7 +83,7 @@ nvm alias default 22
 - Download from: https://nodejs.org/ (choose LTS version)
 
 **Verify installation:**
-```bash
+```
 node --version  # Should show v20.x.x or v22.x.x
 npm --version
 ```
@@ -95,12 +95,12 @@ npm --version
 AWS Cloud Development Kit is used for infrastructure as code in later labs.
 
 **Installation:**
-```bash
+```
 npm install -g aws-cdk
 ```
 
 **Verify installation:**
-```bash
+```
 cdk --version
 ```
 
@@ -114,7 +114,7 @@ Git is required for version control and CodeCommit operations.
 - Linux: Use your package manager (e.g., `apt install git`)
 
 **Verify installation:**
-```bash
+```
 git --version
 ```
 
@@ -136,10 +136,10 @@ You need an AWS account with appropriate permissions to create and manage:
 
 ### 2. AWS Profile Configuration
 
-Configure your AWS credentials with a profile named `serverless-saas-demo`:
+Configure your AWS credentials with a profile name of your choice:
 
-```bash
-aws configure --profile serverless-saas-demo
+```
+aws configure --profile <your-profile-name>
 ```
 
 You'll be prompted for:
@@ -149,8 +149,8 @@ You'll be prompted for:
 - Default output format (e.g., `json`)
 
 **Verify configuration:**
-```bash
-aws sts get-caller-identity --profile serverless-saas-demo
+```
+aws sts get-caller-identity --profile <your-profile-name>
 ```
 
 ### 3. AWS Region
@@ -160,22 +160,6 @@ The workshop is designed to work in any AWS region, but we recommend using:
 - `us-east-1` (N. Virginia)
 
 Make sure all required services are available in your chosen region.
-
-## System Requirements
-
-### Operating System
-- macOS (10.15 or later)
-- Linux (Ubuntu 20.04 or later, Amazon Linux 2)
-- Windows 10/11 (with WSL2 recommended)
-
-### Disk Space
-- At least 5 GB of free disk space for dependencies and build artifacts
-
-### Memory
-- At least 8 GB RAM recommended
-
-### Internet Connection
-- Stable internet connection for downloading dependencies and deploying to AWS
 
 ## Optional Tools
 
@@ -197,7 +181,7 @@ Any text editor or IDE works, but we recommend:
 
 Run this script to verify all prerequisites are installed:
 
-```bash
+```
 #!/bin/bash
 
 echo "Checking prerequisites..."
@@ -252,10 +236,10 @@ else
 fi
 
 # Check AWS credentials
-if aws sts get-caller-identity --profile serverless-saas-demo &> /dev/null; then
-    echo "✓ AWS Profile 'serverless-saas-demo': Configured"
+if aws sts get-caller-identity --profile <your-profile-name> &> /dev/null; then
+    echo "✓ AWS Profile '<your-profile-name>': Configured"
 else
-    echo "✗ AWS Profile 'serverless-saas-demo': Not configured"
+    echo "✗ AWS Profile '<your-profile-name>': Not configured"
 fi
 
 echo ""
@@ -282,9 +266,9 @@ If you encounter errors like "Cannot find module './bootstrap'" or "Access Denie
 
 If you get "Unable to locate credentials" errors, ensure your AWS profile is configured correctly:
 
-```bash
-aws configure --profile serverless-saas-demo
-aws sts get-caller-identity --profile serverless-saas-demo
+```
+aws configure --profile <your-profile-name>
+aws sts get-caller-identity --profile <your-profile-name>
 ```
 
 ### SAM Build Failures

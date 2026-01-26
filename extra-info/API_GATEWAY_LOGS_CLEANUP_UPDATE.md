@@ -15,7 +15,7 @@ The cleanup script (`workshop/Lab2/scripts/cleanup.sh`) has code to delete API G
 1. **Missing CloudFormation Output**: The nested API Gateway template (`workshop/Lab2/server/nested_templates/apigateway.yaml`) only exports `AdminApiGatewayApi` (full resource reference), NOT `AdminApiGatewayId` (just the ID)
 
 2. **Cleanup Script Expectation**: The cleanup script queries for `AdminApiGatewayId` and `TenantApiGatewayId` outputs:
-   ```bash
+   ```
    ADMIN_API_ID=$(aws cloudformation describe-stacks \
        --stack-name "$STACK_NAME" \
        --query "Stacks[0].Outputs[?OutputKey=='AdminApiGatewayId'].OutputValue" \
@@ -60,28 +60,28 @@ Outputs:
 After deploying the updated templates:
 
 1. **Verify Output Exists**:
-   ```bash
+   ```
    aws cloudformation describe-stacks \
        --stack-name serverless-saas-lab2 \
        --region us-west-2 \
-       --profile serverless-saas-demo \
+       --profile <your-profile-name> \
        --query "Stacks[0].Outputs[?OutputKey=='AdminApiGatewayId'].OutputValue" \
        --output text
    ```
    Should return the API Gateway ID (e.g., `4rmlb3pw2a`)
 
 2. **Test Cleanup Script**:
-   ```bash
+   ```
    cd workshop/Lab2/scripts
-   echo "yes" | ./cleanup.sh --stack-name serverless-saas-lab2 --profile serverless-saas-demo
+   echo "yes" | ./cleanup.sh --stack-name serverless-saas-lab2 --profile <your-profile-name>
    ```
    Should successfully delete API Gateway execution logs
 
 3. **Verify Logs Deleted**:
-   ```bash
+   ```
    aws logs describe-log-groups \
        --region us-west-2 \
-       --profile serverless-saas-demo \
+       --profile <your-profile-name> \
        --query "logGroups[?contains(logGroupName, 'API-Gateway-Execution-Logs_')].logGroupName" \
        --output text
    ```

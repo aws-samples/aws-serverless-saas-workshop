@@ -96,14 +96,14 @@ After deploying with these changes:
    ```bash
    aws logs describe-log-groups \
      --log-group-name-prefix /aws/lambda/serverless-saas-lab4 \
-     --profile serverless-saas-demo
+     --profile <your-profile-name>
    ```
 
 2. Confirm no log groups with CloudFormation resource IDs exist:
    ```bash
    aws logs describe-log-groups \
      --log-group-name-prefix /aws/lambda/serverless-saas \
-     --profile serverless-saas-demo | grep "LambdaFunctions-"
+     --profile <your-profile-name> | grep "LambdaFunctions-"
    ```
 
 3. Test cleanup scripts to ensure they can find and delete all log groups

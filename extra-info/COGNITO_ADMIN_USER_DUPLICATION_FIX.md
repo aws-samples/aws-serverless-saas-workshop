@@ -4,7 +4,7 @@
 
 **Problem**: Two admin users were being created in the Cognito OperationUsers pool:
 1. User `admin` with email `test@test.com` (created by CloudFormation)
-2. User `admin-user` with email `lancdieg@amazon.com` (created by deployment script)
+2. User `admin-user` with email `your-email@example.com` (created by deployment script)
 
 **Impact**: 
 - Confusion about which user to use for login
@@ -110,26 +110,26 @@ Resources:
 # List users in Cognito pool
 aws cognito-idp list-users \
   --user-pool-id <pool-id> \
-  --profile serverless-saas-demo
+  --profile <your-profile-name>
 
 # Output shows TWO users:
 # 1. Username: admin, Email: test@test.com
-# 2. Username: admin-user, Email: lancdieg@amazon.com
+# 2. Username: admin-user, Email: your-email@example.com
 ```
 
 ### After Fix
 ```bash
 # Deploy with fix
 cd workshop/Lab2/scripts
-./deployment.sh -s -c --email lancdieg@amazon.com --profile serverless-saas-demo
+./deployment.sh -s -c --email your-email@example.com --profile <your-profile-name>
 
 # List users in Cognito pool
 aws cognito-idp list-users \
   --user-pool-id <pool-id> \
-  --profile serverless-saas-demo
+  --profile <your-profile-name>
 
 # Output shows ONE user:
-# Username: admin-user, Email: lancdieg@amazon.com ✅
+# Username: admin-user, Email: your-email@example.com ✅
 ```
 
 ## Impact on Other Labs
