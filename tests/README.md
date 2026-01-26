@@ -6,7 +6,7 @@ This directory contains property-based tests and unit tests for the AWS Serverle
 
 Install test dependencies:
 
-```bash
+```
 pip install -r requirements.txt
 ```
 
@@ -14,19 +14,19 @@ pip install -r requirements.txt
 
 Run all tests:
 
-```bash
+```
 pytest -v
 ```
 
 Run specific test file:
 
-```bash
+```
 pytest test_python_runtime_consistency.py -v
 ```
 
 Run with detailed output:
 
-```bash
+```
 pytest test_python_runtime_consistency.py -v --tb=short
 ```
 
