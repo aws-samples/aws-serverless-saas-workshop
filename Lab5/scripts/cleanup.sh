@@ -475,8 +475,28 @@ print_message "$BLUE" "=========================================="
 print_message "$BLUE" "Step 4: Deleting shared infrastructure (includes CloudFront)"
 print_message "$BLUE" "=========================================="
 
-if delete_stack "$SHARED_STACK_NAME"; then
-  wait_for_deletion "$SHARED_STACK_NAME"
+PROFILE_ARG=$(get_profile_arg)
+if aws cloudformation $PROFILE_ARG describe-stacks --stack-name "$SHARED_STACK_NAME" --region "$AWS_REGION" &>/dev/null; then
+    print_message "$YELLOW" "  Deleting stack: $SHARED_STACK_NAME"
+    aws cloudformation $PROFILE_ARG delete-stack --stack-name "$SHARED_STACK_NAME" --region "$AWS_REGION"
+    
+    print_message "$YELLOW" "Waiting for stack $SHARED_STACK_NAME to be deleted..."
+    print_message "$YELLOW" "⏳ This may take 15-30 minutes for CloudFront distributions to fully delete"
+    print_message "$YELLOW" "⏳ DO NOT interrupt this process - CloudFront must be fully deleted before S3 buckets"
+    echo ""
+    
+    # Use AWS CLI wait command for reliable stack deletion monitoring
+    if aws cloudformation wait stack-delete-complete $PROFILE_ARG --stack-name "$SHARED_STACK_NAME" --region "$AWS_REGION"; then
+        print_message "$GREEN" "✓ Stack $SHARED_STACK_NAME deleted successfully (including CloudFront distributions)"
+        print_message "$GREEN" "✓ CloudFront distributions are fully deleted - safe to proceed"
+        echo ""
+    else
+        print_message "$RED" "Stack deletion failed or timed out"
+        print_message "$RED" "Please check AWS Console for stack status"
+        exit 1
+    fi
+else
+    print_message "$YELLOW" "  Stack $SHARED_STACK_NAME not found"
 fi
 
 print_message "$GREEN" "✓ Shared infrastructure cleanup complete (CloudFront deleted)"
@@ -516,8 +536,111 @@ print_message "$BLUE" "=========================================="
 print_message "$BLUE" "Step 7: Deleting pipeline"
 print_message "$BLUE" "=========================================="
 
-# Use the CDK role-aware deletion function for pipeline stack
-delete_stack_with_cdk_role "$PIPELINE_STACK_NAME"
+PROFILE_ARG=$(get_profile_arg)
+print_message "$YELLOW" "  Deleting stack: $PIPELINE_STACK_NAME"
+
+# Try to delete the stack normally first
+delete_output=$(aws cloudformation $PROFILE_ARG delete-stack --stack-name "$PIPELINE_STACK_NAME" --region "$AWS_REGION" 2>&1)
+delete_status=$?
+
+# Check if deletion failed due to missing CDK role
+if [[ $delete_status -ne 0 ]] && echo "$delete_output" | grep -q "is invalid or cannot be assumed"; then
+    print_message "$YELLOW" "  ⚠ Stack requires CDK execution role that was deleted"
+    print_message "$YELLOW" "  Creating temporary CDK execution role..."
+    
+    # Extract account ID
+    account_id=$(aws sts $PROFILE_ARG get-caller-identity --query Account --output text 2>/dev/null)
+    role_name="cdk-hnb659fds-cfn-exec-role-${account_id}-${AWS_REGION}"
+    
+    # Create temporary role
+    aws iam $PROFILE_ARG create-role \
+        --role-name "$role_name" \
+        --assume-role-policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"cloudformation.amazonaws.com"},"Action":"sts:AssumeRole"}]}' \
+        --region "$AWS_REGION" >/dev/null 2>&1
+    
+    if [[ $? -eq 0 ]]; then
+        print_message "$GREEN" "  ✓ Temporary role created: $role_name"
+        
+        # Attach admin policy
+        aws iam $PROFILE_ARG attach-role-policy \
+            --role-name "$role_name" \
+            --policy-arn arn:aws:iam::aws:policy/AdministratorAccess \
+            --region "$AWS_REGION" >/dev/null 2>&1
+        
+        # Wait for role to propagate
+        sleep 3
+        
+        # Try deletion again
+        aws cloudformation $PROFILE_ARG delete-stack --stack-name "$PIPELINE_STACK_NAME" --region "$AWS_REGION" 2>/dev/null
+        if [[ $? -eq 0 ]]; then
+            print_message "$GREEN" "  ✓ Delete initiated: $PIPELINE_STACK_NAME"
+            
+            print_message "$YELLOW" "Waiting for stack $PIPELINE_STACK_NAME to be deleted..."
+            print_message "$YELLOW" "⏳ This may take several minutes"
+            echo ""
+            
+            # Use AWS CLI wait command for reliable stack deletion monitoring
+            if aws cloudformation wait stack-delete-complete $PROFILE_ARG --stack-name "$PIPELINE_STACK_NAME" --region "$AWS_REGION"; then
+                print_message "$GREEN" "✓ Stack $PIPELINE_STACK_NAME deleted successfully"
+                echo ""
+            else
+                print_message "$RED" "Stack deletion failed or timed out"
+                print_message "$RED" "Please check AWS Console for stack status"
+                exit 1
+            fi
+            
+            # Clean up temporary role
+            print_message "$YELLOW" "  Cleaning up temporary CDK role..."
+            aws iam $PROFILE_ARG detach-role-policy \
+                --role-name "$role_name" \
+                --policy-arn arn:aws:iam::aws:policy/AdministratorAccess \
+                --region "$AWS_REGION" >/dev/null 2>&1
+            
+            aws iam $PROFILE_ARG delete-role \
+                --role-name "$role_name" \
+                --region "$AWS_REGION" >/dev/null 2>&1
+            
+            if [[ $? -eq 0 ]]; then
+                print_message "$GREEN" "  ✓ Temporary CDK role deleted"
+            else
+                print_message "$YELLOW" "  ⚠ Could not delete temporary role: $role_name"
+                print_message "$YELLOW" "    You may need to delete it manually"
+            fi
+        else
+            print_message "$RED" "  ✗ Failed to delete stack even with temporary role"
+            
+            # Try to clean up role even if stack deletion failed
+            aws iam $PROFILE_ARG detach-role-policy \
+                --role-name "$role_name" \
+                --policy-arn arn:aws:iam::aws:policy/AdministratorAccess \
+                --region "$AWS_REGION" >/dev/null 2>&1
+            aws iam $PROFILE_ARG delete-role \
+                --role-name "$role_name" \
+                --region "$AWS_REGION" >/dev/null 2>&1
+        fi
+    else
+        print_message "$RED" "  ✗ Failed to create temporary CDK role"
+        print_message "$YELLOW" "    Please run the cleanup script again or delete the stack manually"
+    fi
+elif [[ $delete_status -eq 0 ]]; then
+    print_message "$GREEN" "  ✓ Delete initiated: $PIPELINE_STACK_NAME"
+    
+    print_message "$YELLOW" "Waiting for stack $PIPELINE_STACK_NAME to be deleted..."
+    print_message "$YELLOW" "⏳ This may take several minutes"
+    echo ""
+    
+    # Use AWS CLI wait command for reliable stack deletion monitoring
+    if aws cloudformation wait stack-delete-complete $PROFILE_ARG --stack-name "$PIPELINE_STACK_NAME" --region "$AWS_REGION"; then
+        print_message "$GREEN" "✓ Stack $PIPELINE_STACK_NAME deleted successfully"
+        echo ""
+    else
+        print_message "$RED" "Stack deletion failed or timed out"
+        print_message "$RED" "Please check AWS Console for stack status"
+        exit 1
+    fi
+else
+    print_message "$YELLOW" "  ⚠ Could not delete: $PIPELINE_STACK_NAME (may not exist)"
+fi
 
 print_message "$GREEN" "✓ Pipeline cleanup complete"
 echo ""

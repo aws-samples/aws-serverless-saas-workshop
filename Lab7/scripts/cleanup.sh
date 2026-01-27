@@ -142,26 +142,6 @@ verify_stack_ownership() {
   fi
 }
 
-# Function to wait for stack deletion
-wait_for_stack_deletion() {
-    local stack_name=$1
-    echo "Waiting for stack $stack_name to be deleted..."
-    
-    while stack_exists "$stack_name"; do
-        local status=$(aws cloudformation describe-stacks --stack-name "$stack_name" --region "$AWS_REGION" $PROFILE_ARG --query 'Stacks[0].StackStatus' --output text 2>/dev/null || echo "DELETE_COMPLETE")
-        
-        if [ "$status" == "DELETE_FAILED" ]; then
-            print_message "$RED" "Stack deletion failed. Please check AWS Console for details."
-            return 1
-        fi
-        
-        echo "  Status: $status"
-        sleep 10
-    done
-    
-    print_message "$GREEN" "Stack $stack_name deleted successfully"
-}
-
 # Step 1: Identify resources from stacks (before deletion)
 print_message "$BLUE" "=========================================="
 print_message "$BLUE" "Step 1: Identifying resources from stacks"
@@ -262,11 +242,26 @@ print_message "$BLUE" "Step 4: Deleting tenant stack"
 print_message "$BLUE" "=========================================="
 
 if stack_exists "$TENANT_STACK"; then
-    echo "  Deleting stack: $TENANT_STACK"
+    print_message "$YELLOW" "  Deleting stack: $TENANT_STACK"
     aws cloudformation delete-stack --stack-name "$TENANT_STACK" --region "$AWS_REGION" $PROFILE_ARG
-    wait_for_stack_deletion "$TENANT_STACK"
+    
+    print_message "$YELLOW" "⚠️  IMPORTANT: Stack deletion may take 15-30 minutes if CloudFront distributions are present"
+    print_message "$YELLOW" "⚠️  CloudFront distributions must be fully deleted before S3 buckets can be safely removed"
+    print_message "$YELLOW" "⏳ DO NOT interrupt this process - CloudFront must be fully deleted before S3 buckets"
+    echo ""
+    
+    # Use AWS CLI wait command for reliable stack deletion monitoring
+    if aws cloudformation wait stack-delete-complete $PROFILE_ARG --stack-name "$TENANT_STACK" --region "$AWS_REGION"; then
+        print_message "$GREEN" "✓ Stack $TENANT_STACK deleted successfully (including CloudFront distributions)"
+        print_message "$GREEN" "✓ CloudFront distributions are fully deleted - safe to proceed"
+        echo ""
+    else
+        print_message "$RED" "Stack deletion failed or timed out"
+        print_message "$RED" "Please check AWS Console for stack status"
+        exit 1
+    fi
 else
-    echo "  Stack $TENANT_STACK not found"
+    print_message "$YELLOW" "  Stack $TENANT_STACK not found"
 fi
 echo ""
 
@@ -274,12 +269,28 @@ echo ""
 print_message "$BLUE" "=========================================="
 print_message "$BLUE" "Step 5: Deleting main CloudFormation stack"
 print_message "$BLUE" "=========================================="
+
 if stack_exists "$MAIN_STACK"; then
-    echo "  Deleting stack: $MAIN_STACK"
+    print_message "$YELLOW" "  Deleting stack: $MAIN_STACK"
     aws cloudformation delete-stack --stack-name "$MAIN_STACK" --region "$AWS_REGION" $PROFILE_ARG
-    wait_for_stack_deletion "$MAIN_STACK"
+    
+    print_message "$YELLOW" "⚠️  IMPORTANT: Stack deletion may take 15-30 minutes if CloudFront distributions are present"
+    print_message "$YELLOW" "⚠️  CloudFront distributions must be fully deleted before S3 buckets can be safely removed"
+    print_message "$YELLOW" "⏳ DO NOT interrupt this process - CloudFront must be fully deleted before S3 buckets"
+    echo ""
+    
+    # Use AWS CLI wait command for reliable stack deletion monitoring
+    if aws cloudformation wait stack-delete-complete $PROFILE_ARG --stack-name "$MAIN_STACK" --region "$AWS_REGION"; then
+        print_message "$GREEN" "✓ Stack $MAIN_STACK deleted successfully (including CloudFront distributions)"
+        print_message "$GREEN" "✓ CloudFront distributions are fully deleted - safe to proceed"
+        echo ""
+    else
+        print_message "$RED" "Stack deletion failed or timed out"
+        print_message "$RED" "Please check AWS Console for stack status"
+        exit 1
+    fi
 else
-    echo "  Stack $MAIN_STACK not found"
+    print_message "$YELLOW" "  Stack $MAIN_STACK not found"
 fi
 echo ""
 

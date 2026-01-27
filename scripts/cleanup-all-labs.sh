@@ -977,6 +977,65 @@ print_message "$BLUE" "Step 3.5: Cleaning Up Orphaned Resources"
 print_message "$BLUE" "========================================"
 echo ""
 
+# Helper function to check if a stack is a nested stack
+is_nested_stack() {
+    local stack_name="$1"
+    local parent_id=$(aws cloudformation describe-stacks \
+        ${PROFILE:+--profile "$PROFILE"} \
+        --region us-east-1 \
+        --stack-name "$stack_name" \
+        --query 'Stacks[0].ParentId' \
+        --output text 2>/dev/null || echo "")
+    
+    if [[ -n "$parent_id" && "$parent_id" != "None" ]]; then
+        return 0  # Is a nested stack
+    else
+        return 1  # Not a nested stack
+    fi
+}
+
+# Helper function to check if a stack name matches expected patterns
+is_expected_stack() {
+    local stack_name="$1"
+    local lab_num="$2"
+    
+    case "$lab_num" in
+        1)
+            [[ "$stack_name" == "serverless-saas-lab1" ]]
+            ;;
+        2)
+            [[ "$stack_name" == "serverless-saas-lab2" ]]
+            ;;
+        3)
+            [[ "$stack_name" == "serverless-saas-shared-lab3" || "$stack_name" == "serverless-saas-tenant-lab3" || "$stack_name" =~ ^stack-lab3- || "$stack_name" =~ -lab3$ ]]
+            ;;
+        4)
+            [[ "$stack_name" == "serverless-saas-shared-lab4" || "$stack_name" == "serverless-saas-tenant-lab4" || "$stack_name" =~ ^stack-lab4- || "$stack_name" =~ -lab4$ ]]
+            ;;
+        5)
+            [[ "$stack_name" == "serverless-saas-shared-lab5" || "$stack_name" == "serverless-saas-pipeline-lab5" || "$stack_name" =~ ^stack-lab5- || "$stack_name" =~ -lab5$ ]]
+            ;;
+        6)
+            [[ "$stack_name" == "serverless-saas-shared-lab6" || "$stack_name" == "serverless-saas-pipeline-lab6" || "$stack_name" =~ ^stack-lab6- || "$stack_name" =~ -lab6$ ]]
+            ;;
+        7)
+            [[ "$stack_name" == "serverless-saas-lab7" || "$stack_name" =~ ^stack-.*-lab7$ || "$stack_name" =~ -lab7$ ]]
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
+# Re-query all lab-related stacks AFTER individual lab cleanups to get current state
+print_message "$YELLOW" "Re-querying lab-related stacks after individual cleanups..."
+CURRENT_LAB_STACKS=$(aws cloudformation list-stacks \
+    ${PROFILE:+--profile "$PROFILE"} \
+    --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE UPDATE_ROLLBACK_COMPLETE \
+    --region us-east-1 \
+    --query 'StackSummaries[?contains(StackName, `lab1`) || contains(StackName, `lab2`) || contains(StackName, `lab3`) || contains(StackName, `lab4`) || contains(StackName, `lab5`) || contains(StackName, `lab6`) || contains(StackName, `lab7`)].StackName' \
+    --output text 2>/dev/null || echo "")
+
 # Find orphaned S3 buckets
 ORPHANED_BUCKETS=$(aws s3api list-buckets \
     ${PROFILE:+--profile "$PROFILE"} \
@@ -990,135 +1049,55 @@ ORPHANED_LOGS=$(aws logs describe-log-groups \
     --query 'logGroups[?contains(logGroupName, `lab1`) || contains(logGroupName, `lab2`) || contains(logGroupName, `lab3`) || contains(logGroupName, `lab4`) || contains(logGroupName, `lab5`) || contains(logGroupName, `lab6`) || contains(logGroupName, `lab7`)].logGroupName' \
     --output text 2>/dev/null || echo "")
 
-# Find orphaned stacks (not in expected list OR from labs that are not deployed)
+# Find orphaned stacks (stacks that still exist and are not expected)
 ORPHANED_STACKS=""
 
-# Check Lab1 stacks
-for stack in $DISCOVERED_LAB1; do
-    # Check if stack is expected for Lab1
-    if [[ "$stack" == "serverless-saas-lab1" ]]; then
-        # Check if Lab1 is in EXISTING_LABS
-        lab_exists=false
-        for lab in "${EXISTING_LABS[@]}"; do
-            if [[ "$lab" == "1" ]]; then
-                lab_exists=true
-                break
-            fi
-        done
-        # If lab doesn't exist but stack does, it's orphaned
-        if [[ "$lab_exists" == false ]]; then
-            ORPHANED_STACKS+="$stack "
-        fi
-    else
-        # Stack is not in expected list, so it's orphaned
-        ORPHANED_STACKS+="$stack "
+for stack in $CURRENT_LAB_STACKS; do
+    # Skip nested stacks (they are managed by parent stacks)
+    if is_nested_stack "$stack"; then
+        continue
     fi
-done
-
-# Check Lab2 stacks
-for stack in $DISCOVERED_LAB2; do
-    if [[ "$stack" == "serverless-saas-lab2" ]]; then
-        lab_exists=false
-        for lab in "${EXISTING_LABS[@]}"; do
-            if [[ "$lab" == "2" ]]; then
-                lab_exists=true
-                break
-            fi
-        done
-        if [[ "$lab_exists" == false ]]; then
-            ORPHANED_STACKS+="$stack "
-        fi
-    else
-        ORPHANED_STACKS+="$stack "
+    
+    # Determine which lab this stack belongs to
+    lab_num=""
+    if [[ "$stack" == *"lab1"* ]]; then
+        lab_num="1"
+    elif [[ "$stack" == *"lab2"* ]]; then
+        lab_num="2"
+    elif [[ "$stack" == *"lab3"* ]]; then
+        lab_num="3"
+    elif [[ "$stack" == *"lab4"* ]]; then
+        lab_num="4"
+    elif [[ "$stack" == *"lab5"* ]]; then
+        lab_num="5"
+    elif [[ "$stack" == *"lab6"* ]]; then
+        lab_num="6"
+    elif [[ "$stack" == *"lab7"* ]]; then
+        lab_num="7"
     fi
-done
-
-# Check Lab3 stacks
-for stack in $DISCOVERED_LAB3; do
-    if [[ "$stack" == "serverless-saas-shared-lab3" || "$stack" == "serverless-saas-tenant-lab3" ]]; then
-        lab_exists=false
-        for lab in "${EXISTING_LABS[@]}"; do
-            if [[ "$lab" == "3" ]]; then
-                lab_exists=true
-                break
-            fi
-        done
-        if [[ "$lab_exists" == false ]]; then
+    
+    # Check if this stack is expected for its lab
+    if [[ -n "$lab_num" ]]; then
+        if ! is_expected_stack "$stack" "$lab_num"; then
+            # Stack name doesn't match expected patterns - it's orphaned
             ORPHANED_STACKS+="$stack "
+        else
+            # Stack name matches expected pattern - check if lab was supposed to be cleaned
+            lab_was_cleaned=false
+            for cleaned_lab in "${SUCCESSFUL_CLEANUPS[@]}"; do
+                if [[ "$cleaned_lab" == "$lab_num" ]]; then
+                    lab_was_cleaned=true
+                    break
+                fi
+            done
+            
+            # If lab was cleaned but stack still exists, it's orphaned
+            if [[ "$lab_was_cleaned" == true ]]; then
+                ORPHANED_STACKS+="$stack "
+            fi
         fi
     else
-        ORPHANED_STACKS+="$stack "
-    fi
-done
-
-# Check Lab4 stacks
-for stack in $DISCOVERED_LAB4; do
-    if [[ "$stack" == "serverless-saas-shared-lab4" || "$stack" == "serverless-saas-tenant-lab4" ]]; then
-        lab_exists=false
-        for lab in "${EXISTING_LABS[@]}"; do
-            if [[ "$lab" == "4" ]]; then
-                lab_exists=true
-                break
-            fi
-        done
-        if [[ "$lab_exists" == false ]]; then
-            ORPHANED_STACKS+="$stack "
-        fi
-    else
-        ORPHANED_STACKS+="$stack "
-    fi
-done
-
-# Check Lab5 stacks
-for stack in $DISCOVERED_LAB5; do
-    if [[ "$stack" == "serverless-saas-shared-lab5" || "$stack" == "serverless-saas-pipeline-lab5" ]]; then
-        lab_exists=false
-        for lab in "${EXISTING_LABS[@]}"; do
-            if [[ "$lab" == "5" ]]; then
-                lab_exists=true
-                break
-            fi
-        done
-        if [[ "$lab_exists" == false ]]; then
-            ORPHANED_STACKS+="$stack "
-        fi
-    else
-        ORPHANED_STACKS+="$stack "
-    fi
-done
-
-# Check Lab6 stacks
-for stack in $DISCOVERED_LAB6; do
-    if [[ "$stack" == "serverless-saas-shared-lab6" || "$stack" == "serverless-saas-pipeline-lab6" ]]; then
-        lab_exists=false
-        for lab in "${EXISTING_LABS[@]}"; do
-            if [[ "$lab" == "6" ]]; then
-                lab_exists=true
-                break
-            fi
-        done
-        if [[ "$lab_exists" == false ]]; then
-            ORPHANED_STACKS+="$stack "
-        fi
-    else
-        ORPHANED_STACKS+="$stack "
-    fi
-done
-
-# Check Lab7 stacks
-for stack in $DISCOVERED_LAB7; do
-    if [[ "$stack" == "serverless-saas-lab7" ]]; then
-        lab_exists=false
-        for lab in "${EXISTING_LABS[@]}"; do
-            if [[ "$lab" == "7" ]]; then
-                lab_exists=true
-                break
-            fi
-        done
-        if [[ "$lab_exists" == false ]]; then
-            ORPHANED_STACKS+="$stack "
-        fi
-    else
+        # Stack doesn't match any lab pattern - it's orphaned
         ORPHANED_STACKS+="$stack "
     fi
 done
@@ -1153,10 +1132,10 @@ if [[ -n "$ORPHANED_STACKS" || -n "$ORPHANED_BUCKETS" || -n "$ORPHANED_LOGS" ]];
     print_message "$RED" "These resources may have been created outside the normal deployment process."
     echo ""
     
-    if [ "$INTERACTIVE" = false ]; then
+    if [ "$INTERACTIVE" = true ]; then
         read -p "Delete orphaned resources? (yes/no): " confirm
     else
-        confirm="yes"
+        confirm="yes"  # Auto-confirm in non-interactive mode
     fi
     
     if [[ "$confirm" == "yes" ]]; then

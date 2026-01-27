@@ -431,8 +431,26 @@ print_message "$BLUE" "=========================================="
 print_message "$BLUE" "Step 4: Deleting tenant template stack"
 print_message "$BLUE" "=========================================="
 
-if delete_stack "serverless-saas-tenant-lab6"; then
-  wait_for_deletion "serverless-saas-tenant-lab6"
+PROFILE_ARG=$(get_profile_arg)
+if aws cloudformation $PROFILE_ARG describe-stacks --stack-name "serverless-saas-tenant-lab6" --region "$AWS_REGION" &>/dev/null; then
+    print_message "$YELLOW" "  Deleting stack: serverless-saas-tenant-lab6"
+    aws cloudformation $PROFILE_ARG delete-stack --stack-name "serverless-saas-tenant-lab6" --region "$AWS_REGION"
+    
+    print_message "$YELLOW" "Waiting for stack serverless-saas-tenant-lab6 to be deleted..."
+    print_message "$YELLOW" "⏳ This may take several minutes"
+    echo ""
+    
+    # Use AWS CLI wait command for reliable stack deletion monitoring
+    if aws cloudformation wait stack-delete-complete $PROFILE_ARG --stack-name "serverless-saas-tenant-lab6" --region "$AWS_REGION"; then
+        print_message "$GREEN" "✓ Stack serverless-saas-tenant-lab6 deleted successfully"
+        echo ""
+    else
+        print_message "$RED" "Stack deletion failed or timed out"
+        print_message "$RED" "Please check AWS Console for stack status"
+        exit 1
+    fi
+else
+    print_message "$YELLOW" "  Stack serverless-saas-tenant-lab6 not found"
 fi
 
 print_message "$GREEN" "✓ Tenant template cleanup complete"
@@ -443,8 +461,28 @@ print_message "$BLUE" "=========================================="
 print_message "$BLUE" "Step 5: Deleting shared infrastructure (includes CloudFront)"
 print_message "$BLUE" "=========================================="
 
-if delete_stack "serverless-saas-shared-lab6"; then
-  wait_for_deletion "serverless-saas-shared-lab6"
+PROFILE_ARG=$(get_profile_arg)
+if aws cloudformation $PROFILE_ARG describe-stacks --stack-name "serverless-saas-shared-lab6" --region "$AWS_REGION" &>/dev/null; then
+    print_message "$YELLOW" "  Deleting stack: serverless-saas-shared-lab6"
+    aws cloudformation $PROFILE_ARG delete-stack --stack-name "serverless-saas-shared-lab6" --region "$AWS_REGION"
+    
+    print_message "$YELLOW" "Waiting for stack serverless-saas-shared-lab6 to be deleted..."
+    print_message "$YELLOW" "⏳ This may take 15-30 minutes for CloudFront distributions to fully delete"
+    print_message "$YELLOW" "⏳ DO NOT interrupt this process - CloudFront must be fully deleted before S3 buckets"
+    echo ""
+    
+    # Use AWS CLI wait command for reliable stack deletion monitoring
+    if aws cloudformation wait stack-delete-complete $PROFILE_ARG --stack-name "serverless-saas-shared-lab6" --region "$AWS_REGION"; then
+        print_message "$GREEN" "✓ Stack serverless-saas-shared-lab6 deleted successfully (including CloudFront distributions)"
+        print_message "$GREEN" "✓ CloudFront distributions are fully deleted - safe to proceed"
+        echo ""
+    else
+        print_message "$RED" "Stack deletion failed or timed out"
+        print_message "$RED" "Please check AWS Console for stack status"
+        exit 1
+    fi
+else
+    print_message "$YELLOW" "  Stack serverless-saas-shared-lab6 not found"
 fi
 
 print_message "$GREEN" "✓ Shared infrastructure cleanup complete (CloudFront deleted)"

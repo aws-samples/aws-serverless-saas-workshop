@@ -324,26 +324,19 @@ if aws cloudformation describe-stacks $PROFILE_ARG --stack-name "$TENANT_STACK_N
     aws cloudformation delete-stack $PROFILE_ARG --stack-name "$TENANT_STACK_NAME" --region "$AWS_REGION"
     
     print_message "$YELLOW" "Waiting for stack $TENANT_STACK_NAME to be deleted..."
-    while true; do
-        STATUS=$(aws cloudformation describe-stacks \
-            $PROFILE_ARG \
-            --stack-name "$TENANT_STACK_NAME" \
-            --region "$AWS_REGION" \
-            --query "Stacks[0].StackStatus" \
-            --output text 2>/dev/null || echo "DELETE_COMPLETE")
-        
-        if [ "$STATUS" == "DELETE_COMPLETE" ] || [ "$STATUS" == "DELETE_FAILED" ]; then
-            break
-        fi
-        
-        print_message "$YELLOW" "  Status: $STATUS"
-        sleep 10
-    done
+    print_message "$YELLOW" "⏳ This may take 15-30 minutes for CloudFront distributions to fully delete"
+    print_message "$YELLOW" "⏳ DO NOT interrupt this process - CloudFront must be fully deleted before S3 buckets"
+    echo ""
     
-    if [ "$STATUS" == "DELETE_COMPLETE" ]; then
-        print_message "$GREEN" "Stack $TENANT_STACK_NAME deleted successfully"
+    # Use AWS CLI wait command for reliable stack deletion monitoring
+    if aws cloudformation wait stack-delete-complete $PROFILE_ARG --stack-name "$TENANT_STACK_NAME" --region "$AWS_REGION"; then
+        print_message "$GREEN" "✓ Stack $TENANT_STACK_NAME deleted successfully (including CloudFront distributions)"
+        print_message "$GREEN" "✓ CloudFront distributions are fully deleted - safe to proceed"
+        echo ""
     else
-        print_message "$RED" "Stack deletion failed with status: $STATUS"
+        print_message "$RED" "Stack deletion failed or timed out"
+        print_message "$RED" "Please check AWS Console for stack status"
+        exit 1
     fi
 else
     print_message "$YELLOW" "  Stack $TENANT_STACK_NAME not found"
@@ -359,26 +352,19 @@ if aws cloudformation describe-stacks --stack-name "$SHARED_STACK_NAME" --region
     aws cloudformation delete-stack --stack-name "$SHARED_STACK_NAME" --region "$AWS_REGION" $PROFILE_ARG
     
     print_message "$YELLOW" "Waiting for stack $SHARED_STACK_NAME to be deleted..."
-    while true; do
-        STATUS=$(aws cloudformation describe-stacks \
-            --stack-name "$SHARED_STACK_NAME" \
-            --region "$AWS_REGION" \
-            $PROFILE_ARG \
-            --query "Stacks[0].StackStatus" \
-            --output text 2>/dev/null || echo "DELETE_COMPLETE")
-        
-        if [ "$STATUS" == "DELETE_COMPLETE" ] || [ "$STATUS" == "DELETE_FAILED" ]; then
-            break
-        fi
-        
-        print_message "$YELLOW" "  Status: $STATUS"
-        sleep 10
-    done
+    print_message "$YELLOW" "⏳ This may take 15-30 minutes for CloudFront distributions to fully delete"
+    print_message "$YELLOW" "⏳ DO NOT interrupt this process - CloudFront must be fully deleted before S3 buckets"
+    echo ""
     
-    if [ "$STATUS" == "DELETE_COMPLETE" ]; then
-        print_message "$GREEN" "Stack $SHARED_STACK_NAME deleted successfully"
+    # Use AWS CLI wait command for reliable stack deletion monitoring
+    if aws cloudformation wait stack-delete-complete --stack-name "$SHARED_STACK_NAME" --region "$AWS_REGION" $PROFILE_ARG; then
+        print_message "$GREEN" "✓ Stack $SHARED_STACK_NAME deleted successfully (including CloudFront distributions)"
+        print_message "$GREEN" "✓ CloudFront distributions are fully deleted - safe to delete S3 buckets"
+        echo ""
     else
-        print_message "$RED" "Stack deletion failed with status: $STATUS"
+        print_message "$RED" "Stack deletion failed or timed out"
+        print_message "$RED" "Please check AWS Console for stack status"
+        exit 1
     fi
 else
     print_message "$YELLOW" "  Stack $SHARED_STACK_NAME not found"
