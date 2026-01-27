@@ -160,6 +160,46 @@ Lab 3 introduces multi-tenancy support to the application microservices:
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+### Resource Naming
+
+Lab 3 follows a consistent naming convention to ensure resource isolation and easy identification:
+
+**CloudFormation Stacks:**
+- Shared Stack: `serverless-saas-shared-lab3` (tenant/user management)
+- Tenant Stack: `serverless-saas-tenant-lab3` (product/order operations)
+
+**Naming Pattern:**
+All resources created by Lab 3 include `lab3` in their names to ensure isolation from other labs. This prevents accidental deletion of resources from other labs during cleanup.
+
+**Key Resources:**
+
+**Shared Stack Resources:**
+- Lambda Functions: `serverless-saas-shared-lab3-<FunctionName>-<UniqueId>`
+- DynamoDB Tables: `ServerlessSaaS-TenantDetails-lab3`, `ServerlessSaaS-TenantUserMapping-lab3`
+- Cognito User Pools: `PooledTenant-ServerlessSaaS-lab3-UserPool`, `OperationUsers-ServerlessSaaS-lab3-UserPool`
+- S3 Buckets: `serverless-saas-lab3-admin-<UniqueId>`, `serverless-saas-lab3-landing-<UniqueId>`, `serverless-saas-lab3-app-<UniqueId>`
+- CloudWatch Log Groups: `/aws/lambda/serverless-saas-shared-lab3-<FunctionName>-<UniqueId>`
+- API Gateway: `serverless-saas-shared-lab3-api`
+
+**Tenant Stack Resources:**
+- Lambda Functions: `serverless-saas-tenant-lab3-<FunctionName>-<UniqueId>`
+- DynamoDB Tables: `Product-lab3`, `Order-lab3` (pooled multi-tenant tables)
+- CloudWatch Log Groups: `/aws/lambda/serverless-saas-tenant-lab3-<FunctionName>-<UniqueId>`
+- API Gateway: `serverless-saas-tenant-lab3-api`
+
+**Lab Isolation:**
+The cleanup script (`scripts/cleanup.sh`) uses lab-specific filtering to ensure it only deletes resources belonging to Lab 3. It will NOT delete resources from other labs (Lab1-Lab2, Lab4-Lab7), even if they are deployed in the same AWS account.
+
+The cleanup script specifically queries for stacks containing `lab3` in their names:
+```bash
+aws cloudformation list-stacks \
+  --query "StackSummaries[?contains(StackName, 'lab3')].StackName"
+```
+
+For more details on resource naming and lab isolation, see:
+- [Cleanup Isolation Documentation](../extra-info/CLEANUP_ISOLATION.md)
+- [Deployment Manual](../extra-info/DEPLOYMENT_CLEANUP_MANUAL.md)
+
 ### Key Components
 
 **Authentication & Authorization:**

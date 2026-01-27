@@ -94,6 +94,47 @@ Before starting this lab, ensure you have:
 
 Lab 4 deploys a two-stack architecture with enhanced security controls:
 
+### Resource Naming
+
+Lab 4 follows a consistent naming convention to ensure resource isolation and easy identification:
+
+**CloudFormation Stacks:**
+- Shared Stack: `serverless-saas-shared-lab4` (tenant/user management)
+- Tenant Stack: `serverless-saas-tenant-lab4` (product/order operations with IAM isolation)
+
+**Naming Pattern:**
+All resources created by Lab 4 include `lab4` in their names to ensure isolation from other labs. This prevents accidental deletion of resources from other labs during cleanup.
+
+**Key Resources:**
+
+**Shared Stack Resources:**
+- Lambda Functions: `serverless-saas-shared-lab4-<FunctionName>-<UniqueId>`
+- DynamoDB Tables: `ServerlessSaaS-TenantDetails-lab4`, `ServerlessSaaS-TenantUserMapping-lab4`
+- Cognito User Pools: `PooledTenant-ServerlessSaaS-lab4-UserPool`, `OperationUsers-ServerlessSaaS-lab4-UserPool`
+- S3 Buckets: `serverless-saas-lab4-admin-<UniqueId>`, `serverless-saas-lab4-landing-<UniqueId>`, `serverless-saas-lab4-app-<UniqueId>`
+- CloudWatch Log Groups: `/aws/lambda/serverless-saas-shared-lab4-<FunctionName>-<UniqueId>`
+- API Gateway: `serverless-saas-shared-lab4-api`
+
+**Tenant Stack Resources:**
+- Lambda Functions: `serverless-saas-tenant-lab4-<FunctionName>-<UniqueId>`
+- DynamoDB Tables: `Product-lab4`, `Order-lab4` (pooled multi-tenant tables with IAM isolation)
+- IAM Roles: `AuthorizerAccessRole-lab4`, `ProductFunctionRole-lab4`, `OrderFunctionRole-lab4`
+- CloudWatch Log Groups: `/aws/lambda/serverless-saas-tenant-lab4-<FunctionName>-<UniqueId>`
+- API Gateway: `serverless-saas-tenant-lab4-api`
+
+**Lab Isolation:**
+The cleanup script (`scripts/cleanup.sh`) uses lab-specific filtering to ensure it only deletes resources belonging to Lab 4. It will NOT delete resources from other labs (Lab1-Lab3, Lab5-Lab7), even if they are deployed in the same AWS account.
+
+The cleanup script specifically queries for stacks containing `lab4` in their names:
+```bash
+aws cloudformation list-stacks \
+  --query "StackSummaries[?contains(StackName, 'lab4')].StackName"
+```
+
+For more details on resource naming and lab isolation, see:
+- [Cleanup Isolation Documentation](../extra-info/CLEANUP_ISOLATION.md)
+- [Deployment Manual](../extra-info/DEPLOYMENT_CLEANUP_MANUAL.md)
+
 ### Shared Stack (serverless-saas-shared-lab4)
 
 **Purpose**: Manages tenant lifecycle, user management, and administrative functions

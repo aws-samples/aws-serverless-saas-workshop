@@ -35,6 +35,7 @@ SHARED_STACK_NAME="serverless-saas-shared-lab5"
 PIPELINE_STACK_NAME="serverless-saas-pipeline-lab5"
 SKIP_CONFIRMATION=0
 AWS_PROFILE=""
+LAB_ID="lab5"  # Lab identifier for resource filtering
 
 # Function to build AWS CLI profile argument
 # Returns "--profile <profile>" if PROFILE is set, empty string otherwise
@@ -51,6 +52,21 @@ print_message() {
     local color=$1
     local message=$2
     echo -e "${color}${message}${NC}"
+}
+
+# Function to verify stack ownership
+# Ensures that a stack belongs to this lab before deletion
+verify_stack_ownership() {
+    local stack_name=$1
+    local lab_id=$2
+    
+    # Check if stack name contains lab identifier
+    if [[ "$stack_name" == *"$lab_id"* ]]; then
+        return 0  # Stack belongs to this lab
+    else
+        print_message "$RED" "WARNING: Stack $stack_name does not belong to $lab_id"
+        return 1  # Stack does not belong to this lab
+    fi
 }
 
 # Function to print usage
@@ -145,7 +161,7 @@ echo "Shared Stack: $SHARED_STACK_NAME"
 echo "Pipeline Stack: $PIPELINE_STACK_NAME"
 echo ""
 print_message "$YELLOW" "This will delete:"
-print_message "$YELLOW" "  - All tenant stacks (stack-*)"
+print_message "$YELLOW" "  - All tenant stacks for $LAB_ID (stack-*$LAB_ID*)"
 print_message "$YELLOW" "  - Shared infrastructure stack"
 print_message "$YELLOW" "  - Pipeline stack"
 print_message "$YELLOW" "  - S3 buckets (will be emptied first)"
@@ -326,31 +342,47 @@ wait_for_deletion() {
 
 # Step 1: Delete tenant stacks
 print_message "$BLUE" "=========================================="
-print_message "$BLUE" "Step 1: Deleting tenant stacks"
+print_message "$BLUE" "Step 1: Deleting tenant stacks for $LAB_ID"
 print_message "$BLUE" "=========================================="
 
 PROFILE_ARG=$(get_profile_arg)
+# Query for tenant stacks with lab-specific filtering
+# Pattern: stack-* AND contains lab5
 TENANT_STACKS=$(aws cloudformation $PROFILE_ARG list-stacks \
   --region "$AWS_REGION" \
   --stack-status-filter CREATE_COMPLETE ROLLBACK_COMPLETE UPDATE_COMPLETE CREATE_FAILED ROLLBACK_FAILED UPDATE_ROLLBACK_COMPLETE \
-  --query 'StackSummaries[?contains(StackName, `stack-`)].StackName' \
+  --query "StackSummaries[?starts_with(StackName, 'stack-') && contains(StackName, '$LAB_ID')].StackName" \
   --output text 2>/dev/null)
 
 if [[ -z "$TENANT_STACKS" ]]; then
-  print_message "$YELLOW" "No tenant stacks found"
+  print_message "$YELLOW" "No tenant stacks found for $LAB_ID"
 else
+  print_message "$GREEN" "Found tenant stacks for $LAB_ID:"
   for stack in $TENANT_STACKS; do
-    delete_stack $stack
+    print_message "$GREEN" "  - $stack"
+  done
+  echo ""
+  
+  # Delete each tenant stack with verification
+  for stack in $TENANT_STACKS; do
+    if verify_stack_ownership "$stack" "$LAB_ID"; then
+      delete_stack $stack
+    else
+      print_message "$YELLOW" "Skipping stack: $stack (not owned by $LAB_ID)"
+    fi
   done
   
   echo ""
   print_message "$YELLOW" "Waiting for tenant stacks to delete..."
   for stack in $TENANT_STACKS; do
-    wait_for_deletion $stack
+    # Only wait for stacks that belong to this lab
+    if verify_stack_ownership "$stack" "$LAB_ID"; then
+      wait_for_deletion $stack
+    fi
   done
 fi
 
-print_message "$GREEN" "✓ Tenant stacks cleanup complete"
+print_message "$GREEN" "✓ Tenant stacks cleanup complete for $LAB_ID"
 echo ""
 
 # Step 2: Identify resources from stacks (before deletion)

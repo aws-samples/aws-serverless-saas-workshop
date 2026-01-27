@@ -35,12 +35,28 @@ STACK_NAME_PREFIX="serverless-saas-lab4"  # Default prefix for stack names
 SHARED_STACK_NAME=""  # Will be set based on stack name prefix
 TENANT_STACK_NAME=""  # Will be set based on stack name prefix
 SKIP_CONFIRMATION=0
+LAB_ID="lab4"  # Lab identifier for resource filtering
 
 # Function to print colored messages
 print_message() {
     local color=$1
     local message=$2
     echo -e "${color}${message}${NC}"
+}
+
+# Function to verify stack ownership
+# Ensures that a stack belongs to this lab before deletion
+verify_stack_ownership() {
+    local stack_name=$1
+    local lab_id=$2
+    
+    # Check if stack name contains lab identifier
+    if [[ "$stack_name" == *"$lab_id"* ]]; then
+        return 0  # Stack belongs to this lab
+    else
+        print_message "$RED" "WARNING: Stack $stack_name does not belong to $lab_id"
+        return 1  # Stack does not belong to this lab
+    fi
 }
 
 # Function to build AWS CLI profile argument

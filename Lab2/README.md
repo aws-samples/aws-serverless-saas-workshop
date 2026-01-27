@@ -114,6 +114,31 @@ aws configure --profile serverless-saas-demo
 └──────────────┘  └──────────────┘
 ```
 
+### Resource Naming
+
+Lab 2 follows a consistent naming convention to ensure resource isolation and easy identification:
+
+**CloudFormation Stack:**
+- Main Stack: `serverless-saas-lab2`
+
+**Naming Pattern:**
+All resources created by Lab 2 include `lab2` in their names to ensure isolation from other labs. This prevents accidental deletion of resources from other labs during cleanup.
+
+**Key Resources:**
+- Lambda Functions: `serverless-saas-lab2-<FunctionName>-<UniqueId>`
+- DynamoDB Tables: `ServerlessSaaS-TenantDetails-lab2`, `ServerlessSaaS-TenantUserMapping-lab2`
+- Cognito User Pools: `PooledTenant-ServerlessSaaS-lab2-UserPool`, `OperationUsers-ServerlessSaaS-lab2-UserPool`
+- S3 Buckets: `serverless-saas-lab2-admin-<UniqueId>`, `serverless-saas-lab2-landing-<UniqueId>`
+- CloudWatch Log Groups: `/aws/lambda/serverless-saas-lab2-<FunctionName>-<UniqueId>`
+- API Gateway: `serverless-saas-lab2-api`
+
+**Lab Isolation:**
+The cleanup script (`scripts/cleanup.sh`) uses lab-specific filtering to ensure it only deletes resources belonging to Lab 2. It will NOT delete resources from other labs (Lab1, Lab3-Lab7), even if they are deployed in the same AWS account.
+
+For more details on resource naming and lab isolation, see:
+- [Cleanup Isolation Documentation](../extra-info/CLEANUP_ISOLATION.md)
+- [Deployment Manual](../extra-info/DEPLOYMENT_CLEANUP_MANUAL.md)
+
 ### Components
 
 #### Lambda Functions (16 total)

@@ -349,6 +349,8 @@ if [[ $client -eq 1 ]]; then
   ADMIN_APIGATEWAYURL=$(aws cloudformation $PROFILE_ARG describe-stacks --stack-name serverless-saas-shared-lab6 --query "Stacks[0].Outputs[?OutputKey=='AdminApi'].OutputValue" --output text)
   ADMIN_SITE_BUCKET=$(aws cloudformation $PROFILE_ARG describe-stacks --stack-name serverless-saas-shared-lab6 --query "Stacks[0].Outputs[?OutputKey=='AdminSiteBucket'].OutputValue" --output text)
   LANDING_SITE_BUCKET=$(aws cloudformation $PROFILE_ARG describe-stacks --stack-name serverless-saas-shared-lab6 --query "Stacks[0].Outputs[?OutputKey=='LandingApplicationSiteBucket'].OutputValue" --output text)
+  ADMIN_USERPOOLID=$(aws cloudformation $PROFILE_ARG describe-stacks --stack-name serverless-saas-shared-lab6 --query "Stacks[0].Outputs[?OutputKey=='CognitoOperationUsersUserPoolId'].OutputValue" --output text)
+  ADMIN_APPCLIENTID=$(aws cloudformation $PROFILE_ARG describe-stacks --stack-name serverless-saas-shared-lab6 --query "Stacks[0].Outputs[?OutputKey=='CognitoOperationUsersUserPoolClientId'].OutputValue" --output text)
   
   # Verify all buckets are accessible
   echo "Verifying S3 buckets..."
@@ -388,6 +390,18 @@ export const environment = {
   production: true,
   apiUrl: '$ADMIN_APIGATEWAYURL'
 };
+EoF
+
+  echo "Configuring AWS Amplify for Admin UI"
+  cat << EoF > ./src/aws-exports.ts
+const awsmobile = {
+  aws_project_region: 'us-east-1',
+  aws_cognito_region: 'us-east-1',
+  aws_user_pools_id: '$ADMIN_USERPOOLID',
+  aws_user_pools_web_client_id: '$ADMIN_APPCLIENTID',
+};
+
+export default awsmobile;
 EoF
 
   # Try to build, fallback to pre-built if it fails

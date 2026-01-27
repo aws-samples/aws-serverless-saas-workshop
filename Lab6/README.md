@@ -97,6 +97,59 @@ aws configure --profile serverless-saas-demo
 
 Lab 6 builds upon Lab 5's tier-based deployment architecture and adds API Gateway usage plans for throttling:
 
+### Resource Naming
+
+Lab 6 follows a consistent naming convention to ensure resource isolation and easy identification:
+
+**CloudFormation Stacks:**
+- Shared Stack: `serverless-saas-shared-lab6` (tenant/user management)
+- Pipeline Stack: `serverless-saas-pipeline-lab6` (CDK-deployed CI/CD pipeline)
+- Tenant Stacks (Platinum tier): `stack-<tenantId>-lab6` (dedicated infrastructure per tenant)
+
+**Naming Pattern:**
+All resources created by Lab 6 include `lab6` in their names to ensure isolation from other labs. This prevents accidental deletion of resources from other labs during cleanup.
+
+**Key Resources:**
+
+**Shared Stack Resources:**
+- Lambda Functions: `serverless-saas-shared-lab6-<FunctionName>-<UniqueId>`
+- DynamoDB Tables: `ServerlessSaaS-TenantDetails-lab6`, `ServerlessSaaS-TenantUserMapping-lab6`, `ServerlessSaaS-TenantStackMapping-lab6`, `ServerlessSaaS-Settings-lab6`
+- Cognito User Pools: `PooledTenant-ServerlessSaaS-lab6-UserPool`, `OperationUsers-ServerlessSaaS-lab6-UserPool`
+- S3 Buckets: `serverless-saas-lab6-admin-<UniqueId>`, `serverless-saas-lab6-landing-<UniqueId>`, `serverless-saas-lab6-app-<UniqueId>`
+- CloudWatch Log Groups: `/aws/lambda/serverless-saas-shared-lab6-<FunctionName>-<UniqueId>`
+- API Gateway: `serverless-saas-shared-lab6-api`
+- Usage Plans: `BasicTier-lab6`, `StandardTier-lab6`, `PremiumTier-lab6`, `PlatinumTier-lab6`
+- API Keys: `BasicTierKey-lab6`, `StandardTierKey-lab6`, `PremiumTierKey-lab6`, `PlatinumTierKey-lab6`
+
+**Pipeline Stack Resources:**
+- CodePipeline: `serverless-saas-pipeline-lab6`
+- CodeCommit Repository: `serverless-saas-lab6-tenant-templates`
+- CodeBuild Project: `serverless-saas-lab6-tenant-build`
+- Lambda Function: `serverless-saas-pipeline-lab6-TriggerFunction-<UniqueId>`
+- S3 Bucket: `serverless-saas-pipeline-lab6-artifacts-<ShortId>` (predictable naming with ShortId suffix)
+- CloudWatch Log Groups: `/aws/lambda/serverless-saas-pipeline-lab6-<FunctionName>-<UniqueId>`
+
+**Tenant Stack Resources (Platinum tier):**
+- Stack Name: `stack-<tenantId>-lab6` (e.g., `stack-tenant-123-lab6`)
+- Lambda Functions: `stack-<tenantId>-lab6-<FunctionName>-<UniqueId>`
+- DynamoDB Tables: `Product-<tenantId>-lab6`, `Order-<tenantId>-lab6`
+- Cognito User Pool: `<tenantId>-lab6-UserPool`
+- API Gateway: `stack-<tenantId>-lab6-api`
+- Usage Plan: `<tenantId>-PlatinumTier-lab6`
+
+**Lab Isolation:**
+The cleanup script (`scripts/cleanup.sh`) uses lab-specific filtering to ensure it only deletes resources belonging to Lab 6. It will NOT delete resources from other labs (Lab1-Lab5, Lab7), even if they are deployed in the same AWS account.
+
+The cleanup script specifically queries for stacks containing `lab6` in their names:
+```bash
+aws cloudformation list-stacks \
+  --query "StackSummaries[?contains(StackName, 'lab6')].StackName"
+```
+
+For more details on resource naming and lab isolation, see:
+- [Cleanup Isolation Documentation](../extra-info/CLEANUP_ISOLATION.md)
+- [Deployment Manual](../extra-info/DEPLOYMENT_CLEANUP_MANUAL.md)
+
 ### Shared Stack (Pooled Model)
 
 **For Basic, Standard, and Premium Tier Tenants:**

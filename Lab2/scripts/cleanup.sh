@@ -31,6 +31,7 @@ STACK_NAME="serverless-saas-lab2"
 AWS_REGION="us-east-1"
 AWS_PROFILE=""  # Empty by default - will use machine's default profile if not specified
 SKIP_CONFIRMATION=0
+LAB_ID="lab2"  # Lab identifier for resource filtering
 
 # Create log directory and file
 LOG_DIR="logs"
@@ -51,6 +52,18 @@ print_message() {
     local color=$1
     local message=$2
     echo -e "${color}${message}${NC}"
+}
+
+# Function to verify stack belongs to this lab
+verify_stack_ownership() {
+  local stack=$1
+  
+  # Check if stack name contains the lab identifier
+  if [[ "$stack" == *"$LAB_ID"* ]]; then
+    return 0  # Stack belongs to this lab
+  else
+    return 1  # Stack does not belong to this lab
+  fi
 }
 
 # Function to build AWS CLI profile argument

@@ -513,6 +513,8 @@ if [[ $DEPLOY_CLIENT -eq 1 ]]; then
   ADMIN_APIGATEWAYURL=$(aws cloudformation $PROFILE_ARG describe-stacks --stack-name "$SHARED_STACK_NAME" --region "$AWS_REGION" --query "Stacks[0].Outputs[?OutputKey=='AdminApi'].OutputValue" --output text 2>/dev/null || echo "")
   ADMIN_SITE_BUCKET=$(aws cloudformation $PROFILE_ARG describe-stacks --stack-name "$SHARED_STACK_NAME" --region "$AWS_REGION" --query "Stacks[0].Outputs[?OutputKey=='AdminSiteBucket'].OutputValue" --output text 2>/dev/null || echo "")
   LANDING_SITE_BUCKET=$(aws cloudformation $PROFILE_ARG describe-stacks --stack-name "$SHARED_STACK_NAME" --region "$AWS_REGION" --query "Stacks[0].Outputs[?OutputKey=='LandingApplicationSiteBucket'].OutputValue" --output text 2>/dev/null || echo "")
+  ADMIN_USERPOOLID=$(aws cloudformation $PROFILE_ARG describe-stacks --stack-name "$SHARED_STACK_NAME" --region "$AWS_REGION" --query "Stacks[0].Outputs[?OutputKey=='CognitoOperationUsersUserPoolId'].OutputValue" --output text 2>/dev/null || echo "")
+  ADMIN_APPCLIENTID=$(aws cloudformation $PROFILE_ARG describe-stacks --stack-name "$SHARED_STACK_NAME" --region "$AWS_REGION" --query "Stacks[0].Outputs[?OutputKey=='CognitoOperationUsersUserPoolClientId'].OutputValue" --output text 2>/dev/null || echo "")
   
   if [[ -z "$ADMIN_APIGATEWAYURL" ]] || [[ "$ADMIN_APIGATEWAYURL" == "None" ]]; then
       print_message "$RED" "Error: Could not retrieve Admin API URL from CloudFormation stack"
@@ -549,6 +551,18 @@ export const environment = {
   production: true,
   apiUrl: '$ADMIN_APIGATEWAYURL'
 };
+EoF
+
+  print_message "$YELLOW" "  Configuring AWS Amplify for Admin UI"
+  cat << EoF > ./src/aws-exports.ts
+const awsmobile = {
+  aws_project_region: '$AWS_REGION',
+  aws_cognito_region: '$AWS_REGION',
+  aws_user_pools_id: '$ADMIN_USERPOOLID',
+  aws_user_pools_web_client_id: '$ADMIN_APPCLIENTID',
+};
+
+export default awsmobile;
 EoF
 
   print_message "$YELLOW" "  Cleaning previous npm installation for Admin UI..."

@@ -18,6 +18,7 @@ AWS_PROFILE=""  # Optional, will use default profile if not provided
 MAIN_STACK="serverless-saas-lab7"
 TENANT_STACK="stack-pooled-lab7"
 SKIP_CONFIRMATION=0
+LAB_ID="lab7"  # Lab identifier for resource filtering
 
 # Function to print colored messages
 print_message() {
@@ -127,6 +128,18 @@ echo ""
 # Function to check if stack exists
 stack_exists() {
     aws cloudformation describe-stacks --stack-name "$1" --region "$AWS_REGION" $PROFILE_ARG >/dev/null 2>&1
+}
+
+# Function to verify stack belongs to this lab
+verify_stack_ownership() {
+  local stack=$1
+  
+  # Check if stack name contains the lab identifier
+  if [[ "$stack" == *"$LAB_ID"* ]]; then
+    return 0  # Stack belongs to this lab
+  else
+    return 1  # Stack does not belong to this lab
+  fi
 }
 
 # Function to wait for stack deletion

@@ -41,7 +41,9 @@ Resources:
     Condition: IsNotRunningInEventEngine
     DeletionPolicy : Retain
     Properties:
-      BucketName: !Sub 'serverless-saas-workshop-lab4-adminappbucket-${AWS::AccountId}'
+      BucketName: !Sub 
+        - 'serverless-saas-lab4-admin-${ShortId}'
+        - ShortId: !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref 'AWS::StackId']]]]
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
@@ -133,7 +135,9 @@ Resources:
     Condition: IsNotRunningInEventEngine
     DeletionPolicy : Retain
     Properties:
-      BucketName: !Sub 'serverless-saas-workshop-lab4-landingappbucket-${AWS::AccountId}'
+      BucketName: !Sub 
+        - 'serverless-saas-lab4-landing-${ShortId}'
+        - ShortId: !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref 'AWS::StackId']]]]
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
@@ -224,7 +228,9 @@ Resources:
     Condition: IsNotRunningInEventEngine
     DeletionPolicy : Retain
     Properties:
-      BucketName: !Sub 'serverless-saas-workshop-lab4-appbucket-${AWS::AccountId}'
+      BucketName: !Sub 
+        - 'serverless-saas-lab4-app-${ShortId}'
+        - ShortId: !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref 'AWS::StackId']]]]
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:

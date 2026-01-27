@@ -97,6 +97,65 @@ aws configure --profile serverless-saas-demo
 
 Lab 5 implements a hybrid multi-tenant architecture that supports different deployment models based on tenant tier:
 
+### Resource Naming
+
+Lab 5 follows a consistent naming convention to ensure resource isolation and easy identification:
+
+**CloudFormation Stacks:**
+- Shared Stack: `serverless-saas-shared-lab5` (tenant/user management)
+- Pipeline Stack: `serverless-saas-pipeline-lab5` (CDK-deployed CI/CD pipeline)
+- Tenant Stacks (Platinum tier): `stack-<tenantId>-lab5` (dedicated infrastructure per tenant)
+
+**Naming Pattern:**
+All resources created by Lab 5 include `lab5` in their names to ensure isolation from other labs. This prevents accidental deletion of resources from other labs during cleanup.
+
+**Key Resources:**
+
+**Shared Stack Resources:**
+- Lambda Functions: `serverless-saas-shared-lab5-<FunctionName>-<UniqueId>`
+- DynamoDB Tables: `ServerlessSaaS-TenantDetails-lab5`, `ServerlessSaaS-TenantUserMapping-lab5`, `ServerlessSaaS-TenantStackMapping-lab5`, `ServerlessSaaS-Settings-lab5`
+- Cognito User Pools: `PooledTenant-ServerlessSaaS-lab5-UserPool`, `OperationUsers-ServerlessSaaS-lab5-UserPool`
+- S3 Buckets: `serverless-saas-lab5-admin-<UniqueId>`, `serverless-saas-lab5-landing-<UniqueId>`, `serverless-saas-lab5-app-<UniqueId>`
+- CloudWatch Log Groups: `/aws/lambda/serverless-saas-shared-lab5-<FunctionName>-<UniqueId>`
+- API Gateway: `serverless-saas-shared-lab5-api`
+
+**Pipeline Stack Resources:**
+- CodePipeline: `serverless-saas-pipeline-lab5`
+- CodeCommit Repository: `serverless-saas-lab5-tenant-templates`
+- CodeBuild Project: `serverless-saas-lab5-tenant-build`
+- Lambda Function: `serverless-saas-pipeline-lab5-TriggerFunction-<UniqueId>`
+- S3 Bucket: `serverless-saas-pipeline-lab5-artifacts-<ShortId>` (predictable naming with ShortId suffix)
+- CloudWatch Log Groups: `/aws/lambda/serverless-saas-pipeline-lab5-<FunctionName>-<UniqueId>`
+
+**Tenant Stack Resources (Platinum tier):**
+- Stack Name: `stack-<tenantId>-lab5` (e.g., `stack-tenant-123-lab5`)
+- Lambda Functions: `stack-<tenantId>-lab5-<FunctionName>-<UniqueId>`
+- DynamoDB Tables: `Product-<tenantId>-lab5`, `Order-<tenantId>-lab5`
+- Cognito User Pool: `<tenantId>-lab5-UserPool`
+- API Gateway: `stack-<tenantId>-lab5-api`
+
+**Lab Isolation:**
+The cleanup script (`scripts/cleanup.sh`) uses lab-specific filtering to ensure it only deletes resources belonging to Lab 5. It will NOT delete resources from other labs (Lab1-Lab4, Lab6-Lab7), even if they are deployed in the same AWS account.
+
+The cleanup script specifically queries for stacks containing `lab5` in their names:
+```bash
+aws cloudformation list-stacks \
+  --query "StackSummaries[?contains(StackName, 'lab5')].StackName"
+```
+
+**IMPORTANT**: The cleanup script will correctly identify and delete:
+- `serverless-saas-shared-lab5` (shared stack)
+- `serverless-saas-pipeline-lab5` (pipeline stack)
+- `stack-<tenantId>-lab5` (all Platinum tenant stacks)
+
+It will NOT delete stacks from other labs, such as:
+- `stack-lab6-pooled` (belongs to Lab6)
+- `stack-pooled-lab7` (belongs to Lab7)
+
+For more details on resource naming and lab isolation, see:
+- [Cleanup Isolation Documentation](../extra-info/CLEANUP_ISOLATION.md)
+- [Deployment Manual](../extra-info/DEPLOYMENT_CLEANUP_MANUAL.md)
+
 ### Shared Stack (Pooled Model)
 
 **For Basic, Standard, and Premium Tier Tenants:**

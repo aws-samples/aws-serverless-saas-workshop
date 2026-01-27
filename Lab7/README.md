@@ -82,6 +82,50 @@ While Lab 7's cost attribution analysis is more meaningful with real tenant acti
 
 Lab 7 deploys a cost attribution system that consists of:
 
+### Resource Naming
+
+Lab 7 follows a consistent naming convention to ensure resource isolation and easy identification:
+
+**CloudFormation Stacks:**
+- Main Stack: `serverless-saas-lab7` (cost attribution infrastructure)
+- Tenant Stack: `serverless-saas-tenant-lab7` (tenant-specific product operations)
+
+**Naming Pattern:**
+All resources created by Lab 7 include `lab7` in their names to ensure isolation from other labs. This prevents accidental deletion of resources from other labs during cleanup.
+
+**Key Resources:**
+
+**Main Stack Resources:**
+- Lambda Functions: `serverless-saas-lab7-<FunctionName>-<UniqueId>`
+  - `AWSCURInitializer-<UniqueId>`
+  - `GetDynamoDBUsageAndCostByTenant-<UniqueId>`
+  - `GetLambdaUsageAndCostByTenant-<UniqueId>`
+- DynamoDB Table: `TenantCostAndUsageAttributionTable-lab7`
+- S3 Bucket: `serverless-saas-lab7-cur-<UniqueId>` (Cost and Usage Report data)
+- Lambda Layer: `serverless-saas-lab7-MetricsLayer-<UniqueId>`
+- CloudWatch Log Groups: `/aws/lambda/serverless-saas-lab7-<FunctionName>-<UniqueId>`
+- Glue Crawler: `serverless-saas-lab7-cur-crawler`
+- Glue Database: `serverless-saas-lab7-cur-database`
+- EventBridge Rules: `serverless-saas-lab7-<RuleName>`
+
+**Tenant Stack Resources:**
+- Lambda Functions: `serverless-saas-tenant-lab7-<FunctionName>-<UniqueId>`
+- DynamoDB Table: `Product-lab7`
+- CloudWatch Log Groups: `/aws/lambda/serverless-saas-tenant-lab7-<FunctionName>-<UniqueId>`
+
+**Lab Isolation:**
+The cleanup script (`scripts/cleanup.sh`) uses lab-specific filtering to ensure it only deletes resources belonging to Lab 7. It will NOT delete resources from other labs (Lab1-Lab6), even if they are deployed in the same AWS account.
+
+The cleanup script specifically queries for stacks containing `lab7` in their names:
+```bash
+aws cloudformation list-stacks \
+  --query "StackSummaries[?contains(StackName, 'lab7')].StackName"
+```
+
+For more details on resource naming and lab isolation, see:
+- [Cleanup Isolation Documentation](../extra-info/CLEANUP_ISOLATION.md)
+- [Deployment Manual](../extra-info/DEPLOYMENT_CLEANUP_MANUAL.md)
+
 ### Main Stack (serverless-saas-lab7)
 
 **Lambda Functions**:

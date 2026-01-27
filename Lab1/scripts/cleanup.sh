@@ -49,6 +49,18 @@ print_message() {
     echo -e "${color}${message}${NC}"
 }
 
+# Function to verify stack belongs to this lab
+verify_stack_ownership() {
+  local stack=$1
+  
+  # Check if stack name contains the lab identifier
+  if [[ "$stack" == *"$LAB_ID"* ]]; then
+    return 0  # Stack belongs to this lab
+  else
+    return 1  # Stack does not belong to this lab
+  fi
+}
+
 # AWS_PROFILE variable is used directly in AWS CLI commands
 # Pattern: ${AWS_PROFILE:+--profile "$AWS_PROFILE"}
 # This expands to --profile "value" when AWS_PROFILE is set, or nothing when empty
@@ -58,6 +70,7 @@ STACK_NAME="serverless-saas-lab1"
 AWS_REGION="us-east-1"
 AWS_PROFILE=""
 SKIP_CONFIRMATION=0
+LAB_ID="lab1"  # Lab identifier for resource filtering
 
 while [[ "$#" -gt 0 ]]; do
     case $1 in

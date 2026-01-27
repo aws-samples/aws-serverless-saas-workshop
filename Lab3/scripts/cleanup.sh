@@ -33,12 +33,28 @@ AWS_REGION="us-east-1"
 AWS_PROFILE=""
 STACK_NAME=""
 SKIP_CONFIRMATION=0
+LAB_ID="lab3"  # Lab identifier for resource filtering
 
 # Function to print colored messages
 print_message() {
     local color=$1
     local message=$2
     echo -e "${color}${message}${NC}"
+}
+
+# Function to verify stack ownership
+# Ensures that a stack belongs to this lab before deletion
+verify_stack_ownership() {
+    local stack_name=$1
+    local lab_id=$2
+    
+    # Check if stack name contains lab identifier
+    if [[ "$stack_name" == *"$lab_id"* ]]; then
+        return 0  # Stack belongs to this lab
+    else
+        print_message "$RED" "WARNING: Stack $stack_name does not belong to $lab_id"
+        return 1  # Stack does not belong to this lab
+    fi
 }
 
 # Function to print usage
@@ -115,7 +131,14 @@ fi
 # If user provides "serverless-saas-lab3", we create:
 #   - serverless-saas-shared-lab3 (shared stack)
 #   - serverless-saas-tenant-lab3 (tenant stack)
-if [[ "$STACK_NAME" == *"-lab3" ]]; then
+# If user provides "serverless-saas-shared-lab3", we use it as-is for shared stack
+if [[ "$STACK_NAME" == *"-shared-lab3" ]]; then
+    # User provided the full shared stack name
+    SHARED_STACK_NAME="$STACK_NAME"
+    # Derive tenant stack name by replacing "shared" with "tenant"
+    TENANT_STACK_NAME="${STACK_NAME/-shared-/-tenant-}"
+elif [[ "$STACK_NAME" == *"-lab3" ]]; then
+    # User provided base name like "serverless-saas-lab3"
     # Extract prefix (e.g., "serverless-saas" from "serverless-saas-lab3")
     PREFIX="${STACK_NAME%-lab3}"
     SHARED_STACK_NAME="${PREFIX}-shared-lab3"
@@ -172,8 +195,68 @@ fi
 # Record start time
 START_TIME=$(date +%s)
 
-# Step 1: Identify resources from stacks (before deletion)
-print_message "$YELLOW" "Step 1: Identifying resources from stacks..."
+# Step 1: Delete tenant stacks with lab-specific filtering
+print_message "$YELLOW" "Step 1: Deleting tenant stacks for $LAB_ID..."
+
+# Query for tenant stacks with lab-specific filtering
+# Pattern: stack-* AND contains lab3
+if [[ -n "$AWS_PROFILE" ]]; then
+    TENANT_STACKS=$(aws cloudformation list-stacks \
+        --profile "$AWS_PROFILE" \
+        --region "$AWS_REGION" \
+        --query "StackSummaries[?contains(StackName, '$LAB_ID') && starts_with(StackName, 'stack-') && StackStatus!='DELETE_COMPLETE'].StackName" \
+        --output text 2>/dev/null || echo "")
+else
+    TENANT_STACKS=$(aws cloudformation list-stacks \
+        --region "$AWS_REGION" \
+        --query "StackSummaries[?contains(StackName, '$LAB_ID') && starts_with(StackName, 'stack-') && StackStatus!='DELETE_COMPLETE'].StackName" \
+        --output text 2>/dev/null || echo "")
+fi
+
+if [ -n "$TENANT_STACKS" ]; then
+    print_message "$GREEN" "Found tenant stacks for $LAB_ID:"
+    for stack in $TENANT_STACKS; do
+        print_message "$GREEN" "  - $stack"
+    done
+    echo ""
+    
+    # Delete each tenant stack with verification
+    for stack in $TENANT_STACKS; do
+        if verify_stack_ownership "$stack" "$LAB_ID"; then
+            print_message "$YELLOW" "  Deleting stack: $stack"
+            if [[ -n "$AWS_PROFILE" ]]; then
+                aws cloudformation delete-stack --profile "$AWS_PROFILE" --stack-name "$stack" --region "$AWS_REGION" 2>/dev/null || true
+            else
+                aws cloudformation delete-stack --stack-name "$stack" --region "$AWS_REGION" 2>/dev/null || true
+            fi
+            print_message "$GREEN" "  ✓ Delete initiated: $stack"
+        else
+            print_message "$YELLOW" "  Skipping stack: $stack (not owned by $LAB_ID)"
+        fi
+    done
+    
+    # Wait for deletion
+    print_message "$YELLOW" "Waiting for tenant stacks to delete..."
+    for stack in $TENANT_STACKS; do
+        if verify_stack_ownership "$stack" "$LAB_ID"; then
+            print_message "$YELLOW" "  Waiting for deletion: $stack"
+            if [[ -n "$AWS_PROFILE" ]]; then
+                aws cloudformation wait stack-delete-complete --profile "$AWS_PROFILE" --stack-name "$stack" --region "$AWS_REGION" 2>/dev/null || true
+            else
+                aws cloudformation wait stack-delete-complete --stack-name "$stack" --region "$AWS_REGION" 2>/dev/null || true
+            fi
+            print_message "$GREEN" "  ✓ Deleted: $stack"
+        fi
+    done
+    
+    print_message "$GREEN" "✓ Tenant stacks cleanup complete for $LAB_ID"
+else
+    print_message "$YELLOW" "No tenant stacks found for $LAB_ID"
+fi
+echo ""
+
+# Step 2: Identify resources from stacks (before deletion)
+print_message "$YELLOW" "Step 2: Identifying resources from stacks..."
 
 # Get bucket names from shared stack outputs
 if [[ -n "$AWS_PROFILE" ]]; then

@@ -545,6 +545,18 @@ EoF
   };
 EoF
 
+  print_message "$YELLOW" "  Configuring AWS Amplify for Admin Client"
+  cat << EoF > ./src/aws-exports.ts
+const awsmobile = {
+  aws_project_region: '$AWS_REGION',
+  aws_cognito_region: '$AWS_REGION',
+  aws_user_pools_id: '$ADMIN_USERPOOLID',
+  aws_user_pools_web_client_id: '$ADMIN_APPCLIENTID',
+};
+
+export default awsmobile;
+EoF
+
   print_message "$YELLOW" "  Cleaning previous npm installation for Admin Client..."
   rm -rf node_modules package-lock.json || true
   

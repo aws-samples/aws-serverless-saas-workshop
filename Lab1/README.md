@@ -117,6 +117,30 @@ You'll be prompted for:
 └─────────────────┘
 ```
 
+### Resource Naming
+
+Lab 1 follows a consistent naming convention to ensure resource isolation and easy identification:
+
+**CloudFormation Stack:**
+- Main Stack: `serverless-saas-lab1`
+
+**Naming Pattern:**
+All resources created by Lab 1 include `lab1` in their names to ensure isolation from other labs. This prevents accidental deletion of resources from other labs during cleanup.
+
+**Key Resources:**
+- Lambda Functions: `serverless-saas-lab1-<FunctionName>-<UniqueId>`
+- DynamoDB Tables: `Product-Lab1`, `Order-Lab1`
+- S3 Bucket: `serverless-saas-lab1-app-<UniqueId>`
+- CloudWatch Log Groups: `/aws/lambda/serverless-saas-lab1-<FunctionName>-<UniqueId>`
+- API Gateway: `serverless-saas-lab1-api`
+
+**Lab Isolation:**
+The cleanup script (`scripts/cleanup.sh`) uses lab-specific filtering to ensure it only deletes resources belonging to Lab 1. It will NOT delete resources from other labs (Lab2-Lab7), even if they are deployed in the same AWS account.
+
+For more details on resource naming and lab isolation, see:
+- [Cleanup Isolation Documentation](../extra-info/CLEANUP_ISOLATION.md)
+- [Deployment Manual](../extra-info/DEPLOYMENT_CLEANUP_MANUAL.md)
+
 ### Components
 
 #### Lambda Functions (10 total)

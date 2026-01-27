@@ -558,7 +558,7 @@ fi
 
 if [ "$CLEANUP_ALL" = true ]; then
     LABS_TO_CLEANUP=(7 6 5 4 3 2 1)  # Reverse order to cleanup dependencies first
-    print_message "$GREEN" "Cleaning up all labs in reverse order..."
+    print_message "$GREEN" "Cleaning up all labs..."
 else
     # Sort labs in reverse order
     IFS=$'\n' LABS_TO_CLEANUP=($(sort -rn <<<"${LABS_TO_CLEANUP[*]}"))
@@ -653,6 +653,146 @@ START_TIME=$(date +%s)
 # Track cleanup results
 SUCCESSFUL_CLEANUPS=()
 FAILED_CLEANUPS=()
+
+# Step 1.5: Identify all lab-related stacks (including orphaned ones)
+print_message "$YELLOW" "========================================"
+print_message "$YELLOW" "Step 1.5: Identifying All Lab-Related Stacks"
+print_message "$YELLOW" "========================================"
+echo ""
+
+# Query all stacks matching lab patterns
+ALL_LAB_STACKS=$(aws cloudformation list-stacks \
+    ${PROFILE:+--profile "$PROFILE"} \
+    --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE UPDATE_ROLLBACK_COMPLETE \
+    --region us-east-1 \
+    --query 'StackSummaries[?contains(StackName, `lab1`) || contains(StackName, `lab2`) || contains(StackName, `lab3`) || contains(StackName, `lab4`) || contains(StackName, `lab5`) || contains(StackName, `lab6`) || contains(StackName, `lab7`)].StackName' \
+    --output text 2>/dev/null || echo "")
+
+# Group stacks by lab and store in variables
+DISCOVERED_LAB1=""
+DISCOVERED_LAB2=""
+DISCOVERED_LAB3=""
+DISCOVERED_LAB4=""
+DISCOVERED_LAB5=""
+DISCOVERED_LAB6=""
+DISCOVERED_LAB7=""
+
+for stack in $ALL_LAB_STACKS; do
+    if [[ "$stack" == *"lab1"* ]]; then
+        DISCOVERED_LAB1+="$stack "
+    fi
+    if [[ "$stack" == *"lab2"* ]]; then
+        DISCOVERED_LAB2+="$stack "
+    fi
+    if [[ "$stack" == *"lab3"* ]]; then
+        DISCOVERED_LAB3+="$stack "
+    fi
+    if [[ "$stack" == *"lab4"* ]]; then
+        DISCOVERED_LAB4+="$stack "
+    fi
+    if [[ "$stack" == *"lab5"* ]]; then
+        DISCOVERED_LAB5+="$stack "
+    fi
+    if [[ "$stack" == *"lab6"* ]]; then
+        DISCOVERED_LAB6+="$stack "
+    fi
+    if [[ "$stack" == *"lab7"* ]]; then
+        DISCOVERED_LAB7+="$stack "
+    fi
+done
+
+# Display discovered stacks
+if [ -n "$ALL_LAB_STACKS" ]; then
+    print_message "$GREEN" "Discovered Lab Stacks:"
+    
+    # Lab1
+    if [ -n "$DISCOVERED_LAB1" ]; then
+        print_message "$GREEN" "  Lab1:"
+        for stack in $DISCOVERED_LAB1; do
+            if [[ "$stack" == "serverless-saas-lab1" ]]; then
+                print_message "$GREEN" "    - $stack"
+            else
+                print_message "$YELLOW" "    - $stack (orphaned - not in expected list)"
+            fi
+        done
+    fi
+    
+    # Lab2
+    if [ -n "$DISCOVERED_LAB2" ]; then
+        print_message "$GREEN" "  Lab2:"
+        for stack in $DISCOVERED_LAB2; do
+            if [[ "$stack" == "serverless-saas-lab2" ]]; then
+                print_message "$GREEN" "    - $stack"
+            else
+                print_message "$YELLOW" "    - $stack (orphaned - not in expected list)"
+            fi
+        done
+    fi
+    
+    # Lab3
+    if [ -n "$DISCOVERED_LAB3" ]; then
+        print_message "$GREEN" "  Lab3:"
+        for stack in $DISCOVERED_LAB3; do
+            if [[ "$stack" == "serverless-saas-shared-lab3" || "$stack" == "serverless-saas-tenant-lab3" ]]; then
+                print_message "$GREEN" "    - $stack"
+            else
+                print_message "$YELLOW" "    - $stack (orphaned - not in expected list)"
+            fi
+        done
+    fi
+    
+    # Lab4
+    if [ -n "$DISCOVERED_LAB4" ]; then
+        print_message "$GREEN" "  Lab4:"
+        for stack in $DISCOVERED_LAB4; do
+            if [[ "$stack" == "serverless-saas-shared-lab4" || "$stack" == "serverless-saas-tenant-lab4" ]]; then
+                print_message "$GREEN" "    - $stack"
+            else
+                print_message "$YELLOW" "    - $stack (orphaned - not in expected list)"
+            fi
+        done
+    fi
+    
+    # Lab5
+    if [ -n "$DISCOVERED_LAB5" ]; then
+        print_message "$GREEN" "  Lab5:"
+        for stack in $DISCOVERED_LAB5; do
+            if [[ "$stack" == "serverless-saas-shared-lab5" || "$stack" == "serverless-saas-pipeline-lab5" ]]; then
+                print_message "$GREEN" "    - $stack"
+            else
+                print_message "$YELLOW" "    - $stack (orphaned - not in expected list)"
+            fi
+        done
+    fi
+    
+    # Lab6
+    if [ -n "$DISCOVERED_LAB6" ]; then
+        print_message "$GREEN" "  Lab6:"
+        for stack in $DISCOVERED_LAB6; do
+            if [[ "$stack" == "serverless-saas-shared-lab6" || "$stack" == "serverless-saas-pipeline-lab6" ]]; then
+                print_message "$GREEN" "    - $stack"
+            else
+                print_message "$YELLOW" "    - $stack (orphaned - not in expected list)"
+            fi
+        done
+    fi
+    
+    # Lab7
+    if [ -n "$DISCOVERED_LAB7" ]; then
+        print_message "$GREEN" "  Lab7:"
+        for stack in $DISCOVERED_LAB7; do
+            if [[ "$stack" == "serverless-saas-lab7" ]]; then
+                print_message "$GREEN" "    - $stack"
+            else
+                print_message "$YELLOW" "    - $stack (orphaned - not in expected list)"
+            fi
+        done
+    fi
+else
+    print_message "$YELLOW" "No lab-related stacks found"
+fi
+
+echo ""
 
 # Step 2: Cleanup labs based on mode
 print_message "$YELLOW" "========================================"
@@ -806,6 +946,268 @@ fi
 
 echo ""
 print_message "$GREEN" "Orphaned CloudWatch log groups cleanup complete"
+echo ""
+
+# Step 3.5: Clean up orphaned resources (stacks, S3 buckets, logs)
+print_message "$YELLOW" "========================================"
+print_message "$YELLOW" "Step 3.5: Cleaning Up Orphaned Resources"
+print_message "$YELLOW" "========================================"
+echo ""
+
+# Find orphaned S3 buckets
+ORPHANED_BUCKETS=$(aws s3api list-buckets \
+    ${PROFILE:+--profile "$PROFILE"} \
+    --query 'Buckets[?contains(Name, `lab1`) || contains(Name, `lab2`) || contains(Name, `lab3`) || contains(Name, `lab4`) || contains(Name, `lab5`) || contains(Name, `lab6`) || contains(Name, `lab7`)].Name' \
+    --output text 2>/dev/null || echo "")
+
+# Find orphaned CloudWatch log groups (not already cleaned in Step 3)
+ORPHANED_LOGS=$(aws logs describe-log-groups \
+    ${PROFILE:+--profile "$PROFILE"} \
+    --region us-east-1 \
+    --query 'logGroups[?contains(logGroupName, `lab1`) || contains(logGroupName, `lab2`) || contains(logGroupName, `lab3`) || contains(logGroupName, `lab4`) || contains(logGroupName, `lab5`) || contains(logGroupName, `lab6`) || contains(logGroupName, `lab7`)].logGroupName' \
+    --output text 2>/dev/null || echo "")
+
+# Find orphaned stacks (not in expected list OR from labs that are not deployed)
+ORPHANED_STACKS=""
+
+# Check Lab1 stacks
+for stack in $DISCOVERED_LAB1; do
+    # Check if stack is expected for Lab1
+    if [[ "$stack" == "serverless-saas-lab1" ]]; then
+        # Check if Lab1 is in EXISTING_LABS
+        lab_exists=false
+        for lab in "${EXISTING_LABS[@]}"; do
+            if [[ "$lab" == "1" ]]; then
+                lab_exists=true
+                break
+            fi
+        done
+        # If lab doesn't exist but stack does, it's orphaned
+        if [[ "$lab_exists" == false ]]; then
+            ORPHANED_STACKS+="$stack "
+        fi
+    else
+        # Stack is not in expected list, so it's orphaned
+        ORPHANED_STACKS+="$stack "
+    fi
+done
+
+# Check Lab2 stacks
+for stack in $DISCOVERED_LAB2; do
+    if [[ "$stack" == "serverless-saas-lab2" ]]; then
+        lab_exists=false
+        for lab in "${EXISTING_LABS[@]}"; do
+            if [[ "$lab" == "2" ]]; then
+                lab_exists=true
+                break
+            fi
+        done
+        if [[ "$lab_exists" == false ]]; then
+            ORPHANED_STACKS+="$stack "
+        fi
+    else
+        ORPHANED_STACKS+="$stack "
+    fi
+done
+
+# Check Lab3 stacks
+for stack in $DISCOVERED_LAB3; do
+    if [[ "$stack" == "serverless-saas-shared-lab3" || "$stack" == "serverless-saas-tenant-lab3" ]]; then
+        lab_exists=false
+        for lab in "${EXISTING_LABS[@]}"; do
+            if [[ "$lab" == "3" ]]; then
+                lab_exists=true
+                break
+            fi
+        done
+        if [[ "$lab_exists" == false ]]; then
+            ORPHANED_STACKS+="$stack "
+        fi
+    else
+        ORPHANED_STACKS+="$stack "
+    fi
+done
+
+# Check Lab4 stacks
+for stack in $DISCOVERED_LAB4; do
+    if [[ "$stack" == "serverless-saas-shared-lab4" || "$stack" == "serverless-saas-tenant-lab4" ]]; then
+        lab_exists=false
+        for lab in "${EXISTING_LABS[@]}"; do
+            if [[ "$lab" == "4" ]]; then
+                lab_exists=true
+                break
+            fi
+        done
+        if [[ "$lab_exists" == false ]]; then
+            ORPHANED_STACKS+="$stack "
+        fi
+    else
+        ORPHANED_STACKS+="$stack "
+    fi
+done
+
+# Check Lab5 stacks
+for stack in $DISCOVERED_LAB5; do
+    if [[ "$stack" == "serverless-saas-shared-lab5" || "$stack" == "serverless-saas-pipeline-lab5" ]]; then
+        lab_exists=false
+        for lab in "${EXISTING_LABS[@]}"; do
+            if [[ "$lab" == "5" ]]; then
+                lab_exists=true
+                break
+            fi
+        done
+        if [[ "$lab_exists" == false ]]; then
+            ORPHANED_STACKS+="$stack "
+        fi
+    else
+        ORPHANED_STACKS+="$stack "
+    fi
+done
+
+# Check Lab6 stacks
+for stack in $DISCOVERED_LAB6; do
+    if [[ "$stack" == "serverless-saas-shared-lab6" || "$stack" == "serverless-saas-pipeline-lab6" ]]; then
+        lab_exists=false
+        for lab in "${EXISTING_LABS[@]}"; do
+            if [[ "$lab" == "6" ]]; then
+                lab_exists=true
+                break
+            fi
+        done
+        if [[ "$lab_exists" == false ]]; then
+            ORPHANED_STACKS+="$stack "
+        fi
+    else
+        ORPHANED_STACKS+="$stack "
+    fi
+done
+
+# Check Lab7 stacks
+for stack in $DISCOVERED_LAB7; do
+    if [[ "$stack" == "serverless-saas-lab7" ]]; then
+        lab_exists=false
+        for lab in "${EXISTING_LABS[@]}"; do
+            if [[ "$lab" == "7" ]]; then
+                lab_exists=true
+                break
+            fi
+        done
+        if [[ "$lab_exists" == false ]]; then
+            ORPHANED_STACKS+="$stack "
+        fi
+    else
+        ORPHANED_STACKS+="$stack "
+    fi
+done
+
+# Display orphaned resources
+if [[ -n "$ORPHANED_STACKS" || -n "$ORPHANED_BUCKETS" || -n "$ORPHANED_LOGS" ]]; then
+    print_message "$YELLOW" "Orphaned Resources Found:"
+    
+    if [[ -n "$ORPHANED_STACKS" ]]; then
+        print_message "$YELLOW" "  CloudFormation Stacks:"
+        for stack in $ORPHANED_STACKS; do
+            print_message "$YELLOW" "    - $stack"
+        done
+    fi
+    
+    if [[ -n "$ORPHANED_BUCKETS" ]]; then
+        print_message "$YELLOW" "  S3 Buckets:"
+        for bucket in $ORPHANED_BUCKETS; do
+            print_message "$YELLOW" "    - $bucket"
+        done
+    fi
+    
+    if [[ -n "$ORPHANED_LOGS" ]]; then
+        print_message "$YELLOW" "  CloudWatch Log Groups:"
+        for log in $ORPHANED_LOGS; do
+            print_message "$YELLOW" "    - $log"
+        done
+    fi
+    
+    echo ""
+    print_message "$RED" "WARNING: Orphaned resources detected that were not cleaned up by lab-specific cleanup scripts."
+    print_message "$RED" "These resources may have been created outside the normal deployment process."
+    echo ""
+    
+    if [ "$INTERACTIVE" = false ]; then
+        read -p "Delete orphaned resources? (yes/no): " confirm
+    else
+        confirm="yes"
+    fi
+    
+    if [[ "$confirm" == "yes" ]]; then
+        # Delete orphaned stacks first (CloudFormation will delete associated resources)
+        if [[ -n "$ORPHANED_STACKS" ]]; then
+            print_message "$YELLOW" "  Deleting orphaned CloudFormation stacks..."
+            for stack in $ORPHANED_STACKS; do
+                print_message "$YELLOW" "    Deleting stack: $stack"
+                if aws cloudformation delete-stack \
+                    ${PROFILE:+--profile "$PROFILE"} \
+                    --region us-east-1 \
+                    --stack-name "$stack" 2>/dev/null; then
+                    print_message "$GREEN" "      ✓ Initiated deletion of $stack"
+                else
+                    print_message "$RED" "      ✗ Failed to delete $stack"
+                fi
+            done
+            
+            # Wait for stack deletions to complete
+            print_message "$YELLOW" "    Waiting for stack deletions to complete..."
+            for stack in $ORPHANED_STACKS; do
+                aws cloudformation wait stack-delete-complete \
+                    ${PROFILE:+--profile "$PROFILE"} \
+                    --region us-east-1 \
+                    --stack-name "$stack" 2>/dev/null || true
+            done
+            print_message "$GREEN" "    ✓ Orphaned stacks deleted"
+        fi
+        
+        # Delete orphaned S3 buckets
+        if [[ -n "$ORPHANED_BUCKETS" ]]; then
+            print_message "$YELLOW" "  Deleting orphaned S3 buckets..."
+            for bucket in $ORPHANED_BUCKETS; do
+                print_message "$YELLOW" "    Emptying and deleting bucket: $bucket"
+                # Empty bucket first
+                if aws s3 rm "s3://$bucket" --recursive ${PROFILE:+--profile "$PROFILE"} 2>/dev/null; then
+                    # Delete bucket
+                    if aws s3api delete-bucket \
+                        ${PROFILE:+--profile "$PROFILE"} \
+                        --bucket "$bucket" 2>/dev/null; then
+                        print_message "$GREEN" "      ✓ Deleted $bucket"
+                    else
+                        print_message "$RED" "      ✗ Failed to delete $bucket"
+                    fi
+                else
+                    print_message "$RED" "      ✗ Failed to empty $bucket"
+                fi
+            done
+        fi
+        
+        # Delete orphaned log groups
+        if [[ -n "$ORPHANED_LOGS" ]]; then
+            print_message "$YELLOW" "  Deleting orphaned CloudWatch log groups..."
+            for log in $ORPHANED_LOGS; do
+                print_message "$YELLOW" "    Deleting log group: $log"
+                if aws logs delete-log-group \
+                    ${PROFILE:+--profile "$PROFILE"} \
+                    --region us-east-1 \
+                    --log-group-name "$log" 2>/dev/null; then
+                    print_message "$GREEN" "      ✓ Deleted $log"
+                else
+                    print_message "$RED" "      ✗ Failed to delete $log"
+                fi
+            done
+        fi
+        
+        print_message "$GREEN" "  ✓ Orphaned resources cleanup complete"
+    else
+        print_message "$YELLOW" "  ⚠️  Skipped orphaned resource cleanup"
+    fi
+else
+    print_message "$GREEN" "  ✓ No orphaned resources found"
+fi
+
 echo ""
 
 # Step 4: Verify complete cleanup

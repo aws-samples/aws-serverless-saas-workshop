@@ -25,6 +25,7 @@ AWS_PROFILE=""
 STACK_NAME_PREFIX="serverless-saas-lab6"  # Default prefix for stack names
 AWS_REGION="us-east-1"  # Default region
 SKIP_CONFIRMATION=0
+LAB_ID="lab6"  # Lab identifier for resource filtering
 
 # Function to print usage
 print_usage() {
@@ -161,6 +162,18 @@ empty_bucket() {
   fi
 }
 
+# Function to verify stack belongs to this lab
+verify_stack_ownership() {
+  local stack=$1
+  
+  # Check if stack name contains the lab identifier
+  if [[ "$stack" == *"$LAB_ID"* ]]; then
+    return 0  # Stack belongs to this lab
+  else
+    return 1  # Stack does not belong to this lab
+  fi
+}
+
 # Function to delete stack
 delete_stack() {
   local stack=$1
@@ -289,7 +302,7 @@ echo "=========================================="
 
 TENANT_STACKS=$(aws cloudformation $PROFILE_ARG list-stacks \
   --stack-status-filter CREATE_COMPLETE ROLLBACK_COMPLETE UPDATE_COMPLETE CREATE_FAILED ROLLBACK_FAILED UPDATE_ROLLBACK_COMPLETE \
-  --query 'StackSummaries[?contains(StackName, `stack-`)].StackName' \
+  --query 'StackSummaries[?contains(StackName, `stack-`) && contains(StackName, `lab6`)].StackName' \
   --output text 2>/dev/null)
 
 if [[ -z "$TENANT_STACKS" ]]; then

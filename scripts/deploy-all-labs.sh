@@ -283,49 +283,46 @@ DEPLOY_ALL=false
 SKIP_VERIFICATION=false
 STOP_ON_ERROR=true
 
-if [ $# -eq 0 ]; then
-    DEPLOY_ALL=true
-else
-    while [[ $# -gt 0 ]]; do
-        case $1 in
-            --all)
-                DEPLOY_ALL=true
-                shift
-                ;;
-            --lab)
-                LABS_TO_DEPLOY+=("$2")
-                shift 2
-                ;;
-            --email)
-                LAB2_EMAIL=$2
-                shift 2
-                ;;
-            --tenant-email)
-                TENANT_EMAIL=$2
-                shift 2
-                ;;
-            --profile)
-                PROFILE=$2
-                shift 2
-                ;;
-            --parallel)
-                PARALLEL=true
-                shift
-                ;;
-            --skip-verification)
-                SKIP_VERIFICATION=true
-                shift
-                ;;
-            --continue-on-error)
-                STOP_ON_ERROR=false
-                shift
-                ;;
-            --help)
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --all)
+            DEPLOY_ALL=true
+            shift
+            ;;
+        --lab)
+            LABS_TO_DEPLOY+=("$2")
+            shift 2
+            ;;
+        --email)
+            LAB2_EMAIL=$2
+            shift 2
+            ;;
+        --tenant-email)
+            TENANT_EMAIL=$2
+            shift 2
+            ;;
+        --profile)
+            PROFILE=$2
+            shift 2
+            ;;
+        --parallel)
+            PARALLEL=true
+            shift
+            ;;
+        --skip-verification)
+            SKIP_VERIFICATION=true
+            shift
+            ;;
+        --continue-on-error)
+            STOP_ON_ERROR=false
+            shift
+            ;;
+        --help)
                 echo "Usage: $0 [OPTIONS]"
                 echo ""
                 echo "Options:"
-                echo "  --all                       Deploy all labs (default if no options provided)"
                 echo "  --lab <number>              Deploy specific lab (can be used multiple times)"
+                echo "                              If no --lab is specified, all labs are deployed by default"
                 echo "  --email <email>             Email address for Lab2-4 (required if deploying these labs)"
                 echo "  --tenant-email <email>      Tenant admin email for Lab3-4 (optional, enables auto-tenant creation)"
                 echo "  --profile <profile>         AWS profile to use (optional, uses default if not provided)"
@@ -352,15 +349,15 @@ else
                 echo "  Lab7 is completely independent and generates its own sample data"
                 echo ""
                 echo "Examples:"
-                echo "  $0 --all --email user@example.com"
-                echo "  $0 --all --email user@example.com --tenant-email tenant@example.com"
-                echo "  $0 --all --email user@example.com --profile serverless-saas-demo"
-                echo "  $0 --all --email user@example.com --parallel"
+                echo "  $0 --email user@example.com"
+                echo "  $0 --email user@example.com --tenant-email tenant@example.com"
+                echo "  $0 --email user@example.com --profile serverless-saas-demo"
+                echo "  $0 --email user@example.com --parallel"
                 echo "  $0 --lab 1"
                 echo "  $0 --lab 2 --email user@example.com --profile my-profile"
                 echo "  $0 --lab 3 --email user@example.com --tenant-email tenant@example.com"
                 echo "  $0 --lab 5 --lab 6"
-                echo "  $0 --all --email user@example.com --continue-on-error"
+                echo "  $0 --email user@example.com --continue-on-error"
                 exit 0
                 ;;
             *)
@@ -370,6 +367,10 @@ else
                 ;;
         esac
     done
+
+# If no specific labs were selected, deploy all labs by default
+if [ ${#LABS_TO_DEPLOY[@]} -eq 0 ] && [ "$DEPLOY_ALL" = false ]; then
+    DEPLOY_ALL=true
 fi
 
 # Verify prerequisites unless skipped

@@ -34,7 +34,60 @@ pytest test_python_runtime_consistency.py -v --tb=short
 
 Property-based tests use Hypothesis to generate test cases and verify properties hold across all inputs. Each property test runs a minimum of 100 iterations.
 
-### Property 2: Python Runtime Consistency
+### Property 1: Lab Cleanup Isolation
+
+**File**: `test_cleanup_lab_isolation.py`
+
+**Property**: For any lab N and set of other labs M, cleaning up lab N should not affect resources in any lab M (where N ≠ M).
+
+**Validates**: Requirements 1.1, 1.2 (Lab Cleanup Isolation)
+
+This test:
+- Simulates deployment of multiple labs simultaneously
+- Simulates cleanup of one lab
+- Verifies other labs' resources remain intact
+- Tests all lab combinations (Lab1-Lab7)
+- Specifically validates the critical bug fix: Lab5 cleanup does NOT delete Lab6 or Lab7 resources
+
+**Key Tests**:
+1. `test_cleanup_lab_isolation_property` - General isolation property (100 examples)
+2. `test_cleanup_lab_pair_isolation_property` - All lab pairs (21 combinations)
+3. `test_lab5_cleanup_does_not_affect_lab6_lab7_property` - Critical bug validation
+4. `test_sequential_cleanup_all_labs` - Sequential cleanup simulation
+5. `test_all_lab_combinations_isolation` - Comprehensive validation
+
+### Property 2: Complete Cleanup
+
+**File**: `test_cleanup_completeness.py`
+
+**Property**: Cleanup of Lab N must delete ALL resources belonging to Lab N.
+
+**Validates**: Requirements 1.3 (Complete Cleanup)
+
+This test:
+- Simulates deployment of a lab (generates all resources)
+- Records all created resources (stacks, S3 buckets, CloudWatch logs, DynamoDB tables, etc.)
+- Simulates cleanup execution
+- Verifies all recorded resources are deleted
+- Tests all labs (Lab1-Lab7)
+- Validates complete cleanup across all resource types
+
+**Key Tests**:
+1. `test_cleanup_completeness_property` - Complete cleanup for any single lab (100 examples)
+2. `test_cleanup_all_resource_types_property` - Validates all resource types are deleted (100 examples)
+3. `test_cleanup_completeness_multi_lab_property` - Multi-lab environment testing (100 examples)
+4. `test_sequential_cleanup_completeness_all_labs` - Sequential cleanup workflow
+5. `test_lab5_cleanup_completeness` - Critical test for Lab5 (most complex architecture)
+
+**Resource Types Tracked**:
+- CloudFormation stacks (main, shared, tenant, pipeline)
+- S3 buckets (artifacts, pipeline, CUR)
+- CloudWatch log groups (Lambda, API Gateway)
+- Cognito user pools
+- CodeCommit repositories
+- DynamoDB tables
+
+### Property 3: Python Runtime Consistency
 
 **File**: `test_python_runtime_consistency.py`
 
