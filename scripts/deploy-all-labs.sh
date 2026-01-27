@@ -21,13 +21,20 @@ LOG_DIR="$SCRIPT_DIR/logs"
 mkdir -p "$LOG_DIR"
 LOG_FILE="$LOG_DIR/deploy-all-labs-$(date +%Y%m%d-%H%M%S).log"
 
+# Function to print colored messages
+print_message() {
+    local color=$1
+    local message=$2
+    echo -e "${color}${message}${NC}"
+}
+
 # Redirect all output to log file and console
 exec > >(tee -a "$LOG_FILE") 2>&1
 
-echo "========================================"
-echo "AWS Serverless SaaS Workshop"
-echo "Deploy All Labs Script"
-echo "========================================"
+print_message "$BLUE" "========================================"
+print_message "$BLUE" "AWS Serverless SaaS Workshop"
+print_message "$BLUE" "Deploy All Labs Script"
+print_message "$BLUE" "========================================"
 echo "Log file: $LOG_FILE"
 echo ""
 
@@ -36,13 +43,6 @@ LAB2_EMAIL=""
 TENANT_EMAIL=""
 PROFILE=""
 PARALLEL=false
-
-# Function to print colored messages
-print_message() {
-    local color=$1
-    local message=$2
-    echo -e "${color}${message}${NC}"
-}
 
 # Function to deploy a lab
 deploy_lab() {

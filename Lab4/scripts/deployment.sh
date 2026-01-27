@@ -173,7 +173,9 @@ echo ""
 START_TIME=$(date +%s)
 
 # Pre-deployment validation
-print_message "$YELLOW" "Step 1: Validating prerequisites..."
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 1: Validating prerequisites"
+print_message "$BLUE" "=========================================="
 
 # Check AWS CLI
 if ! command -v aws &> /dev/null; then
@@ -238,7 +240,9 @@ if [ ! -z "$PREPROVISIONED_ADMIN_SITE" ]; then
 fi
 
 if [[ $DEPLOY_BOOTSTRAP -eq 1 ]] || [[ $DEPLOY_TENANT -eq 1 ]]; then
-  print_message "$YELLOW" "Step 2: Validating Python code..."
+  print_message "$BLUE" "=========================================="
+  print_message "$BLUE" "Step 2: Validating Python code"
+  print_message "$BLUE" "=========================================="
   cd ../server || exit
   
   # Use virtual environment Python if available
@@ -264,7 +268,9 @@ if [[ $DEPLOY_BOOTSTRAP -eq 1 ]] || [[ $DEPLOY_TENANT -eq 1 ]]; then
 fi
 
 if [[ $DEPLOY_BOOTSTRAP -eq 1 ]]; then
-  print_message "$YELLOW" "Step 3: Deploying bootstrap server infrastructure..."
+  print_message "$BLUE" "=========================================="
+  print_message "$BLUE" "Step 3: Deploying bootstrap server infrastructure"
+  print_message "$BLUE" "=========================================="
   cd ../server || exit
 
   # Get SAM S3 bucket for shared stack from samconfig.toml
@@ -344,7 +350,9 @@ if [[ $DEPLOY_BOOTSTRAP -eq 1 ]]; then
 fi  
 
 if [[ $DEPLOY_TENANT -eq 1 ]]; then
-  print_message "$YELLOW" "Step 4: Deploying tenant server infrastructure..."
+  print_message "$BLUE" "=========================================="
+  print_message "$BLUE" "Step 4: Deploying tenant server infrastructure"
+  print_message "$BLUE" "=========================================="
   cd ../server || exit
 
   # Get SAM S3 bucket for tenant stack from samconfig.toml
@@ -403,7 +411,9 @@ if [ "$IS_RUNNING_IN_EVENT_ENGINE" = false ]; then
 fi
 
 if [[ $DEPLOY_CLIENT -eq 1 ]]; then
-  print_message "$YELLOW" "Step 5: Deploying client applications..."
+  print_message "$BLUE" "=========================================="
+  print_message "$BLUE" "Step 5: Deploying client applications"
+  print_message "$BLUE" "=========================================="
 
   # Re-query stack outputs after deployment to ensure we have the latest values
   if [ "$IS_RUNNING_IN_EVENT_ENGINE" = false ]; then

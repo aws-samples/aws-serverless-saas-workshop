@@ -26,6 +26,7 @@ set -e
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Create log directory and file
@@ -148,7 +149,9 @@ fi
 START_TIME=$(date +%s)
 
 # Step 1: Get S3 bucket names and API Gateway IDs from stack outputs (but don't delete yet)
-print_message "$YELLOW" "Step 1: Identifying resources from stack..."
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 1: Identifying resources from stack"
+print_message "$BLUE" "=========================================="
 
 APP_SITE_BUCKET=$(aws cloudformation describe-stacks \
     ${AWS_PROFILE:+--profile "$AWS_PROFILE"} \
@@ -178,7 +181,9 @@ else
 fi
 
 # Step 2: Delete CloudWatch Log Groups (BEFORE deleting the stack)
-print_message "$YELLOW" "Step 2: Deleting CloudWatch Log Groups..."
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 2: Deleting CloudWatch Log Groups"
+print_message "$BLUE" "=========================================="
 
 # Delete API Gateway execution logs
 if [ -n "$API_GATEWAY_ID" ] && [ "$API_GATEWAY_ID" != "None" ]; then
@@ -240,7 +245,9 @@ fi
 print_message "$GREEN" "CloudWatch Log Groups cleanup complete"
 
 # Step 3: Delete CloudFormation stack (this will delete CloudFront distributions)
-print_message "$YELLOW" "Step 3: Deleting CloudFormation stack..."
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 3: Deleting CloudFormation stack"
+print_message "$BLUE" "=========================================="
 print_message "$YELLOW" "  Deleting stack: $STACK_NAME"
 
 STACK_EXISTS=$(aws cloudformation describe-stacks $PROFILE_ARG --stack-name "$STACK_NAME" --region "$AWS_REGION" 2>/dev/null || echo "")
@@ -275,7 +282,9 @@ else
 fi
 
 # Step 4: Now safely delete S3 buckets (after CloudFront is deleted)
-print_message "$YELLOW" "Step 4: Safely deleting S3 buckets (CloudFront deleted)..."
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 4: Safely deleting S3 buckets (CloudFront deleted)"
+print_message "$BLUE" "=========================================="
 
 if [ -n "$APP_SITE_BUCKET" ] && [ "$APP_SITE_BUCKET" != "None" ]; then
     if aws s3 ls "s3://$APP_SITE_BUCKET" $PROFILE_ARG --region "$AWS_REGION" &> /dev/null; then
@@ -290,7 +299,9 @@ if [ -n "$APP_SITE_BUCKET" ] && [ "$APP_SITE_BUCKET" != "None" ]; then
 fi
 
 # Step 5: Clean up any remaining S3 buckets
-print_message "$YELLOW" "Step 5: Cleaning up any remaining S3 buckets..."
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 5: Cleaning up any remaining S3 buckets"
+print_message "$BLUE" "=========================================="
 
 REMAINING_BUCKETS=$(aws s3 ls $PROFILE_ARG | grep "serverless-saas-lab1" | awk '{print $3}' || echo "")
 
@@ -305,7 +316,9 @@ else
 fi
 
 # Step 6: Clean up SAM bootstrap bucket from samconfig.toml
-print_message "$YELLOW" "Step 6: Cleaning up SAM bootstrap bucket from samconfig.toml..."
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 6: Cleaning up SAM bootstrap bucket from samconfig.toml"
+print_message "$BLUE" "=========================================="
 
 # Get the bucket name from samconfig.toml
 SAM_BUCKET=$(grep s3_bucket ../server/samconfig.toml 2>/dev/null | cut -d'=' -f2 | cut -d \" -f2 || echo "")
@@ -327,7 +340,9 @@ fi
 echo ""
 
 # Step 7: Verify cleanup
-print_message "$YELLOW" "Step 7: Verifying cleanup..."
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 7: Verifying cleanup"
+print_message "$BLUE" "=========================================="
 
 REMAINING_RESOURCES=0
 

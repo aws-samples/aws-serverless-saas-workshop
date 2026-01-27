@@ -26,6 +26,7 @@ set -e
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Default values
@@ -181,7 +182,9 @@ fi
 START_TIME=$(date +%s)
 
 # Step 1: Identify resources from stacks (before deletion)
-print_message "$YELLOW" "Step 1: Identifying resources from stacks..."
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 1: Identifying resources from stacks"
+print_message "$BLUE" "=========================================="
 
 # Get bucket names from shared stack outputs
 PROFILE_ARG=$(get_profile_arg)
@@ -237,7 +240,9 @@ if [ -n "$TENANT_API_ID" ] && [ "$TENANT_API_ID" != "None" ]; then
 fi
 
 # Step 2: Delete CloudWatch Log Groups (BEFORE stack deletion)
-print_message "$YELLOW" "Step 2: Deleting CloudWatch Log Groups..."
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 2: Deleting CloudWatch Log Groups"
+print_message "$BLUE" "=========================================="
 
 # Delete API Gateway execution logs first
 print_message "$YELLOW" "  Deleting API Gateway execution logs..."
@@ -310,7 +315,9 @@ else
 fi
 
 # Step 3: Delete tenant stack first (dependencies)
-print_message "$YELLOW" "Step 3: Deleting tenant stack..."
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 3: Deleting tenant stack"
+print_message "$BLUE" "=========================================="
 print_message "$YELLOW" "  Deleting stack: $TENANT_STACK_NAME"
 
 if aws cloudformation describe-stacks $PROFILE_ARG --stack-name "$TENANT_STACK_NAME" --region "$AWS_REGION" &>/dev/null; then
@@ -343,7 +350,9 @@ else
 fi
 
 # Step 4: Delete shared stack
-print_message "$YELLOW" "Step 4: Deleting shared stack..."
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 4: Deleting shared stack"
+print_message "$BLUE" "=========================================="
 print_message "$YELLOW" "  Deleting stack: $SHARED_STACK_NAME"
 
 if aws cloudformation describe-stacks --stack-name "$SHARED_STACK_NAME" --region "$AWS_REGION" $PROFILE_ARG &>/dev/null; then
@@ -376,7 +385,9 @@ else
 fi
 
 # Step 5: Now safely delete S3 buckets (after CloudFront is deleted)
-print_message "$YELLOW" "Step 5: Safely deleting S3 buckets (CloudFront deleted)..."
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 5: Safely deleting S3 buckets (CloudFront deleted)"
+print_message "$BLUE" "=========================================="
 
 # Empty and delete application buckets from stack outputs
 for bucket in "$ADMIN_SITE_BUCKET" "$LANDING_APP_SITE_BUCKET" "$APP_SITE_BUCKET"; do
@@ -418,7 +429,9 @@ fi
 print_message "$GREEN" "S3 buckets deleted"
 
 # Step 6: Delete DynamoDB tables
-print_message "$YELLOW" "Step 6: Deleting DynamoDB tables..."
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 6: Deleting DynamoDB tables"
+print_message "$BLUE" "=========================================="
 
 TABLES=$(aws dynamodb list-tables \
     --region "$AWS_REGION" \
@@ -436,8 +449,10 @@ else
     print_message "$YELLOW" "  No DynamoDB tables found"
 fi
 
-# Step 6.5: Clean up SAM bootstrap buckets from samconfig.toml files
-print_message "$YELLOW" "Step 6.5: Cleaning up SAM bootstrap buckets from samconfig.toml files..."
+# Step 7: Clean up SAM bootstrap buckets from samconfig.toml files
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 7: Cleaning up SAM bootstrap buckets from samconfig.toml files"
+print_message "$BLUE" "=========================================="
 
 PROFILE_ARG=$(get_profile_arg)
 
@@ -479,8 +494,10 @@ fi
 
 print_message "$GREEN" "SAM bootstrap bucket cleanup complete"
 
-# Step 7: Delete IAM roles and policies
-print_message "$YELLOW" "Step 7: Cleaning up IAM roles and policies..."
+# Step 8: Delete IAM roles and policies
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 8: Cleaning up IAM roles and policies"
+print_message "$BLUE" "=========================================="
 
 # List IAM roles with lab4 in the name
 IAM_ROLES=$(aws iam list-roles \
@@ -525,8 +542,10 @@ else
     print_message "$YELLOW" "  No IAM roles found"
 fi
 
-# Step 8: Verify cleanup
-print_message "$YELLOW" "Step 8: Verifying cleanup..."
+# Step 9: Verify cleanup
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 9: Verifying cleanup"
+print_message "$BLUE" "=========================================="
 
 REMAINING_RESOURCES=0
 

@@ -522,40 +522,9 @@ delete_stack_with_cdk_role "$PIPELINE_STACK_NAME"
 print_message "$GREEN" "✓ Pipeline cleanup complete"
 echo ""
 
-# Step 8: Clean up CDK bootstrap resources
-print_message "$BLUE" "=========================================="
-print_message "$BLUE" "Step 8: Cleaning up CDK bootstrap resources"
-print_message "$BLUE" "=========================================="
-
-# Find CDK bootstrap bucket
-PROFILE_ARG=$(get_profile_arg)
-CDK_BUCKET=$(aws s3 $PROFILE_ARG ls --region "$AWS_REGION" | grep cdktoolkit | awk '{print $3}')
-
-if [[ ! -z "$CDK_BUCKET" ]]; then
-  print_message "$YELLOW" "Found CDK bootstrap bucket: $CDK_BUCKET"
-  empty_bucket $CDK_BUCKET
-  print_message "$YELLOW" "  Deleting bucket: $CDK_BUCKET"
-  aws s3 $PROFILE_ARG rb s3://$CDK_BUCKET --region "$AWS_REGION" 2>/dev/null
-  if [[ $? -eq 0 ]]; then
-    print_message "$GREEN" "  ✓ Bucket deleted: $CDK_BUCKET"
-  else
-    print_message "$YELLOW" "  ⚠ Could not delete bucket: $CDK_BUCKET"
-  fi
-else
-  print_message "$YELLOW" "No CDK bootstrap bucket found"
-fi
-
-# Delete CDKToolkit stack
-if delete_stack "CDKToolkit"; then
-  wait_for_deletion "CDKToolkit"
-fi
-
-print_message "$GREEN" "✓ CDK bootstrap cleanup complete"
-echo ""
-
-# Step 9: Clean up SAM build artifacts
+# Step 8: Clean up SAM build artifacts
 echo "=========================================="
-echo "Step 9: Cleaning up SAM build artifacts"
+echo "Step 8: Cleaning up SAM build artifacts"
 echo "=========================================="
 
 # Find Lab5 SAM buckets (including bootstrap and pipeline artifacts)
@@ -583,9 +552,9 @@ fi
 echo "✓ SAM artifacts cleanup complete"
 echo ""
 
-# Step 10: Clean up CDK assets bucket
+# Step 9: Clean up CDK assets bucket
 echo "=========================================="
-echo "Step 10: Cleaning up CDK assets bucket"
+echo "Step 9: Cleaning up CDK assets bucket"
 echo "=========================================="
 
 PROFILE_ARG=$(get_profile_arg)
@@ -636,9 +605,81 @@ fi
 echo "✓ CDK assets cleanup complete"
 echo ""
 
-# Step 11: Verify cleanup
+# Step 10: Clean up CDK bootstrap resources (including CDKToolkit stack)
 echo "=========================================="
-echo "Step 11: Cleaning up Cognito User Pools"
+echo "Step 10: Cleaning up CDK bootstrap resources"
+echo "=========================================="
+
+# Find CDK bootstrap bucket
+PROFILE_ARG=$(get_profile_arg)
+CDK_BUCKET=$(aws s3 $PROFILE_ARG ls --region "$AWS_REGION" | grep cdktoolkit | awk '{print $3}')
+
+if [[ ! -z "$CDK_BUCKET" ]]; then
+  echo "Found CDK bootstrap bucket: $CDK_BUCKET"
+  empty_bucket $CDK_BUCKET
+  echo "  Deleting bucket: $CDK_BUCKET"
+  aws s3 $PROFILE_ARG rb s3://$CDK_BUCKET --region "$AWS_REGION" 2>/dev/null
+  if [[ $? -eq 0 ]]; then
+    echo "  ✓ Bucket deleted: $CDK_BUCKET"
+  else
+    echo "  ⚠ Could not delete bucket: $CDK_BUCKET"
+  fi
+else
+  echo "No CDK bootstrap bucket found"
+fi
+
+# Delete CDKToolkit stack (moved here to be AFTER pipeline stack deletion)
+if delete_stack "CDKToolkit"; then
+  wait_for_deletion "CDKToolkit"
+fi
+
+echo "✓ CDK bootstrap cleanup complete"
+echo ""
+
+# Step 11: Delete IAM roles (MUST be LAST after all stacks deleted)
+echo "=========================================="
+echo "Step 11: Cleaning up IAM roles"
+echo "=========================================="
+
+# List IAM roles with lab5 in the name
+PROFILE_ARG=$(get_profile_arg)
+IAM_ROLES=$(aws iam $PROFILE_ARG list-roles --query "Roles[?contains(RoleName, 'lab5')].RoleName" --output text 2>/dev/null || echo "")
+
+if [[ ! -z "$IAM_ROLES" ]]; then
+  echo "Found Lab5 IAM roles:"
+  for role in $IAM_ROLES; do
+    echo "  Processing IAM role: $role"
+    
+    # Detach managed policies
+    ATTACHED_POLICIES=$(aws iam $PROFILE_ARG list-attached-role-policies --role-name "$role" --query "AttachedPolicies[].PolicyArn" --output text 2>/dev/null || echo "")
+    
+    for policy_arn in $ATTACHED_POLICIES; do
+      echo "    Detaching policy: $policy_arn"
+      aws iam $PROFILE_ARG detach-role-policy --role-name "$role" --policy-arn "$policy_arn" 2>/dev/null || true
+    done
+    
+    # Delete inline policies
+    INLINE_POLICIES=$(aws iam $PROFILE_ARG list-role-policies --role-name "$role" --query "PolicyNames[]" --output text 2>/dev/null || echo "")
+    
+    for policy_name in $INLINE_POLICIES; do
+      echo "    Deleting inline policy: $policy_name"
+      aws iam $PROFILE_ARG delete-role-policy --role-name "$role" --policy-name "$policy_name" 2>/dev/null || true
+    done
+    
+    # Delete the role
+    echo "    Deleting role: $role"
+    aws iam $PROFILE_ARG delete-role --role-name "$role" 2>/dev/null || true
+  done
+  echo "✓ IAM roles cleaned up"
+else
+  echo "No Lab5 IAM roles found"
+fi
+
+echo ""
+
+# Step 12: Clean up Cognito User Pools
+echo "=========================================="
+echo "Step 12: Cleaning up Cognito User Pools"
 echo "=========================================="
 
 # Find and delete Lab5 Cognito User Pools
@@ -674,9 +715,9 @@ fi
 echo "✓ Cognito User Pools cleanup complete"
 echo ""
 
-# Step 12: Verify cleanup
+# Step 13: Verify cleanup
 echo "=========================================="
-echo "Step 12: Verifying cleanup"
+echo "Step 13: Verifying cleanup"
 echo "=========================================="
 
 PROFILE_ARG=$(get_profile_arg)

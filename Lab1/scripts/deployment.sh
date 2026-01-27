@@ -131,7 +131,9 @@ echo ""
 START_TIME=$(date +%s)
 
 # Pre-deployment validation
-print_message "$YELLOW" "Step 1: Validating prerequisites..."
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 1: Validating prerequisites"
+print_message "$BLUE" "=========================================="
 
 # Check AWS CLI
 if ! command -v aws &> /dev/null; then
@@ -269,7 +271,9 @@ fi
 echo ""
 
 if [[ $DEPLOY_SERVER -eq 1 ]]; then
-    print_message "$YELLOW" "Step 2: Deploying server infrastructure..."
+    print_message "$BLUE" "=========================================="
+    print_message "$BLUE" "Step 2: Deploying server infrastructure"
+    print_message "$BLUE" "=========================================="
     
     # Get the directory where the script is located
     SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -343,7 +347,9 @@ if [[ $DEPLOY_SERVER -eq 1 ]]; then
 fi
 
 if [[ $DEPLOY_CLIENT -eq 1 ]]; then
-    print_message "$YELLOW" "Step 3: Deploying client application..."
+    print_message "$BLUE" "=========================================="
+    print_message "$BLUE" "Step 3: Deploying client application"
+    print_message "$BLUE" "=========================================="
     
     # Get CloudFormation outputs
     print_message "$YELLOW" "  Retrieving CloudFormation stack outputs..."

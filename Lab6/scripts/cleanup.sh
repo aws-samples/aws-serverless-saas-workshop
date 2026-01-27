@@ -27,6 +27,20 @@ AWS_REGION="us-east-1"  # Default region
 SKIP_CONFIRMATION=0
 LAB_ID="lab6"  # Lab identifier for resource filtering
 
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Function to print colored messages
+print_message() {
+    local color=$1
+    local message=$2
+    echo -e "${color}${message}${NC}"
+}
+
 # Function to print usage
 print_usage() {
     echo "Usage: $0 [OPTIONS]"
@@ -92,13 +106,13 @@ LOG_FILE="$LOG_DIR/cleanup-$(date +%Y%m%d-%H%M%S).log"
 # Redirect all output to log file and console
 exec > >(tee -a "$LOG_FILE") 2>&1
 
-echo "=========================================="
-echo "Lab6 Complete Cleanup Script"
-echo "=========================================="
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Lab6 Complete Cleanup Script"
+print_message "$BLUE" "=========================================="
 echo "Started: $(date)"
 echo "Log file: $LOG_FILE"
 echo ""
-echo "This will delete:"
+print_message "$YELLOW" "This will delete:"
 echo "  - All tenant stacks (stack-*)"
 echo "  - Shared infrastructure stack"
 echo "  - Pipeline stack"
@@ -116,7 +130,7 @@ if [ $SKIP_CONFIRMATION -eq 0 ]; then
 fi
 
 echo ""
-echo "Starting cleanup..."
+print_message "$YELLOW" "Starting cleanup..."
 echo ""
 
 REGION=$(aws configure get region $PROFILE_ARG)
@@ -296,9 +310,9 @@ wait_for_deletion() {
 }
 
 # Step 1: Delete tenant stacks (in parallel)
-echo "=========================================="
-echo "Step 1: Deleting tenant stacks"
-echo "=========================================="
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 1: Deleting tenant stacks"
+print_message "$BLUE" "=========================================="
 
 TENANT_STACKS=$(aws cloudformation $PROFILE_ARG list-stacks \
   --stack-status-filter CREATE_COMPLETE ROLLBACK_COMPLETE UPDATE_COMPLETE CREATE_FAILED ROLLBACK_FAILED UPDATE_ROLLBACK_COMPLETE \
@@ -306,7 +320,7 @@ TENANT_STACKS=$(aws cloudformation $PROFILE_ARG list-stacks \
   --output text 2>/dev/null)
 
 if [[ -z "$TENANT_STACKS" ]]; then
-  echo "No tenant stacks found"
+  print_message "$YELLOW" "  No tenant stacks found"
 else
   # Delete all tenant stacks in parallel
   for stack in $TENANT_STACKS; do
@@ -314,7 +328,7 @@ else
   done
   
   echo ""
-  echo "Waiting for tenant stacks to delete (parallel)..."
+  print_message "$YELLOW" "  Waiting for tenant stacks to delete (parallel)..."
   # Wait for all deletions in parallel
   for stack in $TENANT_STACKS; do
     wait_for_deletion $stack &
@@ -322,13 +336,13 @@ else
   wait
 fi
 
-echo "✓ Tenant stacks cleanup complete"
+print_message "$GREEN" "✓ Tenant stacks cleanup complete"
 echo ""
 
 # Step 2: Identify resources from stacks (before deletion)
-echo "=========================================="
-echo "Step 2: Identifying resources from stacks"
-echo "=========================================="
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 2: Identifying resources from stacks"
+print_message "$BLUE" "=========================================="
 
 ADMIN_BUCKET=$(aws cloudformation $PROFILE_ARG describe-stacks --stack-name serverless-saas-shared-lab6 \
   --query "Stacks[0].Outputs[?OutputKey=='AdminSiteBucket'].OutputValue" --output text 2>/dev/null)
@@ -352,9 +366,9 @@ echo "Found resources:"
 echo ""
 
 # Step 3: Delete CloudWatch Log Groups (BEFORE stack deletion)
-echo "=========================================="
-echo "Step 3: Deleting CloudWatch Log Groups"
-echo "=========================================="
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 3: Deleting CloudWatch Log Groups"
+print_message "$BLUE" "=========================================="
 
 # Delete API Gateway execution logs first
 echo "Deleting API Gateway execution logs..."
@@ -391,7 +405,7 @@ if [ -n "$ORPHANED_API_LOGS" ]; then
     done
 fi
 
-echo "✓ API Gateway execution logs deleted"
+print_message "$GREEN" "✓ API Gateway execution logs deleted"
 
 # Delete Lambda function log groups
 LOG_GROUPS=$(aws logs describe-log-groups \
@@ -409,37 +423,37 @@ else
     echo "  No Lambda log groups found"
 fi
 
-echo "✓ CloudWatch Log Groups cleanup complete"
+print_message "$GREEN" "✓ CloudWatch Log Groups cleanup complete"
 echo ""
 
 # Step 4: Delete tenant template stack FIRST (depends on shared stack exports)
-echo "=========================================="
-echo "Step 4: Deleting tenant template stack"
-echo "=========================================="
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 4: Deleting tenant template stack"
+print_message "$BLUE" "=========================================="
 
 if delete_stack "serverless-saas-tenant-lab6"; then
   wait_for_deletion "serverless-saas-tenant-lab6"
 fi
 
-echo "✓ Tenant template cleanup complete"
+print_message "$GREEN" "✓ Tenant template cleanup complete"
 echo ""
 
 # Step 5: Delete shared stack (deletes CloudFront distributions)
-echo "=========================================="
-echo "Step 5: Deleting shared infrastructure (includes CloudFront)"
-echo "=========================================="
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 5: Deleting shared infrastructure (includes CloudFront)"
+print_message "$BLUE" "=========================================="
 
 if delete_stack "serverless-saas-shared-lab6"; then
   wait_for_deletion "serverless-saas-shared-lab6"
 fi
 
-echo "✓ Shared infrastructure cleanup complete (CloudFront deleted)"
+print_message "$GREEN" "✓ Shared infrastructure cleanup complete (CloudFront deleted)"
 echo ""
 
 # Step 6: Safely delete S3 buckets (after CloudFront is deleted)
-echo "=========================================="
-echo "Step 6: Safely deleting S3 buckets (CloudFront deleted)"
-echo "=========================================="
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 6: Safely deleting S3 buckets (CloudFront deleted)"
+print_message "$BLUE" "=========================================="
 
 # Empty buckets in parallel for faster cleanup
 [[ ! -z "$ADMIN_BUCKET" ]] && empty_bucket $ADMIN_BUCKET &
@@ -447,57 +461,57 @@ echo "=========================================="
 [[ ! -z "$APP_BUCKET" ]] && empty_bucket $APP_BUCKET &
 wait
 
-echo "✓ S3 buckets deleted (secure - CloudFront was deleted first)"
+print_message "$GREEN" "✓ S3 buckets deleted (secure - CloudFront was deleted first)"
 echo ""
 
 # Step 7: Identify pipeline artifacts bucket
-echo "=========================================="
-echo "Step 7: Identifying pipeline artifacts bucket"
-echo "=========================================="
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 7: Identifying pipeline artifacts bucket"
+print_message "$BLUE" "=========================================="
 
 PIPELINE_BUCKET=$(aws s3 $PROFILE_ARG ls | grep "serverless-saas-pipeline-lab6-pipelineartifactsbucket" | awk '{print $3}')
 
 if [[ ! -z "$PIPELINE_BUCKET" ]]; then
-  echo "Found pipeline bucket: $PIPELINE_BUCKET"
+  print_message "$YELLOW" "Found pipeline bucket: $PIPELINE_BUCKET"
 else
-  echo "No pipeline artifacts bucket found"
+  print_message "$YELLOW" "No pipeline artifacts bucket found"
 fi
 
 echo ""
 
 # Step 8: Empty pipeline artifacts bucket
-echo "=========================================="
-echo "Step 8: Emptying pipeline artifacts bucket"
-echo "=========================================="
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 8: Emptying pipeline artifacts bucket"
+print_message "$BLUE" "=========================================="
 
 if [[ ! -z "$PIPELINE_BUCKET" ]]; then
   empty_bucket $PIPELINE_BUCKET
 fi
 
-echo "✓ Pipeline artifacts emptied"
+print_message "$GREEN" "✓ Pipeline artifacts emptied"
 echo ""
 
 # Step 9: Delete pipeline stack
-echo "=========================================="
-echo "Step 9: Deleting pipeline"
-echo "=========================================="
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 9: Deleting pipeline"
+print_message "$BLUE" "=========================================="
 
 # Use the CDK role-aware deletion function for pipeline stack
 delete_stack_with_cdk_role "serverless-saas-pipeline-lab6"
 
-echo "✓ Pipeline cleanup complete"
+print_message "$GREEN" "✓ Pipeline cleanup complete"
 echo ""
 
 # Step 10: Clean up SAM build artifacts
-echo "=========================================="
-echo "Step 10: Cleaning up SAM build artifacts"
-echo "=========================================="
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 10: Cleaning up SAM build artifacts"
+print_message "$BLUE" "=========================================="
 
 # Find Lab6 SAM buckets (including bootstrap and pipeline artifacts)
 LAB6_SAM_BUCKETS=$(aws s3 $PROFILE_ARG ls | grep -E "aws-sam-cli-managed.*lab6|serverless-saas.*lab6|sam-bootstrap-bucket.*lab6|serverless-saas-pipeline-l-artifactsbucket" | awk '{print $3}')
 
 if [[ ! -z "$LAB6_SAM_BUCKETS" ]]; then
-  echo "Found Lab6 SAM buckets:"
+  print_message "$YELLOW" "Found Lab6 SAM buckets:"
   for bucket in $LAB6_SAM_BUCKETS; do
     echo "  - $bucket"
     empty_bucket $bucket
@@ -514,64 +528,34 @@ else
   echo "No Lab6 SAM buckets found"
 fi
 
-echo "✓ SAM artifacts cleanup complete"
+print_message "$GREEN" "✓ SAM artifacts cleanup complete"
 echo ""
 
-# Step 11: Clean up CDK bootstrap resources
-echo "=========================================="
-echo "Step 11: Cleaning up CDK bootstrap resources"
-echo "=========================================="
-
-# Find CDK bootstrap bucket
-CDK_BUCKET=$(aws s3 $PROFILE_ARG ls | grep cdktoolkit | awk '{print $3}')
-
-if [[ ! -z "$CDK_BUCKET" ]]; then
-  echo "Found CDK bootstrap bucket: $CDK_BUCKET"
-  empty_bucket $CDK_BUCKET
-  echo "  Deleting bucket: $CDK_BUCKET"
-  aws s3 $PROFILE_ARG rb s3://$CDK_BUCKET 2>/dev/null
-  if [[ $? -eq 0 ]]; then
-    echo "  ✓ Bucket deleted: $CDK_BUCKET"
-  else
-    echo "  ⚠ Could not delete bucket: $CDK_BUCKET"
-  fi
-else
-  echo "No CDK bootstrap bucket found"
-fi
-
-# Delete CDKToolkit stack
-if delete_stack "CDKToolkit"; then
-  wait_for_deletion "CDKToolkit"
-fi
-
-echo "✓ CDK bootstrap cleanup complete"
-echo ""
-
-# Step 12: Clean up CDK assets bucket
-echo "=========================================="
-echo "Step 12: Cleaning up CDK assets bucket"
-echo "=========================================="
+# Step 11: Clean up CDK assets bucket
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 11: Cleaning up CDK assets bucket"
+print_message "$BLUE" "=========================================="
 
 CDK_ASSETS_BUCKET=$(aws s3 $PROFILE_ARG ls | grep "cdk-hnb659fds-assets" | awk '{print $3}')
 
 if [[ ! -z "$CDK_ASSETS_BUCKET" ]]; then
-  echo "Found CDK assets bucket: $CDK_ASSETS_BUCKET"
+  print_message "$YELLOW" "Found CDK assets bucket: $CDK_ASSETS_BUCKET"
   empty_bucket $CDK_ASSETS_BUCKET
   
   # Verify bucket is completely empty before deletion
   REMAINING_VERSIONS=$(aws s3api $PROFILE_ARG list-object-versions --bucket $CDK_ASSETS_BUCKET --output json 2>/dev/null | jq -r '(.Versions // []) + (.DeleteMarkers // []) | length')
   
   if [[ "$REMAINING_VERSIONS" == "0" ]]; then
-    echo "  Deleting bucket: $CDK_ASSETS_BUCKET"
+    print_message "$YELLOW" "  Deleting bucket: $CDK_ASSETS_BUCKET"
     aws s3 $PROFILE_ARG rb s3://$CDK_ASSETS_BUCKET 2>/dev/null
     if [[ $? -eq 0 ]]; then
-      echo "  ✓ Bucket deleted: $CDK_ASSETS_BUCKET"
+      print_message "$GREEN" "  ✓ Bucket deleted: $CDK_ASSETS_BUCKET"
     else
-      echo "  ⚠ Could not delete bucket: $CDK_ASSETS_BUCKET"
+      print_message "$YELLOW" "  ⚠ Could not delete bucket: $CDK_ASSETS_BUCKET"
     fi
   else
-    echo "  ⚠ Warning: $REMAINING_VERSIONS versions/markers still exist in bucket"
-    echo "  Attempting force deletion of remaining versions..."
+    print_message "$YELLOW" "  ⚠ Warning: $REMAINING_VERSIONS versions/markers still exist in bucket"
+    print_message "$YELLOW" "  Attempting force deletion of remaining versions..."
     
     # Force delete any remaining versions
     aws s3api $PROFILE_ARG list-object-versions --bucket $CDK_ASSETS_BUCKET --query 'Versions[].{Key:Key,VersionId:VersionId}' --output json 2>/dev/null | \
@@ -584,82 +568,152 @@ if [[ ! -z "$CDK_ASSETS_BUCKET" ]]; then
       bash 2>/dev/null
     
     # Try deletion again
-    echo "  Retrying bucket deletion: $CDK_ASSETS_BUCKET"
+    print_message "$YELLOW" "  Retrying bucket deletion: $CDK_ASSETS_BUCKET"
     aws s3 $PROFILE_ARG rb s3://$CDK_ASSETS_BUCKET 2>/dev/null
     if [[ $? -eq 0 ]]; then
-      echo "  ✓ Bucket deleted: $CDK_ASSETS_BUCKET"
+      print_message "$GREEN" "  ✓ Bucket deleted: $CDK_ASSETS_BUCKET"
     else
-      echo "  ⚠ Could not delete bucket: $CDK_ASSETS_BUCKET (manual deletion may be required)"
+      print_message "$YELLOW" "  ⚠ Could not delete bucket: $CDK_ASSETS_BUCKET (manual deletion may be required)"
     fi
   fi
 else
-  echo "No CDK assets bucket found"
+  print_message "$YELLOW" "No CDK assets bucket found"
 fi
 
-echo "✓ CDK assets cleanup complete"
+print_message "$GREEN" "✓ CDK assets cleanup complete"
 echo ""
 
-# Step 13: Clean up Cognito User Pools
-echo "=========================================="
-echo "Step 13: Cleaning up Cognito User Pools"
-echo "=========================================="
+# Step 12: Clean up CDK bootstrap resources (including CDKToolkit stack)
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 12: Cleaning up CDK bootstrap resources"
+print_message "$BLUE" "=========================================="
+
+# Find CDK bootstrap bucket
+CDK_BUCKET=$(aws s3 $PROFILE_ARG ls | grep cdktoolkit | awk '{print $3}')
+
+if [[ ! -z "$CDK_BUCKET" ]]; then
+  print_message "$YELLOW" "Found CDK bootstrap bucket: $CDK_BUCKET"
+  empty_bucket $CDK_BUCKET
+  print_message "$YELLOW" "  Deleting bucket: $CDK_BUCKET"
+  aws s3 $PROFILE_ARG rb s3://$CDK_BUCKET 2>/dev/null
+  if [[ $? -eq 0 ]]; then
+    print_message "$GREEN" "  ✓ Bucket deleted: $CDK_BUCKET"
+  else
+    print_message "$YELLOW" "  ⚠ Could not delete bucket: $CDK_BUCKET"
+  fi
+else
+  print_message "$YELLOW" "No CDK bootstrap bucket found"
+fi
+
+# Delete CDKToolkit stack (moved here to be AFTER pipeline stack deletion)
+if delete_stack "CDKToolkit"; then
+  wait_for_deletion "CDKToolkit"
+fi
+
+print_message "$GREEN" "✓ CDK bootstrap cleanup complete"
+echo ""
+
+# Step 13: Delete IAM roles (MUST be LAST after all stacks deleted)
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 13: Cleaning up IAM roles"
+print_message "$BLUE" "=========================================="
+
+# List IAM roles with lab6 in the name
+IAM_ROLES=$(aws iam $PROFILE_ARG list-roles --query "Roles[?contains(RoleName, 'lab6')].RoleName" --output text 2>/dev/null || echo "")
+
+if [[ ! -z "$IAM_ROLES" ]]; then
+  print_message "$YELLOW" "Found Lab6 IAM roles:"
+  for role in $IAM_ROLES; do
+    print_message "$YELLOW" "  Processing IAM role: $role"
+    
+    # Detach managed policies
+    ATTACHED_POLICIES=$(aws iam $PROFILE_ARG list-attached-role-policies --role-name "$role" --query "AttachedPolicies[].PolicyArn" --output text 2>/dev/null || echo "")
+    
+    for policy_arn in $ATTACHED_POLICIES; do
+      print_message "$YELLOW" "    Detaching policy: $policy_arn"
+      aws iam $PROFILE_ARG detach-role-policy --role-name "$role" --policy-arn "$policy_arn" 2>/dev/null || true
+    done
+    
+    # Delete inline policies
+    INLINE_POLICIES=$(aws iam $PROFILE_ARG list-role-policies --role-name "$role" --query "PolicyNames[]" --output text 2>/dev/null || echo "")
+    
+    for policy_name in $INLINE_POLICIES; do
+      print_message "$YELLOW" "    Deleting inline policy: $policy_name"
+      aws iam $PROFILE_ARG delete-role-policy --role-name "$role" --policy-name "$policy_name" 2>/dev/null || true
+    done
+    
+    # Delete the role
+    print_message "$YELLOW" "    Deleting role: $role"
+    aws iam $PROFILE_ARG delete-role --role-name "$role" 2>/dev/null || true
+  done
+  print_message "$GREEN" "✓ IAM roles cleaned up"
+else
+  print_message "$YELLOW" "No Lab6 IAM roles found"
+fi
+
+echo ""
+
+# Step 14: Clean up Cognito User Pools
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 14: Cleaning up Cognito User Pools"
+print_message "$BLUE" "=========================================="
 
 # Find and delete Lab6 Cognito User Pools
 LAB6_POOLS=$(aws cognito-idp $PROFILE_ARG list-user-pools --max-results 60 --output json 2>/dev/null | jq -r '.UserPools[] | select(.Name | contains("lab6")) | .Id')
 
 if [[ ! -z "$LAB6_POOLS" ]]; then
-  echo "Found Lab6 Cognito User Pools:"
+  print_message "$YELLOW" "Found Lab6 Cognito User Pools:"
   for pool_id in $LAB6_POOLS; do
     POOL_NAME=$(aws cognito-idp $PROFILE_ARG describe-user-pool --user-pool-id $pool_id --query 'UserPool.Name' --output text 2>/dev/null)
-    echo "  Processing pool: $POOL_NAME ($pool_id)"
+    print_message "$YELLOW" "  Processing pool: $POOL_NAME ($pool_id)"
     
     # Delete domain first if it exists
     DOMAIN=$(aws cognito-idp $PROFILE_ARG describe-user-pool --user-pool-id $pool_id --query 'UserPool.Domain' --output text 2>/dev/null)
     if [[ ! -z "$DOMAIN" && "$DOMAIN" != "None" ]]; then
-      echo "    Deleting domain: $DOMAIN"
+      print_message "$YELLOW" "    Deleting domain: $DOMAIN"
       aws cognito-idp $PROFILE_ARG delete-user-pool-domain --domain $DOMAIN --user-pool-id $pool_id 2>/dev/null
       sleep 5
     fi
     
     # Now delete the pool
-    echo "    Deleting pool: $POOL_NAME"
+    print_message "$YELLOW" "    Deleting pool: $POOL_NAME"
     aws cognito-idp $PROFILE_ARG delete-user-pool --user-pool-id $pool_id 2>/dev/null
     if [[ $? -eq 0 ]]; then
-      echo "  ✓ Pool deleted: $POOL_NAME"
+      print_message "$GREEN" "  ✓ Pool deleted: $POOL_NAME"
     else
-      echo "  ⚠ Could not delete pool: $POOL_NAME"
+      print_message "$YELLOW" "  ⚠ Could not delete pool: $POOL_NAME"
     fi
   done
 else
-  echo "No Lab6 Cognito User Pools found"
+  print_message "$YELLOW" "No Lab6 Cognito User Pools found"
 fi
 
-echo "✓ Cognito User Pools cleanup complete"
+print_message "$GREEN" "✓ Cognito User Pools cleanup complete"
 echo ""
 
-# Step 14: Verify cleanup
-echo "=========================================="
-echo "Step 14: Verifying cleanup"
-echo "=========================================="
+# Step 15: Verify cleanup
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 15: Verifying cleanup"
+print_message "$BLUE" "=========================================="
 
 REMAINING_EXPORTS=$(aws cloudformation $PROFILE_ARG list-exports --query 'Exports[?contains(Name, `lab6`)].Name' --output text 2>/dev/null)
 if [[ ! -z "$REMAINING_EXPORTS" ]]; then
-  echo "⚠ Warning: Some Lab6 exports still exist:"
+  print_message "$YELLOW" "⚠ Warning: Some Lab6 exports still exist:"
   echo "$REMAINING_EXPORTS"
-  echo "These should be cleaned up automatically when their stacks are deleted"
+  print_message "$YELLOW" "These should be cleaned up automatically when their stacks are deleted"
 else
-  echo "✓ No Lab6 exports remaining"
+  print_message "$GREEN" "✓ No Lab6 exports remaining"
 fi
 
 echo ""
 
 REMAINING_TABLES=$(aws dynamodb $PROFILE_ARG list-tables --query 'TableNames[?contains(@, `lab6`)]' --output text 2>/dev/null)
 if [[ ! -z "$REMAINING_TABLES" ]]; then
-  echo "⚠ Warning: Some Lab6 DynamoDB tables still exist:"
+  print_message "$YELLOW" "⚠ Warning: Some Lab6 DynamoDB tables still exist:"
   echo "$REMAINING_TABLES"
-  echo "These should be cleaned up automatically when the shared stack is deleted"
+  print_message "$YELLOW" "These should be cleaned up automatically when the shared stack is deleted"
 else
-  echo "✓ No Lab6 DynamoDB tables remaining"
+  print_message "$GREEN" "✓ No Lab6 DynamoDB tables remaining"
 fi
 
 echo ""
@@ -669,10 +723,10 @@ REMAINING_STACKS=$(aws cloudformation $PROFILE_ARG list-stacks \
   --query 'StackSummaries[?contains(StackName, `lab6`)].StackName' \
   --output text 2>/dev/null)
 if [[ ! -z "$REMAINING_STACKS" ]]; then
-  echo "⚠ Warning: Some stacks still exist:"
+  print_message "$YELLOW" "⚠ Warning: Some stacks still exist:"
   echo "$REMAINING_STACKS"
 else
-  echo "✓ No Lab6 stacks remaining"
+  print_message "$GREEN" "✓ No Lab6 stacks remaining"
 fi
 
 CLEANUP_END=$(date +%s)
@@ -681,15 +735,15 @@ CLEANUP_MINUTES=$((CLEANUP_DURATION / 60))
 CLEANUP_SECONDS=$((CLEANUP_DURATION % 60))
 
 echo ""
-echo "=========================================="
-echo "Cleanup Complete!"
-echo "=========================================="
-echo "Completed: $(date)"
-echo "Duration: ${CLEANUP_MINUTES}m ${CLEANUP_SECONDS}s"
-echo "Log file: $LOG_FILE"
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Cleanup Complete!"
+print_message "$BLUE" "=========================================="
+print_message "$GREEN" "Completed: $(date)"
+print_message "$GREEN" "Duration: ${CLEANUP_MINUTES}m ${CLEANUP_SECONDS}s"
+print_message "$GREEN" "Log file: $LOG_FILE"
 echo ""
-echo "You can now run a fresh deployment:"
-echo "  cd Lab6/scripts"
-echo "  ./deploy-with-screen.sh    # Recommended for long deployments"
-echo "  ./deployment.sh -s -c      # Direct deployment"
+print_message "$YELLOW" "You can now run a fresh deployment:"
+print_message "$YELLOW" "  cd Lab6/scripts"
+print_message "$YELLOW" "  ./deploy-with-screen.sh    # Recommended for long deployments"
+print_message "$YELLOW" "  ./deployment.sh -s -c      # Direct deployment"
 echo ""

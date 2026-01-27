@@ -140,7 +140,9 @@ echo "Tenant Stack: $TENANT_STACK_NAME"
 echo ""
 
 # Step 1: Deploy main Lab7 stack
-print_message "$YELLOW" "Step 1: Deploying main Lab7 stack..."
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 1: Deploying main Lab7 stack"
+print_message "$BLUE" "=========================================="
 
 # Get SAM S3 bucket from samconfig.toml
 SAM_BUCKET=$(grep s3_bucket "$LAB_DIR/samconfig.toml" | cut -d'=' -f2 | cut -d \" -f2 2>/dev/null || echo "")

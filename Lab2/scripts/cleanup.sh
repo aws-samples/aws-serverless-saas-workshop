@@ -24,6 +24,7 @@ set -e
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Default values
@@ -147,7 +148,9 @@ fi
 START_TIME=$(date +%s)
 
 # Step 1: Get S3 bucket names and API Gateway IDs from stack outputs (but don't delete yet)
-print_message "$YELLOW" "Step 1: Identifying resources from stack..."
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 1: Identifying resources from stack"
+print_message "$BLUE" "=========================================="
 
 # Build profile argument
 PROFILE_ARG=$(get_profile_arg)
@@ -205,7 +208,9 @@ if [ -n "$TENANT_API_ID" ] && [ "$TENANT_API_ID" != "None" ]; then
 fi
 
 # Step 2: Delete CloudWatch Log Groups (BEFORE deleting the stack)
-print_message "$YELLOW" "Step 2: Deleting CloudWatch Log Groups..."
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 2: Deleting CloudWatch Log Groups"
+print_message "$BLUE" "=========================================="
 
 # Delete API Gateway execution logs
 for api_id in "$ADMIN_API_ID" "$TENANT_API_ID"; do
@@ -267,7 +272,9 @@ fi
 print_message "$GREEN" "CloudWatch Log Groups cleanup complete"
 
 # Step 3: Delete CloudFormation stack (this will delete CloudFront distributions)
-print_message "$YELLOW" "Step 3: Deleting CloudFormation stack..."
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 3: Deleting CloudFormation stack"
+print_message "$BLUE" "=========================================="
 print_message "$YELLOW" "  Deleting stack: $STACK_NAME"
 
 if aws cloudformation describe-stacks $PROFILE_ARG --stack-name "$STACK_NAME" --region "$AWS_REGION" &>/dev/null; then
@@ -299,8 +306,10 @@ else
     print_message "$YELLOW" "  Stack $STACK_NAME not found"
 fi
 
-# Step 3: Now safely delete S3 buckets (after CloudFront is deleted)
-print_message "$YELLOW" "Step 3: Safely deleting S3 buckets (CloudFront deleted)..."
+# Step 4: Now safely delete S3 buckets (after CloudFront is deleted)
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 4: Safely deleting S3 buckets (CloudFront deleted)"
+print_message "$BLUE" "=========================================="
 
 # Empty and delete application buckets
 for bucket in "$ADMIN_SITE_BUCKET" "$LANDING_APP_SITE_BUCKET" "$APP_SITE_BUCKET"; do
@@ -340,8 +349,10 @@ fi
 
 print_message "$GREEN" "S3 buckets deleted"
 
-# Step 4: Delete CloudWatch Log Groups
-print_message "$YELLOW" "Step 3: Deleting CloudWatch Log Groups..."
+# Step 5: Delete CloudWatch Log Groups
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 5: Deleting CloudWatch Log Groups"
+print_message "$BLUE" "=========================================="
 
 # Get API Gateway IDs from stack outputs to delete their execution logs
 ADMIN_API_ID=$(aws cloudformation describe-stacks \
@@ -411,8 +422,10 @@ fi
 
 print_message "$GREEN" "CloudWatch Log Groups deleted"
 
-# Step 5: Verify cleanup
-print_message "$YELLOW" "Step 4: Verifying cleanup..."
+# Step 6: Verify cleanup
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 6: Verifying cleanup"
+print_message "$BLUE" "=========================================="
 
 REMAINING_RESOURCES=0
 

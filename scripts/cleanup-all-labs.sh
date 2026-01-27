@@ -9,6 +9,7 @@ set -e
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Get script directory
@@ -20,22 +21,22 @@ LOG_DIR="$SCRIPT_DIR/logs"
 mkdir -p "$LOG_DIR"
 LOG_FILE="$LOG_DIR/cleanup-all-labs-$(date +%Y%m%d-%H%M%S).log"
 
-# Redirect all output to log file and console
-exec > >(tee -a "$LOG_FILE") 2>&1
-
-echo "========================================"
-echo "AWS Serverless SaaS Workshop"
-echo "Cleanup All Labs Script"
-echo "========================================"
-echo "Log file: $LOG_FILE"
-echo ""
-
 # Function to print colored messages
 print_message() {
     local color=$1
     local message=$2
     echo -e "${color}${message}${NC}"
 }
+
+# Redirect all output to log file and console
+exec > >(tee -a "$LOG_FILE") 2>&1
+
+print_message "$BLUE" "========================================"
+print_message "$BLUE" "AWS Serverless SaaS Workshop"
+print_message "$BLUE" "Cleanup All Labs Script"
+print_message "$BLUE" "========================================"
+echo "Log file: $LOG_FILE"
+echo ""
 
 # Function to check if a lab exists (has deployed resources)
 check_lab_exists() {
@@ -117,9 +118,9 @@ check_lab_exists() {
 
 # Function to verify all resources are deleted
 verify_complete_cleanup() {
-    print_message "$YELLOW" "========================================"
-    print_message "$YELLOW" "Final Verification - Checking for Remaining Resources"
-    print_message "$YELLOW" "========================================"
+    print_message "$BLUE" "========================================"
+    print_message "$BLUE" "Final Verification - Checking for Remaining Resources"
+    print_message "$BLUE" "========================================"
     
     local remaining_resources=0
     
@@ -258,9 +259,9 @@ cleanup_lab() {
     local lab_num=$1
     local lab_dir="$WORKSHOP_ROOT/Lab${lab_num}"
     
-    print_message "$YELLOW" "========================================="
-    print_message "$YELLOW" "Cleaning up Lab${lab_num}..."
-    print_message "$YELLOW" "========================================="
+    print_message "$BLUE" "========================================="
+    print_message "$BLUE" "Cleaning up Lab${lab_num}"
+    print_message "$BLUE" "========================================="
     
     # Interactive confirmation
     if [ "$INTERACTIVE" = true ]; then
@@ -593,9 +594,9 @@ print_message "$YELLOW" "  Stop on Error: $STOP_ON_ERROR"
 echo ""
 
 # Step 1: Identify which labs exist
-print_message "$YELLOW" "========================================"
-print_message "$YELLOW" "Step 1: Identifying Deployed Labs"
-print_message "$YELLOW" "========================================"
+print_message "$BLUE" "========================================"
+print_message "$BLUE" "Step 1: Identifying Deployed Labs"
+print_message "$BLUE" "========================================"
 
 EXISTING_LABS=()
 NON_EXISTING_LABS=()
@@ -655,9 +656,9 @@ SUCCESSFUL_CLEANUPS=()
 FAILED_CLEANUPS=()
 
 # Step 1.5: Identify all lab-related stacks (including orphaned ones)
-print_message "$YELLOW" "========================================"
-print_message "$YELLOW" "Step 1.5: Identifying All Lab-Related Stacks"
-print_message "$YELLOW" "========================================"
+print_message "$BLUE" "========================================"
+print_message "$BLUE" "Step 1.5: Identifying All Lab-Related Stacks"
+print_message "$BLUE" "========================================"
 echo ""
 
 # Query all stacks matching lab patterns
@@ -795,9 +796,9 @@ fi
 echo ""
 
 # Step 2: Cleanup labs based on mode
-print_message "$YELLOW" "========================================"
-print_message "$YELLOW" "Step 2: Cleaning Up Labs"
-print_message "$YELLOW" "========================================"
+print_message "$BLUE" "========================================"
+print_message "$BLUE" "Step 2: Cleaning Up Labs"
+print_message "$BLUE" "========================================"
 echo ""
 
 # Check if there are any labs to cleanup
@@ -866,9 +867,9 @@ END_TIME=$(date +%s)
 DURATION=$((END_TIME - START_TIME))
 
 # Step 3: Cleanup Orphaned CloudWatch Log Groups
-print_message "$YELLOW" "========================================"
-print_message "$YELLOW" "Step 3: Cleaning Up Orphaned CloudWatch Log Groups"
-print_message "$YELLOW" "========================================"
+print_message "$BLUE" "========================================"
+print_message "$BLUE" "Step 3: Cleaning Up Orphaned CloudWatch Log Groups"
+print_message "$BLUE" "========================================"
 echo ""
 
 print_message "$YELLOW" "Checking for orphaned CloudWatch log groups..."
@@ -917,6 +918,28 @@ else
     print_message "$GREEN" "  ✓ /aws/lambda-insights not found (already deleted or never created)"
 fi
 
+# Delete /aws-glue/crawlers log group (created by Lab7)
+print_message "$YELLOW" "Checking for /aws-glue/crawlers log group..."
+if aws logs describe-log-groups \
+    ${PROFILE:+--profile "$PROFILE"} \
+    --region us-east-1 \
+    --log-group-name-prefix "/aws-glue/crawlers" \
+    --query "logGroups[?logGroupName=='/aws-glue/crawlers'].logGroupName" \
+    --output text 2>/dev/null | grep -q "/aws-glue/crawlers"; then
+    
+    print_message "$YELLOW" "  Deleting /aws-glue/crawlers log group..."
+    if aws logs delete-log-group \
+        ${PROFILE:+--profile "$PROFILE"} \
+        --region us-east-1 \
+        --log-group-name "/aws-glue/crawlers" 2>/dev/null; then
+        print_message "$GREEN" "  ✓ Deleted /aws-glue/crawlers"
+    else
+        print_message "$RED" "  ✗ Failed to delete /aws-glue/crawlers"
+    fi
+else
+    print_message "$GREEN" "  ✓ /aws-glue/crawlers not found (already deleted or never created)"
+fi
+
 # Delete orphaned API Gateway execution logs
 print_message "$YELLOW" "Checking for orphaned API Gateway execution logs..."
 ORPHANED_APIGW_LOGS=$(aws logs describe-log-groups \
@@ -949,9 +972,9 @@ print_message "$GREEN" "Orphaned CloudWatch log groups cleanup complete"
 echo ""
 
 # Step 3.5: Clean up orphaned resources (stacks, S3 buckets, logs)
-print_message "$YELLOW" "========================================"
-print_message "$YELLOW" "Step 3.5: Cleaning Up Orphaned Resources"
-print_message "$YELLOW" "========================================"
+print_message "$BLUE" "========================================"
+print_message "$BLUE" "Step 3.5: Cleaning Up Orphaned Resources"
+print_message "$BLUE" "========================================"
 echo ""
 
 # Find orphaned S3 buckets
@@ -1217,9 +1240,9 @@ VERIFICATION_RESULT=$?
 
 # Print summary
 echo ""
-print_message "$YELLOW" "========================================"
-print_message "$YELLOW" "Cleanup Summary"
-print_message "$YELLOW" "========================================"
+print_message "$BLUE" "========================================"
+print_message "$BLUE" "Cleanup Summary"
+print_message "$BLUE" "========================================"
 
 if [ ${#SUCCESSFUL_CLEANUPS[@]} -gt 0 ]; then
     print_message "$GREEN" "Successfully cleaned labs: ${SUCCESSFUL_CLEANUPS[*]}"

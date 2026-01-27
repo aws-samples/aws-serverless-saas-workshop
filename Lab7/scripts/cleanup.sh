@@ -163,7 +163,9 @@ wait_for_stack_deletion() {
 }
 
 # Step 1: Identify resources from stacks (before deletion)
-print_message "$YELLOW" "Step 1: Identifying resources from stacks..."
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 1: Identifying resources from stacks"
+print_message "$BLUE" "=========================================="
 
 # Get API Gateway IDs from stack outputs (before deletion)
 MAIN_API_ID=$(aws cloudformation describe-stacks --stack-name "$MAIN_STACK" --region "$AWS_REGION" $PROFILE_ARG \
@@ -177,7 +179,9 @@ echo "Found resources:"
 echo ""
 
 # Step 2: Delete CloudWatch Log Groups (BEFORE stack deletion)
-print_message "$YELLOW" "Step 2: Deleting CloudWatch Log Groups..."
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 2: Deleting CloudWatch Log Groups"
+print_message "$BLUE" "=========================================="
 
 # Delete API Gateway execution logs first
 echo "Deleting API Gateway execution logs..."
@@ -234,7 +238,9 @@ print_message "$GREEN" "CloudWatch Log Groups cleanup complete"
 echo ""
 
 # Step 3: Clean up S3 buckets
-print_message "$YELLOW" "Step 3: Cleaning up S3 buckets..."
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 3: Cleaning up S3 buckets"
+print_message "$BLUE" "=========================================="
 BUCKETS=$(aws s3api list-buckets $PROFILE_ARG --query "Buckets[?contains(Name, 'serverless-saas-lab7')].Name" --output text)
 
 if [ -n "$BUCKETS" ]; then
@@ -251,7 +257,9 @@ fi
 echo ""
 
 # Step 4: Delete tenant stack (if exists)
-print_message "$YELLOW" "Step 4: Deleting tenant stack..."
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 4: Deleting tenant stack"
+print_message "$BLUE" "=========================================="
 
 if stack_exists "$TENANT_STACK"; then
     echo "  Deleting stack: $TENANT_STACK"
@@ -263,7 +271,9 @@ fi
 echo ""
 
 # Step 5: Delete main CloudFormation stack
-print_message "$YELLOW" "Step 5: Deleting main CloudFormation stack..."
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 5: Deleting main CloudFormation stack"
+print_message "$BLUE" "=========================================="
 if stack_exists "$MAIN_STACK"; then
     echo "  Deleting stack: $MAIN_STACK"
     aws cloudformation delete-stack --stack-name "$MAIN_STACK" --region "$AWS_REGION" $PROFILE_ARG
@@ -274,7 +284,9 @@ fi
 echo ""
 
 # Step 6: Delete DynamoDB tables
-print_message "$YELLOW" "Step 6: Deleting DynamoDB tables..."
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 6: Deleting DynamoDB tables"
+print_message "$BLUE" "=========================================="
 
 # Attribution table
 TABLE_NAME="TenantCostAndUsageAttribution-lab7"
@@ -298,7 +310,9 @@ print_message "$GREEN" "DynamoDB tables cleaned up"
 echo ""
 
 # Step 7: Delete Lambda functions with lab7 prefix
-print_message "$YELLOW" "Step 7: Deleting Lambda functions..."
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 7: Deleting Lambda functions"
+print_message "$BLUE" "=========================================="
 FUNCTIONS=$(aws lambda list-functions --region "$AWS_REGION" $PROFILE_ARG --query "Functions[?contains(FunctionName, 'lab7')].FunctionName" --output text)
 
 if [ -n "$FUNCTIONS" ]; then
@@ -313,7 +327,9 @@ fi
 echo ""
 
 # Step 8: Delete EventBridge Rules
-print_message "$YELLOW" "Step 8: Deleting EventBridge Rules..."
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 8: Deleting EventBridge Rules"
+print_message "$BLUE" "=========================================="
 RULES=$(aws events list-rules --region "$AWS_REGION" $PROFILE_ARG --query "Rules[?contains(Name, 'lab7')].Name" --output text)
 
 if [ -n "$RULES" ]; then
@@ -333,7 +349,9 @@ fi
 echo ""
 
 # Step 9: Clean up SAM bootstrap bucket from samconfig.toml
-print_message "$YELLOW" "Step 9: Cleaning up SAM bootstrap buckets from samconfig.toml files..."
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 9: Cleaning up SAM bootstrap buckets from samconfig.toml files"
+print_message "$BLUE" "=========================================="
 
 # Get the bucket name from samconfig.toml
 SAM_BUCKET=$(grep s3_bucket ../samconfig.toml 2>/dev/null | cut -d'=' -f2 | cut -d \" -f2 || echo "")
@@ -373,7 +391,9 @@ fi
 echo ""
 
 # Step 10: Delete IAM Roles
-print_message "$YELLOW" "Step 10: Deleting IAM Roles..."
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 10: Deleting IAM Roles"
+print_message "$BLUE" "=========================================="
 ROLES=$(aws iam list-roles $PROFILE_ARG --query "Roles[?contains(RoleName, 'lab7')].RoleName" --output text)
 
 if [ -n "$ROLES" ]; then
@@ -402,7 +422,9 @@ fi
 echo ""
 
 # Step 11: Verify cleanup
-print_message "$YELLOW" "Step 11: Verifying cleanup..."
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 11: Verifying cleanup"
+print_message "$BLUE" "=========================================="
 REMAINING_STACKS=$(aws cloudformation list-stacks --region "$AWS_REGION" $PROFILE_ARG --query "StackSummaries[?contains(StackName, 'lab7') && StackStatus!='DELETE_COMPLETE'].StackName" --output text)
 REMAINING_FUNCTIONS=$(aws lambda list-functions --region "$AWS_REGION" $PROFILE_ARG --query "Functions[?contains(FunctionName, 'lab7')].FunctionName" --output text)
 REMAINING_BUCKETS=$(aws s3api list-buckets $PROFILE_ARG --query "Buckets[?contains(Name, 'serverless-saas-lab7')].Name" --output text)

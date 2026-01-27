@@ -26,6 +26,7 @@ set -e
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Default values
@@ -196,7 +197,9 @@ fi
 START_TIME=$(date +%s)
 
 # Step 1: Delete tenant stacks with lab-specific filtering
-print_message "$YELLOW" "Step 1: Deleting tenant stacks for $LAB_ID..."
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 1: Deleting tenant stacks for $LAB_ID"
+print_message "$BLUE" "=========================================="
 
 # Query for tenant stacks with lab-specific filtering
 # Pattern: stack-* AND contains lab3
@@ -256,7 +259,9 @@ fi
 echo ""
 
 # Step 2: Identify resources from stacks (before deletion)
-print_message "$YELLOW" "Step 2: Identifying resources from stacks..."
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 2: Identifying resources from stacks"
+print_message "$BLUE" "=========================================="
 
 # Get bucket names from shared stack outputs
 if [[ -n "$AWS_PROFILE" ]]; then
@@ -343,8 +348,10 @@ if [ -n "$TENANT_API_ID" ] && [ "$TENANT_API_ID" != "None" ]; then
     print_message "$GREEN" "  Found Tenant API Gateway ID: $TENANT_API_ID"
 fi
 
-# Step 2: Delete CloudWatch Log Groups (BEFORE stack deletion)
-print_message "$YELLOW" "Step 2: Deleting CloudWatch Log Groups..."
+# Step 3: Delete CloudWatch Log Groups (BEFORE stack deletion)
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 3: Deleting CloudWatch Log Groups"
+print_message "$BLUE" "=========================================="
 
 # Delete API Gateway execution logs first
 print_message "$YELLOW" "  Deleting API Gateway execution logs..."
@@ -431,8 +438,10 @@ else
     print_message "$YELLOW" "  No CloudWatch Log Groups found"
 fi
 
-# Step 3: Delete tenant stack first (dependencies)
-print_message "$YELLOW" "Step 3: Deleting tenant stack..."
+# Step 4: Delete tenant stack first (dependencies)
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 4: Deleting tenant stack"
+print_message "$BLUE" "=========================================="
 print_message "$YELLOW" "  Deleting stack: $TENANT_STACK_NAME"
 
 if [[ -n "$AWS_PROFILE" ]]; then
@@ -494,8 +503,10 @@ else
     fi
 fi
 
-# Step 4: Delete shared stack
-print_message "$YELLOW" "Step 4: Deleting shared stack..."
+# Step 5: Delete shared stack
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 5: Deleting shared stack"
+print_message "$BLUE" "=========================================="
 print_message "$YELLOW" "  Deleting stack: $SHARED_STACK_NAME"
 
 if [[ -n "$AWS_PROFILE" ]]; then
@@ -557,8 +568,10 @@ else
     fi
 fi
 
-# Step 5: Now safely delete S3 buckets (after CloudFront is deleted)
-print_message "$YELLOW" "Step 5: Safely deleting S3 buckets (CloudFront deleted)..."
+# Step 6: Now safely delete S3 buckets (after CloudFront is deleted)
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 6: Safely deleting S3 buckets (CloudFront deleted)"
+print_message "$BLUE" "=========================================="
 
 # Empty and delete application buckets
 for bucket in "$ADMIN_SITE_BUCKET" "$LANDING_APP_SITE_BUCKET" "$APP_SITE_BUCKET"; do
@@ -589,8 +602,10 @@ done
 
 print_message "$GREEN" "S3 buckets deleted"
 
-# Step 6: Delete DynamoDB tables
-print_message "$YELLOW" "Step 6: Deleting DynamoDB tables..."
+# Step 7: Delete DynamoDB tables
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 7: Deleting DynamoDB tables"
+print_message "$BLUE" "=========================================="
 
 if [[ -n "$AWS_PROFILE" ]]; then
     TABLES=$(aws dynamodb list-tables \
@@ -619,8 +634,10 @@ else
     print_message "$YELLOW" "  No DynamoDB tables found"
 fi
 
-# Step 6.5: Clean up SAM bootstrap buckets from samconfig.toml files
-print_message "$YELLOW" "Step 6.5: Cleaning up SAM bootstrap buckets from samconfig.toml files..."
+# Step 8: Clean up SAM bootstrap buckets from samconfig.toml files
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 8: Cleaning up SAM bootstrap buckets from samconfig.toml files"
+print_message "$BLUE" "=========================================="
 
 # Clean up shared stack SAM bucket
 SHARED_SAM_BUCKET=$(grep s3_bucket ../server/shared-samconfig.toml 2>/dev/null | cut -d'=' -f2 | cut -d \" -f2 || echo "")
@@ -684,8 +701,10 @@ fi
 
 print_message "$GREEN" "SAM bootstrap bucket cleanup complete"
 
-# Step 7: Verify cleanup
-print_message "$YELLOW" "Step 7: Verifying cleanup..."
+# Step 9: Verify cleanup
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 9: Verifying cleanup"
+print_message "$BLUE" "=========================================="
 
 REMAINING_RESOURCES=0
 
