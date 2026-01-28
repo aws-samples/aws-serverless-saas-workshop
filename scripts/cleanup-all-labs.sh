@@ -174,21 +174,43 @@ verify_complete_cleanup() {
         print_message "$GREEN" "  ✓ No remaining CloudWatch Log Groups"
     fi
     
-    # Check for remaining IAM Roles
-    print_message "$YELLOW" "Checking for remaining IAM Roles..."
+    # Check for remaining IAM Roles (lab-specific)
+    print_message "$YELLOW" "Checking for remaining lab-specific IAM Roles..."
     local remaining_roles=$(aws iam list-roles \
         ${PROFILE:+--profile "$PROFILE"} \
         --query "Roles[?contains(RoleName, 'serverless-saas-lab') || contains(RoleName, 'stack-lab')].RoleName" \
         --output text 2>/dev/null || echo "")
     
     if [ -n "$remaining_roles" ]; then
-        print_message "$RED" "  ⚠️  Found remaining IAM Roles:"
+        print_message "$RED" "  ⚠️  Found remaining lab-specific IAM Roles:"
         for role in $remaining_roles; do
             print_message "$RED" "    - $role"
         done
         remaining_resources=$((remaining_resources + 1))
     else
-        print_message "$GREEN" "  ✓ No remaining IAM Roles"
+        print_message "$GREEN" "  ✓ No remaining lab-specific IAM Roles"
+    fi
+    
+    # Check for remaining account-level IAM Roles created by workshop
+    print_message "$YELLOW" "Checking for remaining account-level IAM Roles..."
+    local account_level_roles=("APIGatewayCloudWatchLogsRole")
+    local found_account_roles=false
+    
+    for role_name in "${account_level_roles[@]}"; do
+        if aws iam get-role \
+            ${PROFILE:+--profile "$PROFILE"} \
+            --role-name "$role_name" &>/dev/null; then
+            if [ "$found_account_roles" = false ]; then
+                print_message "$RED" "  ⚠️  Found remaining account-level IAM Roles:"
+                found_account_roles=true
+            fi
+            print_message "$RED" "    - $role_name"
+            remaining_resources=$((remaining_resources + 1))
+        fi
+    done
+    
+    if [ "$found_account_roles" = false ]; then
+        print_message "$GREEN" "  ✓ No remaining account-level IAM Roles"
     fi
     
     # Check for remaining DynamoDB tables
@@ -1212,7 +1234,88 @@ fi
 
 echo ""
 
-# Step 4: Verify complete cleanup
+# Step 4: Clean up account-level IAM roles (AFTER all labs are cleaned)
+print_message "$BLUE" "========================================"
+print_message "$BLUE" "Step 4: Cleaning Up Account-Level IAM Roles"
+print_message "$BLUE" "========================================"
+echo ""
+
+print_message "$YELLOW" "Checking for workshop-created account-level IAM roles..."
+
+# Define account-level roles created by the workshop
+# These roles are shared across labs and should only be deleted when ALL labs are cleaned up
+ACCOUNT_LEVEL_ROLES=(
+    "APIGatewayCloudWatchLogsRole"
+)
+
+# Track if any roles were found
+ROLES_FOUND=false
+
+for role_name in "${ACCOUNT_LEVEL_ROLES[@]}"; do
+    # Check if role exists
+    if aws iam get-role \
+        ${PROFILE:+--profile "$PROFILE"} \
+        --role-name "$role_name" &>/dev/null; then
+        
+        ROLES_FOUND=true
+        print_message "$YELLOW" "  Found account-level role: $role_name"
+        
+        # Detach managed policies
+        print_message "$YELLOW" "    Detaching managed policies..."
+        ATTACHED_POLICIES=$(aws iam list-attached-role-policies \
+            ${PROFILE:+--profile "$PROFILE"} \
+            --role-name "$role_name" \
+            --query "AttachedPolicies[].PolicyArn" \
+            --output text 2>/dev/null || echo "")
+        
+        for policy_arn in $ATTACHED_POLICIES; do
+            print_message "$YELLOW" "      Detaching policy: $policy_arn"
+            aws iam detach-role-policy \
+                ${PROFILE:+--profile "$PROFILE"} \
+                --role-name "$role_name" \
+                --policy-arn "$policy_arn" 2>/dev/null || true
+        done
+        
+        # Delete inline policies
+        print_message "$YELLOW" "    Deleting inline policies..."
+        INLINE_POLICIES=$(aws iam list-role-policies \
+            ${PROFILE:+--profile "$PROFILE"} \
+            --role-name "$role_name" \
+            --query "PolicyNames[]" \
+            --output text 2>/dev/null || echo "")
+        
+        for policy_name in $INLINE_POLICIES; do
+            print_message "$YELLOW" "      Deleting inline policy: $policy_name"
+            aws iam delete-role-policy \
+                ${PROFILE:+--profile "$PROFILE"} \
+                --role-name "$role_name" \
+                --policy-name "$policy_name" 2>/dev/null || true
+        done
+        
+        # Delete the role
+        print_message "$YELLOW" "    Deleting role: $role_name"
+        if aws iam delete-role \
+            ${PROFILE:+--profile "$PROFILE"} \
+            --role-name "$role_name" 2>/dev/null; then
+            print_message "$GREEN" "      ✓ Role deleted: $role_name"
+        else
+            print_message "$RED" "      ✗ Failed to delete role: $role_name"
+        fi
+    fi
+done
+
+if [ "$ROLES_FOUND" = false ]; then
+    print_message "$GREEN" "  ✓ No account-level roles found (already deleted or never created)"
+fi
+
+echo ""
+print_message "$GREEN" "Account-level IAM roles cleanup complete"
+echo ""
+
+# IMPORTANT: Service-linked roles like AWSServiceRoleForAPIGateway are NOT deleted
+# These are AWS-managed roles and should never be deleted by cleanup scripts
+
+# Step 5: Verify complete cleanup
 echo ""
 verify_complete_cleanup
 VERIFICATION_RESULT=$?

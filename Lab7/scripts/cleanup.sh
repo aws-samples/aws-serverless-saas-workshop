@@ -12,6 +12,10 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LAB_DIR="$(dirname "$SCRIPT_DIR")"  # Parent directory of scripts/ is the lab root
+
 # Default values
 AWS_REGION="us-east-1"
 AWS_PROFILE=""  # Optional, will use default profile if not provided
@@ -364,8 +368,8 @@ print_message "$BLUE" "=========================================="
 print_message "$BLUE" "Step 9: Cleaning up SAM bootstrap buckets from samconfig.toml files"
 print_message "$BLUE" "=========================================="
 
-# Get the bucket name from samconfig.toml
-SAM_BUCKET=$(grep s3_bucket ../samconfig.toml 2>/dev/null | cut -d'=' -f2 | cut -d \" -f2 || echo "")
+# Get the bucket name from samconfig.toml (in lab root directory)
+SAM_BUCKET=$(grep s3_bucket "$LAB_DIR/samconfig.toml" 2>/dev/null | cut -d'=' -f2 | cut -d '"' -f2 || echo "")
 
 if [ -n "$SAM_BUCKET" ]; then
     print_message "$YELLOW" "  Found SAM bucket in samconfig.toml: $SAM_BUCKET"
@@ -382,8 +386,8 @@ else
     print_message "$YELLOW" "  No SAM bucket found in samconfig.toml"
 fi
 
-# Get the bucket name from tenant-samconfig.toml
-TENANT_SAM_BUCKET=$(grep s3_bucket ../tenant-samconfig.toml 2>/dev/null | cut -d'=' -f2 | cut -d \" -f2 || echo "")
+# Get the bucket name from tenant-samconfig.toml (in lab root directory)
+TENANT_SAM_BUCKET=$(grep s3_bucket "$LAB_DIR/tenant-samconfig.toml" 2>/dev/null | cut -d'=' -f2 | cut -d '"' -f2 || echo "")
 
 if [ -n "$TENANT_SAM_BUCKET" ]; then
     print_message "$YELLOW" "  Found SAM bucket in tenant-samconfig.toml: $TENANT_SAM_BUCKET"
