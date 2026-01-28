@@ -41,6 +41,16 @@ print_message() {
     echo -e "${color}${message}${NC}"
 }
 
+# Function to build AWS CLI profile argument
+# Returns "--profile <profile>" if AWS_PROFILE is set, empty string otherwise
+get_profile_arg() {
+    if [[ -n "$AWS_PROFILE" ]]; then
+        echo "--profile $AWS_PROFILE"
+    else
+        echo ""
+    fi
+}
+
 # Function to print usage
 print_usage() {
     echo "Usage: $0 [OPTIONS]"
@@ -213,12 +223,18 @@ delete_stack_with_cdk_role() {
   local delete_output=$(aws cloudformation $PROFILE_ARG delete-stack --stack-name $stack 2>&1)
   local delete_status=$?
   
-  # Check if deletion failed due to missing CDK role
-  if [[ $delete_status -ne 0 ]] && echo "$delete_output" | grep -q "is invalid or cannot be assumed"; then
-    echo "  ⚠ Stack requires CDK execution role that was deleted"
+  # CRITICAL FIX: Verify stack actually entered DELETE_IN_PROGRESS state
+  # AWS CLI returns success even when deletion fails due to missing CDK role
+  sleep 2  # Brief wait for status to update
+  local stack_status=$(aws cloudformation $PROFILE_ARG describe-stacks --stack-name $stack --query 'Stacks[0].StackStatus' --output text 2>/dev/null || echo "DOES_NOT_EXIST")
+  
+  # Check if deletion actually started or if we need to handle missing CDK role
+  if [[ $delete_status -eq 0 ]] && [[ "$stack_status" != "DELETE_IN_PROGRESS" ]] && [[ "$stack_status" != "DOES_NOT_EXIST" ]]; then
+    echo "  ⚠ Stack deletion command succeeded but stack is still in $stack_status state"
+    echo "  ⚠ This indicates the CDK execution role is missing"
     echo "  Creating temporary CDK execution role..."
     
-    # Extract account ID from the error message or use current account
+    # Extract account ID
     local account_id=$(aws sts $PROFILE_ARG get-caller-identity --query Account --output text 2>/dev/null)
     local role_name="cdk-hnb659fds-cfn-exec-role-${account_id}-${AWS_REGION}"
     
@@ -238,37 +254,59 @@ delete_stack_with_cdk_role() {
         --policy-arn arn:aws:iam::aws:policy/AdministratorAccess \
         >/dev/null 2>&1
       
-      # Wait a moment for role to propagate
-      sleep 3
+      # Wait for role to propagate
+      echo "  Waiting for role to propagate..."
+      sleep 5
       
       # Try deletion again
+      echo "  Retrying stack deletion with temporary role..."
       aws cloudformation $PROFILE_ARG delete-stack --stack-name $stack 2>/dev/null
       if [[ $? -eq 0 ]]; then
-        echo "  ✓ Delete initiated: $stack"
+        # Verify deletion actually started this time
+        sleep 2
+        stack_status=$(aws cloudformation $PROFILE_ARG describe-stacks --stack-name $stack --query 'Stacks[0].StackStatus' --output text 2>/dev/null || echo "DOES_NOT_EXIST")
         
-        # Wait for deletion to complete before cleaning up role
-        echo "  Waiting for stack deletion to complete..."
-        aws cloudformation $PROFILE_ARG wait stack-delete-complete --stack-name $stack 2>/dev/null
-        
-        # Clean up temporary role
-        echo "  Cleaning up temporary CDK role..."
-        aws iam $PROFILE_ARG detach-role-policy \
-          --role-name "$role_name" \
-          --policy-arn arn:aws:iam::aws:policy/AdministratorAccess \
-          >/dev/null 2>&1
-        
-        aws iam $PROFILE_ARG delete-role \
-          --role-name "$role_name" \
-          >/dev/null 2>&1
-        
-        if [[ $? -eq 0 ]]; then
-          echo "  ✓ Temporary CDK role deleted"
+        if [[ "$stack_status" == "DELETE_IN_PROGRESS" ]] || [[ "$stack_status" == "DOES_NOT_EXIST" ]]; then
+          echo "  ✓ Delete initiated: $stack"
+          
+          # Wait for deletion to complete before cleaning up role
+          echo "  Waiting for stack deletion to complete..."
+          aws cloudformation $PROFILE_ARG wait stack-delete-complete --stack-name $stack 2>/dev/null
+          
+          # Clean up temporary role
+          echo "  Cleaning up temporary CDK role..."
+          aws iam $PROFILE_ARG detach-role-policy \
+            --role-name "$role_name" \
+            --policy-arn arn:aws:iam::aws:policy/AdministratorAccess \
+            >/dev/null 2>&1
+          
+          aws iam $PROFILE_ARG delete-role \
+            --role-name "$role_name" \
+            >/dev/null 2>&1
+          
+          if [[ $? -eq 0 ]]; then
+            echo "  ✓ Temporary CDK role deleted"
+          else
+            echo "  ⚠ Could not delete temporary role: $role_name"
+            echo "    You may need to delete it manually"
+          fi
+          
+          return 0
         else
-          echo "  ⚠ Could not delete temporary role: $role_name"
-          echo "    You may need to delete it manually"
+          echo "  ✗ Stack still in $stack_status state after retry"
+          echo "  ✗ Failed to delete stack even with temporary role"
+          
+          # Try to clean up role even if stack deletion failed
+          aws iam $PROFILE_ARG detach-role-policy \
+            --role-name "$role_name" \
+            --policy-arn arn:aws:iam::aws:policy/AdministratorAccess \
+            >/dev/null 2>&1
+          aws iam $PROFILE_ARG delete-role \
+            --role-name "$role_name" \
+            >/dev/null 2>&1
+          
+          return 1
         fi
-        
-        return 0
       else
         echo "  ✗ Failed to delete stack even with temporary role"
         
@@ -288,11 +326,25 @@ delete_stack_with_cdk_role() {
       echo "    Please run the cleanup script again or delete the stack manually"
       return 1
     fi
-  elif [[ $delete_status -eq 0 ]]; then
+  elif [[ $delete_status -eq 0 ]] && [[ "$stack_status" == "DELETE_IN_PROGRESS" ]]; then
     echo "  ✓ Delete initiated: $stack"
+    
+    # Wait for deletion to complete
+    echo "  Waiting for stack deletion to complete..."
+    aws cloudformation $PROFILE_ARG wait stack-delete-complete --stack-name $stack 2>/dev/null
+    
+    if [[ $? -eq 0 ]]; then
+      echo "  ✓ Stack deleted successfully: $stack"
+      return 0
+    else
+      echo "  ⚠ Stack deletion may have failed or timed out: $stack"
+      return 1
+    fi
+  elif [[ "$stack_status" == "DOES_NOT_EXIST" ]]; then
+    echo "  ✓ Stack does not exist: $stack"
     return 0
   else
-    echo "  ⚠ Could not delete: $stack (may not exist)"
+    echo "  ⚠ Could not delete: $stack (may not exist or delete command failed)"
     return 1
   fi
 }
@@ -499,6 +551,37 @@ print_message "$BLUE" "=========================================="
 [[ ! -z "$APP_BUCKET" ]] && empty_bucket $APP_BUCKET &
 wait
 
+# Delete the buckets after emptying
+if [[ ! -z "$ADMIN_BUCKET" ]]; then
+  echo "  Deleting bucket: $ADMIN_BUCKET"
+  aws s3 $PROFILE_ARG rb s3://$ADMIN_BUCKET 2>/dev/null
+  if [[ $? -eq 0 ]]; then
+    echo "  ✓ Bucket deleted: $ADMIN_BUCKET"
+  else
+    echo "  ⚠ Could not delete bucket: $ADMIN_BUCKET"
+  fi
+fi
+
+if [[ ! -z "$LANDING_BUCKET" ]]; then
+  echo "  Deleting bucket: $LANDING_BUCKET"
+  aws s3 $PROFILE_ARG rb s3://$LANDING_BUCKET 2>/dev/null
+  if [[ $? -eq 0 ]]; then
+    echo "  ✓ Bucket deleted: $LANDING_BUCKET"
+  else
+    echo "  ⚠ Could not delete bucket: $LANDING_BUCKET"
+  fi
+fi
+
+if [[ ! -z "$APP_BUCKET" ]]; then
+  echo "  Deleting bucket: $APP_BUCKET"
+  aws s3 $PROFILE_ARG rb s3://$APP_BUCKET 2>/dev/null
+  if [[ $? -eq 0 ]]; then
+    echo "  ✓ Bucket deleted: $APP_BUCKET"
+  else
+    echo "  ⚠ Could not delete bucket: $APP_BUCKET"
+  fi
+fi
+
 print_message "$GREEN" "✓ S3 buckets deleted (secure - CloudFront was deleted first)"
 echo ""
 
@@ -626,26 +709,59 @@ print_message "$BLUE" "=========================================="
 print_message "$BLUE" "Step 12: Cleaning up CDK bootstrap resources"
 print_message "$BLUE" "=========================================="
 
+# CRITICAL: Check if Lab5 is deployed before deleting CDKToolkit
+# CDKToolkit is a SHARED resource between Lab5 and Lab6
+# We can only delete it if Lab5 is NOT deployed
+LAB5_DEPLOYED=false
+
+# Check for Lab5 pipeline stack (uses CDK)
+LAB5_PIPELINE=$(aws cloudformation $PROFILE_ARG describe-stacks --stack-name "serverless-saas-pipeline-lab5" 2>/dev/null)
+if [[ $? -eq 0 ]]; then
+  LAB5_DEPLOYED=true
+  print_message "$YELLOW" "⚠️  Lab5 pipeline stack detected - CDKToolkit is still in use"
+fi
+
+# Check for Lab5 shared stack (might have CDK dependencies)
+if [[ "$LAB5_DEPLOYED" == false ]]; then
+  LAB5_SHARED=$(aws cloudformation $PROFILE_ARG describe-stacks --stack-name "serverless-saas-shared-lab5" 2>/dev/null)
+  if [[ $? -eq 0 ]]; then
+    LAB5_DEPLOYED=true
+    print_message "$YELLOW" "⚠️  Lab5 shared stack detected - CDKToolkit might still be in use"
+  fi
+fi
+
 # Find CDK bootstrap bucket
 CDK_BUCKET=$(aws s3 $PROFILE_ARG ls | grep cdktoolkit | awk '{print $3}')
 
 if [[ ! -z "$CDK_BUCKET" ]]; then
   print_message "$YELLOW" "Found CDK bootstrap bucket: $CDK_BUCKET"
-  empty_bucket $CDK_BUCKET
-  print_message "$YELLOW" "  Deleting bucket: $CDK_BUCKET"
-  aws s3 $PROFILE_ARG rb s3://$CDK_BUCKET 2>/dev/null
-  if [[ $? -eq 0 ]]; then
-    print_message "$GREEN" "  ✓ Bucket deleted: $CDK_BUCKET"
+  
+  if [[ "$LAB5_DEPLOYED" == true ]]; then
+    print_message "$YELLOW" "⚠️  Skipping CDK bucket deletion - Lab5 is still deployed and may need CDK resources"
   else
-    print_message "$YELLOW" "  ⚠ Could not delete bucket: $CDK_BUCKET"
+    empty_bucket $CDK_BUCKET
+    print_message "$YELLOW" "  Deleting bucket: $CDK_BUCKET"
+    aws s3 $PROFILE_ARG rb s3://$CDK_BUCKET 2>/dev/null
+    if [[ $? -eq 0 ]]; then
+      print_message "$GREEN" "  ✓ Bucket deleted: $CDK_BUCKET"
+    else
+      print_message "$YELLOW" "  ⚠ Could not delete bucket: $CDK_BUCKET"
+    fi
   fi
 else
   print_message "$YELLOW" "No CDK bootstrap bucket found"
 fi
 
-# Delete CDKToolkit stack (moved here to be AFTER pipeline stack deletion)
-if delete_stack "CDKToolkit"; then
-  wait_for_deletion "CDKToolkit"
+# Delete CDKToolkit stack only if Lab5 is NOT deployed
+if [[ "$LAB5_DEPLOYED" == true ]]; then
+  print_message "$YELLOW" "⚠️  Skipping CDKToolkit stack deletion - Lab5 is still deployed"
+  print_message "$YELLOW" "   Lab5 pipeline stack uses the shared CDK execution role from CDKToolkit"
+  print_message "$YELLOW" "   CDKToolkit will be deleted when Lab5 is cleaned up"
+else
+  print_message "$GREEN" "✓ Lab5 is not deployed - safe to delete CDKToolkit"
+  if delete_stack "CDKToolkit"; then
+    wait_for_deletion "CDKToolkit"
+  fi
 fi
 
 print_message "$GREEN" "✓ CDK bootstrap cleanup complete"

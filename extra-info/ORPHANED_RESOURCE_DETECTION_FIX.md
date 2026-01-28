@@ -325,6 +325,161 @@ This issue affects any CDK-deployed stack where the execution role is deleted be
 
 This fix addresses the orphaned resource warning discovered during Task 13 (Final Checkpoint - End-to-End Validation) of the lab-cleanup-isolation-all-labs spec.
 
-**Update (January 27, 2026)**: Two new issues were discovered during Task 13 validation:
+**Update (January 27, 2026)**: Three critical issues were discovered during Task 13 validation:
 1. Interactive flag logic was backwards in cleanup-all-labs script (FIXED)
 2. Pipeline stack won't delete due to missing CDK execution role (FIXED)
+3. **CDKToolkit stack is shared between labs but deleted by individual lab cleanup scripts (CRITICAL BUG)**
+
+## CRITICAL BUG #3: CDKToolkit Stack Deletion Breaks Other Labs (January 27, 2026)
+
+### Problem
+Both Lab5 and Lab6 cleanup scripts delete the **CDKToolkit stack**, which is a **SHARED resource** across all labs in the same AWS account+region. This causes a cascading failure:
+
+**Stack Details:**
+- CDKToolkit stack: Created once per AWS account+region (not per lab)
+- CDK Execution Role: `arn:aws:iam::265098672980:role/cdk-hnb659fds-cfn-exec-role-265098672980-us-east-1`
+- This role is created by CDKToolkit and used by ALL CDK-deployed stacks (Lab5 and Lab6 pipelines)
+
+**Failure Scenario:**
+1. Lab5 cleanup runs and deletes CDKToolkit stack (Step 10, line 755 in `workshop/Lab5/scripts/cleanup.sh`)
+2. CloudFormation deletes CDKToolkit stack and all its resources, including the CDK execution role
+3. Lab6 pipeline stack (`serverless-saas-pipeline-lab6`) still references the deleted CDK execution role
+4. Lab6 cleanup tries to delete the pipeline stack but fails silently because the role doesn't exist
+5. Pipeline stack remains in CREATE_COMPLETE state (zombie stack)
+
+**Evidence:**
+```bash
+# Lab6 pipeline stack still references deleted role
+$ aws cloudformation describe-stacks --stack-name serverless-saas-pipeline-lab6 --query 'Stacks[0].RoleARN'
+arn:aws:iam::265098672980:role/cdk-hnb659fds-cfn-exec-role-265098672980-us-east-1
+
+# But the role doesn't exist
+$ aws iam get-role --role-name cdk-hnb659fds-cfn-exec-role-265098672980-us-east-1
+NoSuchEntity: The role with name cdk-hnb659fds-cfn-exec-role-265098672980-us-east-1 cannot be found
+
+# CDKToolkit stack was deleted
+$ aws cloudformation describe-stacks --stack-name CDKToolkit
+ValidationError: Stack with id CDKToolkit does not exist
+```
+
+### Root Cause
+**Design Flaw:** Individual lab cleanup scripts delete shared CDK resources (CDKToolkit stack) without considering that other labs may still need them.
+
+**Why This Happens:**
+1. CDK creates a single CDKToolkit stack per account+region, not per lab
+2. All CDK-deployed stacks (Lab5 pipeline, Lab6 pipeline) share the same CDK execution role
+3. Lab cleanup scripts assume they own all CDK resources they use
+4. No coordination between lab cleanup scripts to check if other labs are still using CDK resources
+
+### Solution Implemented (January 27, 2026)
+
+**User's Solution Approach:**
+Each lab checks if the other lab is deployed before deleting CDKToolkit. This ensures CDKToolkit is only deleted when it's safe to do so.
+
+**Lab5 Cleanup Script Changes (Lines 730-790):**
+```bash
+# CRITICAL: Check if Lab6 is deployed before deleting CDKToolkit
+# CDKToolkit is a SHARED resource between Lab5 and Lab6
+# We can only delete it if Lab6 is NOT deployed
+LAB6_DEPLOYED=false
+
+# Check for Lab6 pipeline stack (uses CDK)
+LAB6_PIPELINE=$(aws cloudformation describe-stacks --stack-name "serverless-saas-pipeline-lab6" 2>/dev/null)
+if [[ $? -eq 0 ]]; then
+  LAB6_DEPLOYED=true
+  echo "⚠️  Lab6 pipeline stack detected - CDKToolkit is still in use"
+fi
+
+# Check for Lab6 shared stack (might have CDK dependencies)
+if [[ "$LAB6_DEPLOYED" == false ]]; then
+  LAB6_SHARED=$(aws cloudformation describe-stacks --stack-name "serverless-saas-shared-lab6" 2>/dev/null)
+  if [[ $? -eq 0 ]]; then
+    LAB6_DEPLOYED=true
+    echo "⚠️  Lab6 shared stack detected - CDKToolkit might still be in use"
+  fi
+fi
+
+# Delete CDKToolkit stack only if Lab6 is NOT deployed
+if [[ "$LAB6_DEPLOYED" == true ]]; then
+  echo "⚠️  Skipping CDKToolkit stack deletion - Lab6 is still deployed"
+  echo "   Lab6 pipeline stack uses the shared CDK execution role from CDKToolkit"
+  echo "   CDKToolkit will be deleted when Lab6 is cleaned up"
+else
+  echo "✓ Lab6 is not deployed - safe to delete CDKToolkit"
+  if delete_stack "CDKToolkit"; then
+    wait_for_deletion "CDKToolkit"
+  fi
+fi
+```
+
+**Lab6 Cleanup Script Changes (Lines 708-768):**
+```bash
+# CRITICAL: Check if Lab5 is deployed before deleting CDKToolkit
+# CDKToolkit is a SHARED resource between Lab5 and Lab6
+# We can only delete it if Lab5 is NOT deployed
+LAB5_DEPLOYED=false
+
+# Check for Lab5 pipeline stack (uses CDK)
+LAB5_PIPELINE=$(aws cloudformation describe-stacks --stack-name "serverless-saas-pipeline-lab5" 2>/dev/null)
+if [[ $? -eq 0 ]]; then
+  LAB5_DEPLOYED=true
+  print_message "$YELLOW" "⚠️  Lab5 pipeline stack detected - CDKToolkit is still in use"
+fi
+
+# Check for Lab5 shared stack (might have CDK dependencies)
+if [[ "$LAB5_DEPLOYED" == false ]]; then
+  LAB5_SHARED=$(aws cloudformation describe-stacks --stack-name "serverless-saas-shared-lab5" 2>/dev/null)
+  if [[ $? -eq 0 ]]; then
+    LAB5_DEPLOYED=true
+    print_message "$YELLOW" "⚠️  Lab5 shared stack detected - CDKToolkit might still be in use"
+  fi
+fi
+
+# Delete CDKToolkit stack only if Lab5 is NOT deployed
+if [[ "$LAB5_DEPLOYED" == true ]]; then
+  print_message "$YELLOW" "⚠️  Skipping CDKToolkit stack deletion - Lab5 is still deployed"
+  print_message "$YELLOW" "   Lab5 pipeline stack uses the shared CDK execution role from CDKToolkit"
+  print_message "$YELLOW" "   CDKToolkit will be deleted when Lab5 is cleaned up"
+else
+  print_message "$GREEN" "✓ Lab5 is not deployed - safe to delete CDKToolkit"
+  if delete_stack "CDKToolkit"; then
+    wait_for_deletion "CDKToolkit"
+  fi
+fi
+```
+
+**Test Cases Added (workshop/tests/test_end_to_end_cleanup_isolation.py):**
+1. `test_lab5_skips_cdktoolkit_when_lab6_deployed()` - Verifies Lab5 cleanup skips CDKToolkit when Lab6 is deployed
+2. `test_lab6_skips_cdktoolkit_when_lab5_deployed()` - Verifies Lab6 cleanup skips CDKToolkit when Lab5 is deployed
+3. `test_lab5_deletes_cdktoolkit_when_lab6_not_deployed()` - Verifies Lab5 cleanup deletes CDKToolkit when Lab6 is NOT deployed
+4. `test_lab6_deletes_cdktoolkit_when_lab5_not_deployed()` - Verifies Lab6 cleanup deletes CDKToolkit when Lab5 is NOT deployed
+
+**Behavior Matrix:**
+
+| Scenario | Lab5 Cleanup | Lab6 Cleanup | CDKToolkit Deleted By |
+|----------|--------------|--------------|----------------------|
+| Both labs deployed, Lab5 cleaned first | Skips CDKToolkit | Deletes CDKToolkit | Lab6 |
+| Both labs deployed, Lab6 cleaned first | Deletes CDKToolkit | Skips CDKToolkit | Lab5 |
+| Only Lab5 deployed | Deletes CDKToolkit | N/A | Lab5 |
+| Only Lab6 deployed | N/A | Deletes CDKToolkit | Lab6 |
+
+**Benefits:**
+1. No orphaned pipeline stacks - CDKToolkit is only deleted when safe
+2. No manual intervention required - scripts automatically detect other lab deployments
+3. Works regardless of cleanup order - Lab5 or Lab6 can be cleaned first
+4. Maintains cleanup isolation - each lab only cleans its own resources
+
+### Impact
+This bug affects any deployment where:
+1. Multiple labs use CDK-deployed resources (Lab5 and Lab6 pipelines)
+2. Labs are cleaned up individually rather than all at once
+3. Lab5 is cleaned up before Lab6
+
+**Severity:** CRITICAL - Causes orphaned resources and prevents proper cleanup
+**Status:** FIXED (January 27, 2026)
+
+### Related Files
+- `workshop/Lab5/scripts/cleanup.sh` - Lines 730-790: CDKToolkit check implementation (FIXED)
+- `workshop/Lab6/scripts/cleanup.sh` - Lines 708-768: CDKToolkit check implementation (FIXED)
+- `workshop/Lab6/scripts/cleanup.sh` - Lines 220-310: Enhanced delete_stack_with_cdk_role function (WORKAROUND)
+- `workshop/tests/test_end_to_end_cleanup_isolation.py` - Lines 890-1010: CDKToolkit test cases (ADDED)

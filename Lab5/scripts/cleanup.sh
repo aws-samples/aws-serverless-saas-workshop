@@ -733,27 +733,60 @@ echo "=========================================="
 echo "Step 10: Cleaning up CDK bootstrap resources"
 echo "=========================================="
 
-# Find CDK bootstrap bucket
+# CRITICAL: Check if Lab6 is deployed before deleting CDKToolkit
+# CDKToolkit is a SHARED resource between Lab5 and Lab6
+# We can only delete it if Lab6 is NOT deployed
 PROFILE_ARG=$(get_profile_arg)
+LAB6_DEPLOYED=false
+
+# Check for Lab6 pipeline stack (uses CDK)
+LAB6_PIPELINE=$(aws cloudformation $PROFILE_ARG describe-stacks --stack-name "serverless-saas-pipeline-lab6" --region "$AWS_REGION" 2>/dev/null)
+if [[ $? -eq 0 ]]; then
+  LAB6_DEPLOYED=true
+  echo "⚠️  Lab6 pipeline stack detected - CDKToolkit is still in use"
+fi
+
+# Check for Lab6 shared stack (might have CDK dependencies)
+if [[ "$LAB6_DEPLOYED" == false ]]; then
+  LAB6_SHARED=$(aws cloudformation $PROFILE_ARG describe-stacks --stack-name "serverless-saas-shared-lab6" --region "$AWS_REGION" 2>/dev/null)
+  if [[ $? -eq 0 ]]; then
+    LAB6_DEPLOYED=true
+    echo "⚠️  Lab6 shared stack detected - CDKToolkit might still be in use"
+  fi
+fi
+
+# Find CDK bootstrap bucket
 CDK_BUCKET=$(aws s3 $PROFILE_ARG ls --region "$AWS_REGION" | grep cdktoolkit | awk '{print $3}')
 
 if [[ ! -z "$CDK_BUCKET" ]]; then
   echo "Found CDK bootstrap bucket: $CDK_BUCKET"
-  empty_bucket $CDK_BUCKET
-  echo "  Deleting bucket: $CDK_BUCKET"
-  aws s3 $PROFILE_ARG rb s3://$CDK_BUCKET --region "$AWS_REGION" 2>/dev/null
-  if [[ $? -eq 0 ]]; then
-    echo "  ✓ Bucket deleted: $CDK_BUCKET"
+  
+  if [[ "$LAB6_DEPLOYED" == true ]]; then
+    echo "⚠️  Skipping CDK bucket deletion - Lab6 is still deployed and may need CDK resources"
   else
-    echo "  ⚠ Could not delete bucket: $CDK_BUCKET"
+    empty_bucket $CDK_BUCKET
+    echo "  Deleting bucket: $CDK_BUCKET"
+    aws s3 $PROFILE_ARG rb s3://$CDK_BUCKET --region "$AWS_REGION" 2>/dev/null
+    if [[ $? -eq 0 ]]; then
+      echo "  ✓ Bucket deleted: $CDK_BUCKET"
+    else
+      echo "  ⚠ Could not delete bucket: $CDK_BUCKET"
+    fi
   fi
 else
   echo "No CDK bootstrap bucket found"
 fi
 
-# Delete CDKToolkit stack (moved here to be AFTER pipeline stack deletion)
-if delete_stack "CDKToolkit"; then
-  wait_for_deletion "CDKToolkit"
+# Delete CDKToolkit stack only if Lab6 is NOT deployed
+if [[ "$LAB6_DEPLOYED" == true ]]; then
+  echo "⚠️  Skipping CDKToolkit stack deletion - Lab6 is still deployed"
+  echo "   Lab6 pipeline stack uses the shared CDK execution role from CDKToolkit"
+  echo "   CDKToolkit will be deleted when Lab6 is cleaned up"
+else
+  echo "✓ Lab6 is not deployed - safe to delete CDKToolkit"
+  if delete_stack "CDKToolkit"; then
+    wait_for_deletion "CDKToolkit"
+  fi
 fi
 
 echo "✓ CDK bootstrap cleanup complete"

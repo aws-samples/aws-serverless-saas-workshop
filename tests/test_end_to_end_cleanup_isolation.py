@@ -884,6 +884,133 @@ def test_lab5_does_not_delete_lab6_lab7_resources(test_runner):
                 f"CRITICAL BUG: Lab5 cleanup deleted {critical_stack}!"
 
 
+# CDKToolkit shared resource tests
+@pytest.mark.critical
+def test_lab5_skips_cdktoolkit_when_lab6_deployed(test_runner):
+    """
+    Critical test: Verify Lab5 cleanup skips CDKToolkit deletion when Lab6 is deployed.
+    
+    CDKToolkit is a SHARED resource between Lab5 and Lab6. When Lab6 is deployed,
+    Lab5 cleanup must NOT delete CDKToolkit because Lab6's pipeline stack needs it.
+    
+    Validates: Bug #3 fix - CDKToolkit shared resource handling
+    """
+    # This test assumes Lab5 and Lab6 are both deployed
+    
+    resources_before = test_runner.tracker.take_snapshot()
+    
+    # Verify CDKToolkit exists before cleanup
+    cdktoolkit_before = any("CDKToolkit" in s for s in resources_before.stacks)
+    
+    # Run Lab5 cleanup (Lab6 is still deployed)
+    result = test_runner.cleanup_single_lab(5, ["lab6"])
+    
+    resources_after = test_runner.tracker.take_snapshot()
+    
+    # Verify CDKToolkit still exists after Lab5 cleanup
+    cdktoolkit_after = any("CDKToolkit" in s for s in resources_after.stacks)
+    
+    if cdktoolkit_before:
+        assert cdktoolkit_after, \
+            "CRITICAL BUG: Lab5 cleanup deleted CDKToolkit while Lab6 is still deployed!"
+
+
+@pytest.mark.critical
+def test_lab6_skips_cdktoolkit_when_lab5_deployed(test_runner):
+    """
+    Critical test: Verify Lab6 cleanup skips CDKToolkit deletion when Lab5 is deployed.
+    
+    CDKToolkit is a SHARED resource between Lab5 and Lab6. When Lab5 is deployed,
+    Lab6 cleanup must NOT delete CDKToolkit because Lab5's pipeline stack needs it.
+    
+    Validates: Bug #3 fix - CDKToolkit shared resource handling
+    """
+    # This test assumes Lab5 and Lab6 are both deployed
+    
+    resources_before = test_runner.tracker.take_snapshot()
+    
+    # Verify CDKToolkit exists before cleanup
+    cdktoolkit_before = any("CDKToolkit" in s for s in resources_before.stacks)
+    
+    # Run Lab6 cleanup (Lab5 is still deployed)
+    result = test_runner.cleanup_single_lab(6, ["lab5"])
+    
+    resources_after = test_runner.tracker.take_snapshot()
+    
+    # Verify CDKToolkit still exists after Lab6 cleanup
+    cdktoolkit_after = any("CDKToolkit" in s for s in resources_after.stacks)
+    
+    if cdktoolkit_before:
+        assert cdktoolkit_after, \
+            "CRITICAL BUG: Lab6 cleanup deleted CDKToolkit while Lab5 is still deployed!"
+
+
+@pytest.mark.critical
+def test_lab5_deletes_cdktoolkit_when_lab6_not_deployed(test_runner):
+    """
+    Critical test: Verify Lab5 cleanup deletes CDKToolkit when Lab6 is NOT deployed.
+    
+    When Lab6 is not deployed, Lab5 cleanup should delete CDKToolkit since it's
+    no longer needed by any lab.
+    
+    Validates: Bug #3 fix - CDKToolkit shared resource handling
+    """
+    # This test assumes Lab5 is deployed but Lab6 is NOT deployed
+    
+    resources_before = test_runner.tracker.take_snapshot()
+    
+    # Verify CDKToolkit exists before cleanup
+    cdktoolkit_before = any("CDKToolkit" in s for s in resources_before.stacks)
+    
+    # Verify Lab6 is NOT deployed
+    lab6_deployed = any("lab6" in s.lower() for s in resources_before.stacks)
+    
+    if not lab6_deployed and cdktoolkit_before:
+        # Run Lab5 cleanup (Lab6 is NOT deployed)
+        result = test_runner.cleanup_single_lab(5, [])
+        
+        resources_after = test_runner.tracker.take_snapshot()
+        
+        # Verify CDKToolkit is deleted after Lab5 cleanup
+        cdktoolkit_after = any("CDKToolkit" in s for s in resources_after.stacks)
+        
+        assert not cdktoolkit_after, \
+            "Lab5 cleanup should delete CDKToolkit when Lab6 is not deployed!"
+
+
+@pytest.mark.critical
+def test_lab6_deletes_cdktoolkit_when_lab5_not_deployed(test_runner):
+    """
+    Critical test: Verify Lab6 cleanup deletes CDKToolkit when Lab5 is NOT deployed.
+    
+    When Lab5 is not deployed, Lab6 cleanup should delete CDKToolkit since it's
+    no longer needed by any lab.
+    
+    Validates: Bug #3 fix - CDKToolkit shared resource handling
+    """
+    # This test assumes Lab6 is deployed but Lab5 is NOT deployed
+    
+    resources_before = test_runner.tracker.take_snapshot()
+    
+    # Verify CDKToolkit exists before cleanup
+    cdktoolkit_before = any("CDKToolkit" in s for s in resources_before.stacks)
+    
+    # Verify Lab5 is NOT deployed
+    lab5_deployed = any("lab5" in s.lower() for s in resources_before.stacks)
+    
+    if not lab5_deployed and cdktoolkit_before:
+        # Run Lab6 cleanup (Lab5 is NOT deployed)
+        result = test_runner.cleanup_single_lab(6, [])
+        
+        resources_after = test_runner.tracker.take_snapshot()
+        
+        # Verify CDKToolkit is deleted after Lab6 cleanup
+        cdktoolkit_after = any("CDKToolkit" in s for s in resources_after.stacks)
+        
+        assert not cdktoolkit_after, \
+            "Lab6 cleanup should delete CDKToolkit when Lab5 is not deployed!"
+
+
 if __name__ == "__main__":
     # Allow running the test directly
     import sys
