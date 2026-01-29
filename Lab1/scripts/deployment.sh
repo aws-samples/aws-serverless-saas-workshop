@@ -202,7 +202,7 @@ print_message "$GREEN" "    Region: $AWS_REGION"
 
 # Check and configure API Gateway CloudWatch Logs role (required for API Gateway logging)
 print_message "$YELLOW" "  Checking API Gateway CloudWatch Logs role..."
-ROLE_NAME="APIGatewayCloudWatchLogsRole"
+ROLE_NAME="apigateway-cloudwatch-publish-role"
 ROLE_ARN="arn:aws:iam::${ACCOUNT_ID}:role/${ROLE_NAME}"
 
 # Check if role exists
