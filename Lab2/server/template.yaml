@@ -44,7 +44,12 @@ Parameters:
   CostCenter:
     Type: String
     Default: serverless-saas-workshop
-    Description: Cost center for billing allocation  
+    Description: Cost center for billing allocation
+  CreateCloudWatchRole:
+    Type: String
+    Default: "true"
+    AllowedValues: ["true", "false"]
+    Description: Whether to create the API Gateway CloudWatch role (set to false if role already exists)
 Conditions:
   IsNotRunningInEventEngine: !Not [ !Equals [ !Ref EventEngineParameter, true] ]    
 Resources:
@@ -124,7 +129,8 @@ Resources:
         AuthorizerFunctionArn: !GetAtt LambdaFunctions.Outputs.SharedServicesAuthorizerFunctionArn
         Environment: !Ref Environment
         Owner: !Ref Owner
-        CostCenter: !Ref CostCenter  
+        CostCenter: !Ref CostCenter
+        CreateCloudWatchRole: !Ref CreateCloudWatchRole  
         
   APIGatewayLambdaPermissions:
     Type: AWS::Serverless::Application
