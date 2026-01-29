@@ -213,6 +213,34 @@ verify_complete_cleanup() {
         print_message "$GREEN" "  ✓ No remaining account-level IAM Roles"
     fi
     
+    # Check API Gateway account settings for orphaned role ARN references
+    print_message "$YELLOW" "Checking API Gateway account settings..."
+    local apigw_role_arn=$(aws apigateway get-account \
+        ${PROFILE:+--profile "$PROFILE"} \
+        --region us-east-1 \
+        --query 'cloudwatchRoleArn' \
+        --output text 2>/dev/null || echo "")
+    
+    if [[ -n "$apigw_role_arn" && "$apigw_role_arn" != "None" ]]; then
+        # Extract role name from ARN
+        local role_name=$(echo "$apigw_role_arn" | awk -F'/' '{print $NF}')
+        
+        # Check if the role still exists in IAM
+        if ! aws iam get-role \
+            ${PROFILE:+--profile "$PROFILE"} \
+            --role-name "$role_name" &>/dev/null; then
+            print_message "$RED" "  ⚠️  API Gateway references deleted role: $apigw_role_arn"
+            print_message "$YELLOW" "     This is an orphaned reference - the role no longer exists in IAM"
+            print_message "$YELLOW" "     Run Step 4.5 again to reset API Gateway account settings"
+            remaining_resources=$((remaining_resources + 1))
+        else
+            print_message "$YELLOW" "  ⚠️  API Gateway references role: $apigw_role_arn"
+            print_message "$YELLOW" "     This is expected if the role still exists in IAM"
+        fi
+    else
+        print_message "$GREEN" "  ✓ API Gateway account settings properly reset (no role ARN configured)"
+    fi
+    
     # Check for remaining DynamoDB tables
     print_message "$YELLOW" "Checking for remaining DynamoDB tables..."
     local remaining_tables=$(aws dynamodb list-tables \
@@ -487,7 +515,7 @@ LABS_TO_CLEANUP=()
 CLEANUP_ALL=false
 LAB1_STACK_NAME="serverless-saas-lab1"
 PROFILE=""
-PARALLEL=false
+PARALLEL=true
 INTERACTIVE=false
 STOP_ON_ERROR=true
 
@@ -514,6 +542,10 @@ while [[ $# -gt 0 ]]; do
             PARALLEL=true
             shift
             ;;
+        --sequential)
+            PARALLEL=false
+            shift
+            ;;
         -i|--interactive)
             INTERACTIVE=true
             shift
@@ -530,14 +562,18 @@ while [[ $# -gt 0 ]]; do
                 echo "  --lab <number>              Cleanup specific lab (can be used multiple times)"
                 echo "  --lab1-stack-name <name>    Stack name for Lab1 (default: serverless-saas-lab1)"
                 echo "  --profile <profile>         AWS profile to use (optional, uses default if not provided)"
-                echo "  --parallel                  Enable parallel cleanup of independent labs (experimental)"
+                echo "  --parallel                  Enable parallel cleanup (DEFAULT)"
+                echo "  --sequential                Disable parallel cleanup (clean labs one by one)"
                 echo "  -i, --interactive           Prompt for confirmation before each cleanup"
                 echo "  --continue-on-error         Continue cleaning next lab even if current fails"
                 echo "  --help                      Show this help message"
                 echo ""
                 echo "Cleanup Order:"
+                echo "  Parallel cleanup is ENABLED BY DEFAULT for faster cleanup."
+                echo "  Use --sequential to disable parallel mode and clean labs one by one."
                 echo "  Labs are cleaned in reverse order (Lab7 → Lab1) to respect dependencies"
-                echo "  With --parallel: Independent labs clean concurrently while respecting dependencies"
+                echo "  With parallel mode: All 7 labs clean concurrently (estimated 5-10 minutes)"
+                echo "  With sequential mode: Labs clean one by one (estimated 20-30 minutes)"
                 echo ""
                 echo "Resources Cleaned:"
                 echo "  - CloudFormation stacks (including nested stacks)"
@@ -553,10 +589,10 @@ while [[ $# -gt 0 ]]; do
                 echo "  - CloudFront distributions"
                 echo ""
                 echo "Examples:"
-                echo "  $0                                      # Cleanup all labs"
-                echo "  $0 --all                                # Cleanup all labs"
+                echo "  $0                                      # Cleanup all labs (parallel by default)"
+                echo "  $0 --all                                # Cleanup all labs (parallel by default)"
                 echo "  $0 --all --profile serverless-saas-demo # Cleanup all labs with specific profile"
-                echo "  $0 --all --parallel                     # Cleanup with parallel mode"
+                echo "  $0 --all --sequential                   # Cleanup all labs one by one"
                 echo "  $0 --all -i                             # Interactive mode with confirmations"
                 echo "  $0 --lab 5                              # Cleanup only Lab5"
                 echo "  $0 --lab 5 --lab 6                     # Cleanup Lab5 and Lab6"
@@ -830,57 +866,29 @@ if [ ${#LABS_TO_CLEANUP[@]} -eq 0 ]; then
 else
     # Cleanup labs based on mode
     if [ "$CLEANUP_ALL" = true ] && [ "$PARALLEL" = true ]; then
-    # Parallel mode: Cleanup independent labs concurrently
-    print_message "$YELLOW" "Parallel Cleanup Mode"
-    echo ""
-    
-    # Separate labs into parallel and sequential groups
-    PARALLEL_LABS=()
-    SEQUENTIAL_LABS=()
-    
-    for lab in "${LABS_TO_CLEANUP[@]}"; do
-        if [[ "$lab" == "7" ]] || [[ "$lab" == "6" ]] || [[ "$lab" == "5" ]]; then
-            PARALLEL_LABS+=("$lab")
-        else
-            SEQUENTIAL_LABS+=("$lab")
-        fi
-    done
-    
-    # Lab7-5 can be cleaned in parallel (independent)
-    if [ ${#PARALLEL_LABS[@]} -gt 0 ]; then
-        if ! cleanup_labs_parallel "${PARALLEL_LABS[@]}"; then
+        # Parallel mode: Cleanup all 7 labs concurrently
+        print_message "$YELLOW" "Parallel Cleanup Mode - All 7 labs cleaning concurrently"
+        echo ""
+        
+        # Cleanup all labs in parallel
+        if ! cleanup_labs_parallel "${LABS_TO_CLEANUP[@]}"; then
             if [ "$STOP_ON_ERROR" = true ]; then
                 print_message "$RED" "Stopping cleanup due to parallel cleanup failure"
-                SEQUENTIAL_LABS=()
             fi
         fi
-    fi
-    
-    # Lab4-2-1 clean sequentially (Lab4-2 depend on each other, Lab1 is independent but cleaned last)
-    for lab in "${SEQUENTIAL_LABS[@]}"; do
-        if cleanup_lab "$lab"; then
-            SUCCESSFUL_CLEANUPS+=("$lab")
-        else
-            FAILED_CLEANUPS+=("$lab")
-            if [ "$STOP_ON_ERROR" = true ]; then
-                print_message "$RED" "Stopping cleanup due to Lab${lab} failure"
-                break
+    else
+        # Sequential mode: Cleanup all labs one by one
+        for lab in "${LABS_TO_CLEANUP[@]}"; do
+            if cleanup_lab "$lab"; then
+                SUCCESSFUL_CLEANUPS+=("$lab")
+            else
+                FAILED_CLEANUPS+=("$lab")
+                if [ "$STOP_ON_ERROR" = true ]; then
+                    print_message "$RED" "Stopping cleanup due to Lab${lab} failure"
+                    break
+                fi
             fi
-        fi
-    done
-else
-    # Sequential mode: Cleanup all labs one by one
-    for lab in "${LABS_TO_CLEANUP[@]}"; do
-        if cleanup_lab "$lab"; then
-            SUCCESSFUL_CLEANUPS+=("$lab")
-        else
-            FAILED_CLEANUPS+=("$lab")
-            if [ "$STOP_ON_ERROR" = true ]; then
-                print_message "$RED" "Stopping cleanup due to Lab${lab} failure"
-                break
-            fi
-        fi
-    done
+        done
     fi
 fi
 
@@ -1314,6 +1322,60 @@ echo ""
 
 # IMPORTANT: Service-linked roles like AWSServiceRoleForAPIGateway are NOT deleted
 # These are AWS-managed roles and should never be deleted by cleanup scripts
+
+# Step 4.5: Reset API Gateway Account Settings
+# After deleting the APIGatewayCloudWatchLogsRole, we need to reset the API Gateway
+# account settings to remove the role ARN reference. Otherwise, the deleted role ARN
+# will still appear in the AWS console even though the IAM role no longer exists.
+echo ""
+print_message "$BLUE" "========================================"
+print_message "$BLUE" "Step 4.5: Resetting API Gateway Account Settings"
+print_message "$BLUE" "========================================"
+echo ""
+
+# Check if API Gateway account settings have a CloudWatch Logs role configured
+print_message "$YELLOW" "Checking API Gateway account settings..."
+APIGW_ROLE_ARN=$(aws apigateway get-account \
+    ${PROFILE:+--profile "$PROFILE"} \
+    --region us-east-1 \
+    --query 'cloudwatchRoleArn' \
+    --output text 2>/dev/null || echo "")
+
+if [[ -n "$APIGW_ROLE_ARN" && "$APIGW_ROLE_ARN" != "None" ]]; then
+    print_message "$YELLOW" "  Found API Gateway CloudWatch Logs role ARN: $APIGW_ROLE_ARN"
+    
+    # Extract role name from ARN
+    ROLE_NAME=$(echo "$APIGW_ROLE_ARN" | awk -F'/' '{print $NF}')
+    
+    # Check if the role still exists in IAM
+    if ! aws iam get-role \
+        ${PROFILE:+--profile "$PROFILE"} \
+        --role-name "$ROLE_NAME" &>/dev/null; then
+        
+        print_message "$YELLOW" "  Role no longer exists in IAM - resetting API Gateway account settings"
+        
+        # Reset API Gateway account settings to remove the role ARN reference
+        if aws apigateway update-account \
+            ${PROFILE:+--profile "$PROFILE"} \
+            --region us-east-1 \
+            --patch-operations op=replace,path=/cloudwatchRoleArn,value='' 2>/dev/null; then
+            print_message "$GREEN" "    ✓ API Gateway account settings reset successfully"
+            print_message "$GREEN" "    ✓ Role ARN reference removed from API Gateway"
+        else
+            print_message "$RED" "    ✗ Failed to reset API Gateway account settings"
+            print_message "$YELLOW" "    Note: This is cosmetic - the role is already deleted from IAM"
+        fi
+    else
+        print_message "$GREEN" "  ✓ Role still exists in IAM - no action needed"
+        print_message "$YELLOW" "    (Role ARN will be removed when the role is deleted)"
+    fi
+else
+    print_message "$GREEN" "  ✓ No API Gateway CloudWatch Logs role configured"
+fi
+
+echo ""
+print_message "$GREEN" "API Gateway account settings check complete"
+echo ""
 
 # Step 5: Verify complete cleanup
 echo ""

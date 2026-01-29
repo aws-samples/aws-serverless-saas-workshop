@@ -190,7 +190,7 @@ empty_bucket() {
   print_message "$YELLOW" "  Emptying bucket: $bucket"
   
   # Check if bucket has versioning enabled
-  VERSIONING=$(aws s3api $PROFILE_ARG get-bucket-versioning --bucket $bucket --region "$AWS_REGION" --query 'Status' --output text 2>/dev/null)
+  VERSIONING=$(aws s3api $PROFILE_ARG get-bucket-versioning --bucket $bucket --region "$AWS_REGION" --query 'Status' --output text 2>/dev/null || echo "")
   
   if [[ "$VERSIONING" == "Enabled" ]]; then
     print_message "$YELLOW" "    Bucket has versioning enabled, deleting all versions..."
@@ -249,7 +249,7 @@ delete_stack_with_cdk_role() {
     print_message "$YELLOW" "  Creating temporary CDK execution role..."
     
     # Extract account ID from the error message or use current account
-    local account_id=$(aws sts $PROFILE_ARG get-caller-identity --query Account --output text 2>/dev/null)
+    local account_id=$(aws sts $PROFILE_ARG get-caller-identity --query Account --output text 2>/dev/null || echo "")
     local role_name="cdk-hnb659fds-cfn-exec-role-${account_id}-${AWS_REGION}"
     
     # Create temporary role
@@ -392,15 +392,15 @@ print_message "$BLUE" "=========================================="
 
 PROFILE_ARG=$(get_profile_arg)
 ADMIN_BUCKET=$(aws cloudformation $PROFILE_ARG describe-stacks --stack-name "$SHARED_STACK_NAME" --region "$AWS_REGION" \
-  --query "Stacks[0].Outputs[?OutputKey=='AdminSiteBucket'].OutputValue" --output text 2>/dev/null)
+  --query "Stacks[0].Outputs[?OutputKey=='AdminSiteBucket'].OutputValue" --output text 2>/dev/null || echo "")
 LANDING_BUCKET=$(aws cloudformation $PROFILE_ARG describe-stacks --stack-name "$SHARED_STACK_NAME" --region "$AWS_REGION" \
-  --query "Stacks[0].Outputs[?OutputKey=='LandingApplicationSiteBucket'].OutputValue" --output text 2>/dev/null)
+  --query "Stacks[0].Outputs[?OutputKey=='LandingApplicationSiteBucket'].OutputValue" --output text 2>/dev/null || echo "")
 APP_BUCKET=$(aws cloudformation $PROFILE_ARG describe-stacks --stack-name "$SHARED_STACK_NAME" --region "$AWS_REGION" \
-  --query "Stacks[0].Outputs[?OutputKey=='AppBucket'].OutputValue" --output text 2>/dev/null)
+  --query "Stacks[0].Outputs[?OutputKey=='AppBucket'].OutputValue" --output text 2>/dev/null || echo "")
 
 # Get API Gateway IDs for log deletion
 SHARED_API_ID=$(aws cloudformation $PROFILE_ARG describe-stacks --stack-name "$SHARED_STACK_NAME" --region "$AWS_REGION" \
-  --query "Stacks[0].Outputs[?OutputKey=='AdminApiGatewayId'].OutputValue" --output text 2>/dev/null)
+  --query "Stacks[0].Outputs[?OutputKey=='AdminApiGatewayId'].OutputValue" --output text 2>/dev/null || echo "")
 
 print_message "$YELLOW" "Found resources:"
 [[ ! -z "$ADMIN_BUCKET" ]] && print_message "$YELLOW" "  - S3 Bucket: $ADMIN_BUCKET (will delete after CloudFront)"
@@ -549,7 +549,7 @@ if [[ $delete_status -ne 0 ]] && echo "$delete_output" | grep -q "is invalid or 
     print_message "$YELLOW" "  Creating temporary CDK execution role..."
     
     # Extract account ID
-    account_id=$(aws sts $PROFILE_ARG get-caller-identity --query Account --output text 2>/dev/null)
+    account_id=$(aws sts $PROFILE_ARG get-caller-identity --query Account --output text 2>/dev/null || echo "")
     role_name="cdk-hnb659fds-cfn-exec-role-${account_id}-${AWS_REGION}"
     
     # Create temporary role
@@ -740,16 +740,17 @@ PROFILE_ARG=$(get_profile_arg)
 LAB6_DEPLOYED=false
 
 # Check for Lab6 pipeline stack (uses CDK)
-LAB6_PIPELINE=$(aws cloudformation $PROFILE_ARG describe-stacks --stack-name "serverless-saas-pipeline-lab6" --region "$AWS_REGION" 2>/dev/null)
-if [[ $? -eq 0 ]]; then
+# Use || echo "" to prevent set -e from exiting when stack doesn't exist
+LAB6_PIPELINE=$(aws cloudformation $PROFILE_ARG describe-stacks --stack-name "serverless-saas-pipeline-lab6" --region "$AWS_REGION" 2>/dev/null || echo "")
+if [[ -n "$LAB6_PIPELINE" ]]; then
   LAB6_DEPLOYED=true
   echo "⚠️  Lab6 pipeline stack detected - CDKToolkit is still in use"
 fi
 
 # Check for Lab6 shared stack (might have CDK dependencies)
 if [[ "$LAB6_DEPLOYED" == false ]]; then
-  LAB6_SHARED=$(aws cloudformation $PROFILE_ARG describe-stacks --stack-name "serverless-saas-shared-lab6" --region "$AWS_REGION" 2>/dev/null)
-  if [[ $? -eq 0 ]]; then
+  LAB6_SHARED=$(aws cloudformation $PROFILE_ARG describe-stacks --stack-name "serverless-saas-shared-lab6" --region "$AWS_REGION" 2>/dev/null || echo "")
+  if [[ -n "$LAB6_SHARED" ]]; then
     LAB6_DEPLOYED=true
     echo "⚠️  Lab6 shared stack detected - CDKToolkit might still be in use"
   fi
@@ -845,11 +846,11 @@ LAB5_POOLS=$(aws cognito-idp $PROFILE_ARG list-user-pools --max-results 60 --out
 if [[ ! -z "$LAB5_POOLS" ]]; then
   echo "Found Lab5 Cognito User Pools:"
   for pool_id in $LAB5_POOLS; do
-    POOL_NAME=$(aws cognito-idp $PROFILE_ARG describe-user-pool --user-pool-id $pool_id --query 'UserPool.Name' --output text 2>/dev/null)
+    POOL_NAME=$(aws cognito-idp $PROFILE_ARG describe-user-pool --user-pool-id $pool_id --query 'UserPool.Name' --output text 2>/dev/null || echo "")
     echo "  Processing pool: $POOL_NAME ($pool_id)"
     
     # Delete domain first if it exists
-    DOMAIN=$(aws cognito-idp $PROFILE_ARG describe-user-pool --user-pool-id $pool_id --query 'UserPool.Domain' --output text 2>/dev/null)
+    DOMAIN=$(aws cognito-idp $PROFILE_ARG describe-user-pool --user-pool-id $pool_id --query 'UserPool.Domain' --output text 2>/dev/null || echo "")
     if [[ ! -z "$DOMAIN" && "$DOMAIN" != "None" ]]; then
       echo "    Deleting domain: $DOMAIN"
       aws cognito-idp $PROFILE_ARG delete-user-pool-domain --domain $DOMAIN --user-pool-id $pool_id 2>/dev/null
@@ -877,7 +878,7 @@ echo "Step 13: Verifying cleanup"
 echo "=========================================="
 
 PROFILE_ARG=$(get_profile_arg)
-REMAINING_EXPORTS=$(aws cloudformation $PROFILE_ARG list-exports --query 'Exports[?contains(Name, `lab5`)].Name' --output text 2>/dev/null)
+REMAINING_EXPORTS=$(aws cloudformation $PROFILE_ARG list-exports --query 'Exports[?contains(Name, `lab5`)].Name' --output text 2>/dev/null || echo "")
 if [[ ! -z "$REMAINING_EXPORTS" ]]; then
   echo "⚠ Warning: Some Lab5 exports still exist:"
   echo "$REMAINING_EXPORTS"
@@ -888,7 +889,7 @@ fi
 
 echo ""
 
-REMAINING_TABLES=$(aws dynamodb $PROFILE_ARG list-tables --query 'TableNames[?contains(@, `lab5`)]' --output text 2>/dev/null)
+REMAINING_TABLES=$(aws dynamodb $PROFILE_ARG list-tables --query 'TableNames[?contains(@, `lab5`)]' --output text 2>/dev/null || echo "")
 if [[ ! -z "$REMAINING_TABLES" ]]; then
   echo "⚠ Warning: Some Lab5 DynamoDB tables still exist:"
   echo "$REMAINING_TABLES"

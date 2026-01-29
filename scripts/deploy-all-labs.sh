@@ -42,7 +42,7 @@ echo ""
 LAB2_EMAIL=""
 TENANT_EMAIL=""
 PROFILE=""
-PARALLEL=false
+PARALLEL=true
 
 # Function to deploy a lab
 deploy_lab() {
@@ -137,95 +137,63 @@ deploy_lab() {
     echo ""
 }
 
-# Generic function to deploy two labs in parallel
-deploy_two_labs_parallel() {
-    local lab1_num=$1
-    local lab2_num=$2
-    local wave_name=$3
+# Generic function to deploy multiple labs in parallel
+deploy_labs_parallel() {
+    local labs_to_deploy=("$@")
+    local wave_name="All Labs Parallel"
     
-    print_message "$YELLOW" "$wave_name: Starting parallel deployment of Lab$lab1_num and Lab$lab2_num..."
+    print_message "$YELLOW" "$wave_name: Starting parallel deployment of ${#labs_to_deploy[@]} labs: ${labs_to_deploy[*]}..."
     
     # Create temporary files to capture exit codes
-    local lab1_status_file=$(mktemp)
-    local lab2_status_file=$(mktemp)
+    local status_files=()
+    local pids=()
     
-    # Deploy first lab in background
-    (
-        if deploy_lab $lab1_num; then
-            echo "0" > "$lab1_status_file"
-        else
-            echo "1" > "$lab1_status_file"
-        fi
-    ) &
-    local lab1_pid=$!
+    # Deploy each lab in background
+    for lab in "${labs_to_deploy[@]}"; do
+        local status_file=$(mktemp)
+        status_files+=("$status_file")
+        
+        (
+            if deploy_lab "$lab"; then
+                echo "0" > "$status_file"
+            else
+                echo "1" > "$status_file"
+            fi
+        ) &
+        pids+=($!)
+    done
     
-    # Deploy second lab in background
-    (
-        if deploy_lab $lab2_num; then
-            echo "0" > "$lab2_status_file"
-        else
-            echo "1" > "$lab2_status_file"
-        fi
-    ) &
-    local lab2_pid=$!
-    
-    # Wait for both deployments to complete
-    print_message "$YELLOW" "Waiting for Lab$lab1_num and Lab$lab2_num to complete..."
-    wait $lab1_pid
-    wait $lab2_pid
+    # Wait for all deployments to complete
+    print_message "$YELLOW" "Waiting for all ${#labs_to_deploy[@]} labs to complete..."
+    for pid in "${pids[@]}"; do
+        wait "$pid"
+    done
     
     # Check results
-    local lab1_status=$(cat "$lab1_status_file")
-    local lab2_status=$(cat "$lab2_status_file")
+    local all_success=true
+    for i in "${!labs_to_deploy[@]}"; do
+        local lab="${labs_to_deploy[$i]}"
+        local status=$(cat "${status_files[$i]}")
+        
+        # Cleanup temp file
+        rm -f "${status_files[$i]}"
+        
+        if [ "$status" -eq 0 ]; then
+            SUCCESSFUL_LABS+=("$lab")
+            print_message "$GREEN" "Lab${lab} parallel deployment completed successfully!"
+        else
+            FAILED_LABS+=("$lab")
+            print_message "$RED" "Lab${lab} parallel deployment failed!"
+            all_success=false
+        fi
+    done
     
-    # Cleanup temp files
-    rm -f "$lab1_status_file" "$lab2_status_file"
-    
-    # Track results
-    local wave_failed=false
-    
-    if [ "$lab1_status" -eq 0 ]; then
-        SUCCESSFUL_LABS+=($lab1_num)
-        print_message "$GREEN" "Lab$lab1_num parallel deployment completed successfully!"
-    else
-        FAILED_LABS+=($lab1_num)
-        print_message "$RED" "Lab$lab1_num parallel deployment failed!"
-        wave_failed=true
-    fi
-    
-    if [ "$lab2_status" -eq 0 ]; then
-        SUCCESSFUL_LABS+=($lab2_num)
-        print_message "$GREEN" "Lab$lab2_num parallel deployment completed successfully!"
-    else
-        FAILED_LABS+=($lab2_num)
-        print_message "$RED" "Lab$lab2_num parallel deployment failed!"
-        wave_failed=true
-    fi
-    
-    # Return failure if either lab failed
-    if [ "$wave_failed" = true ]; then
+    # Return failure if any lab failed
+    if [ "$all_success" = false ]; then
         return 1
     fi
     
     return 0
-}
-
-# Function to deploy a single lab (for odd-numbered final wave)
-deploy_single_lab() {
-    local lab_num=$1
-    local wave_name=$2
-    
-    print_message "$YELLOW" "$wave_name: Starting deployment of Lab$lab_num..."
-    
-    if deploy_lab $lab_num; then
-        SUCCESSFUL_LABS+=($lab_num)
-        print_message "$GREEN" "Lab$lab_num deployment completed successfully!"
-        return 0
-    else
-        FAILED_LABS+=($lab_num)
-        print_message "$RED" "Lab$lab_num deployment failed!"
-        return 1
-    fi
 }
 
 # Function to verify prerequisites
@@ -309,6 +277,10 @@ while [[ $# -gt 0 ]]; do
             PARALLEL=true
             shift
             ;;
+        --sequential)
+            PARALLEL=false
+            shift
+            ;;
         --skip-verification)
             SKIP_VERIFICATION=true
             shift
@@ -326,7 +298,8 @@ while [[ $# -gt 0 ]]; do
                 echo "  --email <email>             Email address for Lab2-4 (required if deploying these labs)"
                 echo "  --tenant-email <email>      Tenant admin email for Lab3-4 (optional, enables auto-tenant creation)"
                 echo "  --profile <profile>         AWS profile to use (optional, uses default if not provided)"
-                echo "  --parallel                  Enable parallel deployment of independent labs"
+                echo "  --parallel                  Enable parallel deployment (DEFAULT)"
+                echo "  --sequential                Disable parallel deployment (deploy labs one by one)"
                 echo "  --skip-verification         Skip prerequisite verification"
                 echo "  --continue-on-error         Continue deploying next lab even if current fails"
                 echo "  --help                      Show this help message"
@@ -338,12 +311,11 @@ while [[ $# -gt 0 ]]; do
                 echo "  Lab5-7: No additional parameters required"
                 echo ""
                 echo "Parallel Deployment:"
-                echo "  When --parallel is enabled:"
-                echo "    Wave 1: Lab1 and Lab2 deploy concurrently"
-                echo "    Wave 2: Lab3 and Lab4 deploy concurrently"
-                echo "    Wave 3: Lab5 and Lab6 deploy concurrently"
-                echo "    Wave 4: Lab7 deploys independently"
-                echo "  This significantly reduces total deployment time"
+                echo "  Parallel deployment is ENABLED BY DEFAULT for faster deployment."
+                echo "  Use --sequential to disable parallel mode and deploy labs one by one."
+                echo "  When parallel is enabled:"
+                echo "    All 7 labs deploy concurrently for maximum speed"
+                echo "  This significantly reduces total deployment time from ~70-90 minutes to ~15-20 minutes"
                 echo "  All labs are self-contained and infrastructure-independent"
                 echo "  Lab3 creates its own complete infrastructure (Cognito, tenant management, shared services)"
                 echo "  Lab7 is completely independent and generates its own sample data"
@@ -352,7 +324,7 @@ while [[ $# -gt 0 ]]; do
                 echo "  $0 --email user@example.com"
                 echo "  $0 --email user@example.com --tenant-email tenant@example.com"
                 echo "  $0 --email user@example.com --profile serverless-saas-demo"
-                echo "  $0 --email user@example.com --parallel"
+                echo "  $0 --email user@example.com --sequential  # Disable parallel mode"
                 echo "  $0 --lab 1"
                 echo "  $0 --lab 2 --email user@example.com --profile my-profile"
                 echo "  $0 --lab 3 --email user@example.com --tenant-email tenant@example.com"
@@ -420,7 +392,7 @@ if [ -n "$PROFILE" ]; then
     print_message "$YELLOW" "  AWS Profile: $PROFILE"
 fi
 if [ "$PARALLEL" = true ]; then
-    print_message "$YELLOW" "  Parallel Mode: Enabled (4 waves of 2 labs each)"
+    print_message "$YELLOW" "  Parallel Mode: Enabled (all 7 labs deploy concurrently)"
 fi
 print_message "$YELLOW" "  Stop on Error: $STOP_ON_ERROR"
 
@@ -435,49 +407,15 @@ FAILED_LABS=()
 
 # Deploy labs based on mode
 if [ "$DEPLOY_ALL" = true ] && [ "$PARALLEL" = true ]; then
-    # Parallel mode: Deploy labs in waves of 2
+    # Parallel mode: Deploy all 7 labs concurrently
     print_message "$BLUE" "========================================"
-    print_message "$BLUE" "Parallel Deployment Mode (Waves of 2)"
+    print_message "$BLUE" "Parallel Deployment Mode (All 7 Labs)"
     print_message "$BLUE" "========================================"
     
-    continue_deployment=true
-    
-    # Wave 1: Lab1 + Lab2
-    if [ "$continue_deployment" = true ]; then
-        if ! deploy_two_labs_parallel 1 2 "Wave 1"; then
-            if [ "$STOP_ON_ERROR" = true ]; then
-                print_message "$RED" "Stopping deployment due to Wave 1 failure"
-                continue_deployment=false
-            fi
-        fi
-    fi
-    
-    # Wave 2: Lab3 + Lab4
-    if [ "$continue_deployment" = true ]; then
-        if ! deploy_two_labs_parallel 3 4 "Wave 2"; then
-            if [ "$STOP_ON_ERROR" = true ]; then
-                print_message "$RED" "Stopping deployment due to Wave 2 failure"
-                continue_deployment=false
-            fi
-        fi
-    fi
-    
-    # Wave 3: Lab5 + Lab6
-    if [ "$continue_deployment" = true ]; then
-        if ! deploy_two_labs_parallel 5 6 "Wave 3"; then
-            if [ "$STOP_ON_ERROR" = true ]; then
-                print_message "$RED" "Stopping deployment due to Wave 3 failure"
-                continue_deployment=false
-            fi
-        fi
-    fi
-    
-    # Wave 4: Lab7 (single lab)
-    if [ "$continue_deployment" = true ]; then
-        if ! deploy_single_lab 7 "Wave 4"; then
-            if [ "$STOP_ON_ERROR" = true ]; then
-                print_message "$RED" "Stopping deployment due to Wave 4 failure"
-            fi
+    # Deploy all labs in parallel
+    if ! deploy_labs_parallel 1 2 3 4 5 6 7; then
+        if [ "$STOP_ON_ERROR" = true ]; then
+            print_message "$RED" "Stopping deployment due to failures"
         fi
     fi
     

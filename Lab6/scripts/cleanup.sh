@@ -715,16 +715,17 @@ print_message "$BLUE" "=========================================="
 LAB5_DEPLOYED=false
 
 # Check for Lab5 pipeline stack (uses CDK)
-LAB5_PIPELINE=$(aws cloudformation $PROFILE_ARG describe-stacks --stack-name "serverless-saas-pipeline-lab5" 2>/dev/null)
-if [[ $? -eq 0 ]]; then
+# Use || echo "" to prevent set -e from exiting when stack doesn't exist
+LAB5_PIPELINE=$(aws cloudformation $PROFILE_ARG describe-stacks --stack-name "serverless-saas-pipeline-lab5" 2>/dev/null || echo "")
+if [[ -n "$LAB5_PIPELINE" ]]; then
   LAB5_DEPLOYED=true
   print_message "$YELLOW" "⚠️  Lab5 pipeline stack detected - CDKToolkit is still in use"
 fi
 
 # Check for Lab5 shared stack (might have CDK dependencies)
 if [[ "$LAB5_DEPLOYED" == false ]]; then
-  LAB5_SHARED=$(aws cloudformation $PROFILE_ARG describe-stacks --stack-name "serverless-saas-shared-lab5" 2>/dev/null)
-  if [[ $? -eq 0 ]]; then
+  LAB5_SHARED=$(aws cloudformation $PROFILE_ARG describe-stacks --stack-name "serverless-saas-shared-lab5" 2>/dev/null || echo "")
+  if [[ -n "$LAB5_SHARED" ]]; then
     LAB5_DEPLOYED=true
     print_message "$YELLOW" "⚠️  Lab5 shared stack detected - CDKToolkit might still be in use"
   fi
