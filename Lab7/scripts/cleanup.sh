@@ -221,9 +221,9 @@ fi
 print_message "$GREEN" "CloudWatch Log Groups cleanup complete"
 echo ""
 
-# Step 3: Clean up S3 buckets
+# Step 3: Clean up S3 buckets (BEFORE stack deletion)
 print_message "$BLUE" "=========================================="
-print_message "$BLUE" "Step 3: Cleaning up S3 buckets"
+print_message "$BLUE" "Step 3: Cleaning up S3 buckets (initial cleanup)"
 print_message "$BLUE" "=========================================="
 BUCKETS=$(aws s3api list-buckets $PROFILE_ARG --query "Buckets[?contains(Name, 'serverless-saas-lab7')].Name" --output text)
 
@@ -234,7 +234,7 @@ if [ -n "$BUCKETS" ]; then
         echo "  Deleting bucket: $bucket"
         aws s3api delete-bucket --bucket $bucket --region "$AWS_REGION" $PROFILE_ARG 2>/dev/null || true
     done
-    print_message "$GREEN" "S3 buckets cleaned up"
+    print_message "$GREEN" "S3 buckets cleaned up (initial)"
 else
     echo "  No Lab7 S3 buckets found"
 fi
@@ -322,6 +322,27 @@ else
 fi
 
 print_message "$GREEN" "DynamoDB tables cleaned up"
+echo ""
+
+# Step 6.5: Clean up S3 buckets again (catch buckets created during stack deletion)
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 6.5: Cleaning up S3 buckets (final cleanup)"
+print_message "$BLUE" "=========================================="
+print_message "$YELLOW" "Checking for buckets created during stack deletion..."
+
+BUCKETS=$(aws s3api list-buckets $PROFILE_ARG --query "Buckets[?contains(Name, 'serverless-saas-lab7')].Name" --output text)
+
+if [ -n "$BUCKETS" ]; then
+    for bucket in $BUCKETS; do
+        echo "  Emptying bucket: $bucket"
+        aws s3 rm s3://$bucket --recursive --quiet --region "$AWS_REGION" $PROFILE_ARG 2>/dev/null || true
+        echo "  Deleting bucket: $bucket"
+        aws s3api delete-bucket --bucket $bucket --region "$AWS_REGION" $PROFILE_ARG 2>/dev/null || true
+    done
+    print_message "$GREEN" "S3 buckets cleaned up (final)"
+else
+    echo "  No Lab7 S3 buckets found"
+fi
 echo ""
 
 # Step 7: Delete Lambda functions with lab7 prefix

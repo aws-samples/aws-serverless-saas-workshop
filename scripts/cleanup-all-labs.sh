@@ -1253,7 +1253,7 @@ print_message "$YELLOW" "Checking for workshop-created account-level IAM roles..
 # Define account-level roles created by the workshop
 # These roles are shared across labs and should only be deleted when ALL labs are cleaned up
 ACCOUNT_LEVEL_ROLES=(
-    "APIGatewayCloudWatchLogsRole"
+    "apigateway-cloudwatch-publish-role"
 )
 
 # Track if any roles were found
