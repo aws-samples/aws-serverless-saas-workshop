@@ -409,6 +409,9 @@ if [[ $DEPLOY_CLIENT -eq 1 ]]; then
 
   # Create admin-user in OperationUsers userpool with given input email address
   print_message "$YELLOW" "  Creating admin user in Cognito..."
+  print_message "$YELLOW" "    User Pool ID: $ADMIN_USERPOOL_ID"
+  print_message "$YELLOW" "    Email: $ADMIN_EMAIL"
+  
   if [[ -n "$AWS_PROFILE" ]]; then
     CREATE_ADMIN_USER=$(aws cognito-idp --profile "$AWS_PROFILE" admin-create-user \
       --user-pool-id "$ADMIN_USERPOOL_ID" \
@@ -425,19 +428,23 @@ if [[ $DEPLOY_CLIENT -eq 1 ]]; then
       --region "$AWS_REGION" 2>&1)
   fi
 
-  if [[ $? -eq 0 ]]; then
+  CREATE_USER_EXIT_CODE=$?
+  if [[ $CREATE_USER_EXIT_CODE -eq 0 ]]; then
     print_message "$GREEN" "  ✓ Admin user created successfully"
   else
     if echo "$CREATE_ADMIN_USER" | grep -q "UsernameExistsException"; then
       print_message "$YELLOW" "  Warning: Admin user already exists"
     else
-      print_message "$RED" "  Error creating admin user: $CREATE_ADMIN_USER"
+      print_message "$RED" "  Error creating admin user (exit code: $CREATE_USER_EXIT_CODE)"
+      print_message "$RED" "  Error details: $CREATE_ADMIN_USER"
       exit 1
     fi
   fi
 
   # Add admin-user to admin user group
   print_message "$YELLOW" "  Adding admin user to admin group..."
+  print_message "$YELLOW" "    Group Name: $ADMIN_USER_GROUP_NAME"
+  
   if [[ -n "$AWS_PROFILE" ]]; then
     ADD_ADMIN_USER_TO_GROUP=$(aws cognito-idp --profile "$AWS_PROFILE" admin-add-user-to-group \
       --user-pool-id "$ADMIN_USERPOOL_ID" \
@@ -452,10 +459,12 @@ if [[ $DEPLOY_CLIENT -eq 1 ]]; then
       --region "$AWS_REGION" 2>&1)
   fi
 
-  if [[ $? -eq 0 ]]; then
+  ADD_USER_GROUP_EXIT_CODE=$?
+  if [[ $ADD_USER_GROUP_EXIT_CODE -eq 0 ]]; then
     print_message "$GREEN" "  ✓ Admin user added to group"
   else
-    print_message "$YELLOW" "  Warning: Could not add user to group (may already be member)"
+    print_message "$YELLOW" "  Warning: Could not add user to group (exit code: $ADD_USER_GROUP_EXIT_CODE)"
+    print_message "$YELLOW" "  Details: $ADD_ADMIN_USER_TO_GROUP"
   fi
 
   # Configuring admin UI
@@ -506,29 +515,44 @@ EoF
   rm -rf node_modules package-lock.json || true
 
   print_message "$YELLOW" "  Installing npm dependencies for Admin Client..."
-  npm install || {
-    print_message "$RED" "Error: npm install failed for Admin Client"
+  NPM_INSTALL_OUTPUT=$(npm install 2>&1)
+  NPM_INSTALL_EXIT_CODE=$?
+  
+  if [[ $NPM_INSTALL_EXIT_CODE -ne 0 ]]; then
+    print_message "$RED" "Error: npm install failed for Admin Client (exit code: $NPM_INSTALL_EXIT_CODE)"
+    print_message "$RED" "Error output:"
+    echo "$NPM_INSTALL_OUTPUT"
     exit 1
-  }
+  fi
+  print_message "$GREEN" "  ✓ npm dependencies installed"
   
   print_message "$YELLOW" "  Building Admin Client..."
-  npm run build || {
-    print_message "$RED" "Error: npm build failed for Admin Client"
+  NPM_BUILD_OUTPUT=$(npm run build 2>&1)
+  NPM_BUILD_EXIT_CODE=$?
+  
+  if [[ $NPM_BUILD_EXIT_CODE -ne 0 ]]; then
+    print_message "$RED" "Error: npm build failed for Admin Client (exit code: $NPM_BUILD_EXIT_CODE)"
+    print_message "$RED" "Error output:"
+    echo "$NPM_BUILD_OUTPUT"
     exit 1
-  }
+  fi
   print_message "$GREEN" "  ✓ Admin Client built successfully"
 
   print_message "$YELLOW" "  Uploading Admin Client to S3..."
-  if [[ -n "$AWS_PROFILE" ]]; then
-    aws s3 --profile "$AWS_PROFILE" sync --delete --cache-control no-store dist "s3://${ADMIN_SITE_BUCKET}" --region "$AWS_REGION" || {
-      print_message "$RED" "Error: Failed to upload Admin Client to S3"
-      exit 1
-    }
-  else
-    aws s3 sync --delete --cache-control no-store dist "s3://${ADMIN_SITE_BUCKET}" --region "$AWS_REGION" || {
-      print_message "$RED" "Error: Failed to upload Admin Client to S3"
-      exit 1
-    }
+  S3_SYNC_OUTPUT=$(
+    if [[ -n "$AWS_PROFILE" ]]; then
+      aws s3 --profile "$AWS_PROFILE" sync --delete --cache-control no-store dist "s3://${ADMIN_SITE_BUCKET}" --region "$AWS_REGION" 2>&1
+    else
+      aws s3 sync --delete --cache-control no-store dist "s3://${ADMIN_SITE_BUCKET}" --region "$AWS_REGION" 2>&1
+    fi
+  )
+  S3_SYNC_EXIT_CODE=$?
+  
+  if [[ $S3_SYNC_EXIT_CODE -ne 0 ]]; then
+    print_message "$RED" "Error: Failed to upload Admin Client to S3 (exit code: $S3_SYNC_EXIT_CODE)"
+    print_message "$RED" "Error output:"
+    echo "$S3_SYNC_OUTPUT"
+    exit 1
   fi
   print_message "$GREEN" "  ✓ Admin Client deployed successfully"
 
@@ -569,29 +593,44 @@ EoF
   rm -rf node_modules package-lock.json || true
 
   print_message "$YELLOW" "  Installing npm dependencies for Landing Client..."
-  npm install || {
-    print_message "$RED" "Error: npm install failed for Landing Client"
+  NPM_INSTALL_OUTPUT=$(npm install 2>&1)
+  NPM_INSTALL_EXIT_CODE=$?
+  
+  if [[ $NPM_INSTALL_EXIT_CODE -ne 0 ]]; then
+    print_message "$RED" "Error: npm install failed for Landing Client (exit code: $NPM_INSTALL_EXIT_CODE)"
+    print_message "$RED" "Error output:"
+    echo "$NPM_INSTALL_OUTPUT"
     exit 1
-  }
+  fi
+  print_message "$GREEN" "  ✓ npm dependencies installed"
   
   print_message "$YELLOW" "  Building Landing Client..."
-  npm run build || {
-    print_message "$RED" "Error: npm build failed for Landing Client"
+  NPM_BUILD_OUTPUT=$(npm run build 2>&1)
+  NPM_BUILD_EXIT_CODE=$?
+  
+  if [[ $NPM_BUILD_EXIT_CODE -ne 0 ]]; then
+    print_message "$RED" "Error: npm build failed for Landing Client (exit code: $NPM_BUILD_EXIT_CODE)"
+    print_message "$RED" "Error output:"
+    echo "$NPM_BUILD_OUTPUT"
     exit 1
-  }
+  fi
   print_message "$GREEN" "  ✓ Landing Client built successfully"
 
   print_message "$YELLOW" "  Uploading Landing Client to S3..."
-  if [[ -n "$AWS_PROFILE" ]]; then
-    aws s3 --profile "$AWS_PROFILE" sync --delete --cache-control no-store dist "s3://${LANDING_APP_SITE_BUCKET}" --region "$AWS_REGION" || {
-      print_message "$RED" "Error: Failed to upload Landing Client to S3"
-      exit 1
-    }
-  else
-    aws s3 sync --delete --cache-control no-store dist "s3://${LANDING_APP_SITE_BUCKET}" --region "$AWS_REGION" || {
-      print_message "$RED" "Error: Failed to upload Landing Client to S3"
-      exit 1
-    }
+  S3_SYNC_OUTPUT=$(
+    if [[ -n "$AWS_PROFILE" ]]; then
+      aws s3 --profile "$AWS_PROFILE" sync --delete --cache-control no-store dist "s3://${LANDING_APP_SITE_BUCKET}" --region "$AWS_REGION" 2>&1
+    else
+      aws s3 sync --delete --cache-control no-store dist "s3://${LANDING_APP_SITE_BUCKET}" --region "$AWS_REGION" 2>&1
+    fi
+  )
+  S3_SYNC_EXIT_CODE=$?
+  
+  if [[ $S3_SYNC_EXIT_CODE -ne 0 ]]; then
+    print_message "$RED" "Error: Failed to upload Landing Client to S3 (exit code: $S3_SYNC_EXIT_CODE)"
+    print_message "$RED" "Error output:"
+    echo "$S3_SYNC_OUTPUT"
+    exit 1
   fi
   print_message "$GREEN" "  ✓ Landing Client deployed successfully"
 

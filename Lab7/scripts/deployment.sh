@@ -170,8 +170,11 @@ else
 fi
 
 sam build -t "$LAB_DIR/template.yaml"
-sam deploy --config-file "$LAB_DIR/samconfig.toml" --region="$AWS_REGION" --stack-name="$MAIN_STACK_NAME" $PROFILE_ARG
-print_message "$GREEN" "✓ Main stack deployed"
+if sam deploy --config-file "$LAB_DIR/samconfig.toml" --region="$AWS_REGION" --stack-name="$MAIN_STACK_NAME" $PROFILE_ARG 2>&1 | tee /dev/tty | grep -q "No changes to deploy"; then
+  print_message "$GREEN" "✓ Main stack is up to date (no changes to deploy)"
+else
+  print_message "$GREEN" "✓ Main stack deployed"
+fi
 echo ""
 
 # Step 2: Upload sample CUR data
@@ -273,8 +276,11 @@ else
 fi
 
 sam build --template-file "$LAB_DIR/tenant-template.yaml"
-sam deploy --config-file "$LAB_DIR/tenant-samconfig.toml" --region="$AWS_REGION" --stack-name="$TENANT_STACK_NAME" $PROFILE_ARG
-print_message "$GREEN" "✓ Tenant stack deployed"
+if sam deploy --config-file "$LAB_DIR/tenant-samconfig.toml" --region="$AWS_REGION" --stack-name="$TENANT_STACK_NAME" $PROFILE_ARG 2>&1 | tee /dev/tty | grep -q "No changes to deploy"; then
+  print_message "$GREEN" "✓ Tenant stack is up to date (no changes to deploy)"
+else
+  print_message "$GREEN" "✓ Tenant stack deployed"
+fi
 echo ""
 
 # Step 5: Generate Lambda invocations for cost attribution demo

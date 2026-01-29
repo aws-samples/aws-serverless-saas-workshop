@@ -63,6 +63,9 @@ deploy_lab() {
         print_message "$GREEN" "Running Lab${lab_num} deployment script..."
         cd "$lab_dir/scripts"
         
+        # Create error log file for this lab
+        local lab_error_log="$LOG_DIR/lab${lab_num}-error-$(date +%Y%m%d-%H%M%S).log"
+        
         # Run deployment script with appropriate parameters
         local deploy_cmd=""
         case $lab_num in
@@ -119,13 +122,34 @@ deploy_lab() {
                 ;;
         esac
         
-        # Run deployment script
-        if eval "$deploy_cmd"; then
+        # Run deployment script with enhanced error capture
+        print_message "$YELLOW" "Command: $deploy_cmd"
+        print_message "$YELLOW" "Error log: $lab_error_log"
+        
+        # Capture both stdout and stderr, with stderr going to error log
+        if eval "$deploy_cmd" 2> >(tee -a "$lab_error_log" >&2); then
             print_message "$GREEN" "Lab${lab_num} deployment completed successfully!"
             cd "$WORKSHOP_ROOT"
             return 0
         else
-            print_message "$RED" "Lab${lab_num} deployment failed!"
+            local exit_code=$?
+            print_message "$RED" "Lab${lab_num} deployment failed with exit code: $exit_code"
+            print_message "$RED" "Error details saved to: $lab_error_log"
+            
+            # Add error summary to main log
+            echo "" >> "$LOG_FILE"
+            echo "=========================================" >> "$LOG_FILE"
+            echo "Lab${lab_num} Deployment Error Summary" >> "$LOG_FILE"
+            echo "=========================================" >> "$LOG_FILE"
+            echo "Exit Code: $exit_code" >> "$LOG_FILE"
+            echo "Command: $deploy_cmd" >> "$LOG_FILE"
+            echo "Error Log: $lab_error_log" >> "$LOG_FILE"
+            echo "" >> "$LOG_FILE"
+            echo "Last 50 lines of error output:" >> "$LOG_FILE"
+            tail -n 50 "$lab_error_log" >> "$LOG_FILE" 2>/dev/null || echo "No error output captured" >> "$LOG_FILE"
+            echo "=========================================" >> "$LOG_FILE"
+            echo "" >> "$LOG_FILE"
+            
             cd "$WORKSHOP_ROOT"
             return 1
         fi
