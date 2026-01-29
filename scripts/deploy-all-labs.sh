@@ -286,15 +286,15 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         --email)
-            LAB2_EMAIL=$2
+            export LAB2_EMAIL=$2
             shift 2
             ;;
         --tenant-email)
-            TENANT_EMAIL=$2
+            export TENANT_EMAIL=$2
             shift 2
             ;;
         --profile)
-            PROFILE=$2
+            export PROFILE=$2
             shift 2
             ;;
         --parallel)
