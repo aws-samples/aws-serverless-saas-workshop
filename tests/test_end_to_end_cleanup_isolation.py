@@ -40,6 +40,31 @@ from datetime import datetime
 import sys
 
 
+# ANSI Color codes for output (matching bash scripts)
+class Colors:
+    RED = '\033[0;31m'
+    GREEN = '\033[0;32m'
+    YELLOW = '\033[1;33m'
+    BLUE = '\033[0;34m'
+    NC = '\033[0m'  # No Color
+
+
+def print_colored(color: str, message: str, flush: bool = True):
+    """Print colored message with automatic flushing for real-time output."""
+    print(f"{color}{message}{Colors.NC}", flush=flush)
+
+
+def print_separator(char: str = "=", length: int = 80, color: str = Colors.BLUE):
+    """Print a separator line."""
+    print_colored(color, char * length)
+
+
+def print_timestamp():
+    """Print current timestamp."""
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    print_colored(Colors.YELLOW, f"[{timestamp}]", flush=True)
+
+
 # Constants
 WORKSHOP_ROOT = Path(__file__).parent.parent
 SCRIPTS_DIR = WORKSHOP_ROOT / "scripts"
@@ -219,66 +244,102 @@ class EndToEndTestRunner:
         self.email = email
         self.tracker = AWSResourceTracker(aws_profile, dry_run)
         self.results: List[StepResult] = []
-        self.profile_arg = f"--profile {aws_profile}" if aws_profile else ""
+        # Store profile args as a list for proper argument passing
+        self.profile_args = ["--profile", aws_profile] if aws_profile else []
     
     def run_script(self, script_path: Path, args: List[str] = None, 
                    timeout: int = 3600) -> Tuple[bool, str, float]:
         """
-        Run a deployment or cleanup script.
+        Run a deployment or cleanup script with real-time output.
         
         Returns:
             Tuple of (success, output, duration_seconds)
         """
         if self.dry_run:
             # Simulate script execution in dry-run mode
-            print(f"[DRY-RUN] Would execute: {script_path} {' '.join(args or [])}")
+            print_colored(Colors.YELLOW, f"[DRY-RUN] Would execute: {script_path} {' '.join(args or [])}")
             return True, "Dry-run mode - script not executed", 0.1
         
         start_time = time.time()
         
         try:
             cmd = [str(script_path)] + (args or [])
-            result = subprocess.run(
+            print_colored(Colors.YELLOW, f"Executing: {' '.join(cmd)}")
+            print_colored(Colors.YELLOW, f"Working directory: {script_path.parent}")
+            print_timestamp()
+            print()
+            
+            # Run with real-time output streaming
+            process = subprocess.Popen(
                 cmd,
-                capture_output=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
                 text=True,
-                timeout=timeout,
+                bufsize=1,  # Line buffered
                 cwd=script_path.parent
             )
             
+            output_lines = []
+            
+            # Stream output in real-time
+            for line in process.stdout:
+                print(line, end='', flush=True)  # Print immediately
+                output_lines.append(line)
+            
+            # Wait for process to complete
+            process.wait(timeout=timeout)
+            
             duration = time.time() - start_time
-            success = result.returncode == 0
-            output = result.stdout + result.stderr
+            success = process.returncode == 0
+            output = ''.join(output_lines)
+            
+            print()
+            print_timestamp()
+            if success:
+                print_colored(Colors.GREEN, f"✓ Script completed successfully in {duration:.2f} seconds")
+            else:
+                print_colored(Colors.RED, f"✗ Script failed with exit code {process.returncode} after {duration:.2f} seconds")
+            print()
             
             return success, output, duration
         
         except subprocess.TimeoutExpired:
             duration = time.time() - start_time
+            print_colored(Colors.RED, f"✗ Script timed out after {timeout} seconds")
             return False, f"Script timed out after {timeout} seconds", duration
         
         except Exception as e:
             duration = time.time() - start_time
+            print_colored(Colors.RED, f"✗ Script execution failed: {str(e)}")
             return False, f"Script execution failed: {str(e)}", duration
 
     def step_1_cleanup_all_labs(self) -> StepResult:
         """Step 1: Run cleanup-all-labs script to ensure clean state."""
-        print("\n" + "="*80)
-        print("STEP 1: Cleanup All Labs (Ensure Clean State)")
-        print("="*80)
+        print()
+        print_separator()
+        print_colored(Colors.BLUE, "STEP 1: Cleanup All Labs (Ensure Clean State)")
+        print_separator()
+        print()
         
         start_time = time.time()
         resources_before = self.tracker.take_snapshot()
         
+        print_colored(Colors.YELLOW, f"Resources before cleanup: {resources_before.count()}")
+        print()
+        
         # Run cleanup-all-labs script
         script_path = SCRIPTS_DIR / "cleanup-all-labs.sh"
-        args = [self.profile_arg] if self.profile_arg else []
+        args = self.profile_args.copy()  # Use profile_args list
         
         success, output, script_duration = self.run_script(script_path, args, timeout=1800)
         
         # Wait for resources to be deleted
         if not self.dry_run:
-            print("Waiting 60 seconds for resources to be deleted...")
-            time.sleep(60)
+            print_colored(Colors.YELLOW, "Waiting 60 seconds for resources to be deleted...")
+            for i in range(60, 0, -10):
+                print_colored(Colors.YELLOW, f"  {i} seconds remaining...", flush=True)
+                time.sleep(10)
+            print()
         
         resources_after = self.tracker.take_snapshot()
         resources_deleted = resources_before - resources_after
@@ -307,25 +368,32 @@ class EndToEndTestRunner:
     
     def step_2_deploy_all_labs(self) -> StepResult:
         """Step 2: Run deploy-all-labs script to deploy all labs."""
-        print("\n" + "="*80)
-        print("STEP 2: Deploy All Labs")
-        print("="*80)
+        print()
+        print_separator()
+        print_colored(Colors.BLUE, "STEP 2: Deploy All Labs")
+        print_separator()
+        print()
         
         start_time = time.time()
         resources_before = self.tracker.take_snapshot()
         
+        print_colored(Colors.YELLOW, f"Resources before deployment: {resources_before.count()}")
+        print()
+        
         # Run deploy-all-labs script
         script_path = SCRIPTS_DIR / "deploy-all-labs.sh"
-        args = ["--all", f"--email={self.email}"]
-        if self.profile_arg:
-            args.append(self.profile_arg)
+        args = ["--all", "--email", self.email]
+        args.extend(self.profile_args)  # Add profile args as separate items
         
         success, output, script_duration = self.run_script(script_path, args, timeout=5400)
         
         # Wait for resources to be created
         if not self.dry_run:
-            print("Waiting 60 seconds for resources to be created...")
-            time.sleep(60)
+            print_colored(Colors.YELLOW, "Waiting 60 seconds for resources to be created...")
+            for i in range(60, 0, -10):
+                print_colored(Colors.YELLOW, f"  {i} seconds remaining...", flush=True)
+                time.sleep(10)
+            print()
         
         resources_after = self.tracker.take_snapshot()
         resources_deleted = resources_before - resources_after
@@ -375,12 +443,17 @@ class EndToEndTestRunner:
         lab_id = f"lab{lab_num}"
         step_num = lab_num + 2  # Steps 3-9 are lab cleanups
         
-        print("\n" + "="*80)
-        print(f"STEP {step_num}: Cleanup Lab{lab_num} (Verify Lab{lab_num+1}-Lab7 Intact)")
-        print("="*80)
+        print()
+        print_separator()
+        print_colored(Colors.BLUE, f"STEP {step_num}: Cleanup Lab{lab_num} (Verify Lab{lab_num+1}-Lab7 Intact)")
+        print_separator()
+        print()
         
         start_time = time.time()
         resources_before = self.tracker.take_snapshot()
+        
+        print_colored(Colors.YELLOW, f"Resources before Lab{lab_num} cleanup: {resources_before.count()}")
+        print()
         
         # Get resources for target lab and remaining labs before cleanup
         target_lab_before = self.tracker.get_lab_resources(resources_before, lab_id)
@@ -394,15 +467,17 @@ class EndToEndTestRunner:
         lab_dir = WORKSHOP_ROOT / f"Lab{lab_num}"
         script_path = lab_dir / "scripts" / "cleanup.sh"
         args = [f"--stack-name=serverless-saas-lab{lab_num}"]
-        if self.profile_arg:
-            args.append(self.profile_arg)
+        args.extend(self.profile_args)  # Add profile args as separate items
         
         success, output, script_duration = self.run_script(script_path, args, timeout=1800)
         
         # Wait for resources to be deleted
         if not self.dry_run:
-            print(f"Waiting 60 seconds for Lab{lab_num} resources to be deleted...")
-            time.sleep(60)
+            print_colored(Colors.YELLOW, f"Waiting 60 seconds for Lab{lab_num} resources to be deleted...")
+            for i in range(60, 0, -10):
+                print_colored(Colors.YELLOW, f"  {i} seconds remaining...", flush=True)
+                time.sleep(10)
+            print()
         
         resources_after = self.tracker.take_snapshot()
         resources_deleted = resources_before - resources_after
@@ -480,26 +555,33 @@ class EndToEndTestRunner:
 
     def step_10_redeploy_all_labs(self) -> StepResult:
         """Step 10: Run deploy-all-labs script again to redeploy all labs."""
-        print("\n" + "="*80)
-        print("STEP 10: Redeploy All Labs")
-        print("="*80)
+        print()
+        print_separator()
+        print_colored(Colors.BLUE, "STEP 10: Redeploy All Labs")
+        print_separator()
+        print()
         
         # This is identical to step 2
         start_time = time.time()
         resources_before = self.tracker.take_snapshot()
         
+        print_colored(Colors.YELLOW, f"Resources before redeployment: {resources_before.count()}")
+        print()
+        
         # Run deploy-all-labs script
         script_path = SCRIPTS_DIR / "deploy-all-labs.sh"
-        args = ["--all", f"--email={self.email}"]
-        if self.profile_arg:
-            args.append(self.profile_arg)
+        args = ["--all", "--email", self.email]
+        args.extend(self.profile_args)  # Add profile args as separate items
         
         success, output, script_duration = self.run_script(script_path, args, timeout=5400)
         
         # Wait for resources to be created
         if not self.dry_run:
-            print("Waiting 60 seconds for resources to be created...")
-            time.sleep(60)
+            print_colored(Colors.YELLOW, "Waiting 60 seconds for resources to be created...")
+            for i in range(60, 0, -10):
+                print_colored(Colors.YELLOW, f"  {i} seconds remaining...", flush=True)
+                time.sleep(10)
+            print()
         
         resources_after = self.tracker.take_snapshot()
         resources_deleted = resources_before - resources_after
@@ -537,23 +619,31 @@ class EndToEndTestRunner:
     
     def step_11_cleanup_all_labs_final(self) -> StepResult:
         """Step 11: Run cleanup-all-labs script and verify all resources deleted."""
-        print("\n" + "="*80)
-        print("STEP 11: Cleanup All Labs (Final Verification)")
-        print("="*80)
+        print()
+        print_separator()
+        print_colored(Colors.BLUE, "STEP 11: Cleanup All Labs (Final Verification)")
+        print_separator()
+        print()
         
         start_time = time.time()
         resources_before = self.tracker.take_snapshot()
         
+        print_colored(Colors.YELLOW, f"Resources before final cleanup: {resources_before.count()}")
+        print()
+        
         # Run cleanup-all-labs script
         script_path = SCRIPTS_DIR / "cleanup-all-labs.sh"
-        args = [self.profile_arg] if self.profile_arg else []
+        args = self.profile_args.copy()  # Use profile_args list
         
         success, output, script_duration = self.run_script(script_path, args, timeout=1800)
         
         # Wait for resources to be deleted
         if not self.dry_run:
-            print("Waiting 60 seconds for resources to be deleted...")
-            time.sleep(60)
+            print_colored(Colors.YELLOW, "Waiting 60 seconds for resources to be deleted...")
+            for i in range(60, 0, -10):
+                print_colored(Colors.YELLOW, f"  {i} seconds remaining...", flush=True)
+                time.sleep(10)
+            print()
         
         resources_after = self.tracker.take_snapshot()
         resources_deleted = resources_before - resources_after
@@ -596,68 +686,93 @@ class EndToEndTestRunner:
 
     def _print_step_summary(self, result: StepResult):
         """Print a summary of a step result."""
-        status = "✓ PASS" if result.success else "✗ FAIL"
-        print(f"\n{status} - Step {result.step_number}: {result.step_name}")
-        print(f"Duration: {result.duration_seconds:.2f} seconds")
-        print(f"Resources before: {result.resources_before.count()}")
-        print(f"Resources after: {result.resources_after.count()}")
-        print(f"Resources deleted: {result.resources_deleted.count()}")
+        print()
+        print_separator("-", 80, Colors.YELLOW)
+        
+        status_color = Colors.GREEN if result.success else Colors.RED
+        status_text = "✓ PASS" if result.success else "✗ FAIL"
+        print_colored(status_color, f"{status_text} - Step {result.step_number}: {result.step_name}")
+        
+        print_colored(Colors.YELLOW, f"Duration: {result.duration_seconds:.2f} seconds ({result.duration_seconds/60:.2f} minutes)")
+        print_colored(Colors.YELLOW, f"Resources before: {result.resources_before.count()}")
+        print_colored(Colors.YELLOW, f"Resources after: {result.resources_after.count()}")
+        print_colored(Colors.YELLOW, f"Resources deleted: {result.resources_deleted.count()}")
         
         if result.warnings:
-            print("\nWarnings:")
+            print()
+            print_colored(Colors.YELLOW, "Warnings:")
             for warning in result.warnings:
-                print(f"  - {warning}")
+                print_colored(Colors.YELLOW, f"  - {warning}")
         
         if result.error_message:
-            print(f"\nError: {result.error_message}")
+            print()
+            print_colored(Colors.RED, f"Error: {result.error_message}")
+        
+        print_separator("-", 80, Colors.YELLOW)
+        print()
     
     def print_final_report(self):
         """Print a comprehensive final report of all test steps."""
-        print("\n" + "="*80)
-        print("END-TO-END CLEANUP ISOLATION TEST - FINAL REPORT")
-        print("="*80)
+        print()
+        print_separator("=", 80, Colors.BLUE)
+        print_colored(Colors.BLUE, "END-TO-END CLEANUP ISOLATION TEST - FINAL REPORT")
+        print_separator("=", 80, Colors.BLUE)
+        print()
         
         total_duration = sum(r.duration_seconds for r in self.results)
         passed_steps = sum(1 for r in self.results if r.success)
         failed_steps = len(self.results) - passed_steps
         
-        print(f"\nTotal Steps: {len(self.results)}")
-        print(f"Passed: {passed_steps}")
-        print(f"Failed: {failed_steps}")
-        print(f"Total Duration: {total_duration:.2f} seconds ({total_duration/60:.2f} minutes)")
+        print_colored(Colors.YELLOW, f"Total Steps: {len(self.results)}")
+        print_colored(Colors.GREEN if passed_steps == len(self.results) else Colors.YELLOW, 
+                     f"Passed: {passed_steps}")
+        if failed_steps > 0:
+            print_colored(Colors.RED, f"Failed: {failed_steps}")
+        else:
+            print_colored(Colors.GREEN, f"Failed: {failed_steps}")
+        print_colored(Colors.YELLOW, f"Total Duration: {total_duration:.2f} seconds ({total_duration/60:.2f} minutes)")
+        print()
         
-        print("\n" + "-"*80)
-        print("Step-by-Step Summary:")
-        print("-"*80)
+        print_separator("-", 80, Colors.YELLOW)
+        print_colored(Colors.BLUE, "Step-by-Step Summary:")
+        print_separator("-", 80, Colors.YELLOW)
+        print()
         
         for result in self.results:
+            status_color = Colors.GREEN if result.success else Colors.RED
             status = "✓" if result.success else "✗"
-            print(f"{status} Step {result.step_number}: {result.step_name} "
-                  f"({result.duration_seconds:.2f}s, "
-                  f"{result.resources_deleted.count()} resources deleted)")
+            print_colored(status_color, 
+                         f"{status} Step {result.step_number}: {result.step_name} "
+                         f"({result.duration_seconds:.2f}s, "
+                         f"{result.resources_deleted.count()} resources deleted)")
             
             if result.error_message:
-                print(f"  ERROR: {result.error_message}")
+                print_colored(Colors.RED, f"  ERROR: {result.error_message}")
             
             if result.warnings:
                 for warning in result.warnings:
-                    print(f"  WARNING: {warning}")
+                    print_colored(Colors.YELLOW, f"  WARNING: {warning}")
         
-        print("\n" + "-"*80)
-        print("Resource Tracking Summary:")
-        print("-"*80)
+        print()
+        print_separator("-", 80, Colors.YELLOW)
+        print_colored(Colors.BLUE, "Resource Tracking Summary:")
+        print_separator("-", 80, Colors.YELLOW)
+        print()
         
         for result in self.results:
-            print(f"\nStep {result.step_number}: {result.step_name}")
-            print(f"  Before: {result.resources_before.count()} resources "
-                  f"({len(result.resources_before.stacks)} stacks, "
-                  f"{len(result.resources_before.s3_buckets)} buckets, "
-                  f"{len(result.resources_before.log_groups)} logs)")
-            print(f"  After:  {result.resources_after.count()} resources "
-                  f"({len(result.resources_after.stacks)} stacks, "
-                  f"{len(result.resources_after.s3_buckets)} buckets, "
-                  f"{len(result.resources_after.log_groups)} logs)")
-            print(f"  Deleted: {result.resources_deleted.count()} resources")
+            print_colored(Colors.BLUE, f"Step {result.step_number}: {result.step_name}")
+            print_colored(Colors.YELLOW, 
+                         f"  Before: {result.resources_before.count()} resources "
+                         f"({len(result.resources_before.stacks)} stacks, "
+                         f"{len(result.resources_before.s3_buckets)} buckets, "
+                         f"{len(result.resources_before.log_groups)} logs)")
+            print_colored(Colors.YELLOW, 
+                         f"  After:  {result.resources_after.count()} resources "
+                         f"({len(result.resources_after.stacks)} stacks, "
+                         f"{len(result.resources_after.s3_buckets)} buckets, "
+                         f"{len(result.resources_after.log_groups)} logs)")
+            print_colored(Colors.YELLOW, f"  Deleted: {result.resources_deleted.count()} resources")
+            print()
         
         # Save detailed report to JSON file
         report_file = WORKSHOP_ROOT / "tests" / "end_to_end_test_report.json"
@@ -676,25 +791,32 @@ class EndToEndTestRunner:
         with open(report_file, 'w') as f:
             json.dump(report_data, f, indent=2)
         
-        print(f"\nDetailed report saved to: {report_file}")
+        print_colored(Colors.GREEN, f"Detailed report saved to: {report_file}")
+        print()
         
         # Final verdict
-        print("\n" + "="*80)
+        print_separator("=", 80, Colors.BLUE)
         if failed_steps == 0:
-            print("✓ ALL TESTS PASSED - Cleanup isolation is working correctly!")
+            print_colored(Colors.GREEN, "✓ ALL TESTS PASSED - Cleanup isolation is working correctly!")
         else:
-            print(f"✗ {failed_steps} TEST(S) FAILED - Cleanup isolation has issues!")
-        print("="*80)
+            print_colored(Colors.RED, f"✗ {failed_steps} TEST(S) FAILED - Cleanup isolation has issues!")
+        print_separator("=", 80, Colors.BLUE)
+        print()
     
     def run_full_test(self):
         """Run the complete 11-step end-to-end test."""
-        print("\n" + "="*80)
-        print("END-TO-END CLEANUP ISOLATION TEST")
-        print("="*80)
-        print(f"Mode: {'DRY-RUN' if self.dry_run else 'REAL AWS'}")
-        print(f"AWS Profile: {self.aws_profile or 'default'}")
-        print(f"Email: {self.email}")
-        print("="*80)
+        print()
+        print_separator("=", 80, Colors.BLUE)
+        print_colored(Colors.BLUE, "END-TO-END CLEANUP ISOLATION TEST")
+        print_separator("=", 80, Colors.BLUE)
+        print()
+        print_colored(Colors.YELLOW, f"Mode: {'DRY-RUN' if self.dry_run else 'REAL AWS'}")
+        print_colored(Colors.YELLOW, f"AWS Profile: {self.aws_profile or 'default'}")
+        print_colored(Colors.YELLOW, f"Email: {self.email}")
+        print_separator("=", 80, Colors.BLUE)
+        print()
+        print_timestamp()
+        print()
         
         try:
             # Step 1: Cleanup all labs (ensure clean state)
@@ -715,7 +837,8 @@ class EndToEndTestRunner:
             self.step_11_cleanup_all_labs_final()
         
         except Exception as e:
-            print(f"\n✗ TEST EXECUTION FAILED: {str(e)}")
+            print()
+            print_colored(Colors.RED, f"✗ TEST EXECUTION FAILED: {str(e)}")
             import traceback
             traceback.print_exc()
         
