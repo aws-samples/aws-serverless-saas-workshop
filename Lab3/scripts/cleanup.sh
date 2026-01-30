@@ -20,7 +20,9 @@
 
 set -e
 
-# AWS Profile should be passed via --profile parameter
+# Source the parameter parsing template
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../../scripts/lib/parameter-parsing-template.sh"
 
 # Colors for output
 RED='\033[0;31m'
@@ -28,13 +30,6 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
-
-# Default values
-AWS_REGION="us-east-1"
-AWS_PROFILE=""
-STACK_NAME=""
-SKIP_CONFIRMATION=0
-LAB_ID="lab3"  # Lab identifier for resource filtering
 
 # Function to print colored messages
 print_message() {
@@ -58,75 +53,13 @@ verify_stack_ownership() {
     fi
 }
 
-# Function to print usage
-print_usage() {
-    echo "Usage: $0 --stack-name <CloudFormation stack name> [OPTIONS]"
-    echo ""
-    echo "Options:"
-    echo "  --stack-name <name>       CloudFormation stack name prefix (required, e.g., serverless-saas-lab3)"
-    echo "  --profile <profile>       AWS CLI profile name (optional, uses default profile if not specified)"
-    echo "  --region <region>         AWS region (default: us-east-1)"
-    echo "  -y, --yes                 Skip confirmation prompt"
-    echo "  --help                    Show this help message"
-    echo ""
-    echo "Examples:"
-    echo "  $0 --stack-name serverless-saas-lab3"
-    echo "  $0 --stack-name serverless-saas-lab3 --profile serverless-saas-demo"
-    echo "  $0 --stack-name serverless-saas-lab3 --profile serverless-saas-demo -y"
-    echo "  $0 --stack-name my-stack --profile my-profile --region us-east-1"
-    echo ""
-    echo "Note: This will clean up both shared and tenant stacks:"
-    echo "  - <stack-name>-shared (e.g., serverless-saas-lab3-shared)"
-    echo "  - <stack-name>-tenant (e.g., serverless-saas-lab3-tenant)"
-}
+# Set default stack name and lab configuration
+DEFAULT_STACK_NAME="serverless-saas-lab3"
+LAB_NUMBER="3"
+LAB_ID="lab3"  # Lab identifier for resource filtering
 
-# Check if no arguments provided
-if [ $# -eq 0 ]; then
-    print_message "$RED" "Error: Stack name is required"
-    echo ""
-    print_usage
-    exit 1
-fi
-
-# Parse command line arguments
-while [[ "$#" -gt 0 ]]; do
-    case $1 in
-        --stack-name)
-            STACK_NAME=$2
-            shift 2
-            ;;
-        --profile)
-            AWS_PROFILE=$2
-            shift 2
-            ;;
-        --region)
-            AWS_REGION=$2
-            shift 2
-            ;;
-        -y|--yes)
-            SKIP_CONFIRMATION=1
-            shift
-            ;;
-        --help)
-            print_usage
-            exit 0
-            ;;
-        *)
-            print_message "$RED" "Unknown parameter: $1"
-            echo ""
-            print_usage
-            exit 1
-            ;;
-    esac
-done
-
-# Validate required parameters
-if [[ -z "$STACK_NAME" ]]; then
-    print_message "$RED" "Error: --stack-name parameter is required"
-    echo ""
-    print_usage
-    exit 1
-fi
+# Parse command-line parameters using template
+parse_cleanup_parameters "$@"
 
 # Derive shared and tenant stack names from base stack name
 # If user provides "serverless-saas-lab3", we create:
@@ -158,21 +91,39 @@ LOG_FILE="$LOG_DIR/cleanup-$(date +%Y%m%d-%H%M%S).log"
 # Redirect all output to log file and console
 exec > >(tee -a "$LOG_FILE") 2>&1
 
-print_message "$YELLOW" "=========================================="
-print_message "$YELLOW" "Lab3 Cleanup Script"
-print_message "$YELLOW" "=========================================="
+# Display cleanup configuration
+display_cleanup_configuration
+
 echo "Log file: $LOG_FILE"
-if [[ -n "$AWS_PROFILE" ]]; then
-    echo "AWS Profile: $AWS_PROFILE"
-else
-    echo "AWS Profile: (using default)"
-fi
-echo "AWS Region: $AWS_REGION"
-echo "Shared Stack: $SHARED_STACK_NAME"
-echo "Tenant Stack: $TENANT_STACK_NAME"
 echo ""
 
 print_message "$YELLOW" "Starting cleanup of Lab3 resources..."
+echo ""
+
+# Derive shared and tenant stack names from base stack name
+# If user provides "serverless-saas-lab3", we create:
+#   - serverless-saas-shared-lab3 (shared stack)
+#   - serverless-saas-tenant-lab3 (tenant stack)
+# If user provides "serverless-saas-shared-lab3", we use it as-is for shared stack
+if [[ "$STACK_NAME" == *"-shared-lab3" ]]; then
+    # User provided the full shared stack name
+    SHARED_STACK_NAME="$STACK_NAME"
+    # Derive tenant stack name by replacing "shared" with "tenant"
+    TENANT_STACK_NAME="${STACK_NAME/-shared-/-tenant-}"
+elif [[ "$STACK_NAME" == *"-lab3" ]]; then
+    # User provided base name like "serverless-saas-lab3"
+    # Extract prefix (e.g., "serverless-saas" from "serverless-saas-lab3")
+    PREFIX="${STACK_NAME%-lab3}"
+    SHARED_STACK_NAME="${PREFIX}-shared-lab3"
+    TENANT_STACK_NAME="${PREFIX}-tenant-lab3"
+else
+    # If stack name doesn't end with -lab3, assume it's a custom name
+    SHARED_STACK_NAME="${STACK_NAME}-shared"
+    TENANT_STACK_NAME="${STACK_NAME}-tenant"
+fi
+
+echo "Shared Stack: $SHARED_STACK_NAME"
+echo "Tenant Stack: $TENANT_STACK_NAME"
 echo ""
 
 # Confirmation prompt (unless -y/--yes flag is used)
@@ -203,18 +154,11 @@ print_message "$BLUE" "=========================================="
 
 # Query for tenant stacks with lab-specific filtering
 # Pattern: stack-* AND contains lab3
-if [[ -n "$AWS_PROFILE" ]]; then
-    TENANT_STACKS=$(aws cloudformation list-stacks \
-        --profile "$AWS_PROFILE" \
-        --region "$AWS_REGION" \
-        --query "StackSummaries[?contains(StackName, '$LAB_ID') && starts_with(StackName, 'stack-') && StackStatus!='DELETE_COMPLETE'].StackName" \
-        --output text 2>/dev/null || echo "")
-else
-    TENANT_STACKS=$(aws cloudformation list-stacks \
-        --region "$AWS_REGION" \
-        --query "StackSummaries[?contains(StackName, '$LAB_ID') && starts_with(StackName, 'stack-') && StackStatus!='DELETE_COMPLETE'].StackName" \
-        --output text 2>/dev/null || echo "")
-fi
+TENANT_STACKS=$(aws cloudformation list-stacks \
+    $PROFILE_ARG \
+    --region "$AWS_REGION" \
+    --query "StackSummaries[?contains(StackName, '$LAB_ID') && starts_with(StackName, 'stack-') && StackStatus!='DELETE_COMPLETE'].StackName" \
+    --output text 2>/dev/null || echo "")
 
 if [ -n "$TENANT_STACKS" ]; then
     print_message "$GREEN" "Found tenant stacks for $LAB_ID:"
@@ -227,11 +171,7 @@ if [ -n "$TENANT_STACKS" ]; then
     for stack in $TENANT_STACKS; do
         if verify_stack_ownership "$stack" "$LAB_ID"; then
             print_message "$YELLOW" "  Deleting stack: $stack"
-            if [[ -n "$AWS_PROFILE" ]]; then
-                aws cloudformation delete-stack --profile "$AWS_PROFILE" --stack-name "$stack" --region "$AWS_REGION" 2>/dev/null || true
-            else
-                aws cloudformation delete-stack --stack-name "$stack" --region "$AWS_REGION" 2>/dev/null || true
-            fi
+            aws cloudformation delete-stack $PROFILE_ARG --stack-name "$stack" --region "$AWS_REGION" 2>/dev/null || true
             print_message "$GREEN" "  ✓ Delete initiated: $stack"
         else
             print_message "$YELLOW" "  Skipping stack: $stack (not owned by $LAB_ID)"
@@ -243,11 +183,7 @@ if [ -n "$TENANT_STACKS" ]; then
     for stack in $TENANT_STACKS; do
         if verify_stack_ownership "$stack" "$LAB_ID"; then
             print_message "$YELLOW" "  Waiting for deletion: $stack"
-            if [[ -n "$AWS_PROFILE" ]]; then
-                aws cloudformation wait stack-delete-complete --profile "$AWS_PROFILE" --stack-name "$stack" --region "$AWS_REGION" 2>/dev/null || true
-            else
-                aws cloudformation wait stack-delete-complete --stack-name "$stack" --region "$AWS_REGION" 2>/dev/null || true
-            fi
+            aws cloudformation wait stack-delete-complete $PROFILE_ARG --stack-name "$stack" --region "$AWS_REGION" 2>/dev/null || true
             print_message "$GREEN" "  ✓ Deleted: $stack"
         fi
     done
@@ -264,74 +200,41 @@ print_message "$BLUE" "Step 2: Identifying resources from stacks"
 print_message "$BLUE" "=========================================="
 
 # Get bucket names from shared stack outputs
-if [[ -n "$AWS_PROFILE" ]]; then
-    ADMIN_SITE_BUCKET=$(aws cloudformation describe-stacks \
-        --profile "$AWS_PROFILE" \
-        --stack-name "$SHARED_STACK_NAME" \
-        --region "$AWS_REGION" \
-        --query "Stacks[0].Outputs[?OutputKey=='AdminSiteBucket'].OutputValue" \
-        --output text 2>/dev/null || echo "")
+ADMIN_SITE_BUCKET=$(aws cloudformation describe-stacks \
+    $PROFILE_ARG \
+    --stack-name "$SHARED_STACK_NAME" \
+    --region "$AWS_REGION" \
+    --query "Stacks[0].Outputs[?OutputKey=='AdminSiteBucket'].OutputValue" \
+    --output text 2>/dev/null || echo "")
 
-    LANDING_APP_SITE_BUCKET=$(aws cloudformation describe-stacks \
-        --profile "$AWS_PROFILE" \
-        --stack-name "$SHARED_STACK_NAME" \
-        --region "$AWS_REGION" \
-        --query "Stacks[0].Outputs[?OutputKey=='LandingApplicationSiteBucket'].OutputValue" \
-        --output text 2>/dev/null || echo "")
+LANDING_APP_SITE_BUCKET=$(aws cloudformation describe-stacks \
+    $PROFILE_ARG \
+    --stack-name "$SHARED_STACK_NAME" \
+    --region "$AWS_REGION" \
+    --query "Stacks[0].Outputs[?OutputKey=='LandingApplicationSiteBucket'].OutputValue" \
+    --output text 2>/dev/null || echo "")
 
-    APP_SITE_BUCKET=$(aws cloudformation describe-stacks \
-        --profile "$AWS_PROFILE" \
-        --stack-name "$SHARED_STACK_NAME" \
-        --region "$AWS_REGION" \
-        --query "Stacks[0].Outputs[?OutputKey=='ApplicationSiteBucket'].OutputValue" \
-        --output text 2>/dev/null || echo "")
-    
-    # Get API Gateway IDs for log deletion
-    SHARED_API_ID=$(aws cloudformation describe-stacks \
-        --profile "$AWS_PROFILE" \
-        --stack-name "$SHARED_STACK_NAME" \
-        --region "$AWS_REGION" \
-        --query "Stacks[0].Outputs[?OutputKey=='AdminApiGatewayId'].OutputValue" \
-        --output text 2>/dev/null || echo "")
-    
-    TENANT_API_ID=$(aws cloudformation describe-stacks \
-        --profile "$AWS_PROFILE" \
-        --stack-name "$TENANT_STACK_NAME" \
-        --region "$AWS_REGION" \
-        --query "Stacks[0].Outputs[?OutputKey=='TenantApiGatewayId'].OutputValue" \
-        --output text 2>/dev/null || echo "")
-else
-    ADMIN_SITE_BUCKET=$(aws cloudformation describe-stacks \
-        --stack-name "$SHARED_STACK_NAME" \
-        --region "$AWS_REGION" \
-        --query "Stacks[0].Outputs[?OutputKey=='AdminSiteBucket'].OutputValue" \
-        --output text 2>/dev/null || echo "")
+APP_SITE_BUCKET=$(aws cloudformation describe-stacks \
+    $PROFILE_ARG \
+    --stack-name "$SHARED_STACK_NAME" \
+    --region "$AWS_REGION" \
+    --query "Stacks[0].Outputs[?OutputKey=='ApplicationSiteBucket'].OutputValue" \
+    --output text 2>/dev/null || echo "")
 
-    LANDING_APP_SITE_BUCKET=$(aws cloudformation describe-stacks \
-        --stack-name "$SHARED_STACK_NAME" \
-        --region "$AWS_REGION" \
-        --query "Stacks[0].Outputs[?OutputKey=='LandingApplicationSiteBucket'].OutputValue" \
-        --output text 2>/dev/null || echo "")
+# Get API Gateway IDs for log deletion
+SHARED_API_ID=$(aws cloudformation describe-stacks \
+    $PROFILE_ARG \
+    --stack-name "$SHARED_STACK_NAME" \
+    --region "$AWS_REGION" \
+    --query "Stacks[0].Outputs[?OutputKey=='AdminApiGatewayId'].OutputValue" \
+    --output text 2>/dev/null || echo "")
 
-    APP_SITE_BUCKET=$(aws cloudformation describe-stacks \
-        --stack-name "$SHARED_STACK_NAME" \
-        --region "$AWS_REGION" \
-        --query "Stacks[0].Outputs[?OutputKey=='ApplicationSiteBucket'].OutputValue" \
-        --output text 2>/dev/null || echo "")
-    
-    # Get API Gateway IDs for log deletion
-    SHARED_API_ID=$(aws cloudformation describe-stacks \
-        --stack-name "$SHARED_STACK_NAME" \
-        --region "$AWS_REGION" \
-        --query "Stacks[0].Outputs[?OutputKey=='AdminApiGatewayId'].OutputValue" \
-        --output text 2>/dev/null || echo "")
-    
-    TENANT_API_ID=$(aws cloudformation describe-stacks \
-        --stack-name "$TENANT_STACK_NAME" \
-        --region "$AWS_REGION" \
-        --query "Stacks[0].Outputs[?OutputKey=='TenantApiGatewayId'].OutputValue" \
-        --output text 2>/dev/null || echo "")
-fi
+TENANT_API_ID=$(aws cloudformation describe-stacks \
+    $PROFILE_ARG \
+    --stack-name "$TENANT_STACK_NAME" \
+    --region "$AWS_REGION" \
+    --query "Stacks[0].Outputs[?OutputKey=='TenantApiGatewayId'].OutputValue" \
+    --output text 2>/dev/null || echo "")
 
 # Report found resources
 for bucket in "$ADMIN_SITE_BUCKET" "$LANDING_APP_SITE_BUCKET" "$APP_SITE_BUCKET"; do
@@ -361,28 +264,17 @@ for api_id in "$SHARED_API_ID" "$TENANT_API_ID"; do
     if [ -n "$api_id" ] && [ "$api_id" != "None" ]; then
         LOG_GROUP_NAME="API-Gateway-Execution-Logs_${api_id}/prod"
         print_message "$YELLOW" "    Deleting log group: $LOG_GROUP_NAME"
-        if [[ -n "$AWS_PROFILE" ]]; then
-            aws logs delete-log-group --profile "$AWS_PROFILE" --log-group-name "$LOG_GROUP_NAME" --region "$AWS_REGION" 2>/dev/null || true
-        else
-            aws logs delete-log-group --log-group-name "$LOG_GROUP_NAME" --region "$AWS_REGION" 2>/dev/null || true
-        fi
+        aws logs delete-log-group $PROFILE_ARG --log-group-name "$LOG_GROUP_NAME" --region "$AWS_REGION" 2>/dev/null || true
     fi
 done
 
 # Check for orphaned API Gateway logs (logs where API Gateway no longer exists)
 print_message "$YELLOW" "  Checking for orphaned API Gateway logs..."
-if [[ -n "$AWS_PROFILE" ]]; then
-    ORPHANED_API_LOGS=$(aws logs describe-log-groups \
-        --profile "$AWS_PROFILE" \
-        --region "$AWS_REGION" \
-        --query "logGroups[?contains(logGroupName, 'API-Gateway-Execution-Logs_')].logGroupName" \
-        --output text 2>/dev/null || echo "")
-else
-    ORPHANED_API_LOGS=$(aws logs describe-log-groups \
-        --region "$AWS_REGION" \
-        --query "logGroups[?contains(logGroupName, 'API-Gateway-Execution-Logs_')].logGroupName" \
-        --output text 2>/dev/null || echo "")
-fi
+ORPHANED_API_LOGS=$(aws logs describe-log-groups \
+    $PROFILE_ARG \
+    --region "$AWS_REGION" \
+    --query "logGroups[?contains(logGroupName, 'API-Gateway-Execution-Logs_')].logGroupName" \
+    --output text 2>/dev/null || echo "")
 
 if [ -n "$ORPHANED_API_LOGS" ]; then
     for log_group in $ORPHANED_API_LOGS; do
@@ -390,20 +282,12 @@ if [ -n "$ORPHANED_API_LOGS" ]; then
         API_ID=$(echo "$log_group" | sed 's/API-Gateway-Execution-Logs_\([^/]*\).*/\1/')
         
         # Check if API Gateway still exists
-        if [[ -n "$AWS_PROFILE" ]]; then
-            API_EXISTS=$(aws apigateway get-rest-api --profile "$AWS_PROFILE" --rest-api-id "$API_ID" --region "$AWS_REGION" 2>/dev/null || echo "")
-        else
-            API_EXISTS=$(aws apigateway get-rest-api --rest-api-id "$API_ID" --region "$AWS_REGION" 2>/dev/null || echo "")
-        fi
+        API_EXISTS=$(aws apigateway get-rest-api $PROFILE_ARG --rest-api-id "$API_ID" --region "$AWS_REGION" 2>/dev/null || echo "")
         
         # If API Gateway doesn't exist, delete the orphaned log group
         if [ -z "$API_EXISTS" ]; then
             print_message "$YELLOW" "    Deleting orphaned log group: $log_group"
-            if [[ -n "$AWS_PROFILE" ]]; then
-                aws logs delete-log-group --profile "$AWS_PROFILE" --log-group-name "$log_group" --region "$AWS_REGION" 2>/dev/null || true
-            else
-                aws logs delete-log-group --log-group-name "$log_group" --region "$AWS_REGION" 2>/dev/null || true
-            fi
+            aws logs delete-log-group $PROFILE_ARG --log-group-name "$log_group" --region "$AWS_REGION" 2>/dev/null || true
         fi
     done
 fi
@@ -411,27 +295,16 @@ fi
 print_message "$GREEN" "  API Gateway execution logs deleted"
 
 # Delete Lambda function log groups
-if [[ -n "$AWS_PROFILE" ]]; then
-    LOG_GROUPS=$(aws logs describe-log-groups \
-        --profile "$AWS_PROFILE" \
-        --region "$AWS_REGION" \
-        --query "logGroups[?contains(logGroupName, 'lab3')].logGroupName" \
-        --output text 2>/dev/null || echo "")
-else
-    LOG_GROUPS=$(aws logs describe-log-groups \
-        --region "$AWS_REGION" \
-        --query "logGroups[?contains(logGroupName, 'lab3')].logGroupName" \
-        --output text 2>/dev/null || echo "")
-fi
+LOG_GROUPS=$(aws logs describe-log-groups \
+    $PROFILE_ARG \
+    --region "$AWS_REGION" \
+    --query "logGroups[?contains(logGroupName, 'lab3')].logGroupName" \
+    --output text 2>/dev/null || echo "")
 
 if [ -n "$LOG_GROUPS" ]; then
     for log_group in $LOG_GROUPS; do
         print_message "$YELLOW" "  Deleting log group: $log_group"
-        if [[ -n "$AWS_PROFILE" ]]; then
-            aws logs delete-log-group --profile "$AWS_PROFILE" --log-group-name "$log_group" --region "$AWS_REGION" 2>/dev/null || true
-        else
-            aws logs delete-log-group --log-group-name "$log_group" --region "$AWS_REGION" 2>/dev/null || true
-        fi
+        aws logs delete-log-group $PROFILE_ARG --log-group-name "$log_group" --region "$AWS_REGION" 2>/dev/null || true
     done
     print_message "$GREEN" "CloudWatch Log Groups deleted"
 else
@@ -444,50 +317,26 @@ print_message "$BLUE" "Step 4: Deleting tenant stack"
 print_message "$BLUE" "=========================================="
 print_message "$YELLOW" "  Deleting stack: $TENANT_STACK_NAME"
 
-if [[ -n "$AWS_PROFILE" ]]; then
-    if aws cloudformation describe-stacks --profile "$AWS_PROFILE" --stack-name "$TENANT_STACK_NAME" --region "$AWS_REGION" &>/dev/null; then
-        aws cloudformation delete-stack --profile "$AWS_PROFILE" --stack-name "$TENANT_STACK_NAME" --region "$AWS_REGION"
-        
-        print_message "$YELLOW" "Waiting for stack $TENANT_STACK_NAME to be deleted..."
-        print_message "$YELLOW" "⏳ This may take 15-30 minutes for CloudFront distributions to fully delete"
-        print_message "$YELLOW" "⏳ DO NOT interrupt this process - CloudFront must be fully deleted before S3 buckets"
+if aws cloudformation describe-stacks $PROFILE_ARG --stack-name "$TENANT_STACK_NAME" --region "$AWS_REGION" &>/dev/null; then
+    aws cloudformation delete-stack $PROFILE_ARG --stack-name "$TENANT_STACK_NAME" --region "$AWS_REGION"
+    
+    print_message "$YELLOW" "Waiting for stack $TENANT_STACK_NAME to be deleted..."
+    print_message "$YELLOW" "⏳ This may take 15-30 minutes for CloudFront distributions to fully delete"
+    print_message "$YELLOW" "⏳ DO NOT interrupt this process - CloudFront must be fully deleted before S3 buckets"
+    echo ""
+    
+    # Use AWS CLI wait command for reliable stack deletion monitoring
+    if aws cloudformation wait stack-delete-complete $PROFILE_ARG --stack-name "$TENANT_STACK_NAME" --region "$AWS_REGION"; then
+        print_message "$GREEN" "✓ Stack $TENANT_STACK_NAME deleted successfully (including CloudFront distributions)"
+        print_message "$GREEN" "✓ CloudFront distributions are fully deleted - safe to proceed"
         echo ""
-        
-        # Use AWS CLI wait command for reliable stack deletion monitoring
-        if aws cloudformation wait stack-delete-complete --profile "$AWS_PROFILE" --stack-name "$TENANT_STACK_NAME" --region "$AWS_REGION"; then
-            print_message "$GREEN" "✓ Stack $TENANT_STACK_NAME deleted successfully (including CloudFront distributions)"
-            print_message "$GREEN" "✓ CloudFront distributions are fully deleted - safe to proceed"
-            echo ""
-        else
-            print_message "$RED" "Stack deletion failed or timed out"
-            print_message "$RED" "Please check AWS Console for stack status"
-            exit 1
-        fi
     else
-        print_message "$YELLOW" "  Stack $TENANT_STACK_NAME not found"
+        print_message "$RED" "Stack deletion failed or timed out"
+        print_message "$RED" "Please check AWS Console for stack status"
+        exit 1
     fi
 else
-    if aws cloudformation describe-stacks --stack-name "$TENANT_STACK_NAME" --region "$AWS_REGION" &>/dev/null; then
-        aws cloudformation delete-stack --stack-name "$TENANT_STACK_NAME" --region "$AWS_REGION"
-        
-        print_message "$YELLOW" "Waiting for stack $TENANT_STACK_NAME to be deleted..."
-        print_message "$YELLOW" "⏳ This may take 15-30 minutes for CloudFront distributions to fully delete"
-        print_message "$YELLOW" "⏳ DO NOT interrupt this process - CloudFront must be fully deleted before S3 buckets"
-        echo ""
-        
-        # Use AWS CLI wait command for reliable stack deletion monitoring
-        if aws cloudformation wait stack-delete-complete --stack-name "$TENANT_STACK_NAME" --region "$AWS_REGION"; then
-            print_message "$GREEN" "✓ Stack $TENANT_STACK_NAME deleted successfully (including CloudFront distributions)"
-            print_message "$GREEN" "✓ CloudFront distributions are fully deleted - safe to proceed"
-            echo ""
-        else
-            print_message "$RED" "Stack deletion failed or timed out"
-            print_message "$RED" "Please check AWS Console for stack status"
-            exit 1
-        fi
-    else
-        print_message "$YELLOW" "  Stack $TENANT_STACK_NAME not found"
-    fi
+    print_message "$YELLOW" "  Stack $TENANT_STACK_NAME not found"
 fi
 # Step 5: Delete shared stack
 print_message "$BLUE" "=========================================="
@@ -495,50 +344,26 @@ print_message "$BLUE" "Step 5: Deleting shared stack"
 print_message "$BLUE" "=========================================="
 print_message "$YELLOW" "  Deleting stack: $SHARED_STACK_NAME"
 
-if [[ -n "$AWS_PROFILE" ]]; then
-    if aws cloudformation describe-stacks --profile "$AWS_PROFILE" --stack-name "$SHARED_STACK_NAME" --region "$AWS_REGION" &>/dev/null; then
-        aws cloudformation delete-stack --profile "$AWS_PROFILE" --stack-name "$SHARED_STACK_NAME" --region "$AWS_REGION"
-        
-        print_message "$YELLOW" "Waiting for stack $SHARED_STACK_NAME to be deleted..."
-        print_message "$YELLOW" "⏳ This may take 15-30 minutes for CloudFront distributions to fully delete"
-        print_message "$YELLOW" "⏳ DO NOT interrupt this process - CloudFront must be fully deleted before S3 buckets"
+if aws cloudformation describe-stacks $PROFILE_ARG --stack-name "$SHARED_STACK_NAME" --region "$AWS_REGION" &>/dev/null; then
+    aws cloudformation delete-stack $PROFILE_ARG --stack-name "$SHARED_STACK_NAME" --region "$AWS_REGION"
+    
+    print_message "$YELLOW" "Waiting for stack $SHARED_STACK_NAME to be deleted..."
+    print_message "$YELLOW" "⏳ This may take 15-30 minutes for CloudFront distributions to fully delete"
+    print_message "$YELLOW" "⏳ DO NOT interrupt this process - CloudFront must be fully deleted before S3 buckets"
+    echo ""
+    
+    # Use AWS CLI wait command for reliable stack deletion monitoring
+    if aws cloudformation wait stack-delete-complete $PROFILE_ARG --stack-name "$SHARED_STACK_NAME" --region "$AWS_REGION"; then
+        print_message "$GREEN" "✓ Stack $SHARED_STACK_NAME deleted successfully (including CloudFront distributions)"
+        print_message "$GREEN" "✓ CloudFront distributions are fully deleted - safe to proceed"
         echo ""
-        
-        # Use AWS CLI wait command for reliable stack deletion monitoring
-        if aws cloudformation wait stack-delete-complete --profile "$AWS_PROFILE" --stack-name "$SHARED_STACK_NAME" --region "$AWS_REGION"; then
-            print_message "$GREEN" "✓ Stack $SHARED_STACK_NAME deleted successfully (including CloudFront distributions)"
-            print_message "$GREEN" "✓ CloudFront distributions are fully deleted - safe to proceed"
-            echo ""
-        else
-            print_message "$RED" "Stack deletion failed or timed out"
-            print_message "$RED" "Please check AWS Console for stack status"
-            exit 1
-        fi
     else
-        print_message "$YELLOW" "  Stack $SHARED_STACK_NAME not found"
+        print_message "$RED" "Stack deletion failed or timed out"
+        print_message "$RED" "Please check AWS Console for stack status"
+        exit 1
     fi
 else
-    if aws cloudformation describe-stacks --stack-name "$SHARED_STACK_NAME" --region "$AWS_REGION" &>/dev/null; then
-        aws cloudformation delete-stack --stack-name "$SHARED_STACK_NAME" --region "$AWS_REGION"
-        
-        print_message "$YELLOW" "Waiting for stack $SHARED_STACK_NAME to be deleted..."
-        print_message "$YELLOW" "⏳ This may take 15-30 minutes for CloudFront distributions to fully delete"
-        print_message "$YELLOW" "⏳ DO NOT interrupt this process - CloudFront must be fully deleted before S3 buckets"
-        echo ""
-        
-        # Use AWS CLI wait command for reliable stack deletion monitoring
-        if aws cloudformation wait stack-delete-complete --stack-name "$SHARED_STACK_NAME" --region "$AWS_REGION"; then
-            print_message "$GREEN" "✓ Stack $SHARED_STACK_NAME deleted successfully (including CloudFront distributions)"
-            print_message "$GREEN" "✓ CloudFront distributions are fully deleted - safe to proceed"
-            echo ""
-        else
-            print_message "$RED" "Stack deletion failed or timed out"
-            print_message "$RED" "Please check AWS Console for stack status"
-            exit 1
-        fi
-    else
-        print_message "$YELLOW" "  Stack $SHARED_STACK_NAME not found"
-    fi
+    print_message "$YELLOW" "  Stack $SHARED_STACK_NAME not found"
 fi
 
 # Step 6: Now safely delete S3 buckets (after CloudFront is deleted)
@@ -549,26 +374,14 @@ print_message "$BLUE" "=========================================="
 # Empty and delete application buckets
 for bucket in "$ADMIN_SITE_BUCKET" "$LANDING_APP_SITE_BUCKET" "$APP_SITE_BUCKET"; do
     if [ -n "$bucket" ] && [ "$bucket" != "None" ]; then
-        if [[ -n "$AWS_PROFILE" ]]; then
-            if aws s3 ls "s3://$bucket" --profile "$AWS_PROFILE" --region "$AWS_REGION" &> /dev/null; then
-                print_message "$YELLOW" "  Emptying bucket: $bucket"
-                aws s3 rm "s3://$bucket" --profile "$AWS_PROFILE" --recursive --region "$AWS_REGION" 2>/dev/null || true
-                print_message "$YELLOW" "  Deleting bucket: $bucket"
-                aws s3 rb "s3://$bucket" --profile "$AWS_PROFILE" --region "$AWS_REGION" 2>/dev/null || true
-                print_message "$GREEN" "  S3 bucket deleted: $bucket"
-            else
-                print_message "$YELLOW" "  Bucket already deleted or not found: $bucket"
-            fi
+        if aws s3 ls "s3://$bucket" $PROFILE_ARG --region "$AWS_REGION" &> /dev/null; then
+            print_message "$YELLOW" "  Emptying bucket: $bucket"
+            aws s3 rm "s3://$bucket" $PROFILE_ARG --recursive --region "$AWS_REGION" 2>/dev/null || true
+            print_message "$YELLOW" "  Deleting bucket: $bucket"
+            aws s3 rb "s3://$bucket" $PROFILE_ARG --region "$AWS_REGION" 2>/dev/null || true
+            print_message "$GREEN" "  S3 bucket deleted: $bucket"
         else
-            if aws s3 ls "s3://$bucket" --region "$AWS_REGION" &> /dev/null; then
-                print_message "$YELLOW" "  Emptying bucket: $bucket"
-                aws s3 rm "s3://$bucket" --recursive --region "$AWS_REGION" 2>/dev/null || true
-                print_message "$YELLOW" "  Deleting bucket: $bucket"
-                aws s3 rb "s3://$bucket" --region "$AWS_REGION" 2>/dev/null || true
-                print_message "$GREEN" "  S3 bucket deleted: $bucket"
-            else
-                print_message "$YELLOW" "  Bucket already deleted or not found: $bucket"
-            fi
+            print_message "$YELLOW" "  Bucket already deleted or not found: $bucket"
         fi
     fi
 done
@@ -580,27 +393,16 @@ print_message "$BLUE" "=========================================="
 print_message "$BLUE" "Step 7: Deleting DynamoDB tables"
 print_message "$BLUE" "=========================================="
 
-if [[ -n "$AWS_PROFILE" ]]; then
-    TABLES=$(aws dynamodb list-tables \
-        --profile "$AWS_PROFILE" \
-        --region "$AWS_REGION" \
-        --query "TableNames[?contains(@, 'lab3')]" \
-        --output text 2>/dev/null || echo "")
-else
-    TABLES=$(aws dynamodb list-tables \
-        --region "$AWS_REGION" \
-        --query "TableNames[?contains(@, 'lab3')]" \
-        --output text 2>/dev/null || echo "")
-fi
+TABLES=$(aws dynamodb list-tables \
+    $PROFILE_ARG \
+    --region "$AWS_REGION" \
+    --query "TableNames[?contains(@, 'lab3')]" \
+    --output text 2>/dev/null || echo "")
 
 if [ -n "$TABLES" ]; then
     for table in $TABLES; do
         print_message "$YELLOW" "  Deleting table: $table"
-        if [[ -n "$AWS_PROFILE" ]]; then
-            aws dynamodb delete-table --profile "$AWS_PROFILE" --table-name "$table" --region "$AWS_REGION" 2>/dev/null || true
-        else
-            aws dynamodb delete-table --table-name "$table" --region "$AWS_REGION" 2>/dev/null || true
-        fi
+        aws dynamodb delete-table $PROFILE_ARG --table-name "$table" --region "$AWS_REGION" 2>/dev/null || true
     done
     print_message "$GREEN" "DynamoDB tables deleted"
 else
@@ -617,26 +419,14 @@ SHARED_SAM_BUCKET=$(grep s3_bucket ../server/shared-samconfig.toml 2>/dev/null |
 
 if [ -n "$SHARED_SAM_BUCKET" ]; then
     print_message "$YELLOW" "  Found shared SAM bucket in shared-samconfig.toml: $SHARED_SAM_BUCKET"
-    if [[ -n "$AWS_PROFILE" ]]; then
-        if aws s3 ls "s3://$SHARED_SAM_BUCKET" --profile "$AWS_PROFILE" --region "$AWS_REGION" &> /dev/null; then
-            print_message "$YELLOW" "  Emptying bucket: $SHARED_SAM_BUCKET"
-            aws s3 rm "s3://$SHARED_SAM_BUCKET" --recursive --profile "$AWS_PROFILE" --region "$AWS_REGION" 2>/dev/null || true
-            print_message "$YELLOW" "  Deleting bucket: $SHARED_SAM_BUCKET"
-            aws s3api delete-bucket --bucket $SHARED_SAM_BUCKET --profile "$AWS_PROFILE" --region "$AWS_REGION" 2>/dev/null || true
-            print_message "$GREEN" "  Shared SAM bootstrap bucket deleted"
-        else
-            print_message "$YELLOW" "  Shared SAM bucket not found or already deleted"
-        fi
+    if aws s3 ls "s3://$SHARED_SAM_BUCKET" $PROFILE_ARG --region "$AWS_REGION" &> /dev/null; then
+        print_message "$YELLOW" "  Emptying bucket: $SHARED_SAM_BUCKET"
+        aws s3 rm "s3://$SHARED_SAM_BUCKET" --recursive $PROFILE_ARG --region "$AWS_REGION" 2>/dev/null || true
+        print_message "$YELLOW" "  Deleting bucket: $SHARED_SAM_BUCKET"
+        aws s3api delete-bucket --bucket $SHARED_SAM_BUCKET $PROFILE_ARG --region "$AWS_REGION" 2>/dev/null || true
+        print_message "$GREEN" "  Shared SAM bootstrap bucket deleted"
     else
-        if aws s3 ls "s3://$SHARED_SAM_BUCKET" --region "$AWS_REGION" &> /dev/null; then
-            print_message "$YELLOW" "  Emptying bucket: $SHARED_SAM_BUCKET"
-            aws s3 rm "s3://$SHARED_SAM_BUCKET" --recursive --region "$AWS_REGION" 2>/dev/null || true
-            print_message "$YELLOW" "  Deleting bucket: $SHARED_SAM_BUCKET"
-            aws s3api delete-bucket --bucket $SHARED_SAM_BUCKET --region "$AWS_REGION" 2>/dev/null || true
-            print_message "$GREEN" "  Shared SAM bootstrap bucket deleted"
-        else
-            print_message "$YELLOW" "  Shared SAM bucket not found or already deleted"
-        fi
+        print_message "$YELLOW" "  Shared SAM bucket not found or already deleted"
     fi
 else
     print_message "$YELLOW" "  No shared SAM bucket found in shared-samconfig.toml"
@@ -647,26 +437,14 @@ TENANT_SAM_BUCKET=$(grep s3_bucket ../server/tenant-samconfig.toml 2>/dev/null |
 
 if [ -n "$TENANT_SAM_BUCKET" ]; then
     print_message "$YELLOW" "  Found tenant SAM bucket in tenant-samconfig.toml: $TENANT_SAM_BUCKET"
-    if [[ -n "$AWS_PROFILE" ]]; then
-        if aws s3 ls "s3://$TENANT_SAM_BUCKET" --profile "$AWS_PROFILE" --region "$AWS_REGION" &> /dev/null; then
-            print_message "$YELLOW" "  Emptying bucket: $TENANT_SAM_BUCKET"
-            aws s3 rm "s3://$TENANT_SAM_BUCKET" --recursive --profile "$AWS_PROFILE" --region "$AWS_REGION" 2>/dev/null || true
-            print_message "$YELLOW" "  Deleting bucket: $TENANT_SAM_BUCKET"
-            aws s3api delete-bucket --bucket $TENANT_SAM_BUCKET --profile "$AWS_PROFILE" --region "$AWS_REGION" 2>/dev/null || true
-            print_message "$GREEN" "  Tenant SAM bootstrap bucket deleted"
-        else
-            print_message "$YELLOW" "  Tenant SAM bucket not found or already deleted"
-        fi
+    if aws s3 ls "s3://$TENANT_SAM_BUCKET" $PROFILE_ARG --region "$AWS_REGION" &> /dev/null; then
+        print_message "$YELLOW" "  Emptying bucket: $TENANT_SAM_BUCKET"
+        aws s3 rm "s3://$TENANT_SAM_BUCKET" --recursive $PROFILE_ARG --region "$AWS_REGION" 2>/dev/null || true
+        print_message "$YELLOW" "  Deleting bucket: $TENANT_SAM_BUCKET"
+        aws s3api delete-bucket --bucket $TENANT_SAM_BUCKET $PROFILE_ARG --region "$AWS_REGION" 2>/dev/null || true
+        print_message "$GREEN" "  Tenant SAM bootstrap bucket deleted"
     else
-        if aws s3 ls "s3://$TENANT_SAM_BUCKET" --region "$AWS_REGION" &> /dev/null; then
-            print_message "$YELLOW" "  Emptying bucket: $TENANT_SAM_BUCKET"
-            aws s3 rm "s3://$TENANT_SAM_BUCKET" --recursive --region "$AWS_REGION" 2>/dev/null || true
-            print_message "$YELLOW" "  Deleting bucket: $TENANT_SAM_BUCKET"
-            aws s3api delete-bucket --bucket $TENANT_SAM_BUCKET --region "$AWS_REGION" 2>/dev/null || true
-            print_message "$GREEN" "  Tenant SAM bootstrap bucket deleted"
-        else
-            print_message "$YELLOW" "  Tenant SAM bucket not found or already deleted"
-        fi
+        print_message "$YELLOW" "  Tenant SAM bucket not found or already deleted"
     fi
 else
     print_message "$YELLOW" "  No tenant SAM bucket found in tenant-samconfig.toml"
@@ -683,16 +461,9 @@ REMAINING_RESOURCES=0
 
 # Check for remaining stacks
 for stack in "$SHARED_STACK_NAME" "$TENANT_STACK_NAME"; do
-    if [[ -n "$AWS_PROFILE" ]]; then
-        if aws cloudformation describe-stacks --profile "$AWS_PROFILE" --stack-name "$stack" --region "$AWS_REGION" &>/dev/null; then
-            print_message "$RED" "  Warning: Stack $stack still exists"
-            REMAINING_RESOURCES=$((REMAINING_RESOURCES + 1))
-        fi
-    else
-        if aws cloudformation describe-stacks --stack-name "$stack" --region "$AWS_REGION" &>/dev/null; then
-            print_message "$RED" "  Warning: Stack $stack still exists"
-            REMAINING_RESOURCES=$((REMAINING_RESOURCES + 1))
-        fi
+    if aws cloudformation describe-stacks $PROFILE_ARG --stack-name "$stack" --region "$AWS_REGION" &>/dev/null; then
+        print_message "$RED" "  Warning: Stack $stack still exists"
+        REMAINING_RESOURCES=$((REMAINING_RESOURCES + 1))
     fi
 done
 

@@ -20,7 +20,14 @@
 
 set -e
 
-# AWS Profile should be passed via --profile parameter
+# Source parameter parsing template
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../../scripts/lib/parameter-parsing-template.sh"
+
+# Default stack name for Lab1
+DEFAULT_STACK_NAME="serverless-saas-lab1"
+LAB_NUMBER="1"
+LAB_ID="lab1"  # Lab identifier for resource filtering
 
 # Colors for output
 RED='\033[0;31m'
@@ -62,75 +69,11 @@ verify_stack_ownership() {
   fi
 }
 
-# AWS_PROFILE variable is used directly in AWS CLI commands
-# Pattern: ${AWS_PROFILE:+--profile "$AWS_PROFILE"}
-# This expands to --profile "value" when AWS_PROFILE is set, or nothing when empty
-
-# Parse command line arguments
-STACK_NAME="serverless-saas-lab1"
-AWS_REGION="us-east-1"
-AWS_PROFILE=""
-SKIP_CONFIRMATION=0
-LAB_ID="lab1"  # Lab identifier for resource filtering
-
-while [[ "$#" -gt 0 ]]; do
-    case $1 in
-        --stack-name)
-            STACK_NAME=$2
-            shift 2
-            ;;
-        --region)
-            AWS_REGION=$2
-            shift 2
-            ;;
-        --profile)
-            AWS_PROFILE=$2
-            shift 2
-            ;;
-        -y|--yes)
-            SKIP_CONFIRMATION=1
-            shift
-            ;;
-        --help)
-            echo "Usage: $0 [--stack-name <CloudFormation stack name>] [--region <AWS region>] [--profile <AWS profile>] [-y]"
-            echo ""
-            echo "Options:"
-            echo "  --stack-name <name>  CloudFormation stack name to cleanup (default: serverless-saas-lab1)"
-            echo "  --region <region>    AWS region (default: us-east-1)"
-            echo "  --profile <profile>  AWS profile (optional, uses machine's default if not provided)"
-            echo "  -y, --yes            Skip confirmation prompt"
-            echo "  --help               Show this help message"
-            echo ""
-            echo "Example:"
-            echo "  $0                                                    # Use default stack name"
-            echo "  $0 --profile serverless-saas-demo                    # Use specific profile"
-            echo "  $0 --stack-name my-stack --profile my-profile        # Custom stack name"
-            echo "  echo \"yes\" | $0 --profile serverless-saas-demo       # Non-interactive"
-            exit 0
-            ;;
-        *)
-            print_message "$RED" "Unknown parameter: $1"
-            echo "Use --help for usage information"
-            exit 1
-            ;;
-    esac
-done
-
-# Set PROFILE_ARG based on AWS_PROFILE for use in AWS CLI commands
-PROFILE_ARG=""
-if [[ -n "$AWS_PROFILE" ]]; then
-    PROFILE_ARG="--profile $AWS_PROFILE"
-fi
+# Parse command line arguments using template
+parse_cleanup_parameters "$@"
 
 print_message "$YELLOW" "Starting cleanup of Lab1 resources..."
-print_message "$YELLOW" "Stack name: $STACK_NAME"
-if [ -n "$AWS_PROFILE" ]; then
-    print_message "$YELLOW" "AWS Profile: $AWS_PROFILE"
-else
-    print_message "$YELLOW" "AWS Profile: (using machine's default)"
-fi
-print_message "$YELLOW" "AWS Region: $AWS_REGION"
-echo ""
+display_cleanup_configuration
 
 # Confirmation prompt
 if [ $SKIP_CONFIRMATION -eq 0 ]; then

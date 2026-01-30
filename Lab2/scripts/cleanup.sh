@@ -20,19 +20,21 @@
 
 set -e
 
+# Source parameter parsing template
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../../scripts/lib/parameter-parsing-template.sh"
+
+# Default stack name for Lab2
+DEFAULT_STACK_NAME="serverless-saas-lab2"
+LAB_NUMBER="2"
+LAB_ID="lab2"  # Lab identifier for resource filtering
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
-
-# Default values
-STACK_NAME="serverless-saas-lab2"
-AWS_REGION="us-east-1"
-AWS_PROFILE=""  # Empty by default - will use machine's default profile if not specified
-SKIP_CONFIRMATION=0
-LAB_ID="lab2"  # Lab identifier for resource filtering
 
 # Create log directory and file
 LOG_DIR="logs"
@@ -67,69 +69,11 @@ verify_stack_ownership() {
   fi
 }
 
-# Function to build AWS CLI profile argument
-# Returns "--profile <profile>" if AWS_PROFILE is set, empty string otherwise
-get_profile_arg() {
-    if [[ -n "$AWS_PROFILE" ]]; then
-        echo "--profile $AWS_PROFILE"
-    else
-        echo ""
-    fi
-}
-
-# Parse command line arguments
-while [[ "$#" -gt 0 ]]; do
-    case $1 in
-        --stack-name)
-            STACK_NAME=$2
-            shift 2
-            ;;
-        --region)
-            AWS_REGION=$2
-            shift 2
-            ;;
-        --profile)
-            AWS_PROFILE=$2
-            shift 2
-            ;;
-        -y|--yes)
-            SKIP_CONFIRMATION=1
-            shift
-            ;;
-        --help)
-            echo "Usage: $0 [OPTIONS]"
-            echo ""
-            echo "Options:"
-            echo "  --stack-name <name>  CloudFormation stack name to cleanup (default: serverless-saas-lab2)"
-            echo "  --region <region>    AWS region (default: us-east-1)"
-            echo "  --profile <profile>  AWS CLI profile name (optional, uses default profile if not specified)"
-            echo "  -y, --yes            Skip confirmation prompt"
-            echo "  --help               Show this help message"
-            echo ""
-            echo "Example:"
-            echo "  $0 --stack-name serverless-saas-lab2"
-            echo "  $0 --stack-name my-stack --region us-east-1"
-            echo "  $0 --stack-name my-stack --profile my-profile"
-            echo "  $0 --stack-name serverless-saas-lab2 -y"
-            exit 0
-            ;;
-        *)
-            print_message "$RED" "Unknown parameter: $1"
-            echo "Use --help for usage information"
-            exit 1
-            ;;
-    esac
-done
+# Parse command line arguments using template
+parse_cleanup_parameters "$@"
 
 print_message "$YELLOW" "Starting cleanup of Lab2 resources..."
-print_message "$YELLOW" "Stack name: $STACK_NAME"
-print_message "$YELLOW" "AWS Region: $AWS_REGION"
-if [[ -n "$AWS_PROFILE" ]]; then
-    print_message "$YELLOW" "AWS Profile: $AWS_PROFILE"
-else
-    print_message "$YELLOW" "AWS Profile: (using machine's default profile)"
-fi
-echo ""
+display_cleanup_configuration
 
 # Confirmation prompt
 if [ $SKIP_CONFIRMATION -eq 0 ]; then
@@ -151,9 +95,6 @@ START_TIME=$(date +%s)
 print_message "$BLUE" "=========================================="
 print_message "$BLUE" "Step 1: Identifying resources from stack"
 print_message "$BLUE" "=========================================="
-
-# Build profile argument
-PROFILE_ARG=$(get_profile_arg)
 
 # Get bucket names from stack outputs
 ADMIN_SITE_BUCKET=$(aws cloudformation describe-stacks \
