@@ -1,11 +1,368 @@
 {
   "test_name": "End-to-End Cleanup Isolation Test",
-  "timestamp": "2026-01-29T19:53:17.276664",
-  "dry_run": false,
-  "aws_profile": "serverless-saas-demo",
-  "total_steps": 0,
-  "passed_steps": 0,
-  "failed_steps": 0,
-  "total_duration_seconds": 0,
-  "steps": []
+  "timestamp": "2026-01-30T03:51:11.044345",
+  "dry_run": true,
+  "aws_profile": null,
+  "total_steps": 11,
+  "passed_steps": 9,
+  "failed_steps": 2,
+  "total_duration_seconds": 0.0004818439483642578,
+  "steps": [
+    {
+      "step_number": 1,
+      "step_name": "Cleanup All Labs (Ensure Clean State)",
+      "success": true,
+      "duration_seconds": 0.0,
+      "resources_before": {
+        "timestamp": "2026-01-30T03:51:11.042663",
+        "stacks": [],
+        "s3_buckets": [],
+        "log_groups": [],
+        "cognito_pools": [],
+        "total_count": 0
+      },
+      "resources_after": {
+        "timestamp": "2026-01-30T03:51:11.042749",
+        "stacks": [],
+        "s3_buckets": [],
+        "log_groups": [],
+        "cognito_pools": [],
+        "total_count": 0
+      },
+      "resources_deleted": {
+        "timestamp": "2026-01-30T03:51:11.042663",
+        "stacks": [],
+        "s3_buckets": [],
+        "log_groups": [],
+        "cognito_pools": [],
+        "total_count": 0
+      },
+      "error_message": null,
+      "warnings": []
+    },
+    {
+      "step_number": 2,
+      "step_name": "Deploy All Labs",
+      "success": false,
+      "duration_seconds": 0.0,
+      "resources_before": {
+        "timestamp": "2026-01-30T03:51:11.042851",
+        "stacks": [],
+        "s3_buckets": [],
+        "log_groups": [],
+        "cognito_pools": [],
+        "total_count": 0
+      },
+      "resources_after": {
+        "timestamp": "2026-01-30T03:51:11.042884",
+        "stacks": [],
+        "s3_buckets": [],
+        "log_groups": [],
+        "cognito_pools": [],
+        "total_count": 0
+      },
+      "resources_deleted": {
+        "timestamp": "2026-01-30T03:51:11.042851",
+        "stacks": [],
+        "s3_buckets": [],
+        "log_groups": [],
+        "cognito_pools": [],
+        "total_count": 0
+      },
+      "error_message": null,
+      "warnings": [
+        "Warning: Labs not deployed: lab1, lab2, lab3, lab4, lab5, lab6, lab7"
+      ]
+    },
+    {
+      "step_number": 3,
+      "step_name": "Cleanup Lab1",
+      "success": true,
+      "duration_seconds": 0.0,
+      "resources_before": {
+        "timestamp": "2026-01-30T03:51:11.042985",
+        "stacks": [],
+        "s3_buckets": [],
+        "log_groups": [],
+        "cognito_pools": [],
+        "total_count": 0
+      },
+      "resources_after": {
+        "timestamp": "2026-01-30T03:51:11.043026",
+        "stacks": [],
+        "s3_buckets": [],
+        "log_groups": [],
+        "cognito_pools": [],
+        "total_count": 0
+      },
+      "resources_deleted": {
+        "timestamp": "2026-01-30T03:51:11.042985",
+        "stacks": [],
+        "s3_buckets": [],
+        "log_groups": [],
+        "cognito_pools": [],
+        "total_count": 0
+      },
+      "error_message": null,
+      "warnings": []
+    },
+    {
+      "step_number": 4,
+      "step_name": "Cleanup Lab2",
+      "success": true,
+      "duration_seconds": 0.0,
+      "resources_before": {
+        "timestamp": "2026-01-30T03:51:11.043113",
+        "stacks": [],
+        "s3_buckets": [],
+        "log_groups": [],
+        "cognito_pools": [],
+        "total_count": 0
+      },
+      "resources_after": {
+        "timestamp": "2026-01-30T03:51:11.043147",
+        "stacks": [],
+        "s3_buckets": [],
+        "log_groups": [],
+        "cognito_pools": [],
+        "total_count": 0
+      },
+      "resources_deleted": {
+        "timestamp": "2026-01-30T03:51:11.043113",
+        "stacks": [],
+        "s3_buckets": [],
+        "log_groups": [],
+        "cognito_pools": [],
+        "total_count": 0
+      },
+      "error_message": null,
+      "warnings": []
+    },
+    {
+      "step_number": 5,
+      "step_name": "Cleanup Lab3",
+      "success": true,
+      "duration_seconds": 0.0,
+      "resources_before": {
+        "timestamp": "2026-01-30T03:51:11.043236",
+        "stacks": [],
+        "s3_buckets": [],
+        "log_groups": [],
+        "cognito_pools": [],
+        "total_count": 0
+      },
+      "resources_after": {
+        "timestamp": "2026-01-30T03:51:11.043262",
+        "stacks": [],
+        "s3_buckets": [],
+        "log_groups": [],
+        "cognito_pools": [],
+        "total_count": 0
+      },
+      "resources_deleted": {
+        "timestamp": "2026-01-30T03:51:11.043236",
+        "stacks": [],
+        "s3_buckets": [],
+        "log_groups": [],
+        "cognito_pools": [],
+        "total_count": 0
+      },
+      "error_message": null,
+      "warnings": []
+    },
+    {
+      "step_number": 6,
+      "step_name": "Cleanup Lab4",
+      "success": true,
+      "duration_seconds": 0.0,
+      "resources_before": {
+        "timestamp": "2026-01-30T03:51:11.043319",
+        "stacks": [],
+        "s3_buckets": [],
+        "log_groups": [],
+        "cognito_pools": [],
+        "total_count": 0
+      },
+      "resources_after": {
+        "timestamp": "2026-01-30T03:51:11.043343",
+        "stacks": [],
+        "s3_buckets": [],
+        "log_groups": [],
+        "cognito_pools": [],
+        "total_count": 0
+      },
+      "resources_deleted": {
+        "timestamp": "2026-01-30T03:51:11.043319",
+        "stacks": [],
+        "s3_buckets": [],
+        "log_groups": [],
+        "cognito_pools": [],
+        "total_count": 0
+      },
+      "error_message": null,
+      "warnings": []
+    },
+    {
+      "step_number": 7,
+      "step_name": "Cleanup Lab5",
+      "success": true,
+      "duration_seconds": 0.0,
+      "resources_before": {
+        "timestamp": "2026-01-30T03:51:11.043449",
+        "stacks": [],
+        "s3_buckets": [],
+        "log_groups": [],
+        "cognito_pools": [],
+        "total_count": 0
+      },
+      "resources_after": {
+        "timestamp": "2026-01-30T03:51:11.043495",
+        "stacks": [],
+        "s3_buckets": [],
+        "log_groups": [],
+        "cognito_pools": [],
+        "total_count": 0
+      },
+      "resources_deleted": {
+        "timestamp": "2026-01-30T03:51:11.043449",
+        "stacks": [],
+        "s3_buckets": [],
+        "log_groups": [],
+        "cognito_pools": [],
+        "total_count": 0
+      },
+      "error_message": null,
+      "warnings": []
+    },
+    {
+      "step_number": 8,
+      "step_name": "Cleanup Lab6",
+      "success": true,
+      "duration_seconds": 0.0,
+      "resources_before": {
+        "timestamp": "2026-01-30T03:51:11.043607",
+        "stacks": [],
+        "s3_buckets": [],
+        "log_groups": [],
+        "cognito_pools": [],
+        "total_count": 0
+      },
+      "resources_after": {
+        "timestamp": "2026-01-30T03:51:11.043688",
+        "stacks": [],
+        "s3_buckets": [],
+        "log_groups": [],
+        "cognito_pools": [],
+        "total_count": 0
+      },
+      "resources_deleted": {
+        "timestamp": "2026-01-30T03:51:11.043607",
+        "stacks": [],
+        "s3_buckets": [],
+        "log_groups": [],
+        "cognito_pools": [],
+        "total_count": 0
+      },
+      "error_message": null,
+      "warnings": []
+    },
+    {
+      "step_number": 9,
+      "step_name": "Cleanup Lab7",
+      "success": true,
+      "duration_seconds": 0.0,
+      "resources_before": {
+        "timestamp": "2026-01-30T03:51:11.043756",
+        "stacks": [],
+        "s3_buckets": [],
+        "log_groups": [],
+        "cognito_pools": [],
+        "total_count": 0
+      },
+      "resources_after": {
+        "timestamp": "2026-01-30T03:51:11.043783",
+        "stacks": [],
+        "s3_buckets": [],
+        "log_groups": [],
+        "cognito_pools": [],
+        "total_count": 0
+      },
+      "resources_deleted": {
+        "timestamp": "2026-01-30T03:51:11.043756",
+        "stacks": [],
+        "s3_buckets": [],
+        "log_groups": [],
+        "cognito_pools": [],
+        "total_count": 0
+      },
+      "error_message": null,
+      "warnings": []
+    },
+    {
+      "step_number": 10,
+      "step_name": "Redeploy All Labs",
+      "success": false,
+      "duration_seconds": 0.0,
+      "resources_before": {
+        "timestamp": "2026-01-30T03:51:11.043850",
+        "stacks": [],
+        "s3_buckets": [],
+        "log_groups": [],
+        "cognito_pools": [],
+        "total_count": 0
+      },
+      "resources_after": {
+        "timestamp": "2026-01-30T03:51:11.043869",
+        "stacks": [],
+        "s3_buckets": [],
+        "log_groups": [],
+        "cognito_pools": [],
+        "total_count": 0
+      },
+      "resources_deleted": {
+        "timestamp": "2026-01-30T03:51:11.043850",
+        "stacks": [],
+        "s3_buckets": [],
+        "log_groups": [],
+        "cognito_pools": [],
+        "total_count": 0
+      },
+      "error_message": null,
+      "warnings": [
+        "Warning: Labs not deployed: lab1, lab2, lab3, lab4, lab5, lab6, lab7"
+      ]
+    },
+    {
+      "step_number": 11,
+      "step_name": "Cleanup All Labs (Final Verification)",
+      "success": true,
+      "duration_seconds": 0.0,
+      "resources_before": {
+        "timestamp": "2026-01-30T03:51:11.043940",
+        "stacks": [],
+        "s3_buckets": [],
+        "log_groups": [],
+        "cognito_pools": [],
+        "total_count": 0
+      },
+      "resources_after": {
+        "timestamp": "2026-01-30T03:51:11.043962",
+        "stacks": [],
+        "s3_buckets": [],
+        "log_groups": [],
+        "cognito_pools": [],
+        "total_count": 0
+      },
+      "resources_deleted": {
+        "timestamp": "2026-01-30T03:51:11.043940",
+        "stacks": [],
+        "s3_buckets": [],
+        "log_groups": [],
+        "cognito_pools": [],
+        "total_count": 0
+      },
+      "error_message": null,
+      "warnings": []
+    }
+  ]
 }
