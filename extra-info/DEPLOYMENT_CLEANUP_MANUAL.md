@@ -107,14 +107,23 @@ curl <API_URL>/products
 
 ### Cleanup
 
-**Option 1: Using cleanup script**:
+**Default stack name**: `serverless-saas-lab1`
+
+**Option 1: Using cleanup script with default stack name**:
 ```
-cd workshop/scripts
-./cleanup.sh
-# Select 'Y' when prompted to delete serverless-saas-workshop-lab1
+cd workshop/Lab1/scripts
+# Using default stack name
+echo "yes" | ./cleanup.sh --profile <your-profile-name>
 ```
 
-**Option 2: Manual cleanup**:
+**Option 2: Using cleanup script with explicit stack name**:
+```
+cd workshop/Lab1/scripts
+# With explicit stack name
+echo "yes" | ./cleanup.sh --stack-name serverless-saas-lab1 --profile <your-profile-name>
+```
+
+**Option 3: Manual cleanup**:
 ```
 # Delete the CloudFormation stack
 aws cloudformation delete-stack \
@@ -176,10 +185,15 @@ Admin User:
 
 ### Cleanup
 
+**Default stack name**: `serverless-saas-lab2`
+
 ```
-cd workshop/scripts
-./cleanup.sh
-# Select 'Y' when prompted to delete stack-pooled
+cd workshop/Lab2/scripts
+# Using default stack name
+echo "yes" | ./cleanup.sh --profile <your-profile-name>
+
+# Or with explicit stack name
+echo "yes" | ./cleanup.sh --stack-name serverless-saas-lab2 --profile <your-profile-name>
 ```
 
 ---
@@ -219,11 +233,15 @@ Tenant Admin:
 
 ### Cleanup
 
+**Default stack name**: `serverless-saas-lab3`
+
 ```
-cd workshop/scripts
-./cleanup.sh
-# Script will automatically find and delete all tenant stacks (stack-*)
-# Select 'Y' for each stack when prompted
+cd workshop/Lab3/scripts
+# Using default stack name (automatically cleans up all tenant stacks)
+echo "yes" | ./cleanup.sh --profile <your-profile-name>
+
+# Or with explicit stack name
+echo "yes" | ./cleanup.sh --stack-name serverless-saas-lab3 --profile <your-profile-name>
 ```
 
 ---
@@ -255,10 +273,15 @@ cd workshop/Lab4/server
 
 ### Cleanup
 
+**Default stack name**: `serverless-saas-lab4`
+
 ```
-cd workshop/scripts
-./cleanup.sh
-# Script will delete all tenant stacks and shared services
+cd workshop/Lab4/scripts
+# Using default stack name (automatically cleans up all tenant stacks)
+echo "yes" | ./cleanup.sh --profile <your-profile-name>
+
+# Or with explicit stack name
+echo "yes" | ./cleanup.sh --stack-name serverless-saas-lab4 --profile <your-profile-name>
 ```
 
 ---
@@ -311,10 +334,15 @@ This is expected behavior and won't affect pipeline functionality, as the pipeli
 
 ### Cleanup
 
+**Default stack name**: `serverless-saas-lab5`
+
 ```
-cd workshop/scripts
-./cleanup.sh
-# Deletes pipeline stack, serverless-saas stack, and CodeCommit repo
+cd workshop/Lab5/scripts
+# Using default stack name (automatically cleans up pipeline, tenant stacks, and CodeCommit repo)
+echo "yes" | ./cleanup.sh --profile <your-profile-name>
+
+# Or with explicit stack name
+echo "yes" | ./cleanup.sh --stack-name serverless-saas-lab5 --profile <your-profile-name>
 ```
 
 ---
@@ -380,10 +408,15 @@ Admin User:
 
 ### Cleanup
 
+**Default stack name**: `serverless-saas-lab6`
+
 ```
-cd workshop/Lab6/server
-./cleanup.sh
-# Runs parallel cleanup operations with timestamped logs
+cd workshop/Lab6/scripts
+# Using default stack name (runs parallel cleanup operations with timestamped logs)
+echo "yes" | ./cleanup.sh --profile <your-profile-name>
+
+# Or with explicit stack name
+echo "yes" | ./cleanup.sh --stack-name serverless-saas-lab6 --profile <your-profile-name>
 ```
 
 ---
@@ -445,18 +478,22 @@ aws events list-rules \
 
 ### Cleanup
 
+**Default stack name**: `serverless-saas-lab7`
+
 ```
 cd workshop/Lab7/scripts
 
-# Run cleanup script
+# Using default stack name
 echo "yes" | ./cleanup.sh --profile <your-profile-name>
+
+# Or with explicit stack name
+echo "yes" | ./cleanup.sh --stack-name serverless-saas-lab7 --profile <your-profile-name>
 ```
 
 **Cleanup Script Parameters**:
-- `--profile <profile>`: AWS CLI profile name (optional, uses default if not provided)
+- `--stack-name <name>`: CloudFormation stack name (optional, default: serverless-saas-lab7)
+- `--profile <profile>`: AWS CLI profile name (REQUIRED)
 - `--region <region>`: AWS region (optional, default: us-east-1)
-- `--main-stack <name>`: Main stack name (optional, default: serverless-saas-lab7)
-- `--tenant-stack <name>`: Tenant stack name (optional, default: stack-pooled-lab7)
 
 ---
 
@@ -576,15 +613,44 @@ aws cognito-idp delete-user-pool \
 
 ## Quick Reference
 
+### Default Stack Names
+
+Each lab cleanup script has a default stack name that is used when `--stack-name` is not explicitly provided:
+
+| Lab | Default Stack Name | Description |
+|-----|-------------------|-------------|
+| Lab 1 | `serverless-saas-lab1` | Basic serverless application |
+| Lab 2 | `serverless-saas-lab2` | Multi-tenant pooled architecture |
+| Lab 3 | `serverless-saas-lab3` | Tenant isolation (silo model) |
+| Lab 4 | `serverless-saas-lab4` | Advanced tenant isolation |
+| Lab 5 | `serverless-saas-lab5` | CI/CD pipeline |
+| Lab 6 | `serverless-saas-lab6` | API throttling and usage plans |
+| Lab 7 | `serverless-saas-lab7` | Cost attribution and metering |
+
+**Usage Examples**:
+```bash
+# Using default stack name
+cd workshop/Lab1/scripts
+echo "yes" | ./cleanup.sh --profile <your-profile-name>
+
+# Using explicit stack name
+cd workshop/Lab1/scripts
+echo "yes" | ./cleanup.sh --stack-name serverless-saas-lab1 --profile <your-profile-name>
+```
+
+### Lab Commands
+
 | Lab | Deploy Command | Stack Name | Cleanup |
 |-----|---------------|------------|---------|
-| Lab 1 | `sam build && sam deploy --profile <your-profile-name>` | `serverless-saas-workshop-lab1` | `cleanup.sh` |
-| Lab 2 | `./deployment.sh -s -c -e <email> -te <email>` | `stack-pooled` | `cleanup.sh` |
-| Lab 3 | `./deployment.sh -s -c -e <email> -te <email>` | `stack-pooled`, `stack-*` | `cleanup.sh` |
-| Lab 4 | `./deployment.sh -s -c -e <email> -te <email>` | `stack-pooled`, `stack-*` | `cleanup.sh` |
-| Lab 5 | `./deployment.sh -s -c` | `serverless-saas`, `serverless-saas-pipeline` | `cleanup.sh` |
-| Lab 6 | `./deploy-with-screen.sh` | `stack-pooled`, `stack-*` | `./cleanup.sh` |
-| Lab 7 | `./deployment.sh --profile <your-profile-name>` | `serverless-saas-lab7`, `stack-pooled-lab7` | `./cleanup.sh --profile <your-profile-name>` |
+| Lab 1 | `sam build && sam deploy --profile <your-profile-name>` | `serverless-saas-lab1` | `./cleanup.sh --profile <profile>` |
+| Lab 2 | `./deployment.sh -s -c -e <email> -te <email>` | `serverless-saas-lab2` | `./cleanup.sh --profile <profile>` |
+| Lab 3 | `./deployment.sh -s -c -e <email> -te <email>` | `serverless-saas-lab3` | `./cleanup.sh --profile <profile>` |
+| Lab 4 | `./deployment.sh -s -c -e <email> -te <email>` | `serverless-saas-lab4` | `./cleanup.sh --profile <profile>` |
+| Lab 5 | `./deployment.sh -s -c` | `serverless-saas-lab5` | `./cleanup.sh --profile <profile>` |
+| Lab 6 | `./deploy-with-screen.sh` | `serverless-saas-lab6` | `./cleanup.sh --profile <profile>` |
+| Lab 7 | `./deployment.sh --profile <your-profile-name>` | `serverless-saas-lab7` | `./cleanup.sh --profile <profile>` |
+
+**Note**: The `--stack-name` parameter is optional for all cleanup commands. If not provided, the default stack name for that lab will be used.
 
 ---
 
@@ -1283,30 +1349,42 @@ All cleanup scripts (Lab1-Lab7) now include:
 
 ### Cleanup Command Examples
 
-All cleanup commands now require the `--profile` parameter:
+All cleanup commands support the `--profile` parameter (REQUIRED) and optional `--stack-name` parameter.
 
 **Lab1**:
 ```bash
 cd workshop/Lab1/scripts
+# Using default stack name (serverless-saas-lab1)
+echo "yes" | ./cleanup.sh --profile <your-profile-name>
+
+# Or with explicit stack name
 echo "yes" | ./cleanup.sh --stack-name serverless-saas-lab1 --profile <your-profile-name>
 ```
 
 **Lab3** (with tenant stacks):
 ```bash
 cd workshop/Lab3/scripts
-echo "yes" | ./cleanup.sh --stack-name serverless-saas-lab3 --profile <your-profile-name>
+# Using default stack name (serverless-saas-lab3)
+echo "yes" | ./cleanup.sh --profile <your-profile-name>
 # Automatically cleans up all tenant stacks matching 'lab3' pattern
+
+# Or with explicit stack name
+echo "yes" | ./cleanup.sh --stack-name serverless-saas-lab3 --profile <your-profile-name>
 ```
 
 **Lab5** (with pipeline and tenant stacks):
 ```bash
 cd workshop/Lab5/scripts
-echo "yes" | ./cleanup.sh --stack-name serverless-saas-lab5 --profile <your-profile-name>
+# Using default stack name (serverless-saas-lab5)
+echo "yes" | ./cleanup.sh --profile <your-profile-name>
 # Automatically cleans up:
 # - serverless-saas-shared-lab5
 # - serverless-saas-pipeline-lab5
 # - All tenant stacks matching 'lab5' pattern
 # Will NOT delete Lab6 or Lab7 resources
+
+# Or with explicit stack name
+echo "yes" | ./cleanup.sh --stack-name serverless-saas-lab5 --profile <your-profile-name>
 ```
 
 **Global cleanup** (all labs):
