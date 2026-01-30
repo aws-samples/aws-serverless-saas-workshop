@@ -1,44 +1,11 @@
 {
   "test_name": "End-to-End Cleanup Isolation Test",
-  "timestamp": "2026-01-29T18:47:13.947347",
+  "timestamp": "2026-01-29T19:53:17.276664",
   "dry_run": false,
   "aws_profile": "serverless-saas-demo",
-  "total_steps": 1,
-  "passed_steps": 1,
+  "total_steps": 0,
+  "passed_steps": 0,
   "failed_steps": 0,
-  "total_duration_seconds": 126.15419816970825,
-  "steps": [
-    {
-      "step_number": 1,
-      "step_name": "Cleanup All Labs (Ensure Clean State)",
-      "success": true,
-      "duration_seconds": 126.15,
-      "resources_before": {
-        "timestamp": "2026-01-29T18:44:51.376220",
-        "stacks": [],
-        "s3_buckets": [],
-        "log_groups": [],
-        "cognito_pools": [],
-        "total_count": 0
-      },
-      "resources_after": {
-        "timestamp": "2026-01-29T18:46:48.693360",
-        "stacks": [],
-        "s3_buckets": [],
-        "log_groups": [],
-        "cognito_pools": [],
-        "total_count": 0
-      },
-      "resources_deleted": {
-        "timestamp": "2026-01-29T18:44:51.376220",
-        "stacks": [],
-        "s3_buckets": [],
-        "log_groups": [],
-        "cognito_pools": [],
-        "total_count": 0
-      },
-      "error_message": null,
-      "warnings": []
-    }
-  ]
+  "total_duration_seconds": 0,
+  "steps": []
 }

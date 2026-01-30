@@ -66,7 +66,7 @@ def print_timestamp():
 
 
 # Constants
-WORKSHOP_ROOT = Path(__file__).parent.parent
+WORKSHOP_ROOT = Path(__file__).parent.parent.resolve()  # Use resolve() to get absolute path
 SCRIPTS_DIR = WORKSHOP_ROOT / "scripts"
 LAB_DIRECTORIES = [f"Lab{i}" for i in range(1, 8)]
 LAB_IDS = [f"lab{i}" for i in range(1, 8)]
@@ -248,9 +248,15 @@ class EndToEndTestRunner:
         self.profile_args = ["--profile", aws_profile] if aws_profile else []
     
     def run_script(self, script_path: Path, args: List[str] = None, 
-                   timeout: int = 3600) -> Tuple[bool, str, float]:
+                   timeout: int = 3600, stdin_input: str = None) -> Tuple[bool, str, float]:
         """
         Run a deployment or cleanup script with real-time output.
+        
+        Args:
+            script_path: Path to the script to execute
+            args: Command-line arguments for the script
+            timeout: Maximum execution time in seconds
+            stdin_input: Optional input to pipe to stdin (e.g., "yes" for cleanup confirmation)
         
         Returns:
             Tuple of (success, output, duration_seconds)
@@ -258,6 +264,8 @@ class EndToEndTestRunner:
         if self.dry_run:
             # Simulate script execution in dry-run mode
             print_colored(Colors.YELLOW, f"[DRY-RUN] Would execute: {script_path} {' '.join(args or [])}")
+            if stdin_input:
+                print_colored(Colors.YELLOW, f"[DRY-RUN] With stdin: {stdin_input}")
             return True, "Dry-run mode - script not executed", 0.1
         
         start_time = time.time()
@@ -266,12 +274,15 @@ class EndToEndTestRunner:
             cmd = [str(script_path)] + (args or [])
             print_colored(Colors.YELLOW, f"Executing: {' '.join(cmd)}")
             print_colored(Colors.YELLOW, f"Working directory: {script_path.parent}")
+            if stdin_input:
+                print_colored(Colors.YELLOW, f"Piping stdin: {stdin_input}")
             print_timestamp()
             print()
             
             # Run with real-time output streaming
             process = subprocess.Popen(
                 cmd,
+                stdin=subprocess.PIPE if stdin_input else None,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 text=True,
@@ -280,6 +291,12 @@ class EndToEndTestRunner:
             )
             
             output_lines = []
+            
+            # Send stdin input if provided
+            if stdin_input:
+                process.stdin.write(stdin_input + '\n')
+                process.stdin.flush()
+                process.stdin.close()
             
             # Stream output in real-time
             for line in process.stdout:
@@ -331,7 +348,7 @@ class EndToEndTestRunner:
         script_path = SCRIPTS_DIR / "cleanup-all-labs.sh"
         args = self.profile_args.copy()  # Use profile_args list
         
-        success, output, script_duration = self.run_script(script_path, args, timeout=1800)
+        success, output, script_duration = self.run_script(script_path, args, timeout=1800, stdin_input="yes")
         
         # Wait for resources to be deleted
         if not self.dry_run:
@@ -466,10 +483,10 @@ class EndToEndTestRunner:
         # Run lab cleanup script
         lab_dir = WORKSHOP_ROOT / f"Lab{lab_num}"
         script_path = lab_dir / "scripts" / "cleanup.sh"
-        args = [f"--stack-name=serverless-saas-lab{lab_num}"]
+        args = ["--stack-name", f"serverless-saas-lab{lab_num}"]
         args.extend(self.profile_args)  # Add profile args as separate items
         
-        success, output, script_duration = self.run_script(script_path, args, timeout=1800)
+        success, output, script_duration = self.run_script(script_path, args, timeout=1800, stdin_input="yes")
         
         # Wait for resources to be deleted
         if not self.dry_run:
@@ -635,7 +652,7 @@ class EndToEndTestRunner:
         script_path = SCRIPTS_DIR / "cleanup-all-labs.sh"
         args = self.profile_args.copy()  # Use profile_args list
         
-        success, output, script_duration = self.run_script(script_path, args, timeout=1800)
+        success, output, script_duration = self.run_script(script_path, args, timeout=1800, stdin_input="yes")
         
         # Wait for resources to be deleted
         if not self.dry_run:
