@@ -20,7 +20,13 @@
 
 set -e
 
-# AWS Profile should be passed via --profile parameter
+# Default stack name for Lab4
+DEFAULT_STACK_NAME="serverless-saas-lab4"
+LAB_NUMBER="4"
+
+# Source the parameter parsing template
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../../scripts/lib/parameter-parsing-template.sh"
 
 # Colors for output
 RED='\033[0;31m'
@@ -28,15 +34,6 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
-
-# Default values
-AWS_REGION="us-east-1"
-AWS_PROFILE=""  # Empty by default - will use machine's default profile if not specified
-STACK_NAME_PREFIX="serverless-saas-lab4"  # Default prefix for stack names
-SHARED_STACK_NAME=""  # Will be set based on stack name prefix
-TENANT_STACK_NAME=""  # Will be set based on stack name prefix
-SKIP_CONFIRMATION=0
-LAB_ID="lab4"  # Lab identifier for resource filtering
 
 # Function to print colored messages
 print_message() {
@@ -70,58 +67,16 @@ get_profile_arg() {
     fi
 }
 
-# Function to print usage
-print_usage() {
-    echo "Usage: $0 [OPTIONS]"
-    echo ""
-    echo "Options:"
-    echo "  --stack-name <name>       Stack name prefix (default: serverless-saas-lab4)"
-    echo "  --region <region>         AWS region (default: us-east-1)"
-    echo "  --profile <profile>       AWS profile to use (optional, uses machine's default if not specified)"
-    echo "  -y, --yes                 Skip confirmation prompt"
-    echo "  --help                    Show this help message"
-    echo ""
-    echo "Examples:"
-    echo "  $0                                              # Clean up with default settings"
-    echo "  $0 --stack-name serverless-saas-lab4            # Clean up specific lab"
-    echo "  $0 --region us-east-1                           # Clean up in specific region"
-    echo "  $0 --profile my-profile                         # Clean up with specific AWS profile"
-    echo "  $0 --stack-name my-lab --profile my-profile -y  # Clean up with custom stack name and profile, skip confirmation"
+# Function to display help text
+show_help() {
+    show_cleanup_help "$LAB_NUMBER" "$DEFAULT_STACK_NAME"
 }
 
-# Parse command line arguments
-while [[ "$#" -gt 0 ]]; do
-    case $1 in
-        --stack-name)
-            STACK_NAME_PREFIX=$2
-            shift 2
-            ;;
-        --region)
-            AWS_REGION=$2
-            shift 2
-            ;;
-        --profile)
-            AWS_PROFILE=$2
-            shift 2
-            ;;
-        -y|--yes)
-            SKIP_CONFIRMATION=1
-            shift
-            ;;
-        --help)
-            print_usage
-            exit 0
-            ;;
-        *)
-            print_message "$RED" "Unknown parameter: $1"
-            echo ""
-            print_usage
-            exit 1
-            ;;
-    esac
-done
+# Parse command line arguments using template
+parse_cleanup_parameters "$@"
 
-# Set stack names based on prefix
+# Set stack names based on prefix (Lab4 has shared and tenant stacks)
+STACK_NAME_PREFIX="$STACK_NAME"
 SHARED_STACK_NAME="serverless-saas-shared-${STACK_NAME_PREFIX##*-}"
 TENANT_STACK_NAME="serverless-saas-tenant-${STACK_NAME_PREFIX##*-}"
 

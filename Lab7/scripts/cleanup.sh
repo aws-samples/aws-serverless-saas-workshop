@@ -17,10 +17,13 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LAB_DIR="$(dirname "$SCRIPT_DIR")"  # Parent directory of scripts/ is the lab root
 
 # Default values
+DEFAULT_STACK_NAME="serverless-saas-lab7"
+LAB_NUMBER="7"
 AWS_REGION="us-east-1"
 AWS_PROFILE=""  # Optional, will use default profile if not provided
-MAIN_STACK="serverless-saas-lab7"
-TENANT_STACK="stack-pooled-lab7"
+STACK_NAME=""  # Will be set to DEFAULT_STACK_NAME if not provided
+MAIN_STACK=""  # Will be derived from STACK_NAME
+TENANT_STACK=""  # Will be derived from STACK_NAME
 SKIP_CONFIRMATION=0
 LAB_ID="lab7"  # Lab identifier for resource filtering
 
@@ -31,61 +34,154 @@ print_message() {
     echo -e "${color}${message}${NC}"
 }
 
-# Function to print usage
-print_usage() {
-    echo "Usage: $0 [OPTIONS]"
-    echo ""
-    echo "Options:"
-    echo "  --profile <profile>            AWS CLI profile name (optional, uses default if not provided)"
-    echo "  --region <region>              AWS region (default: us-east-1)"
-    echo "  --main-stack <name>            Main stack name (default: serverless-saas-lab7)"
-    echo "  --tenant-stack <name>          Tenant stack name (default: stack-pooled-lab7)"
-    echo "  -y, --yes                      Skip confirmation prompt"
-    echo "  --help                         Show this help message"
-    echo ""
-    echo "Examples:"
-    echo "  $0                                              # Use default values"
-    echo "  $0 --profile serverless-saas-demo              # Use specific AWS profile"
-    echo "  $0 --region us-east-1                           # Use custom region"
-    echo "  $0 --main-stack my-lab7-stack                   # Use custom main stack name"
-    echo "  $0 -y                                           # Skip confirmation prompt"
+# Function to show help
+show_help() {
+  cat << EOF
+Usage: ./cleanup.sh [OPTIONS]
+
+Cleanup script for Lab 7 - Deletes all AWS resources created by the lab.
+
+OPTIONS:
+  --stack-name <name>    CloudFormation stack name
+                         (optional, default: serverless-saas-lab7)
+  --main-stack <name>    Main stack name (overrides --stack-name)
+  --tenant-stack <name>  Tenant stack name (overrides --stack-name)
+  --profile <name>       AWS CLI profile name (REQUIRED)
+  --region <region>      AWS region (optional, default: us-east-1)
+  -y, --yes             Skip confirmation prompt
+  -h, --help            Display this help message
+
+EXAMPLES:
+  # Cleanup with default stack name
+  ./cleanup.sh --profile my-profile
+
+  # Cleanup with explicit stack name
+  ./cleanup.sh --stack-name my-custom-stack --profile my-profile
+
+  # Non-interactive cleanup (skip confirmation)
+  echo "yes" | ./cleanup.sh --profile my-profile
+
+  # Cleanup with custom region
+  ./cleanup.sh --profile my-profile --region us-west-2
+
+  # Cleanup with custom main and tenant stacks
+  ./cleanup.sh --main-stack my-main-stack --tenant-stack my-tenant-stack --profile my-profile
+
+SECURITY NOTE:
+  This script follows secure deletion order to prevent CloudFront origin hijacking:
+  1. Delete CloudFormation stack (includes CloudFront distributions)
+  2. Wait for stack DELETE_COMPLETE (15-30 minutes for CloudFront propagation)
+  3. Delete S3 buckets (safe after CloudFront is deleted)
+
+  For more information, see: workshop/CLOUDFRONT_SECURITY_FIX.md
+
+EOF
 }
 
 # Parse command line arguments
 while [[ "$#" -gt 0 ]]; do
     case $1 in
-        --profile)
-            AWS_PROFILE=$2
-            shift 2
-            ;;
-        --region)
-            AWS_REGION=$2
+        --stack-name)
+            if [ -z "$2" ] || [[ "$2" == --* ]]; then
+                echo "Error: --stack-name requires a value"
+                show_help
+                exit 1
+            fi
+            STACK_NAME="$2"
             shift 2
             ;;
         --main-stack)
-            MAIN_STACK=$2
+            if [ -z "$2" ] || [[ "$2" == --* ]]; then
+                echo "Error: --main-stack requires a value"
+                show_help
+                exit 1
+            fi
+            MAIN_STACK="$2"
             shift 2
             ;;
         --tenant-stack)
-            TENANT_STACK=$2
+            if [ -z "$2" ] || [[ "$2" == --* ]]; then
+                echo "Error: --tenant-stack requires a value"
+                show_help
+                exit 1
+            fi
+            TENANT_STACK="$2"
+            shift 2
+            ;;
+        --profile)
+            if [ -z "$2" ] || [[ "$2" == --* ]]; then
+                echo "Error: --profile requires a value"
+                show_help
+                exit 1
+            fi
+            AWS_PROFILE="$2"
+            shift 2
+            ;;
+        --region)
+            if [ -z "$2" ] || [[ "$2" == --* ]]; then
+                echo "Error: --region requires a value"
+                show_help
+                exit 1
+            fi
+            AWS_REGION="$2"
             shift 2
             ;;
         -y|--yes)
             SKIP_CONFIRMATION=1
             shift
             ;;
-        --help)
-            print_usage
+        -h|--help)
+            show_help
             exit 0
             ;;
         *)
-            print_message "$RED" "Unknown parameter: $1"
+            echo "Error: Unknown option: $1"
             echo ""
-            print_usage
+            show_help
             exit 1
             ;;
     esac
 done
+
+# Assign default stack name if not provided
+if [ -z "$STACK_NAME" ]; then
+    STACK_NAME="$DEFAULT_STACK_NAME"
+    echo "ℹ️  Using default stack name: $STACK_NAME"
+fi
+
+# Validate stack name
+if [ -z "$STACK_NAME" ]; then
+    echo "Error: Stack name cannot be empty"
+    exit 1
+fi
+
+if [[ "$STACK_NAME" =~ ^[[:space:]]*$ ]]; then
+    echo "Error: Stack name cannot contain only whitespace"
+    exit 1
+fi
+
+# Validate required parameters
+if [ -z "$AWS_PROFILE" ]; then
+    echo "Error: --profile parameter is required"
+    echo ""
+    show_help
+    exit 1
+fi
+
+# Derive main and tenant stack names if not explicitly provided
+if [ -z "$MAIN_STACK" ]; then
+    MAIN_STACK="$STACK_NAME"
+fi
+
+if [ -z "$TENANT_STACK" ]; then
+    # Derive tenant stack name: if stack ends with -lab7, tenant is stack-pooled-lab7
+    if [[ "$MAIN_STACK" == *"-lab7" ]]; then
+        TENANT_STACK="stack-pooled-lab7"
+    else
+        # For custom stack names, append -tenant suffix
+        TENANT_STACK="${MAIN_STACK}-tenant"
+    fi
+fi
 
 # Build AWS CLI profile argument if profile is provided
 PROFILE_ARG=""
@@ -104,11 +200,10 @@ print_message "$BLUE" "========================================"
 print_message "$BLUE" "Lab7 Cleanup Script"
 print_message "$BLUE" "========================================"
 echo "Log file: $LOG_FILE"
-if [[ -n "$AWS_PROFILE" ]]; then
-    echo "AWS Profile: $AWS_PROFILE"
-fi
-echo "AWS Region: $AWS_REGION"
-echo "Main Stack: $MAIN_STACK"
+echo "Stack name:  $STACK_NAME"
+echo "AWS Profile: $AWS_PROFILE"
+echo "AWS Region:  $AWS_REGION"
+echo "Main Stack:  $MAIN_STACK"
 echo "Tenant Stack: $TENANT_STACK"
 echo ""
 
@@ -480,7 +575,6 @@ DURATION=$((END_TIME - START_TIME))
 
 print_message "$GREEN" "========================================"
 print_message "$GREEN" "Lab7 Cleanup Complete!"
-print_message "$GREEN" "========================================"
-echo "Duration: ${DURATION} seconds"
-echo "Log file: $LOG_FILE"
+print_message "$GREEN" "Duration: ${DURATION} seconds"
+print_message "$GREEN" "Log file: $LOG_FILE"
 print_message "$GREEN" "========================================"

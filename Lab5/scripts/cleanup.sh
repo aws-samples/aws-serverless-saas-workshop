@@ -20,7 +20,9 @@
 
 set -e
 
-# AWS Profile should be passed via --profile parameter
+# Source parameter parsing template
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../../scripts/lib/parameter-parsing-template.sh"
 
 # Colors for output
 RED='\033[0;31m'
@@ -29,13 +31,22 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Default values
-AWS_REGION="us-east-1"
-SHARED_STACK_NAME="serverless-saas-shared-lab5"
-PIPELINE_STACK_NAME="serverless-saas-pipeline-lab5"
-SKIP_CONFIRMATION=0
-AWS_PROFILE=""
+# Lab-specific configuration
+DEFAULT_STACK_NAME="serverless-saas-lab5"
+LAB_NUMBER="5"
 LAB_ID="lab5"  # Lab identifier for resource filtering
+
+# Function to show help text
+show_help() {
+    show_cleanup_help "$LAB_NUMBER" "$DEFAULT_STACK_NAME"
+}
+
+# Parse command line parameters
+parse_cleanup_parameters "$@"
+
+# Derive shared and pipeline stack names from base stack name
+SHARED_STACK_NAME="serverless-saas-shared-${STACK_NAME##*-}"
+PIPELINE_STACK_NAME="serverless-saas-pipeline-${STACK_NAME##*-}"
 
 # Function to build AWS CLI profile argument
 # Returns "--profile <profile>" if PROFILE is set, empty string otherwise
@@ -69,80 +80,6 @@ verify_stack_ownership() {
     fi
 }
 
-# Function to print usage
-print_usage() {
-    echo "Usage: $0 [OPTIONS]"
-    echo ""
-    echo "Options:"
-    echo "  --stack-name <name>       Stack name prefix (default: serverless-saas-lab5)"
-    echo "                            Sets both shared and pipeline stack names automatically"
-    echo "  --shared-stack <name>     Shared stack name (default: serverless-saas-shared-lab5)"
-    echo "  --pipeline-stack <name>   Pipeline stack name (default: serverless-saas-pipeline-lab5)"
-    echo "  --region <region>         AWS region (default: us-east-1)"
-    echo "  --profile <profile>       AWS CLI profile to use (optional, uses default if not specified)"
-    echo "  -y, --yes                 Skip confirmation prompt"
-    echo "  --help                    Show this help message"
-    echo ""
-    echo "Examples:"
-    echo "  $0                                              # Clean up with defaults"
-    echo "  $0 --stack-name serverless-saas-lab5            # Clean up using stack name prefix"
-    echo "  $0 --region us-east-1                           # Clean up in specific region"
-    echo "  $0 --profile serverless-saas-demo               # Use specific AWS profile"
-    echo "  $0 --stack-name my-lab --profile my-profile     # Clean up with custom stack name and profile"
-    echo "  $0 -y                                           # Skip confirmation"
-}
-
-# Parse command line arguments
-while [[ "$#" -gt 0 ]]; do
-    case $1 in
-        --stack-name)
-            STACK_NAME_PREFIX=$2
-            # Derive stack names from prefix
-            SHARED_STACK_NAME="serverless-saas-shared-${STACK_NAME_PREFIX##*-}"
-            PIPELINE_STACK_NAME="serverless-saas-pipeline-${STACK_NAME_PREFIX##*-}"
-            # If the prefix already contains "serverless-saas-shared" or "serverless-saas-pipeline", use it as-is
-            if [[ "$STACK_NAME_PREFIX" == serverless-saas-shared-* ]]; then
-                SHARED_STACK_NAME="$STACK_NAME_PREFIX"
-                PIPELINE_STACK_NAME="serverless-saas-pipeline-${STACK_NAME_PREFIX##*-}"
-            elif [[ "$STACK_NAME_PREFIX" == serverless-saas-pipeline-* ]]; then
-                PIPELINE_STACK_NAME="$STACK_NAME_PREFIX"
-                SHARED_STACK_NAME="serverless-saas-shared-${STACK_NAME_PREFIX##*-}"
-            fi
-            shift 2
-            ;;
-        --shared-stack)
-            SHARED_STACK_NAME=$2
-            shift 2
-            ;;
-        --pipeline-stack)
-            PIPELINE_STACK_NAME=$2
-            shift 2
-            ;;
-        --region)
-            AWS_REGION=$2
-            shift 2
-            ;;
-        --profile)
-            AWS_PROFILE=$2
-            shift 2
-            ;;
-        -y|--yes)
-            SKIP_CONFIRMATION=1
-            shift
-            ;;
-        --help)
-            print_usage
-            exit 0
-            ;;
-        *)
-            print_message "$RED" "Unknown parameter: $1"
-            echo ""
-            print_usage
-            exit 1
-            ;;
-    esac
-done
-
 # Create log directory and file
 LOG_DIR="logs"
 mkdir -p "$LOG_DIR"
@@ -156,6 +93,8 @@ print_message "$BLUE" "Lab5 Complete Cleanup Script"
 print_message "$BLUE" "=========================================="
 echo "Started: $(date)"
 echo "Log file: $LOG_FILE"
+echo "Stack name: $STACK_NAME"
+echo "AWS Profile: $AWS_PROFILE"
 echo "AWS Region: $AWS_REGION"
 echo "Shared Stack: $SHARED_STACK_NAME"
 echo "Pipeline Stack: $PIPELINE_STACK_NAME"
@@ -917,16 +856,8 @@ CLEANUP_MINUTES=$((CLEANUP_DURATION / 60))
 CLEANUP_SECONDS=$((CLEANUP_DURATION % 60))
 
 echo ""
-print_message "$GREEN" "=========================================="
-print_message "$GREEN" "Cleanup Complete!"
-print_message "$GREEN" "=========================================="
-print_message "$GREEN" "Completed: $(date)"
-print_message "$GREEN" "Duration: ${CLEANUP_MINUTES}m ${CLEANUP_SECONDS}s"
-echo ""
-print_message "$BLUE" "Log file: $LOG_FILE"
-echo ""
-print_message "$YELLOW" "You can now run a fresh deployment:"
-print_message "$YELLOW" "  cd Lab5/scripts"
-print_message "$YELLOW" "  ./deployment.sh -s -c      # Deploy server and client"
-print_message "$YELLOW" "  ./deployment.sh -b         # Deploy only bootstrap"
-echo ""
+print_message "$GREEN" "========================================"
+print_message "$GREEN" "Lab5 Cleanup Complete!"
+print_message "$GREEN" "Duration: ${CLEANUP_DURATION} seconds"
+print_message "$GREEN" "Log file: $LOG_FILE"
+print_message "$GREEN" "========================================"

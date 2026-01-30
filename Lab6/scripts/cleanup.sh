@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+
 # SECURITY NOTE: Deletion Order is Critical!
 # ============================================
 # This script follows a specific deletion order to prevent CloudFront Origin Hijacking:
@@ -15,17 +18,11 @@
 #
 # DO NOT change this order without understanding the security implications!
 
-# AWS Profile should be passed via --profile parameter
+set -e
 
-# Lab6 Complete Cleanup Script
-# Removes all Lab6 resources in the correct order to avoid dependency issues
-
-# Default values
-AWS_PROFILE=""
-STACK_NAME_PREFIX="serverless-saas-lab6"  # Default prefix for stack names
-AWS_REGION="us-east-1"  # Default region
-SKIP_CONFIRMATION=0
-LAB_ID="lab6"  # Lab identifier for resource filtering
+# Source parameter parsing template
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../../scripts/lib/parameter-parsing-template.sh"
 
 # Colors for output
 RED='\033[0;31m'
@@ -34,12 +31,21 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Function to print colored messages
-print_message() {
-    local color=$1
-    local message=$2
-    echo -e "${color}${message}${NC}"
+# Lab-specific configuration
+DEFAULT_STACK_NAME="serverless-saas-lab6"
+LAB_NUMBER="6"
+LAB_ID="lab6"  # Lab identifier for resource filtering
+
+# Function to show help text
+show_help() {
+    show_cleanup_help "$LAB_NUMBER" "$DEFAULT_STACK_NAME"
 }
+
+# Parse command line parameters
+parse_cleanup_parameters "$@"
+
+# For Lab6, we use STACK_NAME_PREFIX for backward compatibility with existing logic
+STACK_NAME_PREFIX="$STACK_NAME"
 
 # Function to build AWS CLI profile argument
 # Returns "--profile <profile>" if AWS_PROFILE is set, empty string otherwise
@@ -51,62 +57,12 @@ get_profile_arg() {
     fi
 }
 
-# Function to print usage
-print_usage() {
-    echo "Usage: $0 [OPTIONS]"
-    echo ""
-    echo "Options:"
-    echo "  --stack-name <name>       Stack name prefix (default: serverless-saas-lab6)"
-    echo "  --region <region>         AWS region (default: us-east-1)"
-    echo "  --profile <name>          AWS CLI profile name (optional, uses machine's default if not provided)"
-    echo "  -y, --yes                 Skip confirmation prompt"
-    echo "  --help                    Show this help message"
-    echo ""
-    echo "Examples:"
-    echo "  $0                                              # Clean up with default settings"
-    echo "  $0 --stack-name serverless-saas-lab6            # Clean up specific lab"
-    echo "  $0 --profile serverless-saas-demo               # Use specific AWS profile"
-    echo "  $0 --stack-name my-lab --profile my-profile     # Clean up with custom stack name and profile"
-    echo "  $0 -y                                           # Skip confirmation prompt"
+# Function to print colored messages
+print_message() {
+    local color=$1
+    local message=$2
+    echo -e "${color}${message}${NC}"
 }
-
-# Parse command line arguments
-while [[ "$#" -gt 0 ]]; do
-    case $1 in
-        --stack-name)
-            STACK_NAME_PREFIX=$2
-            shift 2
-            ;;
-        --region)
-            AWS_REGION=$2
-            shift 2
-            ;;
-        --profile)
-            AWS_PROFILE=$2
-            shift 2
-            ;;
-        -y|--yes)
-            SKIP_CONFIRMATION=1
-            shift
-            ;;
-        --help)
-            print_usage
-            exit 0
-            ;;
-        *)
-            echo "Unknown parameter: $1"
-            echo ""
-            print_usage
-            exit 1
-            ;;
-    esac
-done
-
-# Build AWS CLI profile argument if profile is specified
-PROFILE_ARG=""
-if [[ -n "$AWS_PROFILE" ]]; then
-    PROFILE_ARG="--profile $AWS_PROFILE"
-fi
 
 # Create log directory and file
 LOG_DIR="logs"
@@ -121,6 +77,9 @@ print_message "$BLUE" "Lab6 Complete Cleanup Script"
 print_message "$BLUE" "=========================================="
 echo "Started: $(date)"
 echo "Log file: $LOG_FILE"
+echo "Stack name: $STACK_NAME"
+echo "AWS Profile: $AWS_PROFILE"
+echo "AWS Region: $AWS_REGION"
 echo ""
 print_message "$YELLOW" "This will delete:"
 echo "  - All tenant stacks (stack-*)"
@@ -890,15 +849,8 @@ CLEANUP_MINUTES=$((CLEANUP_DURATION / 60))
 CLEANUP_SECONDS=$((CLEANUP_DURATION % 60))
 
 echo ""
-print_message "$BLUE" "=========================================="
-print_message "$BLUE" "Cleanup Complete!"
-print_message "$BLUE" "=========================================="
-print_message "$GREEN" "Completed: $(date)"
-print_message "$GREEN" "Duration: ${CLEANUP_MINUTES}m ${CLEANUP_SECONDS}s"
+print_message "$GREEN" "========================================"
+print_message "$GREEN" "Lab6 Cleanup Complete!"
+print_message "$GREEN" "Duration: ${CLEANUP_DURATION} seconds"
 print_message "$GREEN" "Log file: $LOG_FILE"
-echo ""
-print_message "$YELLOW" "You can now run a fresh deployment:"
-print_message "$YELLOW" "  cd Lab6/scripts"
-print_message "$YELLOW" "  ./deploy-with-screen.sh    # Recommended for long deployments"
-print_message "$YELLOW" "  ./deployment.sh -s -c      # Direct deployment"
-echo ""
+print_message "$GREEN" "========================================"
