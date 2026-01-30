@@ -1,7 +1,7 @@
   export const environment = {
     production: true,
-    regApiGatewayUrl: 'https://d1hhflh0rg.execute-api.us-east-1.amazonaws.com/prod',
-    apiGatewayUrl: 'https://fvywils1u2.execute-api.us-east-1.amazonaws.com/prod',
-    userPoolId: 'us-east-1_L9qQrRyHt',
-    appClientId: '4omjq4oftsk8gselege4b1604e',
+    regApiGatewayUrl: 'https://9xtw3fdhag.execute-api.us-east-1.amazonaws.com/prod',
+    apiGatewayUrl: 'https://3few2o7s1d.execute-api.us-east-1.amazonaws.com/prod',
+    userPoolId: 'us-east-1_VoQw2Iu9y',
+    appClientId: '5rhagivt2vi6ooama9q7ud91s4',
   };
