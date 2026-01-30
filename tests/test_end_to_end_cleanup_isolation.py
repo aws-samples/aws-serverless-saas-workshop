@@ -483,6 +483,8 @@ class EndToEndTestRunner:
         # Run lab cleanup script
         lab_dir = WORKSHOP_ROOT / f"Lab{lab_num}"
         script_path = lab_dir / "scripts" / "cleanup.sh"
+        
+        # All labs now use the same --stack-name parameter format
         args = ["--stack-name", f"serverless-saas-lab{lab_num}"]
         args.extend(self.profile_args)  # Add profile args as separate items
         
