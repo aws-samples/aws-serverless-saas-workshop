@@ -63,6 +63,9 @@ get_profile_arg() {
     fi
 }
 
+# Set PROFILE_ARG early so it's available throughout the script
+PROFILE_ARG=$(get_profile_arg)
+
 # Function to print colored messages
 print_message() {
     local color=$1
@@ -453,7 +456,6 @@ print_message "$BLUE" "=========================================="
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../../scripts/lib/stack-deletion.sh"
 
-PROFILE_ARG=$(get_profile_arg)
 if aws cloudformation $PROFILE_ARG describe-stacks --stack-name "serverless-saas-tenant-lab6" --region "$AWS_REGION" &>/dev/null; then
     print_message "$YELLOW" "⏳ This may take several minutes"
     echo ""
@@ -487,8 +489,6 @@ echo ""
 print_message "$BLUE" "=========================================="
 print_message "$BLUE" "Step 5: Deleting shared infrastructure (includes CloudFront)"
 print_message "$BLUE" "=========================================="
-
-PROFILE_ARG=$(get_profile_arg)
 
 # Source the stack deletion verification module
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

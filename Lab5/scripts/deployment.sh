@@ -287,11 +287,29 @@ echo ""
 if [[ $DEPLOY_PIPELINE -eq 1 ]]; then
   print_message "$YELLOW" "Step 4: Deploying CI/CD pipeline..."
   
-  # Check if CDKToolkit stack exists, bootstrap if missing
-  print_message "$YELLOW" "  Checking CDKToolkit stack..."
+  # Check if CDKToolkit stack exists and staging bucket is accessible
+  print_message "$YELLOW" "  Checking CDKToolkit stack and staging bucket..."
   PROFILE_ARG=$(get_profile_arg)
+  CDK_NEEDS_BOOTSTRAP=false
+  
+  # Check if CDKToolkit stack exists
   if ! aws cloudformation $PROFILE_ARG describe-stacks --stack-name "CDKToolkit" --region "$AWS_REGION" &> /dev/null; then
-      print_message "$YELLOW" "  CDKToolkit stack not found, bootstrapping CDK..."
+      print_message "$YELLOW" "  CDKToolkit stack not found"
+      CDK_NEEDS_BOOTSTRAP=true
+  else
+      # CDKToolkit stack exists, but verify the staging bucket exists
+      CDK_BUCKET="cdk-hnb659fds-assets-${ACCOUNT_ID}-${AWS_REGION}"
+      if ! aws s3 $PROFILE_ARG ls "s3://${CDK_BUCKET}" --region "$AWS_REGION" &> /dev/null; then
+          print_message "$YELLOW" "  CDKToolkit stack exists but staging bucket missing: $CDK_BUCKET"
+          CDK_NEEDS_BOOTSTRAP=true
+      else
+          print_message "$GREEN" "  ✓ CDKToolkit stack and staging bucket verified"
+      fi
+  fi
+  
+  # Bootstrap CDK if needed
+  if [[ "$CDK_NEEDS_BOOTSTRAP" == "true" ]]; then
+      print_message "$YELLOW" "  Bootstrapping CDK..."
       if [[ -n "$AWS_PROFILE" ]]; then
         cdk bootstrap --profile "$AWS_PROFILE" --region "$AWS_REGION" || {
             print_message "$RED" "Error: CDK bootstrap failed"
@@ -306,8 +324,6 @@ if [[ $DEPLOY_PIPELINE -eq 1 ]]; then
         }
       fi
       print_message "$GREEN" "  ✓ CDKToolkit bootstrapped successfully"
-  else
-      print_message "$GREEN" "  ✓ CDKToolkit stack exists"
   fi
   
   # Create CodeCommit repository

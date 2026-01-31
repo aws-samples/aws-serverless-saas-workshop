@@ -1294,10 +1294,32 @@ class EndToEndTestRunner:
         
         try:
             # Step 1: Cleanup all labs (ensure clean state)
-            self.step_1_cleanup_all_labs()
+            step1_result = self.step_1_cleanup_all_labs()
+            
+            # CRITICAL: Stop test if initial cleanup fails
+            if not step1_result.success:
+                print()
+                print_separator("=", 80, Colors.RED)
+                print_colored(Colors.RED, "✗ CRITICAL: Initial cleanup (Step 1) FAILED!")
+                print_colored(Colors.RED, "✗ Cannot proceed with test - environment is not in clean state")
+                print_colored(Colors.RED, "✗ Please manually clean up resources and retry")
+                print_separator("=", 80, Colors.RED)
+                print()
+                return  # Stop test execution immediately
             
             # Step 2: Deploy all labs
-            self.step_2_deploy_all_labs()
+            step2_result = self.step_2_deploy_all_labs()
+            
+            # CRITICAL: Stop test if deployment fails
+            if not step2_result.success:
+                print()
+                print_separator("=", 80, Colors.RED)
+                print_colored(Colors.RED, "✗ CRITICAL: Deployment (Step 2) FAILED!")
+                print_colored(Colors.RED, "✗ Cannot proceed with test - labs did not deploy successfully")
+                print_colored(Colors.RED, "✗ Please check deployment logs and fix issues before retrying")
+                print_separator("=", 80, Colors.RED)
+                print()
+                return  # Stop test execution immediately
             
             # Steps 3-9: Cleanup labs one by one
             for lab_num in range(1, 8):

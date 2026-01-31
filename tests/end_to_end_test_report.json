@@ -1,0 +1,65 @@
+{
+  "test_name": "End-to-End Cleanup Isolation Test",
+  "timestamp": "2026-01-31T00:00:27.376352",
+  "dry_run": false,
+  "aws_profile": "serverless-saas-demo",
+  "total_steps": 1,
+  "passed_steps": 0,
+  "failed_steps": 1,
+  "total_duration_seconds": 357.66782903671265,
+  "throttling_metrics": {
+    "total_throttles": 0,
+    "total_retries": 0,
+    "operations_delayed": 6,
+    "total_delay_seconds": 48.03103804588318
+  },
+  "steps": [
+    {
+      "step_number": 1,
+      "step_name": "Cleanup All Labs (Ensure Clean State)",
+      "success": false,
+      "duration_seconds": 357.67,
+      "resources_before": {
+        "timestamp": "2026-01-30T23:54:29.704235",
+        "stacks": [
+          "serverless-saas-lab7"
+        ],
+        "s3_buckets": [
+          "sam-bootstrap-bucket-lab1",
+          "sam-bootstrap-bucket-lab2",
+          "sam-bootstrap-bucket-lab3-shared",
+          "sam-bootstrap-bucket-lab4-shared",
+          "sam-bootstrap-bucket-lab6-shared",
+          "sam-bootstrap-bucket-lab7",
+          "serverless-saas-lab7-cur-6d7fc150"
+        ],
+        "log_groups": [
+          "/aws-glue/crawlers/AWSCURCrawler-Multi-tenant-lab7",
+          "/aws/lambda/serverless-saas-lab7-aws-cur-initializer",
+          "/aws/lambda/serverless-saas-lab7-dynamodb-cost",
+          "/aws/lambda/serverless-saas-lab7-lambda-cost"
+        ],
+        "cognito_pools": [],
+        "total_count": 12
+      },
+      "resources_after": {
+        "timestamp": "2026-01-30T23:59:54.756148",
+        "stacks": [],
+        "s3_buckets": [],
+        "log_groups": [],
+        "cognito_pools": [],
+        "total_count": 0
+      },
+      "resources_deleted": {
+        "timestamp": "2026-01-30T23:54:29.704235",
+        "stacks": [],
+        "s3_buckets": [],
+        "log_groups": [],
+        "cognito_pools": [],
+        "total_count": 0
+      },
+      "error_message": null,
+      "warnings": []
+    }
+  ]
+}

@@ -263,7 +263,48 @@ if [[ $server -eq 1 ]] || [[ $pipeline -eq 1 ]]; then
   print_message "$YELLOW" "  Cleaning previous npm installation for TenantPipeline..."
   rm -rf node_modules package-lock.json || true
   npm install && npm run build 
-  cdk bootstrap --profile "$AWS_PROFILE"
+  
+  # Check if CDKToolkit stack exists and staging bucket is accessible
+  echo "Checking CDKToolkit stack and staging bucket..."
+  CDK_NEEDS_BOOTSTRAP=false
+  
+  # Get AWS account ID for bucket name
+  ACCOUNT_ID=$(aws sts get-caller-identity $PROFILE_ARG --region "$AWS_REGION" --query Account --output text)
+  
+  # Check if CDKToolkit stack exists
+  if ! aws cloudformation $PROFILE_ARG describe-stacks --stack-name "CDKToolkit" --region "$AWS_REGION" &> /dev/null; then
+      echo "  CDKToolkit stack not found"
+      CDK_NEEDS_BOOTSTRAP=true
+  else
+      # CDKToolkit stack exists, but verify the staging bucket exists
+      CDK_BUCKET="cdk-hnb659fds-assets-${ACCOUNT_ID}-${AWS_REGION}"
+      if ! aws s3 $PROFILE_ARG ls "s3://${CDK_BUCKET}" --region "$AWS_REGION" &> /dev/null; then
+          echo "  CDKToolkit stack exists but staging bucket missing: $CDK_BUCKET"
+          CDK_NEEDS_BOOTSTRAP=true
+      else
+          echo "  ✓ CDKToolkit stack and staging bucket verified"
+      fi
+  fi
+  
+  # Bootstrap CDK if needed
+  if [[ "$CDK_NEEDS_BOOTSTRAP" == "true" ]]; then
+      echo "  Bootstrapping CDK..."
+      if [[ -n "$AWS_PROFILE" ]]; then
+        cdk bootstrap --profile "$AWS_PROFILE" --region "$AWS_REGION" || {
+            echo "✗ Error: CDK bootstrap failed"
+            echo "  This is required before deploying the pipeline"
+            exit 1
+        }
+      else
+        cdk bootstrap --region "$AWS_REGION" || {
+            echo "✗ Error: CDK bootstrap failed"
+            echo "  This is required before deploying the pipeline"
+            exit 1
+        }
+      fi
+      echo "  ✓ CDKToolkit bootstrapped successfully"
+  fi
+  
   cdk deploy --require-approval never --profile "$AWS_PROFILE"
 
   cd ../../scripts
