@@ -178,6 +178,18 @@ class TestOrchestrator:
             print(f"Resuming in 120 seconds...")
             print(f"{'=' * 80}{RESET}\n")
             
+            time.sleep(120)
+        else:
+            # Step 10 - Final step, show completion message in yellow
+            YELLOW = '\033[93m'
+            RESET = '\033[0m'
+            
+            print(f"\n{YELLOW}{'=' * 80}")
+            print(f"✅ FINAL STEP COMPLETED")
+            print(f"Step {step_number} completed: {status}")
+            print(f"Test suite execution finished!")
+            print(f"{'=' * 80}{RESET}\n")
+
             # Wait 2 minutes
             time.sleep(120)
             

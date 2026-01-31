@@ -602,11 +602,17 @@ class StateComparator:
         orphaned = []
         
         # Define workshop resource patterns
+        # CRITICAL: Must include "stack-" to recognize tenant stacks from Lab5/Lab6/Lab7
+        # CRITICAL: Must include both "serverless-saas" and "serverlesssaas" (no hyphen) variations
         workshop_patterns = [
-            "serverless-saas-lab",
-            "serverless-saas-shared",
-            "serverless-saas-tenant",
-            "serverless-saas-pipeline"
+            "serverless-saas-lab",      # Stack names: serverless-saas-lab1, etc.
+            "serverless-saas-shared",   # Stack names: serverless-saas-shared-lab3, etc.
+            "serverless-saas-tenant",   # Stack names: serverless-saas-tenant-lab3, etc.
+            "serverless-saas-pipeline", # Stack names: serverless-saas-pipeline-lab5, etc.
+            "serverlesssaas",           # Resources: ServerlessSaaS-Settings-lab5, PooledTenant-ServerlessSaaS-lab6, etc.
+            "serverlessaas",            # Resources: OperationUsers-ServerlessSaas-lab4, etc.
+            "stack-",                   # Tenant stacks: stack-lab6-pooled, stack-pooled-lab7, etc.
+            "-lab1", "-lab2", "-lab3", "-lab4", "-lab5", "-lab6", "-lab7"  # Catch any resource with lab suffix
         ]
         
         # Check all resource types for orphaned resources

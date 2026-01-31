@@ -165,9 +165,15 @@ def main() -> int:
             logger.info("=" * 80)
             return 0
         else:
-            logger.error("=" * 80)
-            logger.error("❌ TEST SUITE FAILED")
-            logger.error("=" * 80)
+            # Print failure message in yellow
+            YELLOW = '\033[93m'
+            RESET = '\033[0m'
+            
+            print(f"\n{YELLOW}{'=' * 80}")
+            print(f"❌ TEST SUITE FAILED")
+            print(f"{'=' * 80}{RESET}\n")
+            
+            logger.error("Test suite failed - see report for details")
             return 1
             
     except KeyboardInterrupt:
