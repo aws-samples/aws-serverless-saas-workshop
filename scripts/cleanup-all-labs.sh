@@ -49,9 +49,11 @@ check_lab_exists() {
     fi
     
     # Check if lab has any CloudFormation stacks
+    # For each lab, check ALL possible stack patterns (base stacks + dynamic tenant stacks)
     local stacks=""
     case $lab_num in
         1)
+            # Lab1: serverless-saas-lab1
             stacks=$(aws cloudformation describe-stacks \
                 ${PROFILE:+--profile "$PROFILE"} \
                 --stack-name "${LAB1_STACK_NAME:-serverless-saas-lab1}" \
@@ -60,6 +62,7 @@ check_lab_exists() {
                 --output text 2>/dev/null || echo "")
             ;;
         2)
+            # Lab2: serverless-saas-lab2
             stacks=$(aws cloudformation describe-stacks \
                 ${PROFILE:+--profile "$PROFILE"} \
                 --stack-name "serverless-saas-lab2" \
@@ -68,44 +71,143 @@ check_lab_exists() {
                 --output text 2>/dev/null || echo "")
             ;;
         3)
-            stacks=$(aws cloudformation describe-stacks \
+            # Lab3: serverless-saas-shared-lab3, serverless-saas-tenant-lab3
+            # Lab3 exists if EITHER shared OR tenant stack exists
+            local shared_stack=$(aws cloudformation describe-stacks \
                 ${PROFILE:+--profile "$PROFILE"} \
                 --stack-name "serverless-saas-shared-lab3" \
                 --region us-east-1 \
                 --query "Stacks[0].StackName" \
                 --output text 2>/dev/null || echo "")
+            
+            local tenant_stack=$(aws cloudformation describe-stacks \
+                ${PROFILE:+--profile "$PROFILE"} \
+                --stack-name "serverless-saas-tenant-lab3" \
+                --region us-east-1 \
+                --query "Stacks[0].StackName" \
+                --output text 2>/dev/null || echo "")
+            
+            # Lab3 exists if either shared OR tenant stack exists
+            if [[ -n "$shared_stack" && "$shared_stack" != "None" ]] || [[ -n "$tenant_stack" && "$tenant_stack" != "None" ]]; then
+                stacks="exists"
+            fi
             ;;
         4)
-            stacks=$(aws cloudformation describe-stacks \
+            # Lab4: serverless-saas-shared-lab4, serverless-saas-tenant-lab4
+            # Lab4 exists if EITHER shared OR tenant stack exists
+            local shared_stack=$(aws cloudformation describe-stacks \
                 ${PROFILE:+--profile "$PROFILE"} \
                 --stack-name "serverless-saas-shared-lab4" \
                 --region us-east-1 \
                 --query "Stacks[0].StackName" \
                 --output text 2>/dev/null || echo "")
+            
+            local tenant_stack=$(aws cloudformation describe-stacks \
+                ${PROFILE:+--profile "$PROFILE"} \
+                --stack-name "serverless-saas-tenant-lab4" \
+                --region us-east-1 \
+                --query "Stacks[0].StackName" \
+                --output text 2>/dev/null || echo "")
+            
+            # Lab4 exists if either shared OR tenant stack exists
+            if [[ -n "$shared_stack" && "$shared_stack" != "None" ]] || [[ -n "$tenant_stack" && "$tenant_stack" != "None" ]]; then
+                stacks="exists"
+            fi
             ;;
         5)
-            stacks=$(aws cloudformation describe-stacks \
+            # Lab5: serverless-saas-shared-lab5, serverless-saas-pipeline-lab5, stack-<tenantId>-lab5
+            # Lab5 exists if ANY of these stacks exist
+            local shared_stack=$(aws cloudformation describe-stacks \
                 ${PROFILE:+--profile "$PROFILE"} \
                 --stack-name "serverless-saas-shared-lab5" \
                 --region us-east-1 \
                 --query "Stacks[0].StackName" \
                 --output text 2>/dev/null || echo "")
+            
+            local pipeline_stack=$(aws cloudformation describe-stacks \
+                ${PROFILE:+--profile "$PROFILE"} \
+                --stack-name "serverless-saas-pipeline-lab5" \
+                --region us-east-1 \
+                --query "Stacks[0].StackName" \
+                --output text 2>/dev/null || echo "")
+            
+            # Check for dynamic tenant stacks: stack-<tenantId>-lab5
+            local tenant_stacks=$(aws cloudformation list-stacks \
+                ${PROFILE:+--profile "$PROFILE"} \
+                --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE UPDATE_ROLLBACK_COMPLETE \
+                --region us-east-1 \
+                --query "StackSummaries[?contains(StackName, '-lab5') && starts_with(StackName, 'stack-')].StackName" \
+                --output text 2>/dev/null || echo "")
+            
+            # Lab5 exists if shared OR pipeline OR any tenant stack exists
+            if [[ -n "$shared_stack" && "$shared_stack" != "None" ]] || \
+               [[ -n "$pipeline_stack" && "$pipeline_stack" != "None" ]] || \
+               [[ -n "$tenant_stacks" ]]; then
+                stacks="exists"
+            fi
             ;;
         6)
-            stacks=$(aws cloudformation describe-stacks \
+            # Lab6: serverless-saas-shared-lab6, serverless-saas-pipeline-lab6, stack-lab6-pooled, stack-.*-lab6
+            # Lab6 exists if ANY of these stacks exist
+            local shared_stack=$(aws cloudformation describe-stacks \
                 ${PROFILE:+--profile "$PROFILE"} \
                 --stack-name "serverless-saas-shared-lab6" \
                 --region us-east-1 \
                 --query "Stacks[0].StackName" \
                 --output text 2>/dev/null || echo "")
+            
+            local pipeline_stack=$(aws cloudformation describe-stacks \
+                ${PROFILE:+--profile "$PROFILE"} \
+                --stack-name "serverless-saas-pipeline-lab6" \
+                --region us-east-1 \
+                --query "Stacks[0].StackName" \
+                --output text 2>/dev/null || echo "")
+            
+            # Check for pooled stack
+            local pooled_stack=$(aws cloudformation describe-stacks \
+                ${PROFILE:+--profile "$PROFILE"} \
+                --stack-name "stack-lab6-pooled" \
+                --region us-east-1 \
+                --query "Stacks[0].StackName" \
+                --output text 2>/dev/null || echo "")
+            
+            # Check for dynamic tenant stacks: stack-.*-lab6
+            local tenant_stacks=$(aws cloudformation list-stacks \
+                ${PROFILE:+--profile "$PROFILE"} \
+                --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE UPDATE_ROLLBACK_COMPLETE \
+                --region us-east-1 \
+                --query "StackSummaries[?contains(StackName, '-lab6') && starts_with(StackName, 'stack-')].StackName" \
+                --output text 2>/dev/null || echo "")
+            
+            # Lab6 exists if shared OR pipeline OR pooled OR any tenant stack exists
+            if [[ -n "$shared_stack" && "$shared_stack" != "None" ]] || \
+               [[ -n "$pipeline_stack" && "$pipeline_stack" != "None" ]] || \
+               [[ -n "$pooled_stack" && "$pooled_stack" != "None" ]] || \
+               [[ -n "$tenant_stacks" ]]; then
+                stacks="exists"
+            fi
             ;;
         7)
-            stacks=$(aws cloudformation describe-stacks \
+            # Lab7: serverless-saas-lab7, stack-pooled-lab7
+            # Lab7 exists if EITHER base OR pooled stack exists
+            local base_stack=$(aws cloudformation describe-stacks \
                 ${PROFILE:+--profile "$PROFILE"} \
                 --stack-name "serverless-saas-lab7" \
                 --region us-east-1 \
                 --query "Stacks[0].StackName" \
                 --output text 2>/dev/null || echo "")
+            
+            local pooled_stack=$(aws cloudformation describe-stacks \
+                ${PROFILE:+--profile "$PROFILE"} \
+                --stack-name "stack-pooled-lab7" \
+                --region us-east-1 \
+                --query "Stacks[0].StackName" \
+                --output text 2>/dev/null || echo "")
+            
+            # Lab7 exists if either base OR pooled stack exists
+            if [[ -n "$base_stack" && "$base_stack" != "None" ]] || [[ -n "$pooled_stack" && "$pooled_stack" != "None" ]]; then
+                stacks="exists"
+            fi
             ;;
     esac
     

@@ -33,7 +33,8 @@ class ScriptExecutor:
         script_path: Path,
         args: List[str],
         log_file: LogFile,
-        environment: dict = None
+        environment: dict = None,
+        acceptable_exit_codes: List[int] = None
     ) -> ScriptResult:
         """
         Execute script directly (not with bash command).
@@ -43,10 +44,13 @@ class ScriptExecutor:
             args: Script arguments
             log_file: Log file for output
             environment: Optional environment context
+            acceptable_exit_codes: List of exit codes to treat as success (default: [0])
         
         Returns:
             ScriptResult with execution details
         """
+        if acceptable_exit_codes is None:
+            acceptable_exit_codes = [0]
         logger.info(f"Executing script: {script_path}")
         
         # Verify script exists
@@ -120,11 +124,14 @@ class ScriptExecutor:
             stdout = ''.join(stdout_lines)
             stderr = ''.join(stderr_lines)
             
-            success = exit_code == 0
+            success = exit_code in acceptable_exit_codes
             error_message = None if success else f"Script exited with code {exit_code}"
             
             if success:
-                logger.info(f"Script completed successfully: {script_path}")
+                if exit_code == 0:
+                    logger.info(f"Script completed successfully: {script_path}")
+                else:
+                    logger.info(f"Script completed with acceptable exit code {exit_code}: {script_path}")
             else:
                 logger.error(f"Script failed with exit code {exit_code}: {script_path}")
             

@@ -231,13 +231,14 @@ class TestOrchestrator:
             result = self.script_executor.execute_script(
                 cleanup_script,
                 args,
-                log_file
+                log_file,
+                acceptable_exit_codes=[0, 1]  # Accept exit code 1 for initial cleanup
             )
             
             # For initial cleanup, accept exit code 1 if there are no lab resources
             # Exit code 1 typically means "some resources remain" (like CDK bootstrap buckets)
             # which is acceptable for initial cleanup
-            if result.success or result.exit_code == 1:
+            if result.success:
                 logger.info("Initial cleanup completed successfully")
                 return True
             else:
@@ -486,13 +487,14 @@ class TestOrchestrator:
             result = self.script_executor.execute_script(
                 cleanup_script,
                 args,
-                log_file
+                log_file,
+                acceptable_exit_codes=[0, 1]  # Accept exit code 1 for final cleanup
             )
             
             # For final cleanup, accept exit code 1 if there are no lab resources
             # Exit code 1 typically means "some resources remain" (like CDK bootstrap buckets)
             # which is acceptable for final cleanup
-            if result.success or result.exit_code == 1:
+            if result.success:
                 logger.info("Final cleanup completed successfully")
                 return True
             else:
