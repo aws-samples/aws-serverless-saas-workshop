@@ -576,10 +576,16 @@ class TestOrchestrator:
                 
                 # Verify isolation after deletion
                 if step_result.success:
-                    isolation_result = self.state_comparator.verify_isolation(
+                    # First create the diff from before/after snapshots
+                    diff = self.state_comparator.compare_snapshots(
                         step_result.before_snapshot,
-                        step_result.after_snapshot,
-                        f"Lab{lab_number}"
+                        step_result.after_snapshot
+                    )
+                    
+                    # Then verify isolation using the diff
+                    isolation_result = self.state_comparator.verify_isolation(
+                        f"Lab{lab_number}",
+                        diff
                     )
                     self.isolation_results.append(isolation_result)
                     

@@ -1,7 +1,7 @@
 {
-  "test_start_time": "2026-01-31T07:41:47.595324",
-  "test_end_time": "2026-01-31T08:20:10.754451",
-  "total_duration_seconds": 2303.159127,
+  "test_start_time": "2026-01-31T08:34:41.944261",
+  "test_end_time": "2026-01-31T09:18:50.040224",
+  "total_duration_seconds": 2648.095963,
   "config": {
     "aws_profile": "serverless-saas-demo",
     "aws_region": "us-east-1",
@@ -12,46 +12,64 @@
     "log_directory": "workshop/tests/end_to_end_test_report/logs",
     "report_directory": "workshop/tests/end_to_end_test_report"
   },
-  "overall_success": false,
-  "summary": "1 of 2 test steps failed (Duration: 0:38:23.159127)",
+  "overall_success": true,
+  "summary": "All 3 test steps completed successfully in 0:44:08.095963",
   "step_results": [
     {
       "step_number": 1,
       "step_name": "Initial Cleanup",
       "success": true,
-      "start_time": "2026-01-31T07:42:01.866397",
-      "end_time": "2026-01-31T07:54:30.852159",
-      "duration_seconds": 748.985762,
+      "start_time": "2026-01-31T08:34:55.019049",
+      "end_time": "2026-01-31T08:48:27.290694",
+      "duration_seconds": 812.271645,
       "error_message": null,
       "log_files": [],
       "created_resources_count": 0,
-      "deleted_resources_count": 242
+      "deleted_resources_count": 257
     },
     {
       "step_number": 2,
       "step_name": "Full Deployment",
-      "success": false,
-      "start_time": "2026-01-31T07:56:35.808194",
-      "end_time": "2026-01-31T08:17:57.570302",
-      "duration_seconds": 1281.762108,
+      "success": true,
+      "start_time": "2026-01-31T08:50:32.210451",
+      "end_time": "2026-01-31T09:10:03.992809",
+      "duration_seconds": 1171.782358,
       "error_message": null,
       "log_files": [],
-      "created_resources_count": 242,
+      "created_resources_count": 257,
       "deleted_resources_count": 0
+    },
+    {
+      "step_number": 3,
+      "step_name": "Lab1 Isolation Test",
+      "success": true,
+      "start_time": "2026-01-31T09:12:30.493312",
+      "end_time": "2026-01-31T09:16:37.605279",
+      "duration_seconds": 247.111967,
+      "error_message": null,
+      "log_files": [],
+      "created_resources_count": 0,
+      "deleted_resources_count": 13
     }
   ],
   "timing_metrics": [
     {
       "operation_name": "Step 1: Initial Cleanup",
-      "start_time": "2026-01-31T07:41:47.599825",
-      "end_time": "2026-01-31T07:54:33.301432",
-      "duration_seconds": 765.701607
+      "start_time": "2026-01-31T08:34:41.950128",
+      "end_time": "2026-01-31T08:48:29.661043",
+      "duration_seconds": 827.710915
     },
     {
       "operation_name": "Step 2: Full Deployment",
-      "start_time": "2026-01-31T07:56:33.306292",
-      "end_time": "2026-01-31T08:18:10.750673",
-      "duration_seconds": 1297.444381
+      "start_time": "2026-01-31T08:50:29.661426",
+      "end_time": "2026-01-31T09:10:17.347031",
+      "duration_seconds": 1187.685605
+    },
+    {
+      "operation_name": "Step 3: Lab1 Isolation Test",
+      "start_time": "2026-01-31T09:12:17.356511",
+      "end_time": "2026-01-31T09:16:50.028509",
+      "duration_seconds": 272.671998
     }
   ],
   "api_statistics": {
