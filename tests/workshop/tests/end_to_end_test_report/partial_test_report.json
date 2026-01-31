@@ -1,0 +1,46 @@
+{
+  "test_start_time": "2026-01-31T04:12:44.988724",
+  "test_end_time": "2026-01-31T04:12:48.880394",
+  "total_duration_seconds": 3.89167,
+  "config": {
+    "aws_profile": "serverless-saas-demo",
+    "aws_region": "us-east-1",
+    "email": "lancdieg@amazon.com",
+    "tenant_email": null,
+    "parallel_mode": true,
+    "timeout_hours": 6,
+    "log_directory": "workshop/tests/end_to_end_test_report/logs",
+    "report_directory": "workshop/tests/end_to_end_test_report"
+  },
+  "overall_success": false,
+  "summary": "1 of 1 test steps failed (Duration: 0:00:03.891670)",
+  "step_results": [
+    {
+      "step_number": 1,
+      "step_name": "Initial Cleanup",
+      "success": false,
+      "start_time": "2026-01-31T04:12:48.003162",
+      "end_time": "2026-01-31T04:12:48.003236",
+      "duration_seconds": 7.4e-05,
+      "error_message": null,
+      "log_files": [],
+      "created_resources_count": 0,
+      "deleted_resources_count": 0
+    }
+  ],
+  "timing_metrics": [
+    {
+      "operation_name": "Step 1: Initial Cleanup",
+      "start_time": "2026-01-31T04:12:44.993480",
+      "end_time": "2026-01-31T04:12:48.878941",
+      "duration_seconds": 3.885461
+    }
+  ],
+  "api_statistics": {
+    "total_calls": 0,
+    "successful_calls": 0,
+    "failed_calls": 0,
+    "calls_by_service": {},
+    "success_rate_by_service": {}
+  }
+}
