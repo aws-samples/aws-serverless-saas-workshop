@@ -1,7 +1,7 @@
 {
-  "test_start_time": "2026-01-31T06:15:34.464662",
-  "test_end_time": "2026-01-31T06:16:30.174905",
-  "total_duration_seconds": 55.710243,
+  "test_start_time": "2026-01-31T07:13:11.134094",
+  "test_end_time": "2026-01-31T07:40:42.036417",
+  "total_duration_seconds": 1650.902323,
   "config": {
     "aws_profile": "serverless-saas-demo",
     "aws_region": "us-east-1",
@@ -13,27 +13,45 @@
     "report_directory": "workshop/tests/end_to_end_test_report"
   },
   "overall_success": false,
-  "summary": "1 of 1 test steps failed (Duration: 0:00:55.710243)",
+  "summary": "1 of 2 test steps failed (Duration: 0:27:30.902323)",
   "step_results": [
     {
       "step_number": 1,
       "step_name": "Initial Cleanup",
-      "success": false,
-      "start_time": "2026-01-31T06:15:37.015042",
-      "end_time": "2026-01-31T06:16:28.466035",
-      "duration_seconds": 51.450993,
+      "success": true,
+      "start_time": "2026-01-31T07:13:13.689385",
+      "end_time": "2026-01-31T07:14:51.384394",
+      "duration_seconds": 97.695009,
       "error_message": null,
       "log_files": [],
       "created_resources_count": 0,
+      "deleted_resources_count": 0
+    },
+    {
+      "step_number": 2,
+      "step_name": "Full Deployment",
+      "success": false,
+      "start_time": "2026-01-31T07:16:56.305460",
+      "end_time": "2026-01-31T07:38:27.517473",
+      "duration_seconds": 1291.212013,
+      "error_message": null,
+      "log_files": [],
+      "created_resources_count": 242,
       "deleted_resources_count": 0
     }
   ],
   "timing_metrics": [
     {
       "operation_name": "Step 1: Initial Cleanup",
-      "start_time": "2026-01-31T06:15:34.469127",
-      "end_time": "2026-01-31T06:16:30.173324",
-      "duration_seconds": 55.704197
+      "start_time": "2026-01-31T07:13:11.139434",
+      "end_time": "2026-01-31T07:14:53.854159",
+      "duration_seconds": 102.714725
+    },
+    {
+      "operation_name": "Step 2: Full Deployment",
+      "start_time": "2026-01-31T07:16:53.860683",
+      "end_time": "2026-01-31T07:38:42.022355",
+      "duration_seconds": 1308.161672
     }
   ],
   "api_statistics": {

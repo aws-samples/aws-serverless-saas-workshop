@@ -40,7 +40,7 @@ class ResourceTracker:
         "lab4": ["serverless-saas-shared-lab4", "serverless-saas-tenant-lab4"],
         "lab5": ["serverless-saas-shared-lab5", "serverless-saas-pipeline-lab5"],  # Lab5 pipeline (creates tenant stacks)
         "lab6": ["serverless-saas-shared-lab6", "serverless-saas-pipeline-lab6"],  # Lab6 pipeline (DISTINCT from Lab5)
-        "lab7": ["serverless-saas-lab7"],
+        "lab7": ["serverless-saas-lab7", "stack-pooled-lab7"],  # Lab7 base + pooled tenant stack
     }
     
     # Lab5, Lab6, and Lab7 create additional tenant stacks with these patterns
