@@ -54,10 +54,15 @@ class ResourceTracker:
     }
     
     # Workshop resource naming patterns
+    # CRITICAL: Must include "stack-" to capture tenant stacks from Lab5/Lab6/Lab7
+    # Lab5: stack-<tenantId>-lab5 (created by pipeline Lambda)
+    # Lab6: stack-.*-lab6 (e.g., stack-lab6-pooled, stack-basic-lab6)
+    # Lab7: stack-pooled-lab7 (single tenant stack)
     WORKSHOP_PATTERNS = [
         "serverless-saas-",
         "ServerlessSaaS",
         "serverless-saas",
+        "stack-",  # Captures tenant stacks from Lab5/Lab6/Lab7
     ]
     
     def __init__(self, aws_profile: str, aws_region: str = "us-east-1"):

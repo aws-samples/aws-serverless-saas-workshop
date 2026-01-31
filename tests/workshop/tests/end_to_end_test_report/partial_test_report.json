@@ -1,7 +1,7 @@
 {
-  "test_start_time": "2026-01-31T07:13:11.134094",
-  "test_end_time": "2026-01-31T07:40:42.036417",
-  "total_duration_seconds": 1650.902323,
+  "test_start_time": "2026-01-31T07:41:47.595324",
+  "test_end_time": "2026-01-31T08:20:10.754451",
+  "total_duration_seconds": 2303.159127,
   "config": {
     "aws_profile": "serverless-saas-demo",
     "aws_region": "us-east-1",
@@ -13,27 +13,27 @@
     "report_directory": "workshop/tests/end_to_end_test_report"
   },
   "overall_success": false,
-  "summary": "1 of 2 test steps failed (Duration: 0:27:30.902323)",
+  "summary": "1 of 2 test steps failed (Duration: 0:38:23.159127)",
   "step_results": [
     {
       "step_number": 1,
       "step_name": "Initial Cleanup",
       "success": true,
-      "start_time": "2026-01-31T07:13:13.689385",
-      "end_time": "2026-01-31T07:14:51.384394",
-      "duration_seconds": 97.695009,
+      "start_time": "2026-01-31T07:42:01.866397",
+      "end_time": "2026-01-31T07:54:30.852159",
+      "duration_seconds": 748.985762,
       "error_message": null,
       "log_files": [],
       "created_resources_count": 0,
-      "deleted_resources_count": 0
+      "deleted_resources_count": 242
     },
     {
       "step_number": 2,
       "step_name": "Full Deployment",
       "success": false,
-      "start_time": "2026-01-31T07:16:56.305460",
-      "end_time": "2026-01-31T07:38:27.517473",
-      "duration_seconds": 1291.212013,
+      "start_time": "2026-01-31T07:56:35.808194",
+      "end_time": "2026-01-31T08:17:57.570302",
+      "duration_seconds": 1281.762108,
       "error_message": null,
       "log_files": [],
       "created_resources_count": 242,
@@ -43,15 +43,15 @@
   "timing_metrics": [
     {
       "operation_name": "Step 1: Initial Cleanup",
-      "start_time": "2026-01-31T07:13:11.139434",
-      "end_time": "2026-01-31T07:14:53.854159",
-      "duration_seconds": 102.714725
+      "start_time": "2026-01-31T07:41:47.599825",
+      "end_time": "2026-01-31T07:54:33.301432",
+      "duration_seconds": 765.701607
     },
     {
       "operation_name": "Step 2: Full Deployment",
-      "start_time": "2026-01-31T07:16:53.860683",
-      "end_time": "2026-01-31T07:38:42.022355",
-      "duration_seconds": 1308.161672
+      "start_time": "2026-01-31T07:56:33.306292",
+      "end_time": "2026-01-31T08:18:10.750673",
+      "duration_seconds": 1297.444381
     }
   ],
   "api_statistics": {

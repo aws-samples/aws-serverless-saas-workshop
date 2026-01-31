@@ -1,14 +1,14 @@
 # End-to-End AWS Testing Report
 
-**Generated:** 2026-01-31 07:40:42
+**Generated:** 2026-01-31 08:20:10
 
 ## Summary
 
-**Status:** ❌ 1 of 2 test steps failed (Duration: 0:27:30.902323)
+**Status:** ❌ 1 of 2 test steps failed (Duration: 0:38:23.159127)
 
-- **Start Time:** 2026-01-31 07:13:11
-- **End Time:** 2026-01-31 07:40:42
-- **Total Duration:** 0:27:30.902323
+- **Start Time:** 2026-01-31 07:41:47
+- **End Time:** 2026-01-31 08:20:10
+- **Total Duration:** 0:38:23.159127
 - **Total Steps:** 2
 - **Successful Steps:** 1
 - **Failed Steps:** 1
@@ -30,37 +30,35 @@ report_directory: workshop/tests/end_to_end_test_report
 
 | Operation | Duration | Duration (seconds) |
 |-----------|----------|--------------------|
-| Step 1: Initial Cleanup | 0:01:42.714725 | 102.71s |
-| Step 2: Full Deployment | 0:21:48.161672 | 1308.16s |
+| Step 1: Initial Cleanup | 0:12:45.701607 | 765.70s |
+| Step 2: Full Deployment | 0:21:37.444381 | 1297.44s |
 
 ### Slowest Operations
 
-1. **Step 2: Full Deployment**: 0:21:48.161672 (1308.16s)
-2. **Step 1: Initial Cleanup**: 0:01:42.714725 (102.71s)
+1. **Step 2: Full Deployment**: 0:21:37.444381 (1297.44s)
+2. **Step 1: Initial Cleanup**: 0:12:45.701607 (765.70s)
 
 ## Test Steps
 
 ### ✅ Step 1: Initial Cleanup
 
 - **Status:** Success
-- **Duration:** 0:01:37.695009
-- **Start Time:** 2026-01-31 07:13:13
-- **End Time:** 2026-01-31 07:14:51
+- **Duration:** 0:12:28.985762
+- **Start Time:** 2026-01-31 07:42:01
+- **End Time:** 2026-01-31 07:54:30
 
 ### ❌ Step 2: Full Deployment
 
 - **Status:** Failed
-- **Duration:** 0:21:31.212013
-- **Start Time:** 2026-01-31 07:16:56
-- **End Time:** 2026-01-31 07:38:27
+- **Duration:** 0:21:21.762108
+- **Start Time:** 2026-01-31 07:56:35
+- **End Time:** 2026-01-31 08:17:57
 
 ## Resource State Changes
 
 ### Step 1: Initial Cleanup
 
-### Step 2: Full Deployment
-
-**Created Resources:** 242
+**Deleted Resources:** 242
 - CloudFormation::Stack: serverless-saas-shared-lab5-APIGatewayLambdaPermissions-1KRN9HP5320I1
 - CloudFormation::Stack: serverless-saas-shared-lab5-CustomResources-GP00TK28EJP6
 - CloudFormation::Stack: serverless-saas-shared-lab5-APIs-1L7H6SW6T530G
@@ -71,6 +69,21 @@ report_directory: workshop/tests/end_to_end_test_report
 - CloudFormation::Stack: serverless-saas-shared-lab5-Cognito-1NYHGG56S4RWZ
 - CloudFormation::Stack: serverless-saas-shared-lab6-APIGatewayLambdaPermissions-13A30GC51F7FT
 - CloudFormation::Stack: serverless-saas-shared-lab6-CustomResources-P5OFR691BGFC
+- *(and 232 more)*
+
+### Step 2: Full Deployment
+
+**Created Resources:** 242
+- CloudFormation::Stack: serverless-saas-shared-lab5-APIGatewayLambdaPermissions-1QFPYZOMLE6L4
+- CloudFormation::Stack: serverless-saas-shared-lab5-CustomResources-ERPDNBONAC8Q
+- CloudFormation::Stack: serverless-saas-shared-lab5-APIs-47ZLP6PL6NN
+- CloudFormation::Stack: serverless-saas-tenant-lab3
+- CloudFormation::Stack: serverless-saas-tenant-lab4
+- CloudFormation::Stack: serverless-saas-shared-lab5-LambdaFunctions-147JT35N9ZWLJ
+- CloudFormation::Stack: serverless-saas-shared-lab5-Cognito-17KPYHCHQTM98
+- CloudFormation::Stack: serverless-saas-pipeline-lab6
+- CloudFormation::Stack: serverless-saas-shared-lab3-APIGatewayLambdaPermissions-EAMFD2ZEEXMP
+- CloudFormation::Stack: serverless-saas-shared-lab6-APIGatewayLambdaPermissions-12J6105LY9GHE
 - *(and 232 more)*
 
 ## API Call Statistics
