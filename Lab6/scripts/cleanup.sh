@@ -24,6 +24,12 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../../scripts/lib/parameter-parsing-template.sh"
 
+# Source parallel deletion module
+source "$SCRIPT_DIR/../../scripts/lib/parallel-deletion.sh"
+
+# Source exit codes module
+source "$SCRIPT_DIR/../../scripts/lib/exit-codes.sh"
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -94,9 +100,12 @@ if [ $SKIP_CONFIRMATION -eq 0 ]; then
     read -p "Are you sure you want to continue? (yes/no): " confirm
     if [[ "$confirm" != "yes" ]]; then
       echo "Cleanup cancelled"
-      exit 0
+      exit_with_code $EXIT_USER_INTERRUPT "User cancelled cleanup"
     fi
 fi
+
+# Setup exit handlers for graceful shutdown
+setup_exit_handlers
 
 echo ""
 print_message "$YELLOW" "Starting cleanup..."
@@ -333,18 +342,16 @@ TENANT_STACKS=$(aws cloudformation $PROFILE_ARG list-stacks \
 if [[ -z "$TENANT_STACKS" ]]; then
   print_message "$YELLOW" "  No tenant stacks found"
 else
-  # Delete all tenant stacks in parallel
-  for stack in $TENANT_STACKS; do
-    delete_stack $stack
-  done
+  # Convert space-separated string to array
+  TENANT_STACKS_ARRAY=($TENANT_STACKS)
   
-  echo ""
-  print_message "$YELLOW" "  Waiting for tenant stacks to delete (parallel)..."
-  # Wait for all deletions in parallel
-  for stack in $TENANT_STACKS; do
-    wait_for_deletion $stack &
-  done
-  wait
+  # Use parallel deletion module for robust parallel deletion
+  if delete_stacks_parallel "${TENANT_STACKS_ARRAY[@]}"; then
+    print_message "$GREEN" "✓ All tenant stacks deleted successfully"
+  else
+    print_message "$RED" "✗ Some tenant stack deletions failed"
+    print_message "$YELLOW" "  Continuing with cleanup..."
+  fi
 fi
 
 print_message "$GREEN" "✓ Tenant stacks cleanup complete"
@@ -442,23 +449,32 @@ print_message "$BLUE" "=========================================="
 print_message "$BLUE" "Step 4: Deleting tenant template stack"
 print_message "$BLUE" "=========================================="
 
+# Source the stack deletion verification module
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../../scripts/lib/stack-deletion.sh"
+
 PROFILE_ARG=$(get_profile_arg)
 if aws cloudformation $PROFILE_ARG describe-stacks --stack-name "serverless-saas-tenant-lab6" --region "$AWS_REGION" &>/dev/null; then
-    print_message "$YELLOW" "  Deleting stack: serverless-saas-tenant-lab6"
-    aws cloudformation $PROFILE_ARG delete-stack --stack-name "serverless-saas-tenant-lab6" --region "$AWS_REGION"
-    
-    print_message "$YELLOW" "Waiting for stack serverless-saas-tenant-lab6 to be deleted..."
     print_message "$YELLOW" "⏳ This may take several minutes"
     echo ""
     
-    # Use AWS CLI wait command for reliable stack deletion monitoring
-    if aws cloudformation wait stack-delete-complete $PROFILE_ARG --stack-name "serverless-saas-tenant-lab6" --region "$AWS_REGION"; then
+    # Use enhanced stack deletion with verification
+    # 30 minute timeout for standard stack (no CloudFront)
+    if delete_stack_with_verification "serverless-saas-tenant-lab6" 30 "$PROFILE_ARG"; then
         print_message "$GREEN" "✓ Stack serverless-saas-tenant-lab6 deleted successfully"
         echo ""
     else
-        print_message "$RED" "Stack deletion failed or timed out"
-        print_message "$RED" "Please check AWS Console for stack status"
-        exit 1
+        exit_code=$?
+        if [ $exit_code -eq 2 ]; then
+            print_message "$RED" "✗ Timeout waiting for stack deletion (30 minutes exceeded)"
+            print_message "$RED" "  Stack may still be deleting - check AWS Console"
+            print_message "$RED" "  Console URL: https://console.aws.amazon.com/cloudformation/home?region=$AWS_REGION#/stacks"
+        else
+            print_message "$RED" "✗ Stack deletion failed"
+            print_message "$RED" "  Check AWS Console for stack events and error details"
+            print_message "$RED" "  Console URL: https://console.aws.amazon.com/cloudformation/home?region=$AWS_REGION#/stacks"
+        fi
+        exit_with_code $exit_code "Stack deletion failed: serverless-saas-tenant-lab6"
     fi
 else
     print_message "$YELLOW" "  Stack serverless-saas-tenant-lab6 not found"
@@ -473,24 +489,34 @@ print_message "$BLUE" "Step 5: Deleting shared infrastructure (includes CloudFro
 print_message "$BLUE" "=========================================="
 
 PROFILE_ARG=$(get_profile_arg)
+
+# Source the stack deletion verification module
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../../scripts/lib/stack-deletion.sh"
+
 if aws cloudformation $PROFILE_ARG describe-stacks --stack-name "serverless-saas-shared-lab6" --region "$AWS_REGION" &>/dev/null; then
-    print_message "$YELLOW" "  Deleting stack: serverless-saas-shared-lab6"
-    aws cloudformation $PROFILE_ARG delete-stack --stack-name "serverless-saas-shared-lab6" --region "$AWS_REGION"
-    
-    print_message "$YELLOW" "Waiting for stack serverless-saas-shared-lab6 to be deleted..."
     print_message "$YELLOW" "⏳ This may take 15-30 minutes for CloudFront distributions to fully delete"
     print_message "$YELLOW" "⏳ DO NOT interrupt this process - CloudFront must be fully deleted before S3 buckets"
     echo ""
     
-    # Use AWS CLI wait command for reliable stack deletion monitoring
-    if aws cloudformation wait stack-delete-complete $PROFILE_ARG --stack-name "serverless-saas-shared-lab6" --region "$AWS_REGION"; then
+    # Use enhanced stack deletion with verification
+    # 45 minute timeout for CloudFront distributions
+    if delete_stack_with_verification "serverless-saas-shared-lab6" 45 "$PROFILE_ARG"; then
         print_message "$GREEN" "✓ Stack serverless-saas-shared-lab6 deleted successfully (including CloudFront distributions)"
         print_message "$GREEN" "✓ CloudFront distributions are fully deleted - safe to proceed"
         echo ""
     else
-        print_message "$RED" "Stack deletion failed or timed out"
-        print_message "$RED" "Please check AWS Console for stack status"
-        exit 1
+        exit_code=$?
+        if [ $exit_code -eq 2 ]; then
+            print_message "$RED" "✗ Timeout waiting for stack deletion (45 minutes exceeded)"
+            print_message "$RED" "  Stack may still be deleting - check AWS Console"
+            print_message "$RED" "  Console URL: https://console.aws.amazon.com/cloudformation/home?region=$AWS_REGION#/stacks"
+        else
+            print_message "$RED" "✗ Stack deletion failed"
+            print_message "$RED" "  Check AWS Console for stack events and error details"
+            print_message "$RED" "  Console URL: https://console.aws.amazon.com/cloudformation/home?region=$AWS_REGION#/stacks"
+        fi
+        exit_with_code $exit_code "Stack deletion failed: serverless-saas-shared-lab6"
     fi
 else
     print_message "$YELLOW" "  Stack serverless-saas-shared-lab6 not found"
@@ -668,37 +694,19 @@ print_message "$BLUE" "=========================================="
 print_message "$BLUE" "Step 12: Cleaning up CDK bootstrap resources"
 print_message "$BLUE" "=========================================="
 
-# CRITICAL: Check if Lab5 is deployed before deleting CDKToolkit
-# CDKToolkit is a SHARED resource between Lab5 and Lab6
-# We can only delete it if Lab5 is NOT deployed
-LAB5_DEPLOYED=false
-
-# Check for Lab5 pipeline stack (uses CDK)
-# Use || echo "" to prevent set -e from exiting when stack doesn't exist
-LAB5_PIPELINE=$(aws cloudformation $PROFILE_ARG describe-stacks --stack-name "serverless-saas-pipeline-lab5" 2>/dev/null || echo "")
-if [[ -n "$LAB5_PIPELINE" ]]; then
-  LAB5_DEPLOYED=true
-  print_message "$YELLOW" "⚠️  Lab5 pipeline stack detected - CDKToolkit is still in use"
-fi
-
-# Check for Lab5 shared stack (might have CDK dependencies)
-if [[ "$LAB5_DEPLOYED" == false ]]; then
-  LAB5_SHARED=$(aws cloudformation $PROFILE_ARG describe-stacks --stack-name "serverless-saas-shared-lab5" 2>/dev/null || echo "")
-  if [[ -n "$LAB5_SHARED" ]]; then
-    LAB5_DEPLOYED=true
-    print_message "$YELLOW" "⚠️  Lab5 shared stack detected - CDKToolkit might still be in use"
-  fi
-fi
+# Source CDKToolkit handling module
+source "$SCRIPT_DIR/../../scripts/lib/cdktoolkit-handling.sh"
 
 # Find CDK bootstrap bucket
 CDK_BUCKET=$(aws s3 $PROFILE_ARG ls | grep cdktoolkit | awk '{print $3}')
 
-if [[ ! -z "$CDK_BUCKET" ]]; then
-  print_message "$YELLOW" "Found CDK bootstrap bucket: $CDK_BUCKET"
+# Handle CDKToolkit deletion decision using the shared module
+if handle_cdktoolkit_deletion "lab6" "$PROFILE_ARG" "$AWS_REGION"; then
+  # Safe to delete CDKToolkit - proceed with cleanup
   
-  if [[ "$LAB5_DEPLOYED" == true ]]; then
-    print_message "$YELLOW" "⚠️  Skipping CDK bucket deletion - Lab5 is still deployed and may need CDK resources"
-  else
+  # Clean up CDK bootstrap bucket first
+  if [[ ! -z "$CDK_BUCKET" ]]; then
+    print_message "$YELLOW" "Found CDK bootstrap bucket: $CDK_BUCKET"
     empty_bucket $CDK_BUCKET
     print_message "$YELLOW" "  Deleting bucket: $CDK_BUCKET"
     aws s3 $PROFILE_ARG rb s3://$CDK_BUCKET 2>/dev/null
@@ -707,20 +715,20 @@ if [[ ! -z "$CDK_BUCKET" ]]; then
     else
       print_message "$YELLOW" "  ⚠ Could not delete bucket: $CDK_BUCKET"
     fi
+  else
+    print_message "$YELLOW" "No CDK bootstrap bucket found"
   fi
-else
-  print_message "$YELLOW" "No CDK bootstrap bucket found"
-fi
-
-# Delete CDKToolkit stack only if Lab5 is NOT deployed
-if [[ "$LAB5_DEPLOYED" == true ]]; then
-  print_message "$YELLOW" "⚠️  Skipping CDKToolkit stack deletion - Lab5 is still deployed"
-  print_message "$YELLOW" "   Lab5 pipeline stack uses the shared CDK execution role from CDKToolkit"
-  print_message "$YELLOW" "   CDKToolkit will be deleted when Lab5 is cleaned up"
-else
-  print_message "$GREEN" "✓ Lab5 is not deployed - safe to delete CDKToolkit"
+  
+  # Delete CDKToolkit stack
+  print_message "$YELLOW" "Deleting CDKToolkit stack..."
   if delete_stack "CDKToolkit"; then
     wait_for_deletion "CDKToolkit"
+  fi
+else
+  # CDKToolkit deletion skipped - Lab5 is still deployed
+  # Clean up CDK bootstrap bucket only if safe
+  if [[ ! -z "$CDK_BUCKET" ]]; then
+    print_message "$YELLOW" "⚠️  Skipping CDK bucket deletion - Lab5 is still deployed and may need CDK resources"
   fi
 fi
 
@@ -854,3 +862,26 @@ print_message "$GREEN" "Lab6 Cleanup Complete!"
 print_message "$GREEN" "Duration: ${CLEANUP_DURATION} seconds"
 print_message "$GREEN" "Log file: $LOG_FILE"
 print_message "$GREEN" "========================================"
+
+# Final verification using cleanup-verification module
+echo ""
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Final Verification"
+print_message "$BLUE" "=========================================="
+
+source "$SCRIPT_DIR/../../scripts/lib/cleanup-verification.sh"
+
+if verify_complete_cleanup "$LAB_ID" "$PROFILE_ARG"; then
+    print_message "$GREEN" "✓ All Lab6 resources successfully deleted"
+    exit_with_code $EXIT_SUCCESS "Lab6 cleanup completed successfully"
+else
+    verification_exit_code=$?
+    if [ $verification_exit_code -eq 3 ]; then
+        print_message "$YELLOW" "⚠ Cleanup completed but orphaned resources detected"
+        print_message "$YELLOW" "  See manual cleanup commands above"
+        exit_with_code $EXIT_ORPHANED_RESOURCES "Orphaned resources detected after cleanup"
+    else
+        print_message "$RED" "✗ Verification failed"
+        exit_with_code $EXIT_FAILURE "Cleanup verification failed"
+    fi
+fi

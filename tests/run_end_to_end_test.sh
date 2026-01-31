@@ -227,11 +227,37 @@ print_message "$BLUE" "Duration: ${DURATION_MIN}m ${DURATION_SEC}s"
 print_message "$BLUE" "========================================"
 echo ""
 
-# Check for test report
+# Check for test report and organize outputs
 REPORT_FILE="$SCRIPT_DIR/end_to_end_test_report.json"
+REPORT_DIR="$SCRIPT_DIR/end_to_end_test_report"
+
 if [[ -f "$REPORT_FILE" ]]; then
     print_message "$GREEN" "Test report generated: $REPORT_FILE"
     print_message "$YELLOW" "View report with: cat $REPORT_FILE | jq ."
+    
+    # Move report to report directory
+    if [[ -d "$REPORT_DIR" ]]; then
+        print_message "$BLUE" "Moving report to: $REPORT_DIR/"
+        mv "$REPORT_FILE" "$REPORT_DIR/"
+        
+        # Extract individual step logs
+        if [[ -f "$REPORT_DIR/extract_step_logs.py" ]]; then
+            print_message "$BLUE" "Extracting individual step logs..."
+            cd "$REPORT_DIR"
+            python3 extract_step_logs.py
+            
+            # Generate summary report
+            if [[ -f "generate_summary_report.py" ]]; then
+                print_message "$BLUE" "Generating summary report..."
+                python3 generate_summary_report.py
+            fi
+            cd "$SCRIPT_DIR"
+        fi
+        
+        print_message "$GREEN" "All reports saved to: $REPORT_DIR/"
+        print_message "$YELLOW" "View summary: cat $REPORT_DIR/SUMMARY.md"
+        print_message "$YELLOW" "View logs: ls $REPORT_DIR/logs/"
+    fi
 fi
 
 exit $TEST_RESULT

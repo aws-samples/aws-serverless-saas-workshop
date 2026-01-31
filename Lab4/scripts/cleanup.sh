@@ -28,6 +28,9 @@ LAB_NUMBER="4"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../../scripts/lib/parameter-parsing-template.sh"
 
+# Source exit codes module
+source "$SCRIPT_DIR/../../scripts/lib/exit-codes.sh"
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'

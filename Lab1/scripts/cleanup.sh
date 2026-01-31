@@ -24,6 +24,9 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../../scripts/lib/parameter-parsing-template.sh"
 
+# Source exit codes module
+source "$SCRIPT_DIR/../../scripts/lib/exit-codes.sh"
+
 # Default stack name for Lab1
 DEFAULT_STACK_NAME="serverless-saas-lab1"
 LAB_NUMBER="1"
@@ -84,9 +87,12 @@ if [ $SKIP_CONFIRMATION -eq 0 ]; then
     echo ""
     if [[ ! $REPLY =~ ^[Yy][Ee][Ss]$ ]]; then
         print_message "$YELLOW" "Cleanup cancelled"
-        exit 0
+        exit_with_code $EXIT_USER_INTERRUPT "User cancelled cleanup"
     fi
 fi
+
+# Setup exit handlers for graceful shutdown
+setup_exit_handlers
 
 # Record start time
 START_TIME=$(date +%s)
@@ -211,7 +217,7 @@ if [ -n "$STACK_EXISTS" ]; then
     else
         print_message "$RED" "Stack deletion failed or timed out"
         print_message "$RED" "Please check AWS Console for stack status"
-        exit 1
+        exit_with_code $EXIT_FAILURE "Stack deletion failed: $STACK_NAME"
     fi
 else
     print_message "$YELLOW" "  Stack $STACK_NAME not found"
@@ -314,3 +320,26 @@ print_message "$GREEN" "Lab1 Cleanup Complete!"
 print_message "$GREEN" "Duration: ${DURATION} seconds"
 print_message "$GREEN" "Log file: $LOG_FILE"
 print_message "$GREEN" "========================================"
+
+# Final verification using cleanup-verification module
+echo ""
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Final Verification"
+print_message "$BLUE" "=========================================="
+
+source "$SCRIPT_DIR/../../scripts/lib/cleanup-verification.sh"
+
+if verify_complete_cleanup "$LAB_ID" "$PROFILE_ARG"; then
+    print_message "$GREEN" "✓ All Lab1 resources successfully deleted"
+    exit_with_code $EXIT_SUCCESS "Lab1 cleanup completed successfully"
+else
+    verification_exit_code=$?
+    if [ $verification_exit_code -eq 3 ]; then
+        print_message "$YELLOW" "⚠ Cleanup completed but orphaned resources detected"
+        print_message "$YELLOW" "  See manual cleanup commands above"
+        exit_with_code $EXIT_ORPHANED_RESOURCES "Orphaned resources detected after cleanup"
+    else
+        print_message "$RED" "✗ Verification failed"
+        exit_with_code $EXIT_FAILURE "Cleanup verification failed"
+    fi
+fi

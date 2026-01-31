@@ -24,6 +24,9 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../../scripts/lib/parameter-parsing-template.sh"
 
+# Source exit codes module
+source "$SCRIPT_DIR/../../scripts/lib/exit-codes.sh"
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -139,9 +142,12 @@ if [[ $SKIP_CONFIRMATION -eq 0 ]]; then
     
     if [[ "$confirm" != "yes" ]]; then
         print_message "$YELLOW" "Cleanup cancelled by user"
-        exit 0
+        exit_with_code $EXIT_USER_INTERRUPT "User cancelled cleanup"
     fi
     echo ""
+    
+    # Setup exit handlers after confirmation
+    setup_exit_handlers
 fi
 
 # Record start time
@@ -333,7 +339,7 @@ if aws cloudformation describe-stacks $PROFILE_ARG --stack-name "$TENANT_STACK_N
     else
         print_message "$RED" "Stack deletion failed or timed out"
         print_message "$RED" "Please check AWS Console for stack status"
-        exit 1
+        exit_with_code $EXIT_FAILURE "Tenant stack deletion failed"
     fi
 else
     print_message "$YELLOW" "  Stack $TENANT_STACK_NAME not found"
@@ -360,7 +366,7 @@ if aws cloudformation describe-stacks $PROFILE_ARG --stack-name "$SHARED_STACK_N
     else
         print_message "$RED" "Stack deletion failed or timed out"
         print_message "$RED" "Please check AWS Console for stack status"
-        exit 1
+        exit_with_code $EXIT_FAILURE "Shared stack deletion failed"
     fi
 else
     print_message "$YELLOW" "  Stack $SHARED_STACK_NAME not found"

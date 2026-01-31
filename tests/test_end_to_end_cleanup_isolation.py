@@ -33,6 +33,7 @@ import pytest
 import subprocess
 import time
 import json
+import re
 from pathlib import Path
 from typing import Dict, List, Set, Tuple, Optional
 from dataclasses import dataclass, field
@@ -47,6 +48,140 @@ class Colors:
     YELLOW = '\033[1;33m'
     BLUE = '\033[0;34m'
     NC = '\033[0m'  # No Color
+
+
+class RateLimiter:
+    """
+    Rate limiter for AWS API calls to prevent throttling.
+    
+    Implements:
+    - Minimum 10-second delay between CloudFormation operations (Requirement 16.1)
+    - Exponential backoff for throttling errors: 2s, 4s, 8s, 16s, 32s (Requirement 17.3)
+    - Throttling error detection and retry (Requirement 17.2)
+    - Throttling metrics tracking (Requirement 17.4)
+    """
+    
+    def __init__(self, min_delay_seconds: float = 10.0):
+        self.min_delay_seconds = min_delay_seconds
+        self.last_operation_time: Optional[float] = None
+        self.throttling_metrics = {
+            'total_throttles': 0,
+            'total_retries': 0,
+            'operations_delayed': 0,
+            'total_delay_seconds': 0.0
+        }
+    
+    def wait_if_needed(self, operation_name: str = "AWS operation"):
+        """
+        Wait if minimum delay hasn't elapsed since last operation.
+        
+        Args:
+            operation_name: Name of the operation for logging
+        """
+        if self.last_operation_time is not None:
+            elapsed = time.time() - self.last_operation_time
+            if elapsed < self.min_delay_seconds:
+                delay = self.min_delay_seconds - elapsed
+                print(f"{Colors.YELLOW}⏱  Rate limiting: waiting {delay:.1f}s before {operation_name}{Colors.NC}")
+                time.sleep(delay)
+                self.throttling_metrics['operations_delayed'] += 1
+                self.throttling_metrics['total_delay_seconds'] += delay
+        
+        self.last_operation_time = time.time()
+    
+    def is_throttling_error(self, error_output: str) -> bool:
+        """
+        Detect if error is due to AWS API throttling.
+        
+        Args:
+            error_output: Error message from AWS CLI
+            
+        Returns:
+            True if throttling error detected
+        """
+        throttling_patterns = [
+            r'Throttling',
+            r'TooManyRequestsException',
+            r'Rate exceeded',
+            r'RequestLimitExceeded',
+            r'ThrottlingException'
+        ]
+        
+        for pattern in throttling_patterns:
+            if re.search(pattern, error_output, re.IGNORECASE):
+                return True
+        return False
+    
+    def execute_with_retry(self, command: List[str], max_retries: int = 5, 
+                          operation_name: str = "AWS operation") -> Tuple[int, str, str]:
+        """
+        Execute command with exponential backoff retry on throttling.
+        
+        Args:
+            command: Command to execute
+            max_retries: Maximum number of retries (default 5 per Requirement 16.3)
+            operation_name: Name of operation for logging
+            
+        Returns:
+            Tuple of (return_code, stdout, stderr)
+        """
+        self.wait_if_needed(operation_name)
+        
+        retry_count = 0
+        backoff_seconds = 2.0  # Start at 2 seconds
+        
+        while retry_count <= max_retries:
+            try:
+                result = subprocess.run(
+                    command,
+                    capture_output=True,
+                    text=True,
+                    timeout=300  # 5 minute timeout per operation
+                )
+                
+                # Check for throttling in stderr
+                if result.returncode != 0 and self.is_throttling_error(result.stderr):
+                    if retry_count < max_retries:
+                        self.throttling_metrics['total_throttles'] += 1
+                        self.throttling_metrics['total_retries'] += 1
+                        
+                        print(f"{Colors.YELLOW}⚠  Throttling detected on {operation_name}, "
+                              f"retry {retry_count + 1}/{max_retries} after {backoff_seconds}s{Colors.NC}")
+                        
+                        time.sleep(backoff_seconds)
+                        self.throttling_metrics['total_delay_seconds'] += backoff_seconds
+                        
+                        # Exponential backoff: 2s, 4s, 8s, 16s, 32s
+                        backoff_seconds = min(backoff_seconds * 2, 32.0)
+                        retry_count += 1
+                        continue
+                    else:
+                        # Max retries exceeded
+                        print(f"{Colors.RED}✗ Throttling persists after {max_retries} retries for {operation_name}{Colors.NC}")
+                        return result.returncode, result.stdout, result.stderr
+                
+                # Success or non-throttling error
+                return result.returncode, result.stdout, result.stderr
+                
+            except subprocess.TimeoutExpired:
+                print(f"{Colors.RED}✗ Timeout executing {operation_name}{Colors.NC}")
+                return 1, "", f"Timeout after 300 seconds"
+        
+        # Should never reach here
+        return 1, "", "Max retries exceeded"
+    
+    def get_metrics(self) -> Dict:
+        """Get throttling metrics for reporting."""
+        return self.throttling_metrics.copy()
+    
+    def reset_metrics(self):
+        """Reset throttling metrics."""
+        self.throttling_metrics = {
+            'total_throttles': 0,
+            'total_retries': 0,
+            'operations_delayed': 0,
+            'total_delay_seconds': 0.0
+        }
 
 
 def print_colored(color: str, message: str, flush: bool = True):
@@ -70,6 +205,7 @@ WORKSHOP_ROOT = Path(__file__).parent.parent.resolve()  # Use resolve() to get a
 SCRIPTS_DIR = WORKSHOP_ROOT / "scripts"
 LAB_DIRECTORIES = [f"Lab{i}" for i in range(1, 8)]
 LAB_IDS = [f"lab{i}" for i in range(1, 8)]
+REPORT_DIR = WORKSHOP_ROOT / "tests" / "end_to_end_test_report"
 
 
 @dataclass
@@ -124,6 +260,7 @@ class StepResult:
     resources_deleted: ResourceSnapshot
     error_message: Optional[str] = None
     warnings: List[str] = field(default_factory=list)
+    log_output: str = ""  # Store the full log output for this step
     
     def to_dict(self) -> Dict:
         """Convert step result to dictionary for logging."""
@@ -138,15 +275,62 @@ class StepResult:
             "error_message": self.error_message,
             "warnings": self.warnings
         }
+    
+    def save_log_file(self):
+        """Save the step log output to a separate file."""
+        # Create report directory if it doesn't exist
+        REPORT_DIR.mkdir(parents=True, exist_ok=True)
+        
+        # Generate log filename
+        step_name_slug = self.step_name.lower().replace(" ", "_").replace("(", "").replace(")", "")
+        log_filename = f"step_{self.step_number:02d}_{step_name_slug}.log"
+        log_filepath = REPORT_DIR / log_filename
+        
+        # Write log content
+        with open(log_filepath, 'w') as f:
+            f.write(f"=" * 80 + "\n")
+            f.write(f"Step {self.step_number}: {self.step_name}\n")
+            f.write(f"=" * 80 + "\n")
+            f.write(f"Timestamp: {datetime.now().isoformat()}\n")
+            f.write(f"Success: {self.success}\n")
+            f.write(f"Duration: {self.duration_seconds:.2f} seconds ({self.duration_seconds/60:.2f} minutes)\n")
+            f.write(f"\n")
+            f.write(f"Resources Before: {self.resources_before.count()}\n")
+            f.write(f"Resources After: {self.resources_after.count()}\n")
+            f.write(f"Resources Deleted: {self.resources_deleted.count()}\n")
+            f.write(f"\n")
+            
+            if self.error_message:
+                f.write(f"ERROR: {self.error_message}\n")
+                f.write(f"\n")
+            
+            if self.warnings:
+                f.write(f"WARNINGS:\n")
+                for warning in self.warnings:
+                    f.write(f"  - {warning}\n")
+                f.write(f"\n")
+            
+            f.write(f"=" * 80 + "\n")
+            f.write(f"EXECUTION LOG\n")
+            f.write(f"=" * 80 + "\n")
+            f.write(self.log_output)
+            f.write(f"\n")
+            f.write(f"=" * 80 + "\n")
+            f.write(f"END OF LOG\n")
+            f.write(f"=" * 80 + "\n")
+        
+        return log_filepath
 
 
 class AWSResourceTracker:
     """Tracks AWS resources for cleanup isolation testing."""
     
-    def __init__(self, aws_profile: Optional[str] = None, dry_run: bool = True):
+    def __init__(self, aws_profile: Optional[str] = None, dry_run: bool = True, 
+                 rate_limiter: Optional[RateLimiter] = None):
         self.aws_profile = aws_profile
         self.dry_run = dry_run
         self.profile_arg = f"--profile {aws_profile}" if aws_profile else ""
+        self.rate_limiter = rate_limiter or RateLimiter()
     
     def take_snapshot(self) -> ResourceSnapshot:
         """Take a snapshot of current AWS resources."""
@@ -162,56 +346,101 @@ class AWSResourceTracker:
         return ResourceSnapshot(timestamp=datetime.now())
     
     def _take_real_snapshot(self) -> ResourceSnapshot:
-        """Take a real snapshot by querying AWS APIs."""
+        """
+        Take a real snapshot by querying AWS APIs directly.
+        
+        Implements Requirement 8.4: Query AWS directly for verification instead of trusting script output.
+        Implements Requirement 16.1: Include delays between CloudFormation operations to avoid throttling.
+        Implements Requirement 17.2-17.3: Retry with exponential backoff on throttling errors.
+        
+        Returns:
+            ResourceSnapshot with current AWS resources
+        """
         snapshot = ResourceSnapshot(timestamp=datetime.now())
         
         try:
-            # Query CloudFormation stacks
-            cmd = f"aws cloudformation list-stacks --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE UPDATE_ROLLBACK_COMPLETE {self.profile_arg} --output json"
-            result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=30)
-            if result.returncode == 0:
-                data = json.loads(result.stdout)
+            # Query CloudFormation stacks (with rate limiting)
+            cmd = ["aws", "cloudformation", "list-stacks", 
+                   "--stack-status-filter", "CREATE_COMPLETE", "UPDATE_COMPLETE", "UPDATE_ROLLBACK_COMPLETE",
+                   "--output", "json"]
+            if self.aws_profile:
+                cmd.extend(["--profile", self.aws_profile])
+            
+            returncode, stdout, stderr = self.rate_limiter.execute_with_retry(
+                cmd, operation_name="list CloudFormation stacks"
+            )
+            
+            if returncode == 0:
+                data = json.loads(stdout)
                 for stack in data.get("StackSummaries", []):
                     stack_name = stack["StackName"]
                     # Filter for lab-related stacks
                     if any(f"lab{i}" in stack_name.lower() for i in range(1, 8)):
                         snapshot.stacks.add(stack_name)
+            else:
+                print_colored(Colors.YELLOW, f"Warning: Failed to query CloudFormation stacks: {stderr}")
             
-            # Query S3 buckets
-            cmd = f"aws s3api list-buckets {self.profile_arg} --output json"
-            result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=30)
-            if result.returncode == 0:
-                data = json.loads(result.stdout)
+            # Query S3 buckets (with rate limiting)
+            cmd = ["aws", "s3api", "list-buckets", "--output", "json"]
+            if self.aws_profile:
+                cmd.extend(["--profile", self.aws_profile])
+            
+            returncode, stdout, stderr = self.rate_limiter.execute_with_retry(
+                cmd, operation_name="list S3 buckets"
+            )
+            
+            if returncode == 0:
+                data = json.loads(stdout)
                 for bucket in data.get("Buckets", []):
                     bucket_name = bucket["Name"]
                     # Filter for lab-related buckets
                     if any(f"lab{i}" in bucket_name.lower() for i in range(1, 8)):
                         snapshot.s3_buckets.add(bucket_name)
+            else:
+                print_colored(Colors.YELLOW, f"Warning: Failed to query S3 buckets: {stderr}")
             
-            # Query CloudWatch log groups
-            cmd = f"aws logs describe-log-groups {self.profile_arg} --output json"
-            result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=30)
-            if result.returncode == 0:
-                data = json.loads(result.stdout)
+            # Query CloudWatch log groups (with rate limiting)
+            cmd = ["aws", "logs", "describe-log-groups", "--output", "json"]
+            if self.aws_profile:
+                cmd.extend(["--profile", self.aws_profile])
+            
+            returncode, stdout, stderr = self.rate_limiter.execute_with_retry(
+                cmd, operation_name="list CloudWatch log groups"
+            )
+            
+            if returncode == 0:
+                data = json.loads(stdout)
                 for log_group in data.get("logGroups", []):
                     log_name = log_group["logGroupName"]
                     # Filter for lab-related log groups
                     if any(f"lab{i}" in log_name.lower() for i in range(1, 8)):
                         snapshot.log_groups.add(log_name)
+            else:
+                print_colored(Colors.YELLOW, f"Warning: Failed to query CloudWatch log groups: {stderr}")
             
-            # Query Cognito user pools
-            cmd = f"aws cognito-idp list-user-pools --max-results 60 {self.profile_arg} --output json"
-            result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=30)
-            if result.returncode == 0:
-                data = json.loads(result.stdout)
+            # Query Cognito user pools (with rate limiting)
+            cmd = ["aws", "cognito-idp", "list-user-pools", "--max-results", "60", "--output", "json"]
+            if self.aws_profile:
+                cmd.extend(["--profile", self.aws_profile])
+            
+            returncode, stdout, stderr = self.rate_limiter.execute_with_retry(
+                cmd, operation_name="list Cognito user pools"
+            )
+            
+            if returncode == 0:
+                data = json.loads(stdout)
                 for pool in data.get("UserPools", []):
                     pool_name = pool["Name"]
                     # Filter for lab-related pools
                     if any(f"lab{i}" in pool_name.lower() for i in range(1, 8)):
                         snapshot.cognito_pools.add(pool_name)
+            else:
+                print_colored(Colors.YELLOW, f"Warning: Failed to query Cognito user pools: {stderr}")
         
+        except json.JSONDecodeError as e:
+            print_colored(Colors.RED, f"Error: Failed to parse AWS API response: {e}")
         except Exception as e:
-            print(f"Warning: Error taking snapshot: {e}")
+            print_colored(Colors.RED, f"Error: Failed to take snapshot: {e}")
         
         return snapshot
 
@@ -242,15 +471,24 @@ class EndToEndTestRunner:
         self.aws_profile = aws_profile
         self.dry_run = dry_run
         self.email = email
-        self.tracker = AWSResourceTracker(aws_profile, dry_run)
+        # Initialize rate limiter (Requirement 16.1: minimum 10-second delay between CloudFormation operations)
+        self.rate_limiter = RateLimiter(min_delay_seconds=10.0)
+        self.tracker = AWSResourceTracker(aws_profile, dry_run, self.rate_limiter)
         self.results: List[StepResult] = []
         # Store profile args as a list for proper argument passing
         self.profile_args = ["--profile", aws_profile] if aws_profile else []
+        # Create report directory
+        REPORT_DIR.mkdir(parents=True, exist_ok=True)
     
     def run_script(self, script_path: Path, args: List[str] = None, 
                    timeout: int = 3600, stdin_input: str = None) -> Tuple[bool, str, float]:
         """
-        Run a deployment or cleanup script with real-time output.
+        Run a deployment or cleanup script with real-time output and enhanced error capture.
+        
+        Implements Requirements 8.1-8.3:
+        - Captures script exit codes and marks steps as failed for non-zero exits (Req 8.1)
+        - Captures and displays error output in test results (Req 8.2)
+        - Terminates scripts on timeout and marks as failed (Req 8.3)
         
         Args:
             script_path: Path to the script to execute
@@ -269,6 +507,7 @@ class EndToEndTestRunner:
             return True, "Dry-run mode - script not executed", 0.1
         
         start_time = time.time()
+        process = None
         
         try:
             cmd = [str(script_path)] + (args or [])
@@ -298,40 +537,90 @@ class EndToEndTestRunner:
                 process.stdin.flush()
                 process.stdin.close()
             
-            # Stream output in real-time
-            for line in process.stdout:
-                print(line, end='', flush=True)  # Print immediately
-                output_lines.append(line)
-            
-            # Wait for process to complete
-            process.wait(timeout=timeout)
+            # Stream output in real-time with timeout handling
+            # Use communicate() with timeout for proper timeout enforcement
+            try:
+                stdout, _ = process.communicate(timeout=timeout)
+                output_lines = stdout.splitlines(keepends=True)
+                
+                # Print the output
+                for line in output_lines:
+                    print(line, end='', flush=True)
+                
+                output = stdout
+            except subprocess.TimeoutExpired:
+                # Kill the process immediately
+                process.kill()
+                # Re-raise to be caught by outer exception handler
+                raise
             
             duration = time.time() - start_time
-            success = process.returncode == 0
+            exit_code = process.returncode
             output = ''.join(output_lines)
+            
+            # Requirement 8.1: Capture exit code and mark as failed for non-zero exits
+            success = exit_code == 0
             
             print()
             print_timestamp()
             if success:
-                print_colored(Colors.GREEN, f"✓ Script completed successfully in {duration:.2f} seconds")
+                print_colored(Colors.GREEN, f"✓ Script completed successfully (exit code: {exit_code}) in {duration:.2f} seconds")
             else:
-                print_colored(Colors.RED, f"✗ Script failed with exit code {process.returncode} after {duration:.2f} seconds")
+                # Requirement 8.2: Capture and display error output
+                print_colored(Colors.RED, f"✗ Script failed with exit code {exit_code} after {duration:.2f} seconds")
+                
+                # Extract error lines from output for better visibility
+                error_lines = [line for line in output_lines if 'error' in line.lower() or 'failed' in line.lower()]
+                if error_lines:
+                    print_colored(Colors.RED, "Error output:")
+                    for error_line in error_lines[-10:]:  # Show last 10 error lines
+                        print_colored(Colors.RED, f"  {error_line.strip()}")
             print()
             
             return success, output, duration
         
         except subprocess.TimeoutExpired:
+            # Requirement 8.3: Terminate script on timeout and mark as failed
             duration = time.time() - start_time
-            print_colored(Colors.RED, f"✗ Script timed out after {timeout} seconds")
-            return False, f"Script timed out after {timeout} seconds", duration
+            
+            # Terminate the process immediately
+            if process:
+                print_colored(Colors.RED, f"✗ Script timed out after {timeout} seconds - terminating process...")
+                process.kill()  # Kill immediately, don't wait
+                try:
+                    # Collect any output that was generated before timeout
+                    stdout, _ = process.communicate(timeout=1)
+                    output_lines = stdout.splitlines(keepends=True) if stdout else []
+                except:
+                    output_lines = []
+            
+            output = ''.join(output_lines) if output_lines else ""
+            error_message = f"Script timed out after {timeout} seconds (timeout limit exceeded)"
+            
+            print_colored(Colors.RED, f"✗ {error_message}")
+            print()
+            
+            return False, output + f"\n\nERROR: {error_message}", duration
         
         except Exception as e:
             duration = time.time() - start_time
-            print_colored(Colors.RED, f"✗ Script execution failed: {str(e)}")
-            return False, f"Script execution failed: {str(e)}", duration
+            error_message = f"Script execution failed: {str(e)}"
+            
+            # Try to collect any output that was captured before the exception
+            output = ''.join(output_lines) if 'output_lines' in locals() else ""
+            
+            print_colored(Colors.RED, f"✗ {error_message}")
+            print()
+            
+            return False, output + f"\n\nERROR: {error_message}", duration
 
     def step_1_cleanup_all_labs(self) -> StepResult:
-        """Step 1: Run cleanup-all-labs script to ensure clean state."""
+        """
+        Step 1: Run cleanup-all-labs script to ensure clean state.
+        
+        Implements Requirement 15.1: Verify expected number of resources were deleted.
+        Implements Requirement 15.5: Verify zero resources remain after final cleanup.
+        """
         print()
         print_separator()
         print_colored(Colors.BLUE, "STEP 1: Cleanup All Labs (Ensure Clean State)")
@@ -365,18 +654,48 @@ class EndToEndTestRunner:
         
         # Verify clean state
         warnings = []
+        error_message = None
+        
+        # Requirement 15.1: Verify expected number of resources were deleted
+        deleted_count = resources_deleted.count()
+        print_colored(Colors.YELLOW, f"Verification: {deleted_count} resources deleted")
+        
+        # Requirement 15.5: Verify zero resources remain after cleanup
+        remaining_count = resources_after.count()
+        if remaining_count > 0:
+            error_message = f"Cleanup verification failed: Expected 0 resources remaining, found {remaining_count}"
+            print_colored(Colors.RED, f"✗ {error_message}")
+            success = False
+        else:
+            print_colored(Colors.GREEN, f"✓ Cleanup verification passed: 0 resources remaining")
+        
+        # Requirement 8.5: List orphaned resources in test failure message
         if not resources_after.is_empty():
-            warnings.append(f"Warning: {resources_after.count()} resources still exist after cleanup")
+            orphaned_count = resources_after.count()
+            if not error_message:
+                error_message = f"Cleanup incomplete: {orphaned_count} resources still exist after cleanup"
+            
+            # List all orphaned resources by type
+            if resources_after.stacks:
+                warnings.append(f"Orphaned stacks ({len(resources_after.stacks)}): {', '.join(sorted(resources_after.stacks))}")
+            if resources_after.s3_buckets:
+                warnings.append(f"Orphaned S3 buckets ({len(resources_after.s3_buckets)}): {', '.join(sorted(resources_after.s3_buckets))}")
+            if resources_after.log_groups:
+                warnings.append(f"Orphaned log groups ({len(resources_after.log_groups)}): {', '.join(sorted(resources_after.log_groups))}")
+            if resources_after.cognito_pools:
+                warnings.append(f"Orphaned Cognito pools ({len(resources_after.cognito_pools)}): {', '.join(sorted(resources_after.cognito_pools))}")
         
         result = StepResult(
             step_number=1,
             step_name="Cleanup All Labs (Ensure Clean State)",
-            success=success,
+            success=success and resources_after.is_empty(),  # Mark as failed if orphaned resources exist
             duration_seconds=duration,
             resources_before=resources_before,
             resources_after=resources_after,
             resources_deleted=resources_deleted,
-            warnings=warnings
+            error_message=error_message,
+            warnings=warnings,
+            log_output=output
         )
         
         self.results.append(result)
@@ -384,7 +703,11 @@ class EndToEndTestRunner:
         return result
     
     def step_2_deploy_all_labs(self) -> StepResult:
-        """Step 2: Run deploy-all-labs script to deploy all labs."""
+        """
+        Step 2: Run deploy-all-labs script to deploy all labs.
+        
+        Implements Requirement 15.2: Verify all expected stacks were created after deployment.
+        """
         print()
         print_separator()
         print_colored(Colors.BLUE, "STEP 2: Deploy All Labs")
@@ -417,8 +740,9 @@ class EndToEndTestRunner:
         
         duration = time.time() - start_time
         
-        # Verify all labs deployed
+        # Requirement 15.2: Verify all expected stacks were created
         warnings = []
+        error_message = None
         expected_labs = set(LAB_IDS)
         deployed_labs = set()
         
@@ -429,7 +753,15 @@ class EndToEndTestRunner:
         
         missing_labs = expected_labs - deployed_labs
         if missing_labs:
-            warnings.append(f"Warning: Labs not deployed: {', '.join(sorted(missing_labs))}")
+            error_message = f"Deployment verification failed: Expected all 7 labs deployed, missing {len(missing_labs)} labs: {', '.join(sorted(missing_labs))}"
+            print_colored(Colors.RED, f"✗ {error_message}")
+            warnings.append(error_message)
+            success = False
+        else:
+            print_colored(Colors.GREEN, f"✓ Deployment verification passed: All 7 labs deployed successfully")
+        
+        # Log deployed labs for visibility
+        print_colored(Colors.YELLOW, f"Verification: {len(deployed_labs)} labs deployed: {', '.join(sorted(deployed_labs))}")
         
         result = StepResult(
             step_number=2,
@@ -439,7 +771,9 @@ class EndToEndTestRunner:
             resources_before=resources_before,
             resources_after=resources_after,
             resources_deleted=resources_deleted,
-            warnings=warnings
+            error_message=error_message,
+            warnings=warnings,
+            log_output=output
         )
         
         self.results.append(result)
@@ -449,6 +783,9 @@ class EndToEndTestRunner:
     def cleanup_single_lab(self, lab_num: int, remaining_labs: List[str]) -> StepResult:
         """
         Run cleanup for a single lab and verify isolation.
+        
+        Implements Requirement 15.1: Verify expected number of resources were deleted.
+        Implements Requirement 15.3: Verify exactly 10 Lab6 stacks were deleted (for Lab6 only).
         
         Args:
             lab_num: Lab number (1-7)
@@ -480,6 +817,12 @@ class EndToEndTestRunner:
                 resources_before, remaining_lab_id
             )
         
+        # Requirement 15.3: For Lab6, count stacks before cleanup
+        lab6_stacks_before = 0
+        if lab_num == 6:
+            lab6_stacks_before = len(target_lab_before.stacks)
+            print_colored(Colors.YELLOW, f"Lab6 stacks before cleanup: {lab6_stacks_before}")
+        
         # Run lab cleanup script
         lab_dir = WORKSHOP_ROOT / f"Lab{lab_num}"
         script_path = lab_dir / "scripts" / "cleanup.sh"
@@ -508,10 +851,37 @@ class EndToEndTestRunner:
         warnings = []
         error_message = None
         
+        # Requirement 15.1: Verify expected number of resources were deleted
+        deleted_count = resources_deleted.count()
+        print_colored(Colors.YELLOW, f"Verification: {deleted_count} resources deleted from Lab{lab_num}")
+        
+        # Requirement 15.3: For Lab6, verify exactly 10 stacks were deleted
+        if lab_num == 6:
+            lab6_stacks_after = len(target_lab_after.stacks)
+            lab6_stacks_deleted = lab6_stacks_before - lab6_stacks_after
+            
+            if lab6_stacks_deleted == 10:
+                print_colored(Colors.GREEN, f"✓ Lab6 verification passed: Exactly 10 stacks deleted")
+            else:
+                error_message = f"Lab6 verification failed: Expected 10 stacks deleted, found {lab6_stacks_deleted}"
+                print_colored(Colors.RED, f"✗ {error_message}")
+                success = False
+        
+        # Requirement 8.5: List orphaned resources in test failure message
         if not target_lab_after.is_empty():
-            warnings.append(
-                f"Warning: {target_lab_after.count()} Lab{lab_num} resources still exist after cleanup"
-            )
+            orphaned_count = target_lab_after.count()
+            if not error_message:
+                error_message = f"Lab{lab_num} cleanup incomplete: {orphaned_count} resources still exist"
+            
+            # List all orphaned resources by type
+            if target_lab_after.stacks:
+                warnings.append(f"Orphaned Lab{lab_num} stacks ({len(target_lab_after.stacks)}): {', '.join(sorted(target_lab_after.stacks))}")
+            if target_lab_after.s3_buckets:
+                warnings.append(f"Orphaned Lab{lab_num} S3 buckets ({len(target_lab_after.s3_buckets)}): {', '.join(sorted(target_lab_after.s3_buckets))}")
+            if target_lab_after.log_groups:
+                warnings.append(f"Orphaned Lab{lab_num} log groups ({len(target_lab_after.log_groups)}): {', '.join(sorted(target_lab_after.log_groups))}")
+            if target_lab_after.cognito_pools:
+                warnings.append(f"Orphaned Lab{lab_num} Cognito pools ({len(target_lab_after.cognito_pools)}): {', '.join(sorted(target_lab_after.cognito_pools))}")
         
         # CRITICAL: Verify remaining labs are intact
         cross_lab_deletions = []
@@ -524,17 +894,34 @@ class EndToEndTestRunner:
                 deleted_stacks = remaining_lab_before_snapshot.stacks - remaining_lab_after.stacks
                 deleted_buckets = remaining_lab_before_snapshot.s3_buckets - remaining_lab_after.s3_buckets
                 deleted_logs = remaining_lab_before_snapshot.log_groups - remaining_lab_after.log_groups
+                deleted_cognito = remaining_lab_before_snapshot.cognito_pools - remaining_lab_after.cognito_pools
                 
-                if deleted_stacks or deleted_buckets or deleted_logs:
+                if deleted_stacks or deleted_buckets or deleted_logs or deleted_cognito:
                     cross_lab_deletions.append({
                         "lab": remaining_lab_id,
                         "stacks": list(deleted_stacks),
                         "buckets": list(deleted_buckets),
-                        "logs": list(deleted_logs)
+                        "logs": list(deleted_logs),
+                        "cognito": list(deleted_cognito)
                     })
         
         if cross_lab_deletions:
-            error_message = f"CRITICAL: Lab{lab_num} cleanup deleted resources from other labs: {cross_lab_deletions}"
+            # Requirement 8.5: List all cross-lab deletions in error message
+            cross_lab_details = []
+            for deletion in cross_lab_deletions:
+                lab = deletion["lab"]
+                details = []
+                if deletion["stacks"]:
+                    details.append(f"stacks: {', '.join(deletion['stacks'])}")
+                if deletion["buckets"]:
+                    details.append(f"buckets: {', '.join(deletion['buckets'])}")
+                if deletion["logs"]:
+                    details.append(f"logs: {', '.join(deletion['logs'])}")
+                if deletion["cognito"]:
+                    details.append(f"cognito: {', '.join(deletion['cognito'])}")
+                cross_lab_details.append(f"{lab} ({'; '.join(details)})")
+            
+            error_message = f"CRITICAL: Lab{lab_num} cleanup deleted resources from other labs: {'; '.join(cross_lab_details)}"
             success = False
         
         # Special verification for Lab5 (critical bug fix)
@@ -565,7 +952,8 @@ class EndToEndTestRunner:
             resources_after=resources_after,
             resources_deleted=resources_deleted,
             error_message=error_message,
-            warnings=warnings
+            warnings=warnings,
+            log_output=output
         )
         
         self.results.append(result)
@@ -573,7 +961,12 @@ class EndToEndTestRunner:
         return result
 
     def step_10_redeploy_all_labs(self) -> StepResult:
-        """Step 10: Run deploy-all-labs script again to redeploy all labs."""
+        """
+        Step 10: Run deploy-all-labs script again to redeploy all labs.
+        
+        Implements Requirement 15.2: Verify all expected stacks were created after deployment.
+        Implements Requirement 15.4: Verify Lab5 pipeline stack exists after deployment.
+        """
         print()
         print_separator()
         print_colored(Colors.BLUE, "STEP 10: Redeploy All Labs")
@@ -607,8 +1000,9 @@ class EndToEndTestRunner:
         
         duration = time.time() - start_time
         
-        # Verify all labs deployed
+        # Requirement 15.2: Verify all expected stacks were created
         warnings = []
+        error_message = None
         expected_labs = set(LAB_IDS)
         deployed_labs = set()
         
@@ -619,17 +1013,43 @@ class EndToEndTestRunner:
         
         missing_labs = expected_labs - deployed_labs
         if missing_labs:
-            warnings.append(f"Warning: Labs not deployed: {', '.join(sorted(missing_labs))}")
+            error_message = f"Redeployment verification failed: Expected all 7 labs deployed, missing {len(missing_labs)} labs: {', '.join(sorted(missing_labs))}"
+            print_colored(Colors.RED, f"✗ {error_message}")
+            warnings.append(error_message)
+            success = False
+        else:
+            print_colored(Colors.GREEN, f"✓ Redeployment verification passed: All 7 labs deployed successfully")
+        
+        # Requirement 15.4: Verify Lab5 pipeline stack exists
+        lab5_pipeline_exists = False
+        for stack in resources_after.stacks:
+            if "pipeline" in stack.lower() and "lab5" in stack.lower():
+                lab5_pipeline_exists = True
+                print_colored(Colors.GREEN, f"✓ Lab5 pipeline stack verification passed: {stack}")
+                break
+        
+        if not lab5_pipeline_exists:
+            if not error_message:
+                error_message = "Lab5 pipeline stack verification failed: Pipeline stack not found"
+            else:
+                error_message += "; Lab5 pipeline stack not found"
+            print_colored(Colors.RED, f"✗ Lab5 pipeline stack verification failed: Pipeline stack not found")
+            success = False
+        
+        # Log deployed labs for visibility
+        print_colored(Colors.YELLOW, f"Verification: {len(deployed_labs)} labs deployed: {', '.join(sorted(deployed_labs))}")
         
         result = StepResult(
             step_number=10,
             step_name="Redeploy All Labs",
-            success=success and len(missing_labs) == 0,
+            success=success and len(missing_labs) == 0 and lab5_pipeline_exists,
             duration_seconds=duration,
             resources_before=resources_before,
             resources_after=resources_after,
             resources_deleted=resources_deleted,
-            warnings=warnings
+            error_message=error_message,
+            warnings=warnings,
+            log_output=output
         )
         
         self.results.append(result)
@@ -637,7 +1057,11 @@ class EndToEndTestRunner:
         return result
     
     def step_11_cleanup_all_labs_final(self) -> StepResult:
-        """Step 11: Run cleanup-all-labs script and verify all resources deleted."""
+        """
+        Step 11: Run cleanup-all-labs script and verify all resources deleted.
+        
+        Implements Requirement 15.5: Verify zero resources remain after final cleanup.
+        """
         print()
         print_separator()
         print_colored(Colors.BLUE, "STEP 11: Cleanup All Labs (Final Verification)")
@@ -673,30 +1097,40 @@ class EndToEndTestRunner:
         warnings = []
         error_message = None
         
-        if not resources_after.is_empty():
-            error_message = f"CRITICAL: {resources_after.count()} resources still exist after final cleanup"
+        # Requirement 15.5: Verify zero resources remain after final cleanup
+        deleted_count = resources_deleted.count()
+        remaining_count = resources_after.count()
+        
+        print_colored(Colors.YELLOW, f"Verification: {deleted_count} resources deleted")
+        
+        if remaining_count > 0:
+            error_message = f"Final cleanup verification failed: Expected 0 resources remaining, found {remaining_count}"
+            print_colored(Colors.RED, f"✗ {error_message}")
             success = False
             
-            # List remaining resources
+            # Requirement 8.5: List all orphaned resources by type
             if resources_after.stacks:
-                warnings.append(f"Remaining stacks: {', '.join(sorted(resources_after.stacks))}")
+                warnings.append(f"Orphaned stacks ({len(resources_after.stacks)}): {', '.join(sorted(resources_after.stacks))}")
             if resources_after.s3_buckets:
-                warnings.append(f"Remaining S3 buckets: {', '.join(sorted(resources_after.s3_buckets))}")
+                warnings.append(f"Orphaned S3 buckets ({len(resources_after.s3_buckets)}): {', '.join(sorted(resources_after.s3_buckets))}")
             if resources_after.log_groups:
-                warnings.append(f"Remaining log groups: {', '.join(sorted(resources_after.log_groups))}")
+                warnings.append(f"Orphaned log groups ({len(resources_after.log_groups)}): {', '.join(sorted(resources_after.log_groups))}")
             if resources_after.cognito_pools:
-                warnings.append(f"Remaining Cognito pools: {', '.join(sorted(resources_after.cognito_pools))}")
+                warnings.append(f"Orphaned Cognito pools ({len(resources_after.cognito_pools)}): {', '.join(sorted(resources_after.cognito_pools))}")
+        else:
+            print_colored(Colors.GREEN, f"✓ Final cleanup verification passed: 0 resources remaining")
         
         result = StepResult(
             step_number=11,
             step_name="Cleanup All Labs (Final Verification)",
-            success=success,
+            success=success and remaining_count == 0,
             duration_seconds=duration,
             resources_before=resources_before,
             resources_after=resources_after,
             resources_deleted=resources_deleted,
             error_message=error_message,
-            warnings=warnings
+            warnings=warnings,
+            log_output=output
         )
         
         self.results.append(result)
@@ -726,6 +1160,11 @@ class EndToEndTestRunner:
         if result.error_message:
             print()
             print_colored(Colors.RED, f"Error: {result.error_message}")
+        
+        # Save log file for this step
+        log_filepath = result.save_log_file()
+        print()
+        print_colored(Colors.GREEN, f"Step log saved to: {log_filepath}")
         
         print_separator("-", 80, Colors.YELLOW)
         print()
@@ -795,6 +1234,10 @@ class EndToEndTestRunner:
         
         # Save detailed report to JSON file
         report_file = WORKSHOP_ROOT / "tests" / "end_to_end_test_report.json"
+        
+        # Get throttling metrics (Requirement 17.4)
+        throttling_metrics = self.rate_limiter.get_metrics()
+        
         report_data = {
             "test_name": "End-to-End Cleanup Isolation Test",
             "timestamp": datetime.now().isoformat(),
@@ -804,6 +1247,7 @@ class EndToEndTestRunner:
             "passed_steps": passed_steps,
             "failed_steps": failed_steps,
             "total_duration_seconds": total_duration,
+            "throttling_metrics": throttling_metrics,  # Add throttling metrics to report
             "steps": [r.to_dict() for r in self.results]
         }
         
@@ -812,6 +1256,17 @@ class EndToEndTestRunner:
         
         print_colored(Colors.GREEN, f"Detailed report saved to: {report_file}")
         print()
+        
+        # Print throttling metrics summary (Requirement 17.4)
+        if throttling_metrics['total_throttles'] > 0:
+            print_separator("-", 80, Colors.YELLOW)
+            print_colored(Colors.YELLOW, "AWS API Throttling Summary:")
+            print_separator("-", 80, Colors.YELLOW)
+            print_colored(Colors.YELLOW, f"  Total throttling errors: {throttling_metrics['total_throttles']}")
+            print_colored(Colors.YELLOW, f"  Total retries: {throttling_metrics['total_retries']}")
+            print_colored(Colors.YELLOW, f"  Operations delayed: {throttling_metrics['operations_delayed']}")
+            print_colored(Colors.YELLOW, f"  Total delay time: {throttling_metrics['total_delay_seconds']:.1f}s")
+            print()
         
         # Final verdict
         print_separator("=", 80, Colors.BLUE)

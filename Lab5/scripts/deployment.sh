@@ -165,6 +165,34 @@ START_TIME=$(date +%s)
 # Pre-deployment validation
 print_message "$YELLOW" "Step 1: Validating prerequisites..."
 
+# Check for Lab6 resources (conflict detection)
+print_message "$YELLOW" "  Checking for Lab6 resource conflicts..."
+PROFILE_ARG=$(get_profile_arg)
+LAB6_PIPELINE_EXISTS=false
+LAB6_SHARED_EXISTS=false
+
+# Check for Lab6 pipeline stack
+if aws cloudformation $PROFILE_ARG describe-stacks --stack-name "serverless-saas-pipeline-lab6" --region "$AWS_REGION" &> /dev/null; then
+    LAB6_PIPELINE_EXISTS=true
+    print_message "$YELLOW" "  ⚠ Warning: Lab6 pipeline stack exists (serverless-saas-pipeline-lab6)"
+    print_message "$YELLOW" "    This may cause CDKToolkit conflicts during deployment"
+    print_message "$YELLOW" "    Deployment will continue, but CDKToolkit may be shared between labs"
+fi
+
+# Check for Lab6 shared stack
+if aws cloudformation $PROFILE_ARG describe-stacks --stack-name "serverless-saas-shared-lab6" --region "$AWS_REGION" &> /dev/null; then
+    LAB6_SHARED_EXISTS=true
+    print_message "$YELLOW" "  ⚠ Warning: Lab6 shared stack exists (serverless-saas-shared-lab6)"
+    print_message "$YELLOW" "    This indicates Lab6 is currently deployed"
+fi
+
+if [[ "$LAB6_PIPELINE_EXISTS" == "false" ]] && [[ "$LAB6_SHARED_EXISTS" == "false" ]]; then
+    print_message "$GREEN" "  ✓ No Lab6 resource conflicts detected"
+fi
+echo ""
+
+print_message "$YELLOW" "Step 2: Validating prerequisites..."
+
 # Check AWS CLI
 if ! command -v aws &> /dev/null; then
     print_message "$RED" "Error: AWS CLI is not installed"
@@ -238,7 +266,7 @@ fi
 echo ""
 
 # Check for Event Engine pre-provisioned resources
-print_message "$YELLOW" "Step 2: Checking for Event Engine environment..."
+print_message "$YELLOW" "Step 3: Checking for Event Engine environment..."
 IS_RUNNING_IN_EVENT_ENGINE=false 
 PROFILE_ARG=$(get_profile_arg)
 PREPROVISIONED_ADMIN_SITE=$(aws cloudformation $PROFILE_ARG list-exports --region "$AWS_REGION" --query "Exports[?Name=='Serverless-SaaS-AdminAppSite'].Value" --output text 2>/dev/null || echo "")
@@ -257,7 +285,30 @@ echo ""
 
 
 if [[ $DEPLOY_PIPELINE -eq 1 ]]; then
-  print_message "$YELLOW" "Step 3: Deploying CI/CD pipeline..."
+  print_message "$YELLOW" "Step 4: Deploying CI/CD pipeline..."
+  
+  # Check if CDKToolkit stack exists, bootstrap if missing
+  print_message "$YELLOW" "  Checking CDKToolkit stack..."
+  PROFILE_ARG=$(get_profile_arg)
+  if ! aws cloudformation $PROFILE_ARG describe-stacks --stack-name "CDKToolkit" --region "$AWS_REGION" &> /dev/null; then
+      print_message "$YELLOW" "  CDKToolkit stack not found, bootstrapping CDK..."
+      if [[ -n "$AWS_PROFILE" ]]; then
+        cdk bootstrap --profile "$AWS_PROFILE" --region "$AWS_REGION" || {
+            print_message "$RED" "Error: CDK bootstrap failed"
+            print_message "$RED" "  This is required before deploying the pipeline"
+            exit 1
+        }
+      else
+        cdk bootstrap --region "$AWS_REGION" || {
+            print_message "$RED" "Error: CDK bootstrap failed"
+            print_message "$RED" "  This is required before deploying the pipeline"
+            exit 1
+        }
+      fi
+      print_message "$GREEN" "  ✓ CDKToolkit bootstrapped successfully"
+  else
+      print_message "$GREEN" "  ✓ CDKToolkit stack exists"
+  fi
   
   # Create CodeCommit repository
   print_message "$YELLOW" "  Checking CodeCommit repository..."
@@ -341,28 +392,51 @@ if [[ $DEPLOY_PIPELINE -eq 1 ]]; then
       exit 1
   }
   
-  print_message "$YELLOW" "  Bootstrapping CDK..."
-  if [[ -n "$AWS_PROFILE" ]]; then
-    cdk bootstrap --profile "$AWS_PROFILE" --region "$AWS_REGION" || {
-        print_message "$RED" "Error: CDK bootstrap failed"
-        exit 1
-    }
-  else
-    cdk bootstrap --region "$AWS_REGION" || {
-        print_message "$RED" "Error: CDK bootstrap failed"
-        exit 1
-    }
-  fi
-  
   print_message "$YELLOW" "  Deploying CDK stack..."
   if [[ -n "$AWS_PROFILE" ]]; then
     cdk deploy --profile "$AWS_PROFILE" --require-approval never --region "$AWS_REGION" || {
         print_message "$RED" "Error: CDK deploy failed"
+        print_message "$RED" "  Fetching CloudFormation stack events for diagnosis..."
+        
+        # Log stack events for the pipeline stack
+        PROFILE_ARG=$(get_profile_arg)
+        STACK_EVENTS=$(aws cloudformation $PROFILE_ARG describe-stack-events \
+            --stack-name "$PIPELINE_STACK_NAME" \
+            --region "$AWS_REGION" \
+            --max-items 20 \
+            --query 'StackEvents[?ResourceStatus==`CREATE_FAILED` || ResourceStatus==`UPDATE_FAILED` || ResourceStatus==`DELETE_FAILED`].[Timestamp,ResourceType,LogicalResourceId,ResourceStatus,ResourceStatusReason]' \
+            --output table 2>/dev/null || echo "Could not retrieve stack events")
+        
+        if [[ "$STACK_EVENTS" != "Could not retrieve stack events" ]]; then
+            print_message "$RED" "  Recent failure events:"
+            echo "$STACK_EVENTS"
+        else
+            print_message "$YELLOW" "  Could not retrieve stack events (stack may not exist yet)"
+        fi
+        
         exit 1
     }
   else
     cdk deploy --require-approval never --region "$AWS_REGION" || {
         print_message "$RED" "Error: CDK deploy failed"
+        print_message "$RED" "  Fetching CloudFormation stack events for diagnosis..."
+        
+        # Log stack events for the pipeline stack
+        PROFILE_ARG=$(get_profile_arg)
+        STACK_EVENTS=$(aws cloudformation $PROFILE_ARG describe-stack-events \
+            --stack-name "$PIPELINE_STACK_NAME" \
+            --region "$AWS_REGION" \
+            --max-items 20 \
+            --query 'StackEvents[?ResourceStatus==`CREATE_FAILED` || ResourceStatus==`UPDATE_FAILED` || ResourceStatus==`DELETE_FAILED`].[Timestamp,ResourceType,LogicalResourceId,ResourceStatus,ResourceStatusReason]' \
+            --output table 2>/dev/null || echo "Could not retrieve stack events")
+        
+        if [[ "$STACK_EVENTS" != "Could not retrieve stack events" ]]; then
+            print_message "$RED" "  Recent failure events:"
+            echo "$STACK_EVENTS"
+        else
+            print_message "$YELLOW" "  Could not retrieve stack events (stack may not exist yet)"
+        fi
+        
         exit 1
     }
   fi
@@ -374,7 +448,7 @@ if [[ $DEPLOY_PIPELINE -eq 1 ]]; then
 fi
 
 if [[ $DEPLOY_BOOTSTRAP -eq 1 ]]; then
-  STEP_NUM=$((DEPLOY_PIPELINE + 3))
+  STEP_NUM=$((DEPLOY_PIPELINE + 4))
   print_message "$YELLOW" "Step $STEP_NUM: Deploying bootstrap server infrastructure..."
   
   cd ../server || exit
@@ -504,7 +578,7 @@ fi
 
 
 if [[ $DEPLOY_CLIENT -eq 1 ]]; then
-  STEP_NUM=$((DEPLOY_PIPELINE + DEPLOY_BOOTSTRAP + 3))
+  STEP_NUM=$((DEPLOY_PIPELINE + DEPLOY_BOOTSTRAP + 4))
   print_message "$YELLOW" "Step $STEP_NUM: Deploying client applications..."
   
   # Get CloudFormation outputs

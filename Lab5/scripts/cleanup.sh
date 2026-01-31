@@ -672,38 +672,21 @@ echo "=========================================="
 echo "Step 10: Cleaning up CDK bootstrap resources"
 echo "=========================================="
 
-# CRITICAL: Check if Lab6 is deployed before deleting CDKToolkit
-# CDKToolkit is a SHARED resource between Lab5 and Lab6
-# We can only delete it if Lab6 is NOT deployed
+# Source CDKToolkit handling module
+source "$SCRIPT_DIR/../../scripts/lib/cdktoolkit-handling.sh"
+
 PROFILE_ARG=$(get_profile_arg)
-LAB6_DEPLOYED=false
-
-# Check for Lab6 pipeline stack (uses CDK)
-# Use || echo "" to prevent set -e from exiting when stack doesn't exist
-LAB6_PIPELINE=$(aws cloudformation $PROFILE_ARG describe-stacks --stack-name "serverless-saas-pipeline-lab6" --region "$AWS_REGION" 2>/dev/null || echo "")
-if [[ -n "$LAB6_PIPELINE" ]]; then
-  LAB6_DEPLOYED=true
-  echo "⚠️  Lab6 pipeline stack detected - CDKToolkit is still in use"
-fi
-
-# Check for Lab6 shared stack (might have CDK dependencies)
-if [[ "$LAB6_DEPLOYED" == false ]]; then
-  LAB6_SHARED=$(aws cloudformation $PROFILE_ARG describe-stacks --stack-name "serverless-saas-shared-lab6" --region "$AWS_REGION" 2>/dev/null || echo "")
-  if [[ -n "$LAB6_SHARED" ]]; then
-    LAB6_DEPLOYED=true
-    echo "⚠️  Lab6 shared stack detected - CDKToolkit might still be in use"
-  fi
-fi
 
 # Find CDK bootstrap bucket
 CDK_BUCKET=$(aws s3 $PROFILE_ARG ls --region "$AWS_REGION" | grep cdktoolkit | awk '{print $3}')
 
-if [[ ! -z "$CDK_BUCKET" ]]; then
-  echo "Found CDK bootstrap bucket: $CDK_BUCKET"
+# Handle CDKToolkit deletion decision using the shared module
+if handle_cdktoolkit_deletion "lab5" "$PROFILE_ARG" "$AWS_REGION"; then
+  # Safe to delete CDKToolkit - proceed with cleanup
   
-  if [[ "$LAB6_DEPLOYED" == true ]]; then
-    echo "⚠️  Skipping CDK bucket deletion - Lab6 is still deployed and may need CDK resources"
-  else
+  # Clean up CDK bootstrap bucket first
+  if [[ ! -z "$CDK_BUCKET" ]]; then
+    echo "Found CDK bootstrap bucket: $CDK_BUCKET"
     empty_bucket $CDK_BUCKET
     echo "  Deleting bucket: $CDK_BUCKET"
     aws s3 $PROFILE_ARG rb s3://$CDK_BUCKET --region "$AWS_REGION" 2>/dev/null
@@ -712,20 +695,20 @@ if [[ ! -z "$CDK_BUCKET" ]]; then
     else
       echo "  ⚠ Could not delete bucket: $CDK_BUCKET"
     fi
+  else
+    echo "No CDK bootstrap bucket found"
   fi
-else
-  echo "No CDK bootstrap bucket found"
-fi
-
-# Delete CDKToolkit stack only if Lab6 is NOT deployed
-if [[ "$LAB6_DEPLOYED" == true ]]; then
-  echo "⚠️  Skipping CDKToolkit stack deletion - Lab6 is still deployed"
-  echo "   Lab6 pipeline stack uses the shared CDK execution role from CDKToolkit"
-  echo "   CDKToolkit will be deleted when Lab6 is cleaned up"
-else
-  echo "✓ Lab6 is not deployed - safe to delete CDKToolkit"
+  
+  # Delete CDKToolkit stack
+  echo "Deleting CDKToolkit stack..."
   if delete_stack "CDKToolkit"; then
     wait_for_deletion "CDKToolkit"
+  fi
+else
+  # CDKToolkit deletion skipped - Lab6 is still deployed
+  # Clean up CDK bootstrap bucket only if safe
+  if [[ ! -z "$CDK_BUCKET" ]]; then
+    echo "⚠️  Skipping CDK bucket deletion - Lab6 is still deployed and may need CDK resources"
   fi
 fi
 
