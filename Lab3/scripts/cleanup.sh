@@ -415,6 +415,82 @@ else
     print_message "$YELLOW" "  No DynamoDB tables found"
 fi
 
+# Step 7.5: Clean up Cognito User Pools
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 7.5: Cleaning up Cognito User Pools"
+print_message "$BLUE" "=========================================="
+
+# Find and delete Lab3 Cognito User Pools
+LAB3_POOLS=$(aws cognito-idp list-user-pools \
+    $PROFILE_ARG \
+    --max-results 60 \
+    --output json 2>/dev/null | jq -r '.UserPools[] | select(.Name | contains("lab3")) | .Id')
+
+if [ -n "$LAB3_POOLS" ]; then
+    print_message "$GREEN" "Found Lab3 Cognito User Pools:"
+    for pool_id in $LAB3_POOLS; do
+        POOL_NAME=$(aws cognito-idp describe-user-pool \
+            $PROFILE_ARG \
+            --user-pool-id $pool_id \
+            --query 'UserPool.Name' \
+            --output text 2>/dev/null || echo "")
+        print_message "$GREEN" "  Processing pool: $POOL_NAME ($pool_id)"
+        
+        # CRITICAL: Delete all users FIRST before deleting the pool
+        # This prevents orphaned users that cause deployment failures
+        print_message "$YELLOW" "    Listing users in pool..."
+        USERS=$(aws cognito-idp list-users \
+            $PROFILE_ARG \
+            --user-pool-id $pool_id \
+            --query 'Users[].Username' \
+            --output text 2>/dev/null || echo "")
+        
+        if [ -n "$USERS" ]; then
+            print_message "$YELLOW" "    Found users to delete:"
+            for username in $USERS; do
+                print_message "$YELLOW" "      Deleting user: $username"
+                aws cognito-idp admin-delete-user \
+                    $PROFILE_ARG \
+                    --user-pool-id $pool_id \
+                    --username "$username" 2>/dev/null || true
+            done
+            print_message "$GREEN" "    ✓ All users deleted from pool"
+        else
+            print_message "$YELLOW" "    No users found in pool"
+        fi
+        
+        # Delete domain if it exists
+        DOMAIN=$(aws cognito-idp describe-user-pool \
+            $PROFILE_ARG \
+            --user-pool-id $pool_id \
+            --query 'UserPool.Domain' \
+            --output text 2>/dev/null || echo "")
+        if [ -n "$DOMAIN" ] && [ "$DOMAIN" != "None" ]; then
+            print_message "$YELLOW" "    Deleting domain: $DOMAIN"
+            aws cognito-idp delete-user-pool-domain \
+                $PROFILE_ARG \
+                --domain $DOMAIN \
+                --user-pool-id $pool_id 2>/dev/null || true
+        fi
+        
+        # Now delete the pool (users are already deleted)
+        print_message "$YELLOW" "    Deleting pool: $POOL_NAME"
+        aws cognito-idp delete-user-pool \
+            $PROFILE_ARG \
+            --user-pool-id $pool_id 2>/dev/null
+        if [ $? -eq 0 ]; then
+            print_message "$GREEN" "  ✓ Pool deleted: $POOL_NAME"
+        else
+            print_message "$YELLOW" "  ⚠ Could not delete pool: $POOL_NAME"
+        fi
+    done
+else
+    print_message "$YELLOW" "No Lab3 Cognito User Pools found"
+fi
+
+print_message "$GREEN" "✓ Cognito User Pools cleanup complete"
+echo ""
+
 # Step 8: Clean up SAM bootstrap buckets from samconfig.toml files
 print_message "$BLUE" "=========================================="
 print_message "$BLUE" "Step 8: Cleaning up SAM bootstrap buckets from samconfig.toml files"

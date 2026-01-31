@@ -771,14 +771,30 @@ if [[ ! -z "$LAB5_POOLS" ]]; then
     POOL_NAME=$(aws cognito-idp $PROFILE_ARG describe-user-pool --user-pool-id $pool_id --query 'UserPool.Name' --output text 2>/dev/null || echo "")
     echo "  Processing pool: $POOL_NAME ($pool_id)"
     
-    # Delete domain first if it exists
+    # CRITICAL: Delete all users FIRST before deleting the pool
+    # This prevents orphaned users that cause deployment failures
+    echo "    Listing users in pool..."
+    USERS=$(aws cognito-idp $PROFILE_ARG list-users --user-pool-id $pool_id --query 'Users[].Username' --output text 2>/dev/null || echo "")
+    
+    if [[ ! -z "$USERS" ]]; then
+      echo "    Found users to delete:"
+      for username in $USERS; do
+        echo "      Deleting user: $username"
+        aws cognito-idp $PROFILE_ARG admin-delete-user --user-pool-id $pool_id --username "$username" 2>/dev/null || true
+      done
+      echo "    ✓ All users deleted from pool"
+    else
+      echo "    No users found in pool"
+    fi
+    
+    # Delete domain if it exists
     DOMAIN=$(aws cognito-idp $PROFILE_ARG describe-user-pool --user-pool-id $pool_id --query 'UserPool.Domain' --output text 2>/dev/null || echo "")
     if [[ ! -z "$DOMAIN" && "$DOMAIN" != "None" ]]; then
       echo "    Deleting domain: $DOMAIN"
       aws cognito-idp $PROFILE_ARG delete-user-pool-domain --domain $DOMAIN --user-pool-id $pool_id 2>/dev/null
     fi
     
-    # Now delete the pool
+    # Now delete the pool (users are already deleted)
     echo "    Deleting pool: $POOL_NAME"
     aws cognito-idp $PROFILE_ARG delete-user-pool --user-pool-id $pool_id 2>/dev/null
     if [[ $? -eq 0 ]]; then

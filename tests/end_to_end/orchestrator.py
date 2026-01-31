@@ -84,6 +84,85 @@ class TestOrchestrator:
         
         logger.debug("Configuration validated successfully")
     
+    def _validate_cleanup_success(self, step_result: StepResult) -> bool:
+        """
+        Validate that cleanup actually removed all lab resources.
+        
+        For cleanup steps (Step 1 and Step 10), we need to verify that all lab
+        resources are actually deleted, not just that the script returned exit code 0 or 1.
+        
+        Args:
+            step_result: Step result with before/after snapshots
+        
+        Returns:
+            True if all lab resources are deleted, False otherwise
+        """
+        after_snapshot = step_result.after_snapshot
+        
+        # Check for remaining lab stacks (these should all be deleted)
+        lab_stacks = [
+            stack for stack in after_snapshot.stacks
+            if any(lab_pattern in stack for lab_pattern in [
+                'serverless-saas-lab',
+                'stack-lab',
+                'stack-pooled-lab'
+            ])
+        ]
+        
+        if lab_stacks:
+            logger.error(f"Cleanup validation FAILED: {len(lab_stacks)} lab stack(s) remain:")
+            for stack in lab_stacks:
+                logger.error(f"  - {stack}")
+            return False
+        
+        # Check for remaining lab S3 buckets
+        lab_buckets = [
+            bucket for bucket in after_snapshot.s3_buckets
+            if 'serverless-saas' in bucket.lower() or 'lab' in bucket.lower()
+        ]
+        
+        if lab_buckets:
+            logger.warning(f"Cleanup validation: {len(lab_buckets)} lab bucket(s) remain (may be CDK bootstrap):")
+            for bucket in lab_buckets:
+                logger.warning(f"  - {bucket}")
+            # Don't fail on buckets - they might be CDK bootstrap buckets
+        
+        # Check for remaining lab log groups
+        lab_log_groups = [
+            lg.log_group_name for lg in after_snapshot.log_groups
+            if any(pattern in lg.log_group_name for pattern in ['/aws/lambda/', 'serverless-saas', 'lab'])
+        ]
+        
+        if lab_log_groups:
+            logger.error(f"Cleanup validation FAILED: {len(lab_log_groups)} lab log group(s) remain:")
+            for lg in lab_log_groups[:10]:  # Show first 10
+                logger.error(f"  - {lg}")
+            if len(lab_log_groups) > 10:
+                logger.error(f"  ... and {len(lab_log_groups) - 10} more")
+            return False
+        
+        # Check for remaining Cognito user pools
+        if after_snapshot.user_pools:
+            logger.error(f"Cleanup validation FAILED: {len(after_snapshot.user_pools)} Cognito pool(s) remain:")
+            for pool in after_snapshot.user_pools:
+                logger.error(f"  - {pool.pool_name}")
+            return False
+        
+        # Check for remaining DynamoDB tables
+        lab_tables = [
+            table.table_name for table in after_snapshot.dynamodb_tables
+            if 'serverless-saas' in table.table_name.lower() or 'lab' in table.table_name.lower()
+        ]
+        
+        if lab_tables:
+            logger.error(f"Cleanup validation FAILED: {len(lab_tables)} lab table(s) remain:")
+            for table in lab_tables:
+                logger.error(f"  - {table}")
+            return False
+        
+        logger.info("✅ Cleanup validation PASSED: All lab resources successfully deleted")
+        return True
+    
     def run_step(
         self,
         step_number: int,
@@ -266,12 +345,54 @@ class TestOrchestrator:
                 acceptable_exit_codes=[0, 1]  # Accept exit code 1 for initial cleanup
             )
             
-            # For initial cleanup, accept exit code 1 if there are no lab resources
-            # Exit code 1 typically means "some resources remain" (like CDK bootstrap buckets)
-            # which is acceptable for initial cleanup
-            if result.success:
-                logger.info("Initial cleanup completed successfully")
+            # For initial cleanup, we need to validate the result:
+            # - Exit code 0: Always success
+            # - Exit code 1: Success ONLY if all lab resources are deleted
+            #   (exit code 1 can mean "no resources to delete" OR "some resources failed to delete")
+            
+            if result.exit_code == 0:
+                logger.info("Initial cleanup completed successfully (exit code 0)")
                 return True
+            elif result.exit_code == 1:
+                # Exit code 1 - need to verify all lab resources are actually deleted
+                # Check if any lab stacks remain
+                logger.warning("Initial cleanup returned exit code 1 - verifying all lab stacks are deleted")
+                
+                # Get current stacks
+                try:
+                    import boto3
+                    session = boto3.Session(profile_name=self.config.aws_profile)
+                    cfn_client = session.client('cloudformation', region_name=self.config.region)
+                    
+                    # List all stacks
+                    response = cfn_client.list_stacks(
+                        StackStatusFilter=[
+                            'CREATE_COMPLETE', 'UPDATE_COMPLETE', 'DELETE_FAILED',
+                            'CREATE_FAILED', 'ROLLBACK_COMPLETE', 'UPDATE_ROLLBACK_COMPLETE'
+                        ]
+                    )
+                    
+                    # Check for lab stacks
+                    lab_stacks = []
+                    for stack in response.get('StackSummaries', []):
+                        stack_name = stack['StackName']
+                        # Check if stack belongs to any lab
+                        if any(pattern in stack_name.lower() for pattern in [
+                            'serverless-saas-lab', 'stack-lab', '-lab1', '-lab2', '-lab3',
+                            '-lab4', '-lab5', '-lab6', '-lab7'
+                        ]):
+                            lab_stacks.append(stack_name)
+                    
+                    if lab_stacks:
+                        logger.error(f"Initial cleanup incomplete - {len(lab_stacks)} lab stack(s) remain: {', '.join(lab_stacks)}")
+                        return False
+                    else:
+                        logger.info("Initial cleanup verified - no lab stacks remain")
+                        return True
+                        
+                except Exception as e:
+                    logger.error(f"Failed to verify cleanup results: {e}")
+                    return False
             else:
                 logger.error(f"Initial cleanup failed with exit code {result.exit_code}")
                 return False
@@ -522,12 +643,52 @@ class TestOrchestrator:
                 acceptable_exit_codes=[0, 1]  # Accept exit code 1 for final cleanup
             )
             
-            # For final cleanup, accept exit code 1 if there are no lab resources
-            # Exit code 1 typically means "some resources remain" (like CDK bootstrap buckets)
-            # which is acceptable for final cleanup
-            if result.success:
-                logger.info("Final cleanup completed successfully")
+            # For final cleanup, we need to validate the result:
+            # - Exit code 0: Always success
+            # - Exit code 1: Success ONLY if all lab resources are deleted
+            
+            if result.exit_code == 0:
+                logger.info("Final cleanup completed successfully (exit code 0)")
                 return True
+            elif result.exit_code == 1:
+                # Exit code 1 - need to verify all lab resources are actually deleted
+                logger.warning("Final cleanup returned exit code 1 - verifying all lab stacks are deleted")
+                
+                # Get current stacks
+                try:
+                    import boto3
+                    session = boto3.Session(profile_name=self.config.aws_profile)
+                    cfn_client = session.client('cloudformation', region_name=self.config.region)
+                    
+                    # List all stacks
+                    response = cfn_client.list_stacks(
+                        StackStatusFilter=[
+                            'CREATE_COMPLETE', 'UPDATE_COMPLETE', 'DELETE_FAILED',
+                            'CREATE_FAILED', 'ROLLBACK_COMPLETE', 'UPDATE_ROLLBACK_COMPLETE'
+                        ]
+                    )
+                    
+                    # Check for lab stacks
+                    lab_stacks = []
+                    for stack in response.get('StackSummaries', []):
+                        stack_name = stack['StackName']
+                        # Check if stack belongs to any lab
+                        if any(pattern in stack_name.lower() for pattern in [
+                            'serverless-saas-lab', 'stack-lab', '-lab1', '-lab2', '-lab3',
+                            '-lab4', '-lab5', '-lab6', '-lab7'
+                        ]):
+                            lab_stacks.append(stack_name)
+                    
+                    if lab_stacks:
+                        logger.error(f"Final cleanup incomplete - {len(lab_stacks)} lab stack(s) remain: {', '.join(lab_stacks)}")
+                        return False
+                    else:
+                        logger.info("Final cleanup verified - no lab stacks remain")
+                        return True
+                        
+                except Exception as e:
+                    logger.error(f"Failed to verify cleanup results: {e}")
+                    return False
             else:
                 logger.error(f"Final cleanup failed with exit code {result.exit_code}")
                 return False
@@ -561,6 +722,14 @@ class TestOrchestrator:
                 step_name="Initial Cleanup",
                 operation=self.run_initial_cleanup
             )
+            
+            # Validate that cleanup actually removed all lab resources
+            if step1_result.success:
+                cleanup_validated = self._validate_cleanup_success(step1_result)
+                if not cleanup_validated:
+                    logger.error("Initial cleanup validation failed - lab resources remain")
+                    step1_result.success = False
+                    step1_result.error_message = "Cleanup script completed but lab resources remain (validation failed)"
             
             if not step1_result.success:
                 logger.error("Initial cleanup failed, aborting test suite")
@@ -621,6 +790,14 @@ class TestOrchestrator:
                 step_name="Final Cleanup",
                 operation=self.run_final_cleanup
             )
+            
+            # Validate that final cleanup actually removed all lab resources
+            if step10_result.success:
+                cleanup_validated = self._validate_cleanup_success(step10_result)
+                if not cleanup_validated:
+                    logger.error("Final cleanup validation failed - lab resources remain")
+                    step10_result.success = False
+                    step10_result.error_message = "Cleanup script completed but lab resources remain (validation failed)"
             
             if not step10_result.success:
                 logger.warning("Final cleanup failed, but test suite completed")

@@ -386,6 +386,71 @@ echo "Found resources:"
 [[ ! -z "$TENANT_API_ID" ]] && echo "  - Tenant API Gateway ID: $TENANT_API_ID"
 echo ""
 
+# Step 2.5: Delete Cognito users (BEFORE deleting the stack)
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 2.5: Deleting Cognito users"
+print_message "$BLUE" "=========================================="
+
+# Get Cognito User Pool IDs from shared stack
+POOLED_TENANT_USER_POOL_ID=$(aws cloudformation $PROFILE_ARG describe-stacks --stack-name serverless-saas-shared-lab6 \
+  --query "Stacks[0].Outputs[?OutputKey=='CognitoUserPoolId'].OutputValue" --output text 2>/dev/null || true)
+
+OPERATION_USERS_POOL_ID=$(aws cloudformation $PROFILE_ARG describe-stacks --stack-name serverless-saas-shared-lab6 \
+  --query "Stacks[0].Outputs[?OutputKey=='CognitoOperationUsersUserPoolId'].OutputValue" --output text 2>/dev/null || true)
+
+# Delete users from Pooled Tenant User Pool
+if [[ ! -z "$POOLED_TENANT_USER_POOL_ID" && "$POOLED_TENANT_USER_POOL_ID" != "None" ]]; then
+  print_message "$YELLOW" "  Found Pooled Tenant User Pool: $POOLED_TENANT_USER_POOL_ID"
+  
+  # List and delete all users in the pooled tenant pool
+  POOLED_USERS=$(aws cognito-idp $PROFILE_ARG list-users \
+    --user-pool-id "$POOLED_TENANT_USER_POOL_ID" \
+    --query "Users[].Username" \
+    --output text 2>/dev/null || true)
+  
+  if [[ ! -z "$POOLED_USERS" ]]; then
+    for username in $POOLED_USERS; do
+      print_message "$YELLOW" "    Deleting pooled tenant user: $username"
+      aws cognito-idp $PROFILE_ARG admin-delete-user \
+        --user-pool-id "$POOLED_TENANT_USER_POOL_ID" \
+        --username "$username" 2>/dev/null || true
+    done
+    print_message "$GREEN" "  ✓ Pooled tenant users deleted"
+  else
+    print_message "$YELLOW" "  No pooled tenant users found"
+  fi
+else
+  print_message "$YELLOW" "  Pooled Tenant User Pool not found"
+fi
+
+# Delete users from Operation Users Pool
+if [[ ! -z "$OPERATION_USERS_POOL_ID" && "$OPERATION_USERS_POOL_ID" != "None" ]]; then
+  print_message "$YELLOW" "  Found Operation Users Pool: $OPERATION_USERS_POOL_ID"
+  
+  # List and delete all users in the operation users pool
+  OPERATION_USERS=$(aws cognito-idp $PROFILE_ARG list-users \
+    --user-pool-id "$OPERATION_USERS_POOL_ID" \
+    --query "Users[].Username" \
+    --output text 2>/dev/null || true)
+  
+  if [[ ! -z "$OPERATION_USERS" ]]; then
+    for username in $OPERATION_USERS; do
+      print_message "$YELLOW" "    Deleting operation user: $username"
+      aws cognito-idp $PROFILE_ARG admin-delete-user \
+        --user-pool-id "$OPERATION_USERS_POOL_ID" \
+        --username "$username" 2>/dev/null || true
+    done
+    print_message "$GREEN" "  ✓ Operation users deleted"
+  else
+    print_message "$YELLOW" "  No operation users found"
+  fi
+else
+  print_message "$YELLOW" "  Operation Users Pool not found"
+fi
+
+print_message "$GREEN" "✓ Cognito users cleanup complete"
+echo ""
+
 # Step 3: Delete CloudWatch Log Groups (BEFORE stack deletion)
 print_message "$BLUE" "=========================================="
 print_message "$BLUE" "Step 3: Deleting CloudWatch Log Groups"

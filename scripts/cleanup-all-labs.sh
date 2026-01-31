@@ -406,6 +406,130 @@ verify_complete_cleanup() {
     fi
 }
 
+# Function to fix pipeline stacks with missing CDK execution role
+fix_pipeline_stack_cdk_role() {
+    local stack_name=$1
+    
+    print_message "$YELLOW" "Checking if CDK execution role fix is needed for $stack_name..."
+    
+    # Check if stack exists
+    local stack_status=$(aws cloudformation describe-stacks \
+        --stack-name "$stack_name" \
+        ${PROFILE:+--profile "$PROFILE"} \
+        --region us-east-1 \
+        --query 'Stacks[0].StackStatus' \
+        --output text 2>/dev/null || echo "NOT_FOUND")
+    
+    if [ "$stack_status" == "NOT_FOUND" ]; then
+        print_message "$GREEN" "  ✓ Stack $stack_name does not exist, no fix needed"
+        return 0
+    fi
+    
+    # Get account ID
+    local account_id=$(aws sts get-caller-identity \
+        ${PROFILE:+--profile "$PROFILE"} \
+        --query Account \
+        --output text)
+    
+    # CDK execution role name
+    local cdk_role_name="cdk-hnb659fds-cfn-exec-role-${account_id}-us-east-1"
+    
+    # Check if role exists
+    local role_exists=$(aws iam get-role \
+        --role-name "$cdk_role_name" \
+        ${PROFILE:+--profile "$PROFILE"} \
+        2>/dev/null || echo "")
+    
+    if [ -n "$role_exists" ]; then
+        print_message "$GREEN" "  ✓ CDK execution role exists, no fix needed"
+        return 0
+    fi
+    
+    print_message "$YELLOW" "  Creating temporary CDK execution role..."
+    
+    # Create the role
+    aws iam create-role \
+        --role-name "$cdk_role_name" \
+        --assume-role-policy-document '{
+            "Version": "2012-10-17",
+            "Statement": [{
+                "Effect": "Allow",
+                "Principal": {"Service": "cloudformation.amazonaws.com"},
+                "Action": "sts:AssumeRole"
+            }]
+        }' \
+        ${PROFILE:+--profile "$PROFILE"} \
+        --region us-east-1 >/dev/null 2>&1
+    
+    if [ $? -ne 0 ]; then
+        print_message "$RED" "  ✗ Failed to create CDK execution role"
+        return 1
+    fi
+    
+    print_message "$GREEN" "  ✓ CDK execution role created"
+    
+    # Attach AdministratorAccess policy
+    print_message "$YELLOW" "  Attaching AdministratorAccess policy..."
+    aws iam attach-role-policy \
+        --role-name "$cdk_role_name" \
+        --policy-arn arn:aws:iam::aws:policy/AdministratorAccess \
+        ${PROFILE:+--profile "$PROFILE"} \
+        --region us-east-1 >/dev/null 2>&1
+    
+    if [ $? -ne 0 ]; then
+        print_message "$RED" "  ✗ Failed to attach policy"
+        return 1
+    fi
+    
+    print_message "$GREEN" "  ✓ Policy attached"
+    
+    # Wait for role to propagate
+    print_message "$YELLOW" "  Waiting 10 seconds for role to propagate..."
+    sleep 10
+    
+    print_message "$GREEN" "  ✓ CDK execution role fix completed"
+    return 0
+}
+
+# Function to cleanup CDK execution role after pipeline stack deletion
+cleanup_cdk_execution_role() {
+    # Get account ID
+    local account_id=$(aws sts get-caller-identity \
+        ${PROFILE:+--profile "$PROFILE"} \
+        --query Account \
+        --output text)
+    
+    # CDK execution role name
+    local cdk_role_name="cdk-hnb659fds-cfn-exec-role-${account_id}-us-east-1"
+    
+    # Check if role exists
+    local role_exists=$(aws iam get-role \
+        --role-name "$cdk_role_name" \
+        ${PROFILE:+--profile "$PROFILE"} \
+        2>/dev/null || echo "")
+    
+    if [ -z "$role_exists" ]; then
+        return 0
+    fi
+    
+    print_message "$YELLOW" "Cleaning up temporary CDK execution role..."
+    
+    # Detach AdministratorAccess policy
+    aws iam detach-role-policy \
+        --role-name "$cdk_role_name" \
+        --policy-arn arn:aws:iam::aws:policy/AdministratorAccess \
+        ${PROFILE:+--profile "$PROFILE"} \
+        --region us-east-1 2>/dev/null || true
+    
+    # Delete the role
+    aws iam delete-role \
+        --role-name "$cdk_role_name" \
+        ${PROFILE:+--profile "$PROFILE"} \
+        --region us-east-1 2>/dev/null || true
+    
+    print_message "$GREEN" "  ✓ CDK execution role cleaned up"
+}
+
 # Function to cleanup a lab
 cleanup_lab() {
     local lab_num=$1
@@ -469,9 +593,20 @@ cleanup_lab() {
                 ;;
         esac
         
+        # For Lab5 and Lab6, fix CDK execution role if needed before cleanup
+        if [ "$lab_num" -eq 5 ] || [ "$lab_num" -eq 6 ]; then
+            fix_pipeline_stack_cdk_role "serverless-saas-pipeline-lab${lab_num}"
+        fi
+        
         # Run cleanup script
         if eval "$cleanup_cmd"; then
             print_message "$GREEN" "Lab${lab_num} cleanup completed!"
+            
+            # For Lab5 and Lab6, cleanup CDK execution role after successful cleanup
+            if [ "$lab_num" -eq 5 ] || [ "$lab_num" -eq 6 ]; then
+                cleanup_cdk_execution_role
+            fi
+            
             cd "$WORKSHOP_ROOT"
             return 0
         else

@@ -218,6 +218,47 @@ fi
 
 print_message "$GREEN" "CloudWatch Log Groups cleanup complete"
 
+# Step 2.5: Delete Cognito users (BEFORE deleting the stack)
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 2.5: Deleting Cognito users"
+print_message "$BLUE" "=========================================="
+
+# Get Cognito User Pool IDs from stack
+ADMIN_USER_POOL_ID=$(aws cloudformation describe-stacks \
+    $PROFILE_ARG \
+    --stack-name "$STACK_NAME" \
+    --region "$AWS_REGION" \
+    --query "Stacks[0].Outputs[?OutputKey=='CognitoOperationUsersUserPoolId'].OutputValue" \
+    --output text 2>/dev/null || echo "")
+
+if [ -n "$ADMIN_USER_POOL_ID" ] && [ "$ADMIN_USER_POOL_ID" != "None" ]; then
+    print_message "$YELLOW" "  Found Admin User Pool: $ADMIN_USER_POOL_ID"
+    
+    # List and delete all users in the admin pool
+    ADMIN_USERS=$(aws cognito-idp list-users \
+        $PROFILE_ARG \
+        --user-pool-id "$ADMIN_USER_POOL_ID" \
+        --region "$AWS_REGION" \
+        --query "Users[].Username" \
+        --output text 2>/dev/null || echo "")
+    
+    if [ -n "$ADMIN_USERS" ]; then
+        for username in $ADMIN_USERS; do
+            print_message "$YELLOW" "    Deleting admin user: $username"
+            aws cognito-idp admin-delete-user \
+                $PROFILE_ARG \
+                --user-pool-id "$ADMIN_USER_POOL_ID" \
+                --username "$username" \
+                --region "$AWS_REGION" 2>/dev/null || true
+        done
+        print_message "$GREEN" "  ✓ Admin users deleted"
+    else
+        print_message "$YELLOW" "  No admin users found"
+    fi
+else
+    print_message "$YELLOW" "  Admin User Pool not found"
+fi
+
 # Step 3: Delete CloudFormation stack (this will delete CloudFront distributions)
 print_message "$BLUE" "=========================================="
 print_message "$BLUE" "Step 3: Deleting CloudFormation stack"
