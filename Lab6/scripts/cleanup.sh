@@ -129,7 +129,7 @@ empty_bucket() {
   fi
   
   # Check if bucket has versioning enabled
-  VERSIONING=$(aws s3api $PROFILE_ARG get-bucket-versioning --bucket $bucket --query 'Status' --output text 2>/dev/null)
+  VERSIONING=$(aws s3api $PROFILE_ARG get-bucket-versioning --bucket $bucket --query 'Status' --output text 2>/dev/null || true)
   
   if [[ "$VERSIONING" == "Enabled" ]]; then
     echo "    Bucket has versioning enabled, deleting all versions..."
@@ -206,7 +206,7 @@ delete_stack_with_cdk_role() {
     echo "  Creating temporary CDK execution role..."
     
     # Extract account ID
-    local account_id=$(aws sts $PROFILE_ARG get-caller-identity --query Account --output text 2>/dev/null)
+    local account_id=$(aws sts $PROFILE_ARG get-caller-identity --query Account --output text 2>/dev/null || true)
     local role_name="cdk-hnb659fds-cfn-exec-role-${account_id}-${AWS_REGION}"
     
     # Create temporary role
@@ -366,17 +366,17 @@ print_message "$BLUE" "Step 2: Identifying resources from stacks"
 print_message "$BLUE" "=========================================="
 
 ADMIN_BUCKET=$(aws cloudformation $PROFILE_ARG describe-stacks --stack-name serverless-saas-shared-lab6 \
-  --query "Stacks[0].Outputs[?OutputKey=='AdminSiteBucket'].OutputValue" --output text 2>/dev/null)
+  --query "Stacks[0].Outputs[?OutputKey=='AdminSiteBucket'].OutputValue" --output text 2>/dev/null || true)
 LANDING_BUCKET=$(aws cloudformation $PROFILE_ARG describe-stacks --stack-name serverless-saas-shared-lab6 \
-  --query "Stacks[0].Outputs[?OutputKey=='LandingApplicationSiteBucket'].OutputValue" --output text 2>/dev/null)
+  --query "Stacks[0].Outputs[?OutputKey=='LandingApplicationSiteBucket'].OutputValue" --output text 2>/dev/null || true)
 APP_BUCKET=$(aws cloudformation $PROFILE_ARG describe-stacks --stack-name serverless-saas-shared-lab6 \
-  --query "Stacks[0].Outputs[?OutputKey=='ApplicationSiteBucket'].OutputValue" --output text 2>/dev/null)
+  --query "Stacks[0].Outputs[?OutputKey=='ApplicationSiteBucket'].OutputValue" --output text 2>/dev/null || true)
 
 # Get API Gateway IDs for log deletion
 SHARED_API_ID=$(aws cloudformation $PROFILE_ARG describe-stacks --stack-name serverless-saas-shared-lab6 \
-  --query "Stacks[0].Outputs[?OutputKey=='AdminApiGatewayId'].OutputValue" --output text 2>/dev/null)
+  --query "Stacks[0].Outputs[?OutputKey=='AdminApiGatewayId'].OutputValue" --output text 2>/dev/null || true)
 TENANT_API_ID=$(aws cloudformation $PROFILE_ARG describe-stacks --stack-name serverless-saas-tenant-lab6 \
-  --query "Stacks[0].Outputs[?OutputKey=='TenantApiGatewayId'].OutputValue" --output text 2>/dev/null)
+  --query "Stacks[0].Outputs[?OutputKey=='TenantApiGatewayId'].OutputValue" --output text 2>/dev/null || true)
 
 echo "Found resources:"
 [[ ! -z "$ADMIN_BUCKET" ]] && echo "  - S3 Bucket: $ADMIN_BUCKET (will delete after CloudFront)"
@@ -786,11 +786,11 @@ LAB6_POOLS=$(aws cognito-idp $PROFILE_ARG list-user-pools --max-results 60 --out
 if [[ ! -z "$LAB6_POOLS" ]]; then
   print_message "$YELLOW" "Found Lab6 Cognito User Pools:"
   for pool_id in $LAB6_POOLS; do
-    POOL_NAME=$(aws cognito-idp $PROFILE_ARG describe-user-pool --user-pool-id $pool_id --query 'UserPool.Name' --output text 2>/dev/null)
+    POOL_NAME=$(aws cognito-idp $PROFILE_ARG describe-user-pool --user-pool-id $pool_id --query 'UserPool.Name' --output text 2>/dev/null || true)
     print_message "$YELLOW" "  Processing pool: $POOL_NAME ($pool_id)"
     
     # Delete domain first if it exists
-    DOMAIN=$(aws cognito-idp $PROFILE_ARG describe-user-pool --user-pool-id $pool_id --query 'UserPool.Domain' --output text 2>/dev/null)
+    DOMAIN=$(aws cognito-idp $PROFILE_ARG describe-user-pool --user-pool-id $pool_id --query 'UserPool.Domain' --output text 2>/dev/null || true)
     if [[ ! -z "$DOMAIN" && "$DOMAIN" != "None" ]]; then
       print_message "$YELLOW" "    Deleting domain: $DOMAIN"
       aws cognito-idp $PROFILE_ARG delete-user-pool-domain --domain $DOMAIN --user-pool-id $pool_id 2>/dev/null
@@ -818,7 +818,7 @@ print_message "$BLUE" "=========================================="
 print_message "$BLUE" "Step 15: Verifying cleanup"
 print_message "$BLUE" "=========================================="
 
-REMAINING_EXPORTS=$(aws cloudformation $PROFILE_ARG list-exports --query 'Exports[?contains(Name, `lab6`)].Name' --output text 2>/dev/null)
+REMAINING_EXPORTS=$(aws cloudformation $PROFILE_ARG list-exports --query 'Exports[?contains(Name, `lab6`)].Name' --output text 2>/dev/null || true)
 if [[ ! -z "$REMAINING_EXPORTS" ]]; then
   print_message "$YELLOW" "⚠ Warning: Some Lab6 exports still exist:"
   echo "$REMAINING_EXPORTS"
@@ -829,7 +829,7 @@ fi
 
 echo ""
 
-REMAINING_TABLES=$(aws dynamodb $PROFILE_ARG list-tables --query 'TableNames[?contains(@, `lab6`)]' --output text 2>/dev/null)
+REMAINING_TABLES=$(aws dynamodb $PROFILE_ARG list-tables --query 'TableNames[?contains(@, `lab6`)]' --output text 2>/dev/null || true)
 if [[ ! -z "$REMAINING_TABLES" ]]; then
   print_message "$YELLOW" "⚠ Warning: Some Lab6 DynamoDB tables still exist:"
   echo "$REMAINING_TABLES"

@@ -8,9 +8,29 @@
 # Both labs use the same CDK execution role from CDKToolkit
 # We can only delete it if BOTH labs are NOT deployed
 
-# Source required modules
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "${SCRIPT_DIR}/logging.sh"
+# Logging functions (inline to avoid dependency on external logging module)
+log_info() {
+    echo "  $1"
+}
+
+log_warning() {
+    echo "  ⚠️  $1"
+}
+
+log_error() {
+    echo "  ✗ $1"
+}
+
+log_success() {
+    echo "  ✓ $1"
+}
+
+log_section() {
+    echo ""
+    echo "=========================================="
+    echo "$1"
+    echo "=========================================="
+}
 
 # Check if Lab5 pipeline stack exists
 # Returns: 0 if exists, 1 if not exists

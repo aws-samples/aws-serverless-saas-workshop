@@ -180,12 +180,52 @@ aws cloudformation delete-stack --stack-name serverless-saas-pipeline-lab6 --pro
 - `workshop/scripts/lib/cleanup-verification.sh` - Cleanup verification module
 - `workshop/scripts/cleanup-all-labs.sh` - Orchestration script
 
+### Fix 3: Remove Dependency on Non-Existent logging.sh Module
+
+**File**: `workshop/scripts/lib/cdktoolkit-handling.sh`
+
+**Problem**: The module tried to source a non-existent `logging.sh` file, causing the script to fail at Step 12.
+
+**Change**: Replaced the external dependency with inline logging functions:
+
+```bash
+# Logging functions (inline to avoid dependency on external logging module)
+log_info() {
+    echo "  $1"
+}
+
+log_warning() {
+    echo "  ⚠️  $1"
+}
+
+log_error() {
+    echo "  ✗ $1"
+}
+
+log_success() {
+    echo "  ✓ $1"
+}
+
+log_section() {
+    echo ""
+    echo "=========================================="
+    echo "$1"
+    echo "=========================================="
+}
+```
+
+**Result**: The CDKToolkit handling module now works correctly and successfully deletes the CDKToolkit stack when Lab5 is not deployed.
+
 ## Status
 
 ✅ **FIXED** - Lab6 cleanup script now initializes PROFILE_ARG early and works correctly when run via orchestration scripts or manually.
 
 ✅ **RESOLVED** - CDKToolkit recreation procedure documented for handling orphaned CDK-based stacks.
 
+✅ **FIXED** - CDKToolkit handling module no longer depends on non-existent logging.sh file.
+
+✅ **VERIFIED** - Lab6 cleanup script successfully deletes both `serverless-saas-pipeline-lab6` and `CDKToolkit` stacks (89 seconds, exit code 0).
+
 ## Date
 
-January 30, 2026
+January 31, 2026
