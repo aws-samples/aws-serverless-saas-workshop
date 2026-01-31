@@ -311,13 +311,13 @@ if [[ $DEPLOY_PIPELINE -eq 1 ]]; then
   if [[ "$CDK_NEEDS_BOOTSTRAP" == "true" ]]; then
       print_message "$YELLOW" "  Bootstrapping CDK..."
       if [[ -n "$AWS_PROFILE" ]]; then
-        cdk bootstrap --profile "$AWS_PROFILE" --region "$AWS_REGION" || {
+        cdk bootstrap aws://${ACCOUNT_ID}/${AWS_REGION} --profile "$AWS_PROFILE" || {
             print_message "$RED" "Error: CDK bootstrap failed"
             print_message "$RED" "  This is required before deploying the pipeline"
             exit 1
         }
       else
-        cdk bootstrap --region "$AWS_REGION" || {
+        cdk bootstrap aws://${ACCOUNT_ID}/${AWS_REGION} || {
             print_message "$RED" "Error: CDK bootstrap failed"
             print_message "$RED" "  This is required before deploying the pipeline"
             exit 1
