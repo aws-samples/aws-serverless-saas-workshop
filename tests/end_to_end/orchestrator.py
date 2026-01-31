@@ -164,6 +164,25 @@ class TestOrchestrator:
         status = "✅ SUCCESS" if success else "❌ FAILED"
         logger.info(f"Step {step_number} completed: {status} (Duration: {step_result.duration})")
         
+        # Add 2-minute pause before next step (except after last step)
+        if step_number < 10:
+            import time
+            # Yellow color code for terminal
+            YELLOW = '\033[93m'
+            RESET = '\033[0m'
+            
+            print(f"\n{YELLOW}{'=' * 80}")
+            print(f"⚠️  PAUSING FOR 2 MINUTES - CHECK YOUR CONSOLE")
+            print(f"Step {step_number} completed: {status}")
+            print(f"Next: Step {step_number + 1}")
+            print(f"Resuming in 120 seconds...")
+            print(f"{'=' * 80}{RESET}\n")
+            
+            # Wait 2 minutes
+            time.sleep(120)
+            
+            print(f"\n{YELLOW}Resuming test execution...{RESET}\n")
+        
         return step_result
     
     def handle_failure(self, step_number: int, error: Exception) -> None:

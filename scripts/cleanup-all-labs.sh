@@ -1352,6 +1352,57 @@ fi
 
 echo ""
 
+# Step 3.7: Clean up CDKToolkit Stack
+# The CDKToolkit stack must be deleted BEFORE IAM roles to avoid dependency issues
+# CDK bootstrap creates IAM roles that are referenced by the CDKToolkit stack
+print_message "$BLUE" "========================================"
+print_message "$BLUE" "Step 3.7: Cleaning Up CDKToolkit Stack"
+print_message "$BLUE" "========================================"
+echo ""
+
+print_message "$YELLOW" "Checking for CDKToolkit stack..."
+
+# Check if CDKToolkit stack exists
+if aws cloudformation describe-stacks \
+    ${PROFILE:+--profile "$PROFILE"} \
+    --region us-east-1 \
+    --stack-name "CDKToolkit" \
+    --query "Stacks[0].StackName" \
+    --output text 2>/dev/null | grep -q "CDKToolkit"; then
+    
+    print_message "$YELLOW" "  Found CDKToolkit stack - initiating deletion..."
+    
+    # Delete the CDKToolkit stack
+    if aws cloudformation delete-stack \
+        ${PROFILE:+--profile "$PROFILE"} \
+        --region us-east-1 \
+        --stack-name "CDKToolkit" 2>/dev/null; then
+        print_message "$GREEN" "  ✓ Initiated deletion of CDKToolkit stack"
+        
+        # Wait for stack deletion to complete
+        print_message "$YELLOW" "  Waiting for CDKToolkit stack deletion to complete..."
+        print_message "$YELLOW" "  (This may take a few minutes as CloudFormation deletes all CDK bootstrap resources)"
+        
+        if aws cloudformation wait stack-delete-complete \
+            ${PROFILE:+--profile "$PROFILE"} \
+            --region us-east-1 \
+            --stack-name "CDKToolkit" 2>/dev/null; then
+            print_message "$GREEN" "  ✓ CDKToolkit stack deleted successfully"
+        else
+            print_message "$RED" "  ✗ Failed to wait for CDKToolkit stack deletion"
+            print_message "$YELLOW" "  Note: Stack deletion may still be in progress"
+        fi
+    else
+        print_message "$RED" "  ✗ Failed to initiate CDKToolkit stack deletion"
+    fi
+else
+    print_message "$GREEN" "  ✓ CDKToolkit stack not found (already deleted or never created)"
+fi
+
+echo ""
+print_message "$GREEN" "CDKToolkit stack cleanup complete"
+echo ""
+
 # Step 4: Clean up account-level IAM roles (AFTER all labs are cleaned)
 print_message "$BLUE" "========================================"
 print_message "$BLUE" "Step 4: Cleaning Up Account-Level IAM Roles"
