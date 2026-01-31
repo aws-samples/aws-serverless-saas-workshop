@@ -1,14 +1,14 @@
 # End-to-End AWS Testing Report
 
-**Generated:** 2026-01-31 04:12:48
+**Generated:** 2026-01-31 06:16:30
 
 ## Summary
 
-**Status:** ❌ 1 of 1 test steps failed (Duration: 0:00:03.891670)
+**Status:** ❌ 1 of 1 test steps failed (Duration: 0:00:55.710243)
 
-- **Start Time:** 2026-01-31 04:12:44
-- **End Time:** 2026-01-31 04:12:48
-- **Total Duration:** 0:00:03.891670
+- **Start Time:** 2026-01-31 06:15:34
+- **End Time:** 2026-01-31 06:16:30
+- **Total Duration:** 0:00:55.710243
 - **Total Steps:** 1
 - **Successful Steps:** 0
 - **Failed Steps:** 1
@@ -30,20 +30,20 @@ report_directory: workshop/tests/end_to_end_test_report
 
 | Operation | Duration | Duration (seconds) |
 |-----------|----------|--------------------|
-| Step 1: Initial Cleanup | 0:00:03.885461 | 3.89s |
+| Step 1: Initial Cleanup | 0:00:55.704197 | 55.70s |
 
 ### Slowest Operations
 
-1. **Step 1: Initial Cleanup**: 0:00:03.885461 (3.89s)
+1. **Step 1: Initial Cleanup**: 0:00:55.704197 (55.70s)
 
 ## Test Steps
 
 ### ❌ Step 1: Initial Cleanup
 
 - **Status:** Failed
-- **Duration:** 0:00:00.000074
-- **Start Time:** 2026-01-31 04:12:48
-- **End Time:** 2026-01-31 04:12:48
+- **Duration:** 0:00:51.450993
+- **Start Time:** 2026-01-31 06:15:37
+- **End Time:** 2026-01-31 06:16:28
 
 ## Resource State Changes
 

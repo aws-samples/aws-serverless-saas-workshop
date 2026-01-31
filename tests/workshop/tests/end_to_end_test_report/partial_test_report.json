@@ -1,7 +1,7 @@
 {
-  "test_start_time": "2026-01-31T04:12:44.988724",
-  "test_end_time": "2026-01-31T04:12:48.880394",
-  "total_duration_seconds": 3.89167,
+  "test_start_time": "2026-01-31T06:15:34.464662",
+  "test_end_time": "2026-01-31T06:16:30.174905",
+  "total_duration_seconds": 55.710243,
   "config": {
     "aws_profile": "serverless-saas-demo",
     "aws_region": "us-east-1",
@@ -13,15 +13,15 @@
     "report_directory": "workshop/tests/end_to_end_test_report"
   },
   "overall_success": false,
-  "summary": "1 of 1 test steps failed (Duration: 0:00:03.891670)",
+  "summary": "1 of 1 test steps failed (Duration: 0:00:55.710243)",
   "step_results": [
     {
       "step_number": 1,
       "step_name": "Initial Cleanup",
       "success": false,
-      "start_time": "2026-01-31T04:12:48.003162",
-      "end_time": "2026-01-31T04:12:48.003236",
-      "duration_seconds": 7.4e-05,
+      "start_time": "2026-01-31T06:15:37.015042",
+      "end_time": "2026-01-31T06:16:28.466035",
+      "duration_seconds": 51.450993,
       "error_message": null,
       "log_files": [],
       "created_resources_count": 0,
@@ -31,9 +31,9 @@
   "timing_metrics": [
     {
       "operation_name": "Step 1: Initial Cleanup",
-      "start_time": "2026-01-31T04:12:44.993480",
-      "end_time": "2026-01-31T04:12:48.878941",
-      "duration_seconds": 3.885461
+      "start_time": "2026-01-31T06:15:34.469127",
+      "end_time": "2026-01-31T06:16:30.173324",
+      "duration_seconds": 55.704197
     }
   ],
   "api_statistics": {

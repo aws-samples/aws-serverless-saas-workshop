@@ -518,6 +518,7 @@ PROFILE=""
 PARALLEL=true
 INTERACTIVE=false
 STOP_ON_ERROR=true
+AUTO_CONFIRM=false  # New flag for non-interactive confirmation
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -550,6 +551,10 @@ while [[ $# -gt 0 ]]; do
             INTERACTIVE=true
             shift
             ;;
+        -y|--yes)
+            AUTO_CONFIRM=true
+            shift
+            ;;
         --continue-on-error)
             STOP_ON_ERROR=false
             shift
@@ -565,6 +570,7 @@ while [[ $# -gt 0 ]]; do
                 echo "  --parallel                  Enable parallel cleanup (DEFAULT)"
                 echo "  --sequential                Disable parallel cleanup (clean labs one by one)"
                 echo "  -i, --interactive           Prompt for confirmation before each cleanup"
+                echo "  -y, --yes                   Auto-confirm all prompts (non-interactive mode)"
                 echo "  --continue-on-error         Continue cleaning next lab even if current fails"
                 echo "  --help                      Show this help message"
                 echo ""
@@ -695,7 +701,7 @@ echo ""
 LABS_TO_CLEANUP=("${EXISTING_LABS[@]}")
 
 # Confirmation prompt for cleanup all (only if there are labs to cleanup)
-if [ ${#EXISTING_LABS[@]} -gt 0 ] && [ "$CLEANUP_ALL" = true ] && [ "$INTERACTIVE" = false ]; then
+if [ ${#EXISTING_LABS[@]} -gt 0 ] && [ "$CLEANUP_ALL" = true ] && [ "$INTERACTIVE" = false ] && [ "$AUTO_CONFIRM" = false ]; then
     print_message "$RED" "WARNING: This will delete ALL resources from the following labs: ${EXISTING_LABS[*]}"
     print_message "$RED" "This action cannot be undone."
     read -p "Are you sure you want to continue? (yes/no) " -r
@@ -704,6 +710,8 @@ if [ ${#EXISTING_LABS[@]} -gt 0 ] && [ "$CLEANUP_ALL" = true ] && [ "$INTERACTIV
         print_message "$YELLOW" "Cleanup cancelled"
         exit 0
     fi
+elif [ "$AUTO_CONFIRM" = true ]; then
+    print_message "$YELLOW" "Auto-confirm enabled, skipping confirmation prompt"
 fi
 
 # Record start time
