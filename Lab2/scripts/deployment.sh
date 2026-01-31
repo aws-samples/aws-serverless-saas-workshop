@@ -412,25 +412,37 @@ if [[ $DEPLOY_CLIENT -eq 1 ]]; then
   print_message "$YELLOW" "    User Pool ID: $ADMIN_USERPOOL_ID"
   print_message "$YELLOW" "    Email: $ADMIN_EMAIL"
   
+  # Generate a temporary password
+  TEMP_PASSWORD="TempPass$(date +%s)!"
+  
   if [[ -n "$AWS_PROFILE" ]]; then
     CREATE_ADMIN_USER=$(aws cognito-idp --profile "$AWS_PROFILE" admin-create-user \
       --user-pool-id "$ADMIN_USERPOOL_ID" \
       --username admin-user \
       --user-attributes Name=email,Value="$ADMIN_EMAIL" Name=email_verified,Value="True" Name=phone_number,Value="+11234567890" Name="custom:userRole",Value="SystemAdmin" Name="custom:tenantId",Value="system_admins" \
-      --desired-delivery-mediums EMAIL \
+      --message-action SUPPRESS \
+      --temporary-password "$TEMP_PASSWORD" \
       --region "$AWS_REGION" 2>&1)
   else
     CREATE_ADMIN_USER=$(aws cognito-idp admin-create-user \
       --user-pool-id "$ADMIN_USERPOOL_ID" \
       --username admin-user \
       --user-attributes Name=email,Value="$ADMIN_EMAIL" Name=email_verified,Value="True" Name=phone_number,Value="+11234567890" Name="custom:userRole",Value="SystemAdmin" Name="custom:tenantId",Value="system_admins" \
-      --desired-delivery-mediums EMAIL \
+      --message-action SUPPRESS \
+      --temporary-password "$TEMP_PASSWORD" \
       --region "$AWS_REGION" 2>&1)
   fi
 
   CREATE_USER_EXIT_CODE=$?
   if [[ $CREATE_USER_EXIT_CODE -eq 0 ]]; then
     print_message "$GREEN" "  ✓ Admin user created successfully"
+    print_message "$YELLOW" "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    print_message "$GREEN" "  📧 Admin User Credentials:"
+    print_message "$GREEN" "     Username: admin-user"
+    print_message "$GREEN" "     Temporary Password: $TEMP_PASSWORD"
+    print_message "$GREEN" "     Email: $ADMIN_EMAIL"
+    print_message "$YELLOW" "  ⚠️  You will be required to change this password on first login"
+    print_message "$YELLOW" "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   else
     if echo "$CREATE_ADMIN_USER" | grep -q "UsernameExistsException"; then
       print_message "$YELLOW" "  Warning: Admin user already exists"

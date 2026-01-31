@@ -362,7 +362,7 @@ class TestOrchestrator:
                 try:
                     import boto3
                     session = boto3.Session(profile_name=self.config.aws_profile)
-                    cfn_client = session.client('cloudformation', region_name=self.config.region)
+                    cfn_client = session.client('cloudformation', region_name=self.config.aws_region)
                     
                     # List all stacks
                     response = cfn_client.list_stacks(
@@ -658,7 +658,7 @@ class TestOrchestrator:
                 try:
                     import boto3
                     session = boto3.Session(profile_name=self.config.aws_profile)
-                    cfn_client = session.client('cloudformation', region_name=self.config.region)
+                    cfn_client = session.client('cloudformation', region_name=self.config.aws_region)
                     
                     # List all stacks
                     response = cfn_client.list_stacks(

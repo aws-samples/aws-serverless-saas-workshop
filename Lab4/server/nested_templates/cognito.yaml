@@ -182,8 +182,7 @@ Resources:
     Type: AWS::Cognito::UserPoolUser
     Properties:
       Username: admin
-      DesiredDeliveryMediums:
-        - EMAIL
+      MessageAction: SUPPRESS  # Don't send welcome email (avoids conflicts with same email across labs)
       ForceAliasCreation: true
       UserAttributes:
         - Name: email

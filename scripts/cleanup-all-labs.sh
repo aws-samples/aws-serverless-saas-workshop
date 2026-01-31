@@ -491,6 +491,90 @@ fix_pipeline_stack_cdk_role() {
     return 0
 }
 
+# Function to fix DELETE_FAILED pipeline stacks with stuck IAM policies
+fix_delete_failed_pipeline_stack() {
+    local stack_name=$1
+    
+    print_message "$YELLOW" "Checking if stack $stack_name is in DELETE_FAILED state..."
+    
+    # Check stack status
+    local stack_status=$(aws cloudformation describe-stacks \
+        --stack-name "$stack_name" \
+        ${PROFILE:+--profile "$PROFILE"} \
+        --region us-east-1 \
+        --query 'Stacks[0].StackStatus' \
+        --output text 2>/dev/null || echo "NOT_FOUND")
+    
+    if [ "$stack_status" != "DELETE_FAILED" ]; then
+        print_message "$GREEN" "  ✓ Stack is not in DELETE_FAILED state (status: $stack_status)"
+        return 0
+    fi
+    
+    print_message "$YELLOW" "  Stack is in DELETE_FAILED state, checking for stuck IAM policies..."
+    
+    # Get failed resources
+    local failed_resources=$(aws cloudformation describe-stack-resources \
+        --stack-name "$stack_name" \
+        ${PROFILE:+--profile "$PROFILE"} \
+        --region us-east-1 \
+        --query 'StackResources[?ResourceStatus==`DELETE_FAILED` && ResourceType==`AWS::IAM::Policy`].PhysicalResourceId' \
+        --output text 2>/dev/null || echo "")
+    
+    if [ -z "$failed_resources" ]; then
+        print_message "$GREEN" "  ✓ No stuck IAM policies found"
+        return 0
+    fi
+    
+    print_message "$YELLOW" "  Found stuck IAM policies, attempting manual cleanup..."
+    
+    # Try to delete each stuck policy
+    for policy_name in $failed_resources; do
+        print_message "$YELLOW" "    Attempting to delete policy: $policy_name"
+        
+        # Try to delete the policy (it may already be gone)
+        aws iam delete-policy \
+            --policy-arn "$policy_name" \
+            ${PROFILE:+--profile "$PROFILE"} \
+            2>/dev/null
+        
+        if [ $? -eq 0 ]; then
+            print_message "$GREEN" "      ✓ Policy deleted"
+        else
+            print_message "$YELLOW" "      ⚠ Policy may already be deleted or doesn't exist"
+        fi
+    done
+    
+    print_message "$YELLOW" "  Retrying stack deletion..."
+    
+    # Retry stack deletion
+    aws cloudformation delete-stack \
+        --stack-name "$stack_name" \
+        ${PROFILE:+--profile "$PROFILE"} \
+        --region us-east-1 2>/dev/null
+    
+    if [ $? -eq 0 ]; then
+        print_message "$GREEN" "  ✓ Stack deletion retry initiated"
+        
+        # Wait for deletion
+        print_message "$YELLOW" "  Waiting for stack deletion to complete..."
+        aws cloudformation wait stack-delete-complete \
+            --stack-name "$stack_name" \
+            ${PROFILE:+--profile "$PROFILE"} \
+            --region us-east-1 2>/dev/null
+        
+        if [ $? -eq 0 ]; then
+            print_message "$GREEN" "  ✓ Stack deleted successfully"
+            return 0
+        else
+            print_message "$RED" "  ✗ Stack deletion failed or timed out"
+            return 1
+        fi
+    else
+        print_message "$RED" "  ✗ Failed to retry stack deletion"
+        return 1
+    fi
+}
+
 # Function to cleanup CDK execution role after pipeline stack deletion
 cleanup_cdk_execution_role() {
     # Get account ID
@@ -596,16 +680,12 @@ cleanup_lab() {
         # For Lab5 and Lab6, fix CDK execution role if needed before cleanup
         if [ "$lab_num" -eq 5 ] || [ "$lab_num" -eq 6 ]; then
             fix_pipeline_stack_cdk_role "serverless-saas-pipeline-lab${lab_num}"
+            fix_delete_failed_pipeline_stack "serverless-saas-pipeline-lab${lab_num}"
         fi
         
         # Run cleanup script
         if eval "$cleanup_cmd"; then
             print_message "$GREEN" "Lab${lab_num} cleanup completed!"
-            
-            # For Lab5 and Lab6, cleanup CDK execution role after successful cleanup
-            if [ "$lab_num" -eq 5 ] || [ "$lab_num" -eq 6 ]; then
-                cleanup_cdk_execution_role
-            fi
             
             cd "$WORKSHOP_ROOT"
             return 0
@@ -1671,6 +1751,44 @@ fi
 
 echo ""
 print_message "$GREEN" "API Gateway account settings check complete"
+echo ""
+
+# Step 4.6: Cleanup CDK execution role and assets bucket
+echo ""
+print_message "$BLUE" "========================================"
+print_message "$BLUE" "Step 4.6: Cleanup CDK Resources"
+print_message "$BLUE" "========================================"
+echo ""
+
+# Cleanup CDK execution role (if it exists)
+cleanup_cdk_execution_role
+
+# Cleanup CDK assets bucket
+print_message "$YELLOW" "Checking for CDK assets bucket..."
+CDK_ASSETS_BUCKET="cdk-hnb659fds-assets-$(aws sts get-caller-identity ${PROFILE:+--profile "$PROFILE"} --query Account --output text)-us-east-1"
+
+if aws s3 ls "s3://$CDK_ASSETS_BUCKET" ${PROFILE:+--profile "$PROFILE"} 2>/dev/null; then
+    print_message "$YELLOW" "  Found CDK assets bucket: $CDK_ASSETS_BUCKET"
+    print_message "$YELLOW" "  Emptying bucket..."
+    
+    if aws s3 rm "s3://$CDK_ASSETS_BUCKET" --recursive ${PROFILE:+--profile "$PROFILE"} 2>/dev/null; then
+        print_message "$GREEN" "    ✓ Bucket emptied"
+    else
+        print_message "$YELLOW" "    ⚠ Failed to empty bucket (may already be empty)"
+    fi
+    
+    print_message "$YELLOW" "  Deleting bucket..."
+    if aws s3api delete-bucket --bucket "$CDK_ASSETS_BUCKET" ${PROFILE:+--profile "$PROFILE"} --region us-east-1 2>/dev/null; then
+        print_message "$GREEN" "    ✓ CDK assets bucket deleted"
+    else
+        print_message "$RED" "    ✗ Failed to delete CDK assets bucket"
+    fi
+else
+    print_message "$GREEN" "  ✓ No CDK assets bucket found"
+fi
+
+echo ""
+print_message "$GREEN" "CDK resources cleanup complete"
 echo ""
 
 # Step 5: Verify complete cleanup

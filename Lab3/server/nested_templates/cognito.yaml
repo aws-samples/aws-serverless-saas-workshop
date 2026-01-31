@@ -181,8 +181,7 @@ Resources:
     Type: AWS::Cognito::UserPoolUser
     Properties:
       Username: admin
-      DesiredDeliveryMediums:
-        - EMAIL
+      MessageAction: SUPPRESS  # Don't send welcome email (avoids SES sandbox issues)
       ForceAliasCreation: true
       UserAttributes:
         - Name: email
@@ -211,8 +210,7 @@ Resources:
     Type: AWS::Cognito::UserPoolUser
     Properties:
       Username: tenant-admin
-      DesiredDeliveryMediums:
-        - EMAIL
+      MessageAction: SUPPRESS  # Don't send welcome email (avoids SES sandbox issues)
       ForceAliasCreation: true
       UserAttributes:
         - Name: email
