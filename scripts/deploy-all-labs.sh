@@ -16,10 +16,11 @@ NC='\033[0m' # No Color
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 WORKSHOP_ROOT="$(dirname "$SCRIPT_DIR")"
 
-# Create log file
-LOG_DIR="$SCRIPT_DIR/logs"
+# Create timestamped log directory (similar to test framework structure)
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+LOG_DIR="$SCRIPT_DIR/logs/$TIMESTAMP"
 mkdir -p "$LOG_DIR"
-LOG_FILE="$LOG_DIR/deploy-all-labs-$(date +%Y%m%d-%H%M%S).log"
+LOG_FILE="$LOG_DIR/deploy-all-labs.log"
 
 # Function to print colored messages
 print_message() {
@@ -29,7 +30,10 @@ print_message() {
 }
 
 # Redirect all output to log file and console
-exec > >(tee -a "$LOG_FILE") 2>&1
+# Skip if running in test mode (test framework handles logging)
+if [[ -z "$E2E_TEST_MODE" ]]; then
+    exec > >(tee -a "$LOG_FILE") 2>&1
+fi
 
 print_message "$BLUE" "========================================"
 print_message "$BLUE" "AWS Serverless SaaS Workshop"
@@ -44,9 +48,79 @@ TENANT_EMAIL=""
 PROFILE=""
 PARALLEL=true
 
+# Function to create API Gateway CloudWatch role (once for all labs)
+create_api_gateway_cloudwatch_role() {
+    print_message "$YELLOW" "Checking API Gateway CloudWatch Logs role..."
+    
+    local ROLE_NAME="apigateway-cloudwatch-publish-role"
+    local PROFILE_ARG=""
+    if [ -n "$PROFILE" ]; then
+        PROFILE_ARG="--profile $PROFILE"
+    fi
+    
+    # Get AWS account ID
+    local ACCOUNT_ID=$(aws sts get-caller-identity $PROFILE_ARG --query Account --output text 2>/dev/null)
+    if [ -z "$ACCOUNT_ID" ]; then
+        print_message "$RED" "Error: Failed to get AWS account ID"
+        return 1
+    fi
+    
+    # Check if role exists
+    if aws iam get-role $PROFILE_ARG --role-name "$ROLE_NAME" &> /dev/null; then
+        print_message "$GREEN" "✓ API Gateway CloudWatch Logs role already exists"
+        return 0
+    fi
+    
+    print_message "$YELLOW" "Creating API Gateway CloudWatch Logs role..."
+    
+    # Create trust policy
+    local TRUST_POLICY=$(cat <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "apigateway.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+EOF
+)
+    
+    # Create role
+    if ! aws iam create-role \
+        $PROFILE_ARG \
+        --role-name "$ROLE_NAME" \
+        --assume-role-policy-document "$TRUST_POLICY" \
+        --description "Allows API Gateway to push logs to CloudWatch Logs" &> /dev/null; then
+        print_message "$RED" "Error: Failed to create API Gateway CloudWatch Logs role"
+        return 1
+    fi
+    
+    # Attach policy
+    if ! aws iam attach-role-policy \
+        $PROFILE_ARG \
+        --role-name "$ROLE_NAME" \
+        --policy-arn "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs" &> /dev/null; then
+        print_message "$RED" "Error: Failed to attach policy to API Gateway CloudWatch Logs role"
+        return 1
+    fi
+    
+    print_message "$GREEN" "✓ API Gateway CloudWatch Logs role created successfully"
+    
+    # Wait a moment for role to propagate
+    sleep 5
+    
+    return 0
+}
+
 # Function to deploy a lab
 deploy_lab() {
     local lab_num=$1
+    local cloudwatch_role_created=$2
     local lab_dir="$WORKSHOP_ROOT/Lab${lab_num}"
     
     print_message "$BLUE" "========================================="
@@ -63,8 +137,8 @@ deploy_lab() {
         print_message "$GREEN" "Running Lab${lab_num} deployment script..."
         cd "$lab_dir/scripts"
         
-        # Create error log file for this lab
-        local lab_error_log="$LOG_DIR/lab${lab_num}-error-$(date +%Y%m%d-%H%M%S).log"
+        # Create dedicated log file for this lab in timestamped directory
+        local lab_log_file="$LOG_DIR/lab${lab_num}-deployment.log"
         
         # Run deployment script with appropriate parameters
         local deploy_cmd=""
@@ -82,6 +156,9 @@ deploy_lab() {
                     return 1
                 fi
                 deploy_cmd="./deployment.sh -s -c --email $LAB2_EMAIL"
+                if [ "$cloudwatch_role_created" = "true" ]; then
+                    deploy_cmd="$deploy_cmd --cloudwatch-role-created"
+                fi
                 if [ -n "$PROFILE" ]; then
                     deploy_cmd="$deploy_cmd --profile $PROFILE"
                 fi
@@ -98,6 +175,9 @@ deploy_lab() {
                     deploy_cmd="$deploy_cmd --tenant-email $TENANT_EMAIL"
                     print_message "$YELLOW" "Using tenant email: $TENANT_EMAIL (auto-tenant creation enabled)"
                 fi
+                if [ "$cloudwatch_role_created" = "true" ]; then
+                    deploy_cmd="$deploy_cmd --cloudwatch-role-created"
+                fi
                 if [ -n "$PROFILE" ]; then
                     deploy_cmd="$deploy_cmd --profile $PROFILE"
                 fi
@@ -105,6 +185,9 @@ deploy_lab() {
                 ;;
             5|6)
                 deploy_cmd="./deployment.sh -s -c"
+                if [ "$cloudwatch_role_created" = "true" ] && [ "$lab_num" = "6" ]; then
+                    deploy_cmd="$deploy_cmd --cloudwatch-role-created"
+                fi
                 if [ -n "$PROFILE" ]; then
                     deploy_cmd="$deploy_cmd --profile $PROFILE"
                 fi
@@ -122,19 +205,21 @@ deploy_lab() {
                 ;;
         esac
         
-        # Run deployment script with enhanced error capture
+        # Run deployment script with enhanced logging
         print_message "$YELLOW" "Command: $deploy_cmd"
-        print_message "$YELLOW" "Error log: $lab_error_log"
+        print_message "$YELLOW" "Lab log: $lab_log_file"
         
-        # Capture both stdout and stderr, with stderr going to error log
-        if eval "$deploy_cmd" 2> >(tee -a "$lab_error_log" >&2); then
+        # Capture ALL output (stdout and stderr) to lab-specific log file
+        # Also display to console via tee
+        if eval "$deploy_cmd" > >(tee -a "$lab_log_file") 2>&1; then
             print_message "$GREEN" "Lab${lab_num} deployment completed successfully!"
+            print_message "$GREEN" "Full log: $lab_log_file"
             cd "$WORKSHOP_ROOT"
             return 0
         else
             local exit_code=$?
             print_message "$RED" "Lab${lab_num} deployment failed with exit code: $exit_code"
-            print_message "$RED" "Error details saved to: $lab_error_log"
+            print_message "$RED" "Full log: $lab_log_file"
             
             # Add error summary to main log
             echo "" >> "$LOG_FILE"
@@ -143,10 +228,10 @@ deploy_lab() {
             echo "=========================================" >> "$LOG_FILE"
             echo "Exit Code: $exit_code" >> "$LOG_FILE"
             echo "Command: $deploy_cmd" >> "$LOG_FILE"
-            echo "Error Log: $lab_error_log" >> "$LOG_FILE"
+            echo "Full Log: $lab_log_file" >> "$LOG_FILE"
             echo "" >> "$LOG_FILE"
-            echo "Last 50 lines of error output:" >> "$LOG_FILE"
-            tail -n 50 "$lab_error_log" >> "$LOG_FILE" 2>/dev/null || echo "No error output captured" >> "$LOG_FILE"
+            echo "Last 50 lines of output:" >> "$LOG_FILE"
+            tail -n 50 "$lab_log_file" >> "$LOG_FILE" 2>/dev/null || echo "No output captured" >> "$LOG_FILE"
             echo "=========================================" >> "$LOG_FILE"
             echo "" >> "$LOG_FILE"
             
@@ -163,6 +248,8 @@ deploy_lab() {
 
 # Generic function to deploy multiple labs in parallel
 deploy_labs_parallel() {
+    local cloudwatch_role_created=$1
+    shift
     local labs_to_deploy=("$@")
     local wave_name="All Labs Parallel"
     
@@ -178,7 +265,7 @@ deploy_labs_parallel() {
         status_files+=("$status_file")
         
         (
-            if deploy_lab "$lab"; then
+            if deploy_lab "$lab" "$cloudwatch_role_created"; then
                 echo "0" > "$status_file"
             else
                 echo "1" > "$status_file"
@@ -429,6 +516,17 @@ START_TIME=$(date +%s)
 SUCCESSFUL_LABS=()
 FAILED_LABS=()
 
+# Create API Gateway CloudWatch role once before any deployments
+CLOUDWATCH_ROLE_CREATED="false"
+if create_api_gateway_cloudwatch_role; then
+    CLOUDWATCH_ROLE_CREATED="true"
+    print_message "$GREEN" "API Gateway CloudWatch role is ready for all labs"
+else
+    print_message "$RED" "Failed to create API Gateway CloudWatch role"
+    print_message "$RED" "Labs 2, 3, 4, and 6 may fail during deployment"
+fi
+echo ""
+
 # Deploy labs based on mode
 if [ "$DEPLOY_ALL" = true ] && [ "$PARALLEL" = true ]; then
     # Parallel mode: Deploy all 7 labs concurrently
@@ -437,7 +535,7 @@ if [ "$DEPLOY_ALL" = true ] && [ "$PARALLEL" = true ]; then
     print_message "$BLUE" "========================================"
     
     # Deploy all labs in parallel
-    if ! deploy_labs_parallel 1 2 3 4 5 6 7; then
+    if ! deploy_labs_parallel "$CLOUDWATCH_ROLE_CREATED" 1 2 3 4 5 6 7; then
         if [ "$STOP_ON_ERROR" = true ]; then
             print_message "$RED" "Stopping deployment due to failures"
         fi
@@ -448,7 +546,7 @@ if [ "$DEPLOY_ALL" = true ] && [ "$PARALLEL" = true ]; then
 else
     # Sequential mode: Deploy all labs one by one
     for lab in "${LABS_TO_DEPLOY[@]}"; do
-        if deploy_lab "$lab"; then
+        if deploy_lab "$lab" "$CLOUDWATCH_ROLE_CREATED"; then
             SUCCESSFUL_LABS+=("$lab")
         else
             FAILED_LABS+=("$lab")

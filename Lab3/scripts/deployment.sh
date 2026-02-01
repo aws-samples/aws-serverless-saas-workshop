@@ -24,6 +24,7 @@ DEPLOY_TENANT=0
 DEPLOY_CLIENT=0
 ADMIN_EMAIL=""
 TENANT_ADMIN_EMAIL=""
+CLOUDWATCH_ROLE_PRE_CREATED=0
 
 # Function to print colored messages
 print_message() {
@@ -103,6 +104,10 @@ while [[ "$#" -gt 0 ]]; do
             AWS_PROFILE=$2
             shift 2
             ;;
+        --cloudwatch-role-created)
+            CLOUDWATCH_ROLE_PRE_CREATED=1
+            shift
+            ;;
         --help)
             print_usage
             exit 0
@@ -136,7 +141,10 @@ mkdir -p "$LOG_DIR"
 LOG_FILE="$LOG_DIR/deployment-$(date +%Y%m%d-%H%M%S).log"
 
 # Redirect all output to log file and console
-exec > >(tee -a "$LOG_FILE") 2>&1
+# Skip if running in test mode (test framework handles logging)
+if [[ -z "$E2E_TEST_MODE" ]]; then
+    exec > >(tee -a "$LOG_FILE") 2>&1
+fi
 
 print_message "$BLUE" "=========================================="
 print_message "$BLUE" "Lab3 Deployment Script"
@@ -318,7 +326,12 @@ if [[ $DEPLOY_BOOTSTRAP -eq 1 ]]; then
   # Check if API Gateway CloudWatch role already exists
   print_message "$YELLOW" "  Checking for existing API Gateway CloudWatch role..."
   CREATE_CLOUDWATCH_ROLE="true"
-  if [[ -n "$AWS_PROFILE" ]]; then
+  
+  # If role was pre-created by deploy-all-labs.sh, skip the check
+  if [[ $CLOUDWATCH_ROLE_PRE_CREATED -eq 1 ]]; then
+    CREATE_CLOUDWATCH_ROLE="false"
+    print_message "$GREEN" "  ✓ API Gateway CloudWatch role was pre-created, skipping creation"
+  elif [[ -n "$AWS_PROFILE" ]]; then
     if aws iam get-role --role-name apigateway-cloudwatch-publish-role --profile "$AWS_PROFILE" --region "$AWS_REGION" >/dev/null 2>&1; then
       CREATE_CLOUDWATCH_ROLE="false"
       print_message "$GREEN" "  ✓ API Gateway CloudWatch role already exists, skipping creation"

@@ -21,6 +21,7 @@ server=0
 bootstrap=0
 pipeline=0
 client=0
+CLOUDWATCH_ROLE_PRE_CREATED=0
 
 # Function to print usage
 print_usage() {
@@ -60,6 +61,9 @@ while [[ "$#" -gt 0 ]]; do
             AWS_REGION=$2
             shift
             ;;
+        --cloudwatch-role-created)
+            CLOUDWATCH_ROLE_PRE_CREATED=1
+            ;;
         --help)
             print_usage
             exit 0
@@ -86,7 +90,10 @@ mkdir -p "$LOG_DIR"
 LOG_FILE="$LOG_DIR/deployment-$(date +%Y%m%d-%H%M%S).log"
 
 # Redirect all output to log file and console
-exec > >(tee -a "$LOG_FILE") 2>&1
+# Skip if running in test mode (test framework handles logging)
+if [[ -z "$E2E_TEST_MODE" ]]; then
+    exec > >(tee -a "$LOG_FILE") 2>&1
+fi
 
 echo "=========================================="
 echo "Lab6 Deployment Script"
@@ -174,7 +181,12 @@ if [[ $server -eq 1 ]] || [[ $bootstrap -eq 1 ]]; then
   # Check if API Gateway CloudWatch role already exists
   echo "Checking for existing API Gateway CloudWatch role..."
   CREATE_CLOUDWATCH_ROLE="true"
-  if aws iam get-role --role-name apigateway-cloudwatch-publish-role $PROFILE_ARG --region "$REGION" >/dev/null 2>&1; then
+  
+  # If role was pre-created by deploy-all-labs.sh, skip the check
+  if [[ $CLOUDWATCH_ROLE_PRE_CREATED -eq 1 ]]; then
+    CREATE_CLOUDWATCH_ROLE="false"
+    echo "✓ API Gateway CloudWatch role was pre-created, skipping creation"
+  elif aws iam get-role --role-name apigateway-cloudwatch-publish-role $PROFILE_ARG --region "$REGION" >/dev/null 2>&1; then
     CREATE_CLOUDWATCH_ROLE="false"
     echo "✓ API Gateway CloudWatch role already exists, skipping creation"
   else
