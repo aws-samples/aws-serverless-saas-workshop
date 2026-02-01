@@ -5,6 +5,7 @@ This module coordinates the entire 10-step test workflow and manages all compone
 """
 
 import logging
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Callable, List, Optional
@@ -245,7 +246,6 @@ class TestOrchestrator:
         
         # Add 2-minute pause before next step (except after last step)
         if step_number < 10:
-            import time
             # Yellow color code for terminal
             YELLOW = '\033[93m'
             RESET = '\033[0m'
@@ -472,8 +472,6 @@ class TestOrchestrator:
         Returns:
             True if all stacks are in CREATE_COMPLETE state
         """
-        import time
-        
         logger.info("Verifying deployment stack statuses...")
         
         # Expected base stacks for all labs
