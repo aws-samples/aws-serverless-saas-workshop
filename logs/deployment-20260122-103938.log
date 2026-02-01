@@ -1,492 +1,0 @@
-[0;34m==========================================[0m
-[0;34mLab2 Deployment Script[0m
-[0;34m==========================================[0m
-Log file: logs/deployment-20260122-103938.log
-AWS Profile: serverless-saas-demo
-AWS Region: us-west-2
-Stack Name: serverless-saas-lab2
-
-[1;33mStep 1: Validating prerequisites...[0m
-[0;32m  ✓ AWS CLI installed[0m
-[0;32m  ✓ SAM CLI installed[0m
-[0;32m  ✓ Python installed (version: 3.14.2)[0m
-[0;32m  ✓ Node.js installed (version: v22.22.0)[0m
-[1;33m  Validating AWS credentials...[0m
-[0;32m  ✓ AWS credentials valid[0m
-[0;32m    Account: 265098672980[0m
-[0;32m    Region: us-west-2[0m
-
-[1;33mStep 2: Deploying server infrastructure...[0m
-[1;33m  Checking API Gateway CloudWatch Logs role...[0m
-[0;32m  ✓ API Gateway CloudWatch Logs role already configured[0m
-[1;33m  Checking SAM deployment bucket: sam-bootstrap-bucket-lab2[0m
-[1;33m  Bucket does not exist, creating: sam-bootstrap-bucket-lab2[0m
-make_bucket: sam-bootstrap-bucket-lab2
-[0;32m  ✓ Created SAM deployment bucket: sam-bootstrap-bucket-lab2[0m
-[1;33m  Validating Python code with pylint...[0m
-[0;32m  ✓ Code validation passed[0m
-[1;33m  Building SAM application...[0m
-Building layer 'LambdaFunctions/ServerlessSaasLab2Layers'
- Running PythonPipBuilder:ResolveDependencies
- Running PythonPipBuilder:CopySource
-Building codeuri: /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop/Lab2/server/Resources runtime: python3.14 architecture: x86_64 functions: LambdaFunctions/SharedServicesAuthorizerFunction
- Running PythonPipBuilder:ResolveDependencies
- Running PythonPipBuilder:CopySource
-Building codeuri: /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop/Lab2/server/TenantManagementService runtime: python3.14 architecture: x86_64 functions: LambdaFunctions/CreateTenantAdminUserFunction, LambdaFunctions/CreateUserFunction, LambdaFunctions/UpdateUserFunction, LambdaFunctions/DisableUserFunction, LambdaFunctions/DisableUsersByTenantFunction, LambdaFunctions/EnableUsersByTenantFunction, LambdaFunctions/GetUserFunction, LambdaFunctions/GetUsersFunction, LambdaFunctions/CreateTenantFunction, LambdaFunctions/ActivateTenantFunction, LambdaFunctions/GetTenantFunction, LambdaFunctions/DeactivateTenantFunction, LambdaFunctions/UpdateTenantFunction, LambdaFunctions/GetTenantsFunction, LambdaFunctions/RegisterTenantFunction
- Running PythonPipBuilder:ResolveDependencies
- Running PythonPipBuilder:CopySource
-
-Build Succeeded
-
-Built Artifacts  : .aws-sam/build
-Built Template   : .aws-sam/build/template.yaml
-
-Commands you can use next
-=========================
-[*] Validate SAM template: sam validate
-[*] Invoke Function: sam local invoke
-[*] Test Function in the Cloud: sam sync --stack-name {{stack-name}} --watch
-[*] Deploy: sam deploy --guided
-[0;32m  ✓ SAM build completed[0m
-[1;33m  Deploying SAM application to stack: serverless-saas-lab2[0m
-	Uploading to serverless-saas-lab2/65305ed38048d18abab39f72fc229f86.template  2992 / 2992  (100.00%)
-	Uploading to serverless-saas-lab2/a2d743562a290148818bf89faf8f081e.template  8846 / 8846  (100.00%)
-	Uploading to serverless-saas-lab2/5a45aee11fbe48943599227abd35230a.template  7639 / 7639  (100.00%)
-	Uploading to serverless-saas-lab2/b5a96da437494a0dba5106d7c0402f74  1048576 / 16673112  (6.29%)	Uploading to serverless-saas-lab2/b5a96da437494a0dba5106d7c0402f74  2097152 / 16673112  (12.58%)	Uploading to serverless-saas-lab2/b5a96da437494a0dba5106d7c0402f74  3145728 / 16673112  (18.87%)	Uploading to serverless-saas-lab2/b5a96da437494a0dba5106d7c0402f74  4194304 / 16673112  (25.16%)	Uploading to serverless-saas-lab2/b5a96da437494a0dba5106d7c0402f74  5242880 / 16673112  (31.45%)	Uploading to serverless-saas-lab2/b5a96da437494a0dba5106d7c0402f74  6291456 / 16673112  (37.73%)	Uploading to serverless-saas-lab2/b5a96da437494a0dba5106d7c0402f74  7340032 / 16673112  (44.02%)	Uploading to serverless-saas-lab2/b5a96da437494a0dba5106d7c0402f74  8388608 / 16673112  (50.31%)	Uploading to serverless-saas-lab2/b5a96da437494a0dba5106d7c0402f74  9333080 / 16673112  (55.98%)	Uploading to serverless-saas-lab2/b5a96da437494a0dba5106d7c0402f74  10381656 / 16673112  (62.27%)	Uploading to serverless-saas-lab2/b5a96da437494a0dba5106d7c0402f74  11430232 / 16673112  (68.55%)	Uploading to serverless-saas-lab2/b5a96da437494a0dba5106d7c0402f74  12478808 / 16673112  (74.84%)	Uploading to serverless-saas-lab2/b5a96da437494a0dba5106d7c0402f74  13527384 / 16673112  (81.13%)	Uploading to serverless-saas-lab2/b5a96da437494a0dba5106d7c0402f74  14575960 / 16673112  (87.42%)	Uploading to serverless-saas-lab2/b5a96da437494a0dba5106d7c0402f74  15624536 / 16673112  (93.71%)	Uploading to serverless-saas-lab2/b5a96da437494a0dba5106d7c0402f74  16673112 / 16673112  (100.00%)
-	Uploading to serverless-saas-lab2/a369fb488f77f72e3aa929ef9f601b88  1048576 / 5033987  (20.83%)	Uploading to serverless-saas-lab2/a369fb488f77f72e3aa929ef9f601b88  2097152 / 5033987  (41.66%)	Uploading to serverless-saas-lab2/a369fb488f77f72e3aa929ef9f601b88  3145728 / 5033987  (62.49%)	Uploading to serverless-saas-lab2/a369fb488f77f72e3aa929ef9f601b88  4194304 / 5033987  (83.32%)	Uploading to serverless-saas-lab2/a369fb488f77f72e3aa929ef9f601b88  5033987 / 5033987  (100.00%)
-	Uploading to serverless-saas-lab2/a59ed80c27387073f63b45e9527af864  584088 / 584088  (100.00%)
-
-	File with same data already exists at serverless-saas-lab2/a59ed80c27387073f63b45e9527af864, skipping upload
-
-	File with same data already exists at serverless-saas-lab2/a59ed80c27387073f63b45e9527af864, skipping upload
-
-	File with same data already exists at serverless-saas-lab2/a59ed80c27387073f63b45e9527af864, skipping upload
-
-	File with same data already exists at serverless-saas-lab2/a59ed80c27387073f63b45e9527af864, skipping upload
-
-	File with same data already exists at serverless-saas-lab2/a59ed80c27387073f63b45e9527af864, skipping upload
-
-	File with same data already exists at serverless-saas-lab2/a59ed80c27387073f63b45e9527af864, skipping upload
-
-	File with same data already exists at serverless-saas-lab2/a59ed80c27387073f63b45e9527af864, skipping upload
-
-	File with same data already exists at serverless-saas-lab2/a59ed80c27387073f63b45e9527af864, skipping upload
-
-	File with same data already exists at serverless-saas-lab2/a59ed80c27387073f63b45e9527af864, skipping upload
-
-	File with same data already exists at serverless-saas-lab2/a59ed80c27387073f63b45e9527af864, skipping upload
-
-	File with same data already exists at serverless-saas-lab2/a59ed80c27387073f63b45e9527af864, skipping upload
-
-	File with same data already exists at serverless-saas-lab2/a59ed80c27387073f63b45e9527af864, skipping upload
-
-	File with same data already exists at serverless-saas-lab2/a59ed80c27387073f63b45e9527af864, skipping upload
-
-	File with same data already exists at serverless-saas-lab2/a59ed80c27387073f63b45e9527af864, skipping upload
-	Uploading to serverless-saas-lab2/aba5972189f0688bad5f677606a2c1fc.template  32282 / 32282  (100.00%)
-	Uploading to serverless-saas-lab2/c952a3093f93796e5cb8559af8bd18ef.template  31643 / 31643  (100.00%)
-	Uploading to serverless-saas-lab2/c7141d21461a2bfb0d60ef1614bf98ca.template  9880 / 9880  (100.00%)
-
-	Deploying with following values
-	===============================
-	Stack name                   : serverless-saas-lab2
-	Region                       : us-west-2
-	Confirm changeset            : False
-	Disable rollback             : False
-	Deployment s3 bucket         : sam-bootstrap-bucket-lab2
-	Capabilities                 : ["CAPABILITY_NAMED_IAM", "CAPABILITY_AUTO_EXPAND"]
-	Parameter overrides          : {"EventEngineParameter": "false"}
-	Signing Profiles             : {}
-
-Initiating deployment
-=====================
-
-	Uploading to serverless-saas-lab2/9f8230be55c4cfc148774ab7bb6c695d.template  11934 / 11934  (100.00%)
-
-
-Waiting for changeset to be created..
-
-CloudFormation stack changeset
--------------------------------------------------------------------------------------------------
-Operation                LogicalResourceId        ResourceType             Replacement            
--------------------------------------------------------------------------------------------------
-+ Add                    APIGatewayLambdaPermis   AWS::CloudFormation::S   N/A                    
-                         sions                    tack                                            
-+ Add                    APIs                     AWS::CloudFormation::S   N/A                    
-                                                  tack                                            
-+ Add                    Cognito                  AWS::CloudFormation::S   N/A                    
-                                                  tack                                            
-+ Add                    DynamoDBTables           AWS::CloudFormation::S   N/A                    
-                                                  tack                                            
-+ Add                    LambdaFunctions          AWS::CloudFormation::S   N/A                    
-                                                  tack                                            
-+ Add                    UserInterface            AWS::CloudFormation::S   N/A                    
-                                                  tack                                            
--------------------------------------------------------------------------------------------------
-
-
-Changeset created successfully. arn:aws:cloudformation:us-west-2:265098672980:changeSet/samcli-deploy1769096437/f4e318ce-36fe-43c1-bb59-8dcc6f64b4aa
-
-
-2026-01-22 10:40:44 - Waiting for stack create/update to complete
-
-CloudFormation events from stack operations (refresh every 5.0 seconds)
--------------------------------------------------------------------------------------------------
-ResourceStatus           ResourceType             LogicalResourceId        ResourceStatusReason   
--------------------------------------------------------------------------------------------------
-CREATE_IN_PROGRESS       AWS::CloudFormation::S   serverless-saas-lab2     User Initiated         
-                         tack                                                                     
-CREATE_IN_PROGRESS       AWS::CloudFormation::S   DynamoDBTables           -                      
-                         tack                                                                     
-CREATE_IN_PROGRESS       AWS::CloudFormation::S   UserInterface            -                      
-                         tack                                                                     
-CREATE_IN_PROGRESS       AWS::CloudFormation::S   DynamoDBTables           Resource creation      
-                         tack                                              Initiated              
-CREATE_IN_PROGRESS       AWS::CloudFormation::S   UserInterface            Resource creation      
-                         tack                                              Initiated              
-CREATE_COMPLETE          AWS::CloudFormation::S   DynamoDBTables           -                      
-                         tack                                                                     
-CREATE_COMPLETE          AWS::CloudFormation::S   UserInterface            -                      
-                         tack                                                                     
-CREATE_IN_PROGRESS       AWS::CloudFormation::S   Cognito                  -                      
-                         tack                                                                     
-CREATE_IN_PROGRESS       AWS::CloudFormation::S   Cognito                  Resource creation      
-                         tack                                              Initiated              
-CREATE_COMPLETE          AWS::CloudFormation::S   Cognito                  -                      
-                         tack                                                                     
-CREATE_IN_PROGRESS       AWS::CloudFormation::S   LambdaFunctions          -                      
-                         tack                                                                     
-CREATE_IN_PROGRESS       AWS::CloudFormation::S   LambdaFunctions          Resource creation      
-                         tack                                              Initiated              
-CREATE_COMPLETE          AWS::CloudFormation::S   LambdaFunctions          -                      
-                         tack                                                                     
-CREATE_IN_PROGRESS       AWS::CloudFormation::S   APIs                     -                      
-                         tack                                                                     
-CREATE_IN_PROGRESS       AWS::CloudFormation::S   APIs                     Resource creation      
-                         tack                                              Initiated              
-CREATE_COMPLETE          AWS::CloudFormation::S   APIs                     -                      
-                         tack                                                                     
-CREATE_IN_PROGRESS       AWS::CloudFormation::S   APIGatewayLambdaPermis   -                      
-                         tack                     sions                                           
-CREATE_IN_PROGRESS       AWS::CloudFormation::S   APIGatewayLambdaPermis   Resource creation      
-                         tack                     sions                    Initiated              
-CREATE_COMPLETE          AWS::CloudFormation::S   APIGatewayLambdaPermis   -                      
-                         tack                     sions                                           
-CREATE_COMPLETE          AWS::CloudFormation::S   serverless-saas-lab2     -                      
-                         tack                                                                     
--------------------------------------------------------------------------------------------------
-
-CloudFormation outputs from deployed stack
--------------------------------------------------------------------------------------------------
-Outputs                                                                                         
--------------------------------------------------------------------------------------------------
-Key                 CognitoOperationUsersUserPoolProviderURL                                    
-Description         The Admin Management userpool provider url                                  
-Value               https://cognito-idp.us-west-2.amazonaws.com/us-west-2_FF1wYGsIS             
-
-Key                 AdminSiteBucket                                                             
-Description         The S3 Bucket that will contain the static assets for the tenant            
-administration application                                                                      
-Value               serverless-saas-lab2-admin-b8ce7570                                         
-
-Key                 CognitoAdminUserGroupName                                                   
-Description         The Admin Management userpool admin user group name                         
-Value               SystemAdmins                                                                
-
-Key                 LandingApplicationSiteBucket                                                
-Description         The S3 Bucket that will contain the static assets for the landing           
-application                                                                                     
-Value               serverless-saas-lab2-landing-b8ce7570                                       
-
-Key                 CognitoOperationUsersUserPoolId                                             
-Description         The user pool id of Admin Management userpool                               
-Value               us-west-2_FF1wYGsIS                                                         
-
-Key                 AdminAppSite                                                                
-Description         The name of the CloudFront url for Admin Management site                    
-Value               d3m85uw1o3l2n6.cloudfront.net                                               
-
-Key                 CognitoOperationUsersUserPoolClientId                                       
-Description         The Admin Management userpool client id                                     
-Value               4qkk9u3iei8vj2sn7i3u2k81h9                                                  
-
-Key                 AdminApi                                                                    
-Description         API Gateway endpoint URL for Admin API                                      
-Value               https://s8t2odq0i7.execute-api.us-west-2.amazonaws.com/prod                 
-
-Key                 LandingApplicationSite                                                      
-Description         The name of the CloudFront url for Landing site                             
-Value               dmsimi07my4rx.cloudfront.net                                                
--------------------------------------------------------------------------------------------------
-
-
-Successfully created/updated stack - serverless-saas-lab2 in us-west-2
-
-[0;32m  ✓ Server infrastructure deployed successfully[0m
-
-[1;33mStep 3: Deploying client applications...[0m
-[1;33m  Creating admin user in Cognito...[0m
-[0;32m  ✓ Admin user created successfully[0m
-[1;33m  Adding admin user to admin group...[0m
-[0;32m  ✓ Admin user added to group[0m
-[1;33m  Configuring Admin UI...[0m
-[1;33m  Configuring environment for Admin Client[0m
-[1;33m  Installing npm dependencies for Admin Client...[0m
-
-up to date, audited 1787 packages in 45s
-
-155 packages are looking for funding
-  run `npm fund` for details
-
-63 vulnerabilities (11 low, 18 moderate, 32 high, 2 critical)
-
-To address issues that do not require attention, run:
-  npm audit fix
-
-To address all issues (including breaking changes), run:
-  npm audit fix --force
-
-Run `npm audit` for details.
-[1;33m  Building Admin Client...[0m
-
-> admin@0.0.0 build
-> ng build
-
-- Generating browser application bundles (phase: setup)...
-✔ Browser application bundle generation complete.
-✔ Browser application bundle generation complete.
-- Copying assets...
-✔ Copying assets complete.
-- Generating index html...
-- Generating index html...
-2 rules skipped due to selector errors:
-  .amplify-stepperfield__input:not(,[aria-invalid=true]) -> Empty sub-selector
-  legend+* -> Cannot read properties of undefined (reading 'type')
-✔ Index html generation complete.
-
-Initial Chunk Files           | Names                            |  Raw Size | Estimated Transfer Size
-main.6a02efd725dfbf5f.js      | main                             |   1.19 MB |               277.10 kB
-styles.1801ea2f7432d9ba.css   | styles                           | 298.88 kB |                26.51 kB
-polyfills.522c932b54ce7a21.js | polyfills                        |  33.07 kB |                10.67 kB
-runtime.b4168f41309f8d8f.js   | runtime                          |   2.90 kB |                 1.39 kB
-
-| Initial Total                    |   1.52 MB |               315.66 kB
-
-Lazy Chunk Files              | Names                            |  Raw Size | Estimated Transfer Size
-528.b6afbda362b5862e.js       | views-dashboard-dashboard-module | 208.09 kB |                62.15 kB
-137.cdd5d77c7895aa2f.js       | views-tenants-tenants-module     | 100.13 kB |                20.99 kB
-535.af037c02e1eef4e5.js       | views-tenants-tenants-module     |   8.39 kB |                 2.34 kB
-383.03aa132af63fcbd1.js       | views-users-users-module         |   8.05 kB |                 2.40 kB
-common.21736a37a3367e68.js    | common                           | 566 bytes |               302 bytes
-
-Build at: 2026-01-22T15:49:26.439Z - Hash: 5c20e82ca65f0afb - Time: 15828ms
-
-Warning: /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop/Lab2/client/Admin/node_modules/@aws-amplify/analytics/lib-esm/Providers/AWSPinpointProvider.js depends on 'uuid'. CommonJS or AMD dependencies can cause optimization bailouts.
-For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
-
-Warning: /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop/Lab2/client/Admin/node_modules/@aws-amplify/analytics/lib-esm/Providers/AmazonPersonalizeProvider.js depends on 'lodash/get'. CommonJS or AMD dependencies can cause optimization bailouts.
-For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
-
-Warning: /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop/Lab2/client/Admin/node_modules/@aws-amplify/analytics/lib-esm/Providers/AmazonPersonalizeProvider.js depends on 'lodash/isEmpty'. CommonJS or AMD dependencies can cause optimization bailouts.
-For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
-
-Warning: /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop/Lab2/client/Admin/node_modules/@aws-amplify/analytics/lib-esm/Providers/AmazonPersonalizeProvider.js depends on 'lodash/isEqual'. CommonJS or AMD dependencies can cause optimization bailouts.
-For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
-
-Warning: /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop/Lab2/client/Admin/node_modules/@aws-amplify/auth/lib-esm/Auth.js depends on 'url'. CommonJS or AMD dependencies can cause optimization bailouts.
-For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
-
-Warning: /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop/Lab2/client/Admin/node_modules/@aws-amplify/core/lib-esm/Signer.js depends on '@aws-crypto/sha256-js'. CommonJS or AMD dependencies can cause optimization bailouts.
-For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
-
-Warning: /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop/Lab2/client/Admin/node_modules/@aws-amplify/datastore/lib-esm/datastore/datastore.js depends on 'uuid'. CommonJS or AMD dependencies can cause optimization bailouts.
-For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
-
-Warning: /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop/Lab2/client/Admin/node_modules/@aws-amplify/datastore/lib-esm/util.js depends on 'buffer'. CommonJS or AMD dependencies can cause optimization bailouts.
-For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
-
-Warning: /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop/Lab2/client/Admin/node_modules/@aws-amplify/datastore/lib-esm/util.js depends on 'ulid'. CommonJS or AMD dependencies can cause optimization bailouts.
-For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
-
-Warning: /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop/Lab2/client/Admin/node_modules/@aws-amplify/geo/lib-esm/Providers/AmazonLocationServiceProvider.js depends on 'camelcase-keys'. CommonJS or AMD dependencies can cause optimization bailouts.
-For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
-
-Warning: /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop/Lab2/client/Admin/node_modules/@aws-amplify/pubsub/lib-esm/Providers/AWSAppSyncRealTimeProvider/index.js depends on 'uuid'. CommonJS or AMD dependencies can cause optimization bailouts.
-For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
-
-Warning: /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop/Lab2/client/Admin/node_modules/@aws-amplify/pubsub/lib-esm/Providers/MqttOverWSProvider.js depends on 'paho-mqtt'. CommonJS or AMD dependencies can cause optimization bailouts.
-For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
-
-Warning: /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop/Lab2/client/Admin/node_modules/@aws-amplify/storage/lib-esm/providers/AWSS3Provider.js depends on 'events'. CommonJS or AMD dependencies can cause optimization bailouts.
-For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
-
-Warning: /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop/Lab2/client/Admin/node_modules/@aws-amplify/ui-angular/__ivy_ngcc__/fesm2015/aws-amplify-ui-angular.js depends on 'qrcode'. CommonJS or AMD dependencies can cause optimization bailouts.
-For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
-
-Warning: /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop/Lab2/client/Admin/node_modules/@aws-amplify/ui/dist/esm/helpers/authenticator/context.js depends on 'lodash/includes'. CommonJS or AMD dependencies can cause optimization bailouts.
-For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
-
-Warning: /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop/Lab2/client/Admin/node_modules/@aws-amplify/ui/dist/esm/helpers/authenticator/formFields/util.js depends on 'lodash/cloneDeep'. CommonJS or AMD dependencies can cause optimization bailouts.
-For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
-
-Warning: /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop/Lab2/client/Admin/node_modules/@aws-amplify/ui/dist/esm/machines/authenticator/index.js depends on 'xstate/lib/actions'. CommonJS or AMD dependencies can cause optimization bailouts.
-For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
-
-Warning: /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop/Lab2/client/Admin/node_modules/@aws-amplify/ui/dist/esm/theme/createTheme.js depends on 'style-dictionary/lib/utils/deepExtend'. CommonJS or AMD dependencies can cause optimization bailouts.
-For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
-
-Warning: /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop/Lab2/client/Admin/node_modules/@aws-amplify/ui/dist/esm/theme/createTheme.js depends on 'style-dictionary/lib/utils/flattenProperties'. CommonJS or AMD dependencies can cause optimization bailouts.
-For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
-
-Warning: /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop/Lab2/client/Admin/node_modules/@aws-amplify/ui/dist/esm/theme/utils.js depends on 'lodash/kebabCase'. CommonJS or AMD dependencies can cause optimization bailouts.
-For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
-
-Warning: /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop/Lab2/client/Admin/node_modules/@aws-amplify/ui/dist/esm/theme/utils.js depends on 'style-dictionary/lib/utils/references/usesReference'. CommonJS or AMD dependencies can cause optimization bailouts.
-For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
-
-Warning: /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop/Lab2/client/Admin/node_modules/@aws-sdk/client-cognito-identity/dist/es/runtimeConfig.browser.js depends on '@aws-crypto/sha256-browser'. CommonJS or AMD dependencies can cause optimization bailouts.
-For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
-
-Warning: /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop/Lab2/client/Admin/node_modules/@aws-sdk/client-comprehend/dist/es/protocols/Aws_json1_1.js depends on 'uuid'. CommonJS or AMD dependencies can cause optimization bailouts.
-For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
-
-Warning: /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop/Lab2/client/Admin/node_modules/@aws-sdk/client-lex-runtime-service/dist-es/runtimeConfig.browser.js depends on '@aws-crypto/sha256-browser'. CommonJS or AMD dependencies can cause optimization bailouts.
-For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
-
-Warning: /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop/Lab2/client/Admin/node_modules/@aws-sdk/client-lex-runtime-v2/dist-es/runtimeConfig.browser.js depends on '@aws-crypto/sha256-browser'. CommonJS or AMD dependencies can cause optimization bailouts.
-For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
-
-Warning: /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop/Lab2/client/Admin/node_modules/@aws-sdk/client-location/dist-es/runtimeConfig.browser.js depends on '@aws-crypto/sha256-browser'. CommonJS or AMD dependencies can cause optimization bailouts.
-For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
-
-Warning: /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop/Lab2/client/Admin/node_modules/@aws-sdk/client-s3/dist/es/protocols/Aws_restXml.js depends on 'fast-xml-parser'. CommonJS or AMD dependencies can cause optimization bailouts.
-For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
-
-Warning: /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop/Lab2/client/Admin/node_modules/@aws-sdk/client-translate/dist/es/protocols/Aws_json1_1.js depends on 'uuid'. CommonJS or AMD dependencies can cause optimization bailouts.
-For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
-
-Warning: /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop/Lab2/client/Admin/node_modules/@aws-sdk/eventstream-codec/dist-es/EventStreamCodec.js depends on '@aws-crypto/crc32'. CommonJS or AMD dependencies can cause optimization bailouts.
-For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
-
-Warning: /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop/Lab2/client/Admin/node_modules/@aws-sdk/eventstream-marshaller/dist/es/EventStreamMarshaller.js depends on '@aws-crypto/crc32'. CommonJS or AMD dependencies can cause optimization bailouts.
-For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
-
-Warning: /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop/Lab2/client/Admin/node_modules/@aws-sdk/middleware-retry/dist/es/defaultStrategy.js depends on 'uuid'. CommonJS or AMD dependencies can cause optimization bailouts.
-For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
-
-Warning: /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop/Lab2/client/Admin/node_modules/amazon-cognito-identity-js/es/AuthenticationHelper.js depends on 'crypto-js/core'. CommonJS or AMD dependencies can cause optimization bailouts.
-For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
-
-Warning: /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop/Lab2/client/Admin/node_modules/amazon-cognito-identity-js/es/AuthenticationHelper.js depends on 'crypto-js/hmac-sha256'. CommonJS or AMD dependencies can cause optimization bailouts.
-For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
-
-Warning: /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop/Lab2/client/Admin/node_modules/amazon-cognito-identity-js/es/AuthenticationHelper.js depends on 'crypto-js/lib-typedarrays'. CommonJS or AMD dependencies can cause optimization bailouts.
-For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
-
-Warning: /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop/Lab2/client/Admin/node_modules/amazon-cognito-identity-js/es/Client.js depends on 'isomorphic-unfetch'. CommonJS or AMD dependencies can cause optimization bailouts.
-For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
-
-Warning: /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop/Lab2/client/Admin/node_modules/amazon-cognito-identity-js/es/CookieStorage.js depends on 'js-cookie'. CommonJS or AMD dependencies can cause optimization bailouts.
-For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
-
-Warning: /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop/Lab2/client/Admin/node_modules/aws-amplify/lib-esm/index.js depends on '@aws-amplify/ui'. CommonJS or AMD dependencies can cause optimization bailouts.
-For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
-
-Warning: /Users/lancdieg/Documents/SA work/2026/Demos/AWS Serverless SaaS Demo/workshop/Lab2/client/Admin/node_modules/universal-cookie/es6/Cookies.js depends on 'cookie'. CommonJS or AMD dependencies can cause optimization bailouts.
-For more info see: https://angular.io/guide/build#configuring-commonjs-dependencies
-
-
-[0;32m  ✓ Admin Client built successfully[0m
-[1;33m  Uploading Admin Client to S3...[0m
-Completed 481.1 KiB/2.4 MiB (1.3 MiB/s) with 13 file(s) remainingCompleted 1.5 MiB/2.4 MiB (3.6 MiB/s) with 13 file(s) remaining  Completed 1.6 MiB/2.4 MiB (3.0 MiB/s) with 13 file(s) remaining  upload: dist/137.cdd5d77c7895aa2f.js to s3://serverless-saas-lab2-admin-b8ce7570/137.cdd5d77c7895aa2f.js
-Completed 1.6 MiB/2.4 MiB (3.0 MiB/s) with 12 file(s) remainingCompleted 1.6 MiB/2.4 MiB (2.7 MiB/s) with 12 file(s) remainingupload: dist/assets/logo.svg to s3://serverless-saas-lab2-admin-b8ce7570/assets/logo.svg
-Completed 1.6 MiB/2.4 MiB (2.7 MiB/s) with 11 file(s) remainingCompleted 1.6 MiB/2.4 MiB (2.7 MiB/s) with 11 file(s) remainingupload: dist/common.21736a37a3367e68.js to s3://serverless-saas-lab2-admin-b8ce7570/common.21736a37a3367e68.js
-Completed 1.6 MiB/2.4 MiB (2.7 MiB/s) with 10 file(s) remainingCompleted 1.9 MiB/2.4 MiB (3.2 MiB/s) with 10 file(s) remainingCompleted 1.9 MiB/2.4 MiB (3.1 MiB/s) with 10 file(s) remainingupload: dist/favicon.ico to s3://serverless-saas-lab2-admin-b8ce7570/favicon.ico
-Completed 1.9 MiB/2.4 MiB (3.1 MiB/s) with 9 file(s) remainingCompleted 1.9 MiB/2.4 MiB (3.1 MiB/s) with 9 file(s) remainingupload: dist/535.af037c02e1eef4e5.js to s3://serverless-saas-lab2-admin-b8ce7570/535.af037c02e1eef4e5.js
-Completed 1.9 MiB/2.4 MiB (3.1 MiB/s) with 8 file(s) remainingCompleted 1.9 MiB/2.4 MiB (3.1 MiB/s) with 8 file(s) remainingupload: dist/383.03aa132af63fcbd1.js to s3://serverless-saas-lab2-admin-b8ce7570/383.03aa132af63fcbd1.js
-Completed 1.9 MiB/2.4 MiB (3.1 MiB/s) with 7 file(s) remainingCompleted 1.9 MiB/2.4 MiB (2.7 MiB/s) with 7 file(s) remainingupload: dist/polyfills.522c932b54ce7a21.js to s3://serverless-saas-lab2-admin-b8ce7570/polyfills.522c932b54ce7a21.js
-Completed 1.9 MiB/2.4 MiB (2.7 MiB/s) with 6 file(s) remainingCompleted 1.9 MiB/2.4 MiB (2.5 MiB/s) with 6 file(s) remainingupload: dist/runtime.b4168f41309f8d8f.js to s3://serverless-saas-lab2-admin-b8ce7570/runtime.b4168f41309f8d8f.js
-Completed 1.9 MiB/2.4 MiB (2.5 MiB/s) with 5 file(s) remainingCompleted 2.0 MiB/2.4 MiB (2.2 MiB/s) with 5 file(s) remainingupload: dist/index.html to s3://serverless-saas-lab2-admin-b8ce7570/index.html
-Completed 2.0 MiB/2.4 MiB (2.2 MiB/s) with 4 file(s) remainingCompleted 2.2 MiB/2.4 MiB (1.7 MiB/s) with 4 file(s) remainingupload: dist/528.b6afbda362b5862e.js to s3://serverless-saas-lab2-admin-b8ce7570/528.b6afbda362b5862e.js
-Completed 2.2 MiB/2.4 MiB (1.7 MiB/s) with 3 file(s) remainingupload: dist/3rdpartylicenses.txt to s3://serverless-saas-lab2-admin-b8ce7570/3rdpartylicenses.txt
-Completed 2.2 MiB/2.4 MiB (1.7 MiB/s) with 2 file(s) remainingupload: dist/styles.1801ea2f7432d9ba.css to s3://serverless-saas-lab2-admin-b8ce7570/styles.1801ea2f7432d9ba.css
-Completed 2.2 MiB/2.4 MiB (1.7 MiB/s) with 1 file(s) remainingCompleted 2.4 MiB/2.4 MiB (1.5 MiB/s) with 1 file(s) remainingupload: dist/main.6a02efd725dfbf5f.js to s3://serverless-saas-lab2-admin-b8ce7570/main.6a02efd725dfbf5f.js
-[0;32m  ✓ Admin Client deployed successfully[0m
-[1;33m  Configuring Landing UI...[0m
-[1;33m  Configuring environment for Landing Client[0m
-[1;33m  Installing npm dependencies for Landing Client...[0m
-
-up to date, audited 973 packages in 3s
-
-137 packages are looking for funding
-  run `npm fund` for details
-
-34 vulnerabilities (3 low, 6 moderate, 23 high, 2 critical)
-
-To address issues that do not require attention, run:
-  npm audit fix
-
-To address all issues (including breaking changes), run:
-  npm audit fix --force
-
-Run `npm audit` for details.
-[1;33m  Building Landing Client...[0m
-
-> landing@0.0.0 build
-> ng build
-
-- Generating browser application bundles (phase: setup)...
-✔ Browser application bundle generation complete.
-✔ Browser application bundle generation complete.
-- Copying assets...
-✔ Copying assets complete.
-- Generating index html...
-- Generating index html...
-1 rules skipped due to selector errors:
-  legend+* -> Cannot read properties of undefined (reading 'type')
-✔ Index html generation complete.
-
-Initial Chunk Files           | Names         |  Raw Size | Estimated Transfer Size
-main.ac66c485662ad762.js      | main          | 472.67 kB |               112.61 kB
-styles.75e4bfa888482b61.css   | styles        | 258.73 kB |                29.44 kB
-polyfills.1112bef149771381.js | polyfills     |  33.07 kB |                10.66 kB
-runtime.b17e967e033d9fa4.js   | runtime       |   1.04 kB |               599 bytes
-
-| Initial Total | 765.50 kB |               153.30 kB
-
-Build at: 2026-01-22T15:49:49.395Z - Hash: 0c79ae44ae136cb5 - Time: 7436ms
-[0;32m  ✓ Landing Client built successfully[0m
-[1;33m  Uploading Landing Client to S3...[0m
-Completed 948 Bytes/1.7 MiB (4.4 KiB/s) with 12 file(s) remainingupload: dist/favicon.ico to s3://serverless-saas-lab2-landing-b8ce7570/favicon.ico
-Completed 948 Bytes/1.7 MiB (4.4 KiB/s) with 11 file(s) remainingCompleted 2.0 KiB/1.7 MiB (5.1 KiB/s) with 11 file(s) remaining  upload: dist/runtime.b17e967e033d9fa4.js to s3://serverless-saas-lab2-landing-b8ce7570/runtime.b17e967e033d9fa4.js
-Completed 2.0 KiB/1.7 MiB (5.1 KiB/s) with 10 file(s) remainingCompleted 260.7 KiB/1.7 MiB (665.6 KiB/s) with 10 file(s) remainingCompleted 694.7 KiB/1.7 MiB (1.4 MiB/s) with 10 file(s) remaining  Completed 1.1 MiB/1.7 MiB (2.3 MiB/s) with 10 file(s) remaining    Completed 1.1 MiB/1.7 MiB (1.6 MiB/s) with 10 file(s) remaining    upload: dist/index.html to s3://serverless-saas-lab2-landing-b8ce7570/index.html
-Completed 1.1 MiB/1.7 MiB (1.6 MiB/s) with 9 file(s) remainingCompleted 1.2 MiB/1.7 MiB (1.3 MiB/s) with 9 file(s) remainingupload: dist/3rdpartylicenses.txt to s3://serverless-saas-lab2-landing-b8ce7570/3rdpartylicenses.txt
-Completed 1.2 MiB/1.7 MiB (1.3 MiB/s) with 8 file(s) remainingCompleted 1.3 MiB/1.7 MiB (1.1 MiB/s) with 8 file(s) remainingupload: dist/fontawesome-webfont.8a7cb27d142e3e19.ttf to s3://serverless-saas-lab2-landing-b8ce7570/fontawesome-webfont.8a7cb27d142e3e19.ttf
-Completed 1.3 MiB/1.7 MiB (1.1 MiB/s) with 7 file(s) remainingupload: dist/styles.75e4bfa888482b61.css to s3://serverless-saas-lab2-landing-b8ce7570/styles.75e4bfa888482b61.css
-Completed 1.3 MiB/1.7 MiB (1.1 MiB/s) with 6 file(s) remainingCompleted 1.5 MiB/1.7 MiB (1.1 MiB/s) with 6 file(s) remainingupload: dist/fontawesome-webfont.2b13baa7dd4f54c9.eot to s3://serverless-saas-lab2-landing-b8ce7570/fontawesome-webfont.2b13baa7dd4f54c9.eot
-Completed 1.5 MiB/1.7 MiB (1.1 MiB/s) with 5 file(s) remainingupload: dist/fontawesome-webfont.da909aa098b0ee2d.svg to s3://serverless-saas-lab2-landing-b8ce7570/fontawesome-webfont.da909aa098b0ee2d.svg
-Completed 1.5 MiB/1.7 MiB (1.1 MiB/s) with 4 file(s) remainingupload: dist/main.ac66c485662ad762.js to s3://serverless-saas-lab2-landing-b8ce7570/main.ac66c485662ad762.js
-Completed 1.5 MiB/1.7 MiB (1.1 MiB/s) with 3 file(s) remainingCompleted 1.6 MiB/1.7 MiB (836.7 KiB/s) with 3 file(s) remainingupload: dist/fontawesome-webfont.cf011583fb81df9f.woff to s3://serverless-saas-lab2-landing-b8ce7570/fontawesome-webfont.cf011583fb81df9f.woff
-Completed 1.6 MiB/1.7 MiB (836.7 KiB/s) with 2 file(s) remainingCompleted 1.6 MiB/1.7 MiB (723.7 KiB/s) with 2 file(s) remainingupload: dist/polyfills.1112bef149771381.js to s3://serverless-saas-lab2-landing-b8ce7570/polyfills.1112bef149771381.js
-Completed 1.6 MiB/1.7 MiB (723.7 KiB/s) with 1 file(s) remainingCompleted 1.7 MiB/1.7 MiB (701.4 KiB/s) with 1 file(s) remainingupload: dist/fontawesome-webfont.e9955780856cf8aa.woff2 to s3://serverless-saas-lab2-landing-b8ce7570/fontawesome-webfont.e9955780856cf8aa.woff2
-[0;32m  ✓ Landing Client deployed successfully[0m
-
-[0;32m==========================================[0m
-[0;32mLab2 Deployment Complete![0m
-[0;32m==========================================[0m
-[0;32mDuration: 615 seconds[0m
-
-[0;34mApplication URLs:[0m
-[0;34m  Admin Site: https://d3m85uw1o3l2n6.cloudfront.net[0m
-[0;34m  Landing Site: https://dmsimi07my4rx.cloudfront.net[0m
-[0;34m  Admin API: https://s8t2odq0i7.execute-api.us-west-2.amazonaws.com/prod[0m
-
-[1;33mNext Steps:[0m
-[1;33m  1. Check your email (lancdieg@amazon.com) for temporary password[0m
-[1;33m  2. Open the Admin Site URL in your browser[0m
-[1;33m  3. Log in with username: admin-user[0m
-[1;33m  4. Follow the lab instructions to create tenants[0m
-[1;33m  5. To retrieve URLs later: ./geturl.sh --stack-name serverless-saas-lab2[0m
-[1;33m  6. To clean up resources: ./cleanup.sh --stack-name serverless-saas-lab2[0m
-
-[0;32mLog file: logs/deployment-20260122-103938.log[0m
