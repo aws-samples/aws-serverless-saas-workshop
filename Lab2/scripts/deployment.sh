@@ -459,13 +459,9 @@ if [[ $DEPLOY_CLIENT -eq 1 ]]; then
   CREATE_USER_EXIT_CODE=$?
   if [[ $CREATE_USER_EXIT_CODE -eq 0 ]]; then
     print_message "$GREEN" "  ✓ Admin user created successfully"
-    print_message "$YELLOW" "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    print_message "$GREEN" "  📧 Admin User Credentials:"
-    print_message "$GREEN" "     Username: admin-user"
-    print_message "$GREEN" "     Temporary Password: $TEMP_PASSWORD"
-    print_message "$GREEN" "     Email: $ADMIN_EMAIL"
-    print_message "$YELLOW" "  ⚠️  You will be required to change this password on first login"
-    print_message "$YELLOW" "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    # Store credentials for display at the end
+    ADMIN_USERNAME="admin-user"
+    ADMIN_TEMP_PASSWORD="$TEMP_PASSWORD"
   else
     if echo "$CREATE_ADMIN_USER" | grep -q "UsernameExistsException"; then
       print_message "$YELLOW" "  Warning: Admin user already exists"
@@ -701,10 +697,21 @@ if [[ $DEPLOY_SERVER -eq 1 ]] && [[ $DEPLOY_CLIENT -eq 0 ]]; then
   print_message "$YELLOW" "  2. Check your email for temporary password"
   print_message "$YELLOW" "  3. Access the Admin Site using the URL above"
 elif [[ $DEPLOY_CLIENT -eq 1 ]]; then
-  print_message "$YELLOW" "  1. Check your email ($ADMIN_EMAIL) for temporary password"
-  print_message "$YELLOW" "  2. Open the Admin Site URL in your browser"
-  print_message "$YELLOW" "  3. Log in with username: admin-user"
-  print_message "$YELLOW" "  4. Follow the lab instructions to create tenants"
+  # Display admin credentials if user was created
+  if [[ -n "$ADMIN_TEMP_PASSWORD" ]]; then
+    echo ""
+    print_message "$YELLOW" "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    print_message "$GREEN" "  📧 Admin User Credentials:"
+    print_message "$GREEN" "     Username: $ADMIN_USERNAME"
+    print_message "$GREEN" "     Temporary Password: $ADMIN_TEMP_PASSWORD"
+    print_message "$GREEN" "     Email: $ADMIN_EMAIL"
+    print_message "$YELLOW" "  ⚠️  You will be required to change this password on first login"
+    print_message "$YELLOW" "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+  fi
+  print_message "$YELLOW" "  1. Open the Admin Site URL in your browser"
+  print_message "$YELLOW" "  2. Log in with the credentials shown above"
+  print_message "$YELLOW" "  3. Follow the lab instructions to create tenants"
 fi
 print_message "$YELLOW" "  5. To retrieve URLs later: ./geturl.sh --stack-name $STACK_NAME"
 print_message "$YELLOW" "  6. To clean up resources: ./cleanup.sh --stack-name $STACK_NAME"
