@@ -412,7 +412,7 @@ print_message "$BLUE" "=========================================="
 source "$SCRIPT_DIR/../../scripts/lib/cleanup-verification.sh"
 
 # Run verification
-verify_cleanup_complete "$LAB_ID" "$AWS_REGION" "$PROFILE_ARG"
+verify_complete_cleanup "$LAB_ID" "$PROFILE_ARG"
 VERIFICATION_EXIT_CODE=$?
 
 # Calculate duration

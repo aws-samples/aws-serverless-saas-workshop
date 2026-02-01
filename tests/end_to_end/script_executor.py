@@ -85,6 +85,7 @@ class ScriptExecutor:
             logger.info(f"Executing command: {' '.join(command)}")
             
             # Execute and capture output
+            # IMPORTANT: Pass env=None to inherit parent environment (includes PATH, AWS credentials, etc.)
             process = subprocess.Popen(
                 command,
                 stdout=subprocess.PIPE,
@@ -92,7 +93,8 @@ class ScriptExecutor:
                 text=True,
                 bufsize=1,
                 universal_newlines=True,
-                cwd=script_path.parent  # Execute in script's directory
+                cwd=script_path.parent,  # Execute in script's directory
+                env=None  # Inherit parent environment
             )
             
             stdout_lines = []
