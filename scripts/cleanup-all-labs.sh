@@ -22,6 +22,9 @@ LOG_DIR="$SCRIPT_DIR/logs/$TIMESTAMP"
 mkdir -p "$LOG_DIR"
 LOG_FILE="$LOG_DIR/cleanup-all-labs.log"
 
+# Export GLOBAL_LOG_DIR so individual lab scripts know where to write their logs
+export GLOBAL_LOG_DIR="$LOG_DIR"
+
 # Function to print colored messages
 print_message() {
     local color=$1

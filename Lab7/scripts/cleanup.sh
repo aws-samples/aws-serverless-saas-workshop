@@ -189,11 +189,20 @@ if [[ -n "$AWS_PROFILE" ]]; then
     PROFILE_ARG="--profile $AWS_PROFILE"
 fi
 
-# Logging setup
-TIMESTAMP=$(date +"%Y%m%d-%H%M%S")
-LOG_DIR="logs"
-mkdir -p "$LOG_DIR"
-LOG_FILE="$LOG_DIR/cleanup-${TIMESTAMP}.log"
+# Determine log file location based on execution context
+if [[ -n "$E2E_TEST_MODE" ]]; then
+    # E2E Test Mode: Skip logging (test framework handles it)
+    LOG_FILE="/dev/null"
+elif [[ -n "$GLOBAL_LOG_DIR" ]]; then
+    # Global Scripts Mode: Write to global log directory
+    LOG_FILE="$GLOBAL_LOG_DIR/lab7-cleanup.log"
+else
+    # Individual Lab Mode: Create timestamped directory
+    TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+    LOG_DIR="logs/$TIMESTAMP"
+    mkdir -p "$LOG_DIR"
+    LOG_FILE="$LOG_DIR/cleanup.log"
+fi
 # Skip if running in test mode (test framework handles logging)
 if [[ -z "$E2E_TEST_MODE" ]]; then
     exec > >(tee -a "$LOG_FILE") 2>&1
