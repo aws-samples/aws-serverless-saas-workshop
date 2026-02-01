@@ -666,10 +666,14 @@ if [[ $DEPLOY_BOOTSTRAP -eq 1 ]] && [ ! -z "$TENANT_ADMIN_EMAIL" ]; then
       }")
     
     if echo "$TENANT1_RESPONSE" | grep -q "registered"; then
+      # Extract temporary password from response
+      TENANT1_PASSWORD=$(echo "$TENANT1_RESPONSE" | python3 -c "import sys, json; data=json.load(sys.stdin); print(data.get('message', {}).get('temporaryPassword', ''))" 2>/dev/null || echo "")
       print_message "$GREEN" "  ✓ Tenant One created successfully"
       print_message "$GREEN" "    Username: tenant1-admin"
       print_message "$GREEN" "    Email: $TENANT1_EMAIL"
-      print_message "$GREEN" "    Cognito will send a temporary password to this email"
+      if [[ -n "$TENANT1_PASSWORD" ]]; then
+        print_message "$GREEN" "    Temporary Password: $TENANT1_PASSWORD"
+      fi
     else
       print_message "$RED" "  ✗ Failed to create Tenant One"
       print_message "$RED" "    Response: $TENANT1_RESPONSE"
@@ -692,10 +696,14 @@ if [[ $DEPLOY_BOOTSTRAP -eq 1 ]] && [ ! -z "$TENANT_ADMIN_EMAIL" ]; then
       }")
     
     if echo "$TENANT2_RESPONSE" | grep -q "registered"; then
+      # Extract temporary password from response
+      TENANT2_PASSWORD=$(echo "$TENANT2_RESPONSE" | python3 -c "import sys, json; data=json.load(sys.stdin); print(data.get('message', {}).get('temporaryPassword', ''))" 2>/dev/null || echo "")
       print_message "$GREEN" "  ✓ Tenant Two created successfully"
       print_message "$GREEN" "    Username: tenant2-admin"
       print_message "$GREEN" "    Email: $TENANT2_EMAIL"
-      print_message "$GREEN" "    Cognito will send a temporary password to this email"
+      if [[ -n "$TENANT2_PASSWORD" ]]; then
+        print_message "$GREEN" "    Temporary Password: $TENANT2_PASSWORD"
+      fi
     else
       print_message "$RED" "  ✗ Failed to create Tenant Two"
       print_message "$RED" "    Response: $TENANT2_RESPONSE"
@@ -703,10 +711,24 @@ if [[ $DEPLOY_BOOTSTRAP -eq 1 ]] && [ ! -z "$TENANT_ADMIN_EMAIL" ]; then
     
     echo ""
     print_message "$GREEN" "Sample tenant creation complete!"
-    print_message "$BLUE" "Check your email ($TENANT_ADMIN_EMAIL) for temporary passwords for:"
-    print_message "$BLUE" "  1. Default tenant: tenant-admin (email: $TENANT_ADMIN_EMAIL)"
-    print_message "$BLUE" "  2. Tenant One: tenant1-admin (email: $TENANT1_EMAIL)"
-    print_message "$BLUE" "  3. Tenant Two: tenant2-admin (email: $TENANT2_EMAIL)"
+    if [[ -n "$TENANT1_PASSWORD" ]] || [[ -n "$TENANT2_PASSWORD" ]]; then
+      print_message "$YELLOW" "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      print_message "$GREEN" "  📧 Tenant User Credentials:"
+      if [[ -n "$TENANT1_PASSWORD" ]]; then
+        print_message "$GREEN" "     Tenant One:"
+        print_message "$GREEN" "       Username: tenant1-admin"
+        print_message "$GREEN" "       Password: $TENANT1_PASSWORD"
+        print_message "$GREEN" "       Email: $TENANT1_EMAIL"
+      fi
+      if [[ -n "$TENANT2_PASSWORD" ]]; then
+        print_message "$GREEN" "     Tenant Two:"
+        print_message "$GREEN" "       Username: tenant2-admin"
+        print_message "$GREEN" "       Password: $TENANT2_PASSWORD"
+        print_message "$GREEN" "       Email: $TENANT2_EMAIL"
+      fi
+      print_message "$YELLOW" "  ⚠️  You will be required to change these passwords on first login"
+      print_message "$YELLOW" "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    fi
   fi
 fi
 
