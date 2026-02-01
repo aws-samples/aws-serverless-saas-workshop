@@ -120,7 +120,10 @@ mkdir -p "$LOG_DIR"
 LOG_FILE="$LOG_DIR/deployment-$(date +%Y%m%d-%H%M%S).log"
 
 # Redirect all output to log file and console
-exec > >(tee -a "$LOG_FILE") 2>&1
+# Skip if running in test mode (test framework handles logging)
+if [[ -z "$E2E_TEST_MODE" ]]; then
+    exec > >(tee -a "$LOG_FILE") 2>&1
+fi
 
 # Use virtual environment Python if available
 if [ -f "$LAB_DIR/../.venv_py313/bin/python" ]; then

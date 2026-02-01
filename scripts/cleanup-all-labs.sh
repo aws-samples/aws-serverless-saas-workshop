@@ -16,10 +16,11 @@ NC='\033[0m' # No Color
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 WORKSHOP_ROOT="$(dirname "$SCRIPT_DIR")"
 
-# Create log file
-LOG_DIR="$SCRIPT_DIR/logs"
+# Create timestamped log directory (similar to test framework structure)
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+LOG_DIR="$SCRIPT_DIR/logs/$TIMESTAMP"
 mkdir -p "$LOG_DIR"
-LOG_FILE="$LOG_DIR/cleanup-all-labs-$(date +%Y%m%d-%H%M%S).log"
+LOG_FILE="$LOG_DIR/cleanup-all-labs.log"
 
 # Function to print colored messages
 print_message() {
@@ -29,7 +30,10 @@ print_message() {
 }
 
 # Redirect all output to log file and console
-exec > >(tee -a "$LOG_FILE") 2>&1
+# Skip if running in test mode (test framework handles logging)
+if [[ -z "$E2E_TEST_MODE" ]]; then
+    exec > >(tee -a "$LOG_FILE") 2>&1
+fi
 
 print_message "$BLUE" "========================================"
 print_message "$BLUE" "AWS Serverless SaaS Workshop"
@@ -643,6 +647,9 @@ cleanup_lab() {
         print_message "$GREEN" "Running Lab${lab_num} cleanup script..."
         cd "$lab_dir/scripts"
         
+        # Create dedicated log file for this lab in timestamped directory
+        local lab_log_file="$LOG_DIR/lab${lab_num}-cleanup.log"
+        
         # Run cleanup script with appropriate parameters
         local cleanup_cmd=""
         case $lab_num in
@@ -683,14 +690,21 @@ cleanup_lab() {
             fix_delete_failed_pipeline_stack "serverless-saas-pipeline-lab${lab_num}"
         fi
         
-        # Run cleanup script
-        if eval "$cleanup_cmd"; then
+        # Run cleanup script with enhanced logging
+        print_message "$YELLOW" "Command: $cleanup_cmd"
+        print_message "$YELLOW" "Lab log: $lab_log_file"
+        
+        # Capture ALL output (stdout and stderr) to lab-specific log file
+        # Also display to console via tee
+        if eval "$cleanup_cmd" > >(tee -a "$lab_log_file") 2>&1; then
             print_message "$GREEN" "Lab${lab_num} cleanup completed!"
+            print_message "$GREEN" "Full log: $lab_log_file"
             
             cd "$WORKSHOP_ROOT"
             return 0
         else
             print_message "$RED" "Lab${lab_num} cleanup failed!"
+            print_message "$RED" "Full log: $lab_log_file"
             cd "$WORKSHOP_ROOT"
             return 1
         fi
