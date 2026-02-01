@@ -54,7 +54,13 @@ def create_tenant_admin_user(event, context):
     
     tenant_user_mapping_response = user_mgmt.create_user_tenant_mapping(tenant_admin_user_name,tenant_id)
     
-    response = {"userPoolId": user_pool_id, "appClientId": app_client_id, "tenantAdminUserName": tenant_admin_user_name}
+    # Include temporary password in response
+    response = {
+        "userPoolId": user_pool_id, 
+        "appClientId": app_client_id, 
+        "tenantAdminUserName": tenant_admin_user_name,
+        "temporaryPassword": create_tenant_admin_response.get('TemporaryPassword', '')
+    }
     return utils.create_success_response(response)
 
 @tracer.capture_lambda_handler
@@ -470,10 +476,19 @@ class UserManagement:
         return response
 
     def create_tenant_admin(self, user_pool_id, tenant_admin_user_name, user_details):
+        import secrets
+        import string
+        
+        # Generate a secure temporary password
+        alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
+        temp_password = ''.join(secrets.choice(alphabet) for _ in range(12))
+        
         response = client.admin_create_user(
             Username=tenant_admin_user_name,
             UserPoolId=user_pool_id,
             ForceAliasCreation=True,
+            TemporaryPassword=temp_password,
+            MessageAction='SUPPRESS',  # Don't send email
             UserAttributes=[
                 {
                     'Name': 'email',
@@ -493,6 +508,9 @@ class UserManagement:
                 }
             ]
         )
+        
+        # Add password to response
+        response['TemporaryPassword'] = temp_password
         return response
 
     def add_user_to_group(self, user_pool_id, user_name, group_name):
