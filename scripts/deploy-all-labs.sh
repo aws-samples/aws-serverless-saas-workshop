@@ -17,13 +17,19 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 WORKSHOP_ROOT="$(dirname "$SCRIPT_DIR")"
 
 # Create timestamped log directory (similar to test framework structure)
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-LOG_DIR="$SCRIPT_DIR/logs/$TIMESTAMP"
-mkdir -p "$LOG_DIR"
-LOG_FILE="$LOG_DIR/deploy-all-labs.log"
-
-# Export GLOBAL_LOG_DIR so individual lab scripts know where to write their logs
-export GLOBAL_LOG_DIR="$LOG_DIR"
+# Skip if running in test mode (test framework handles logging)
+if [[ -z "$E2E_TEST_MODE" ]]; then
+    TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+    LOG_DIR="$SCRIPT_DIR/logs/$TIMESTAMP"
+    mkdir -p "$LOG_DIR"
+    LOG_FILE="$LOG_DIR/deploy-all-labs.log"
+    
+    # Export GLOBAL_LOG_DIR so individual lab scripts know where to write their logs
+    export GLOBAL_LOG_DIR="$LOG_DIR"
+else
+    # E2E Test Mode: Skip logging setup
+    LOG_FILE="/dev/null"
+fi
 
 # Function to print colored messages
 print_message() {
