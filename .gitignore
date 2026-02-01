@@ -14,6 +14,11 @@ dist/
 node_modules/
 package-lock.json
 
+# Generated configuration files (deployment-specific)
+**/aws-exports.ts
+**/environment.ts
+**/environment.prod.ts
+
 # Python
 __pycache__/
 *.py[cod]
@@ -26,6 +31,12 @@ ENV/
 env/
 .hypothesis/
 .pytest_cache/
+
+# Tests (local only)
+tests/
+
+# Documentation and notes (local only)
+extra-info/
 
 # IDE
 .vscode/
