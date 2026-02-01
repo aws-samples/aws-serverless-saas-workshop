@@ -272,9 +272,30 @@ else
     print_message "$YELLOW" "  No CloudWatch Log Groups found"
 fi
 
-# Step 3: Delete tenant stack first (dependencies)
+# Step 3: Empty S3 buckets BEFORE stack deletion (CloudFormation cannot delete non-empty buckets)
 print_message "$BLUE" "=========================================="
-print_message "$BLUE" "Step 3: Deleting tenant stack"
+print_message "$BLUE" "Step 3: Emptying S3 buckets (before stack deletion)"
+print_message "$BLUE" "=========================================="
+
+# Empty application buckets (but don't delete them yet - CloudFormation will delete them)
+for bucket in "$ADMIN_SITE_BUCKET" "$LANDING_APP_SITE_BUCKET" "$APP_SITE_BUCKET"; do
+    if [ -n "$bucket" ] && [ "$bucket" != "None" ]; then
+        if aws s3 ls "s3://$bucket" $PROFILE_ARG --region "$AWS_REGION" &> /dev/null; then
+            print_message "$YELLOW" "  Emptying bucket: $bucket"
+            aws s3 rm "s3://$bucket" $PROFILE_ARG --recursive --region "$AWS_REGION" 2>/dev/null || true
+            print_message "$GREEN" "  ✓ Bucket emptied: $bucket (CloudFormation will delete it)"
+        else
+            print_message "$YELLOW" "  Bucket not found or already empty: $bucket"
+        fi
+    fi
+done
+
+print_message "$GREEN" "✓ S3 buckets emptied (ready for CloudFormation deletion)"
+echo ""
+
+# Step 4: Delete tenant stack first (dependencies)
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Step 4: Deleting tenant stack"
 print_message "$BLUE" "=========================================="
 print_message "$YELLOW" "  Deleting stack: $TENANT_STACK_NAME"
 
@@ -300,9 +321,9 @@ else
     print_message "$YELLOW" "  Stack $TENANT_STACK_NAME not found"
 fi
 
-# Step 4: Delete shared stack
+# Step 5: Delete shared stack
 print_message "$BLUE" "=========================================="
-print_message "$BLUE" "Step 4: Deleting shared stack"
+print_message "$BLUE" "Step 5: Deleting shared stack"
 print_message "$BLUE" "=========================================="
 print_message "$YELLOW" "  Deleting stack: $SHARED_STACK_NAME"
 
@@ -328,22 +349,21 @@ else
     print_message "$YELLOW" "  Stack $SHARED_STACK_NAME not found"
 fi
 
-# Step 5: Now safely delete S3 buckets (after CloudFront is deleted)
+# Step 6: Verify S3 buckets are deleted (CloudFormation should have deleted them)
 print_message "$BLUE" "=========================================="
-print_message "$BLUE" "Step 5: Safely deleting S3 buckets (CloudFront deleted)"
+print_message "$BLUE" "Step 6: Verifying S3 bucket deletion"
 print_message "$BLUE" "=========================================="
 
-# Empty and delete application buckets from stack outputs
+# Check if any buckets still exist and delete them manually if needed
 for bucket in "$ADMIN_SITE_BUCKET" "$LANDING_APP_SITE_BUCKET" "$APP_SITE_BUCKET"; do
     if [ -n "$bucket" ] && [ "$bucket" != "None" ]; then
         if aws s3 ls "s3://$bucket" $PROFILE_ARG --region "$AWS_REGION" &> /dev/null; then
-            print_message "$YELLOW" "  Emptying bucket: $bucket"
-            aws s3 rm "s3://$bucket" $PROFILE_ARG --recursive --region "$AWS_REGION" 2>/dev/null || true
-            print_message "$YELLOW" "  Deleting bucket: $bucket"
+            print_message "$YELLOW" "  Bucket still exists (CloudFormation didn't delete it): $bucket"
+            print_message "$YELLOW" "  Deleting bucket manually: $bucket"
             aws s3 rb "s3://$bucket" $PROFILE_ARG --region "$AWS_REGION" 2>/dev/null || true
-            print_message "$GREEN" "  S3 bucket deleted: $bucket"
+            print_message "$GREEN" "  ✓ Bucket deleted: $bucket"
         else
-            print_message "$YELLOW" "  Bucket already deleted or not found: $bucket"
+            print_message "$GREEN" "  ✓ Bucket deleted by CloudFormation: $bucket"
         fi
     fi
 done
@@ -364,17 +384,18 @@ if [ -n "$LAB4_BUCKETS" ]; then
                 aws s3 rm "s3://$bucket" $PROFILE_ARG --recursive --region "$AWS_REGION" 2>/dev/null || true
                 print_message "$YELLOW" "  Deleting bucket: $bucket"
                 aws s3 rb "s3://$bucket" $PROFILE_ARG --region "$AWS_REGION" 2>/dev/null || true
-                print_message "$GREEN" "  S3 bucket deleted: $bucket"
+                print_message "$GREEN" "  ✓ Bucket deleted: $bucket"
             fi
         fi
     done
 fi
 
-print_message "$GREEN" "S3 buckets deleted"
+print_message "$GREEN" "✓ S3 bucket verification complete"
+echo ""
 
-# Step 6: Delete DynamoDB tables
+# Step 7: Delete DynamoDB tables
 print_message "$BLUE" "=========================================="
-print_message "$BLUE" "Step 6: Deleting DynamoDB tables"
+print_message "$BLUE" "Step 7: Deleting DynamoDB tables"
 print_message "$BLUE" "=========================================="
 
 TABLES=$(aws dynamodb list-tables \
@@ -469,9 +490,9 @@ fi
 print_message "$GREEN" "✓ Cognito User Pools cleanup complete"
 echo ""
 
-# Step 7: Clean up SAM bootstrap buckets from samconfig.toml files
+# Step 8: Clean up SAM bootstrap buckets from samconfig.toml files
 print_message "$BLUE" "=========================================="
-print_message "$BLUE" "Step 7: Cleaning up SAM bootstrap buckets from samconfig.toml files"
+print_message "$BLUE" "Step 8: Cleaning up SAM bootstrap buckets from samconfig.toml files"
 print_message "$BLUE" "=========================================="
 
 PROFILE_ARG=$(get_profile_arg)
@@ -514,9 +535,9 @@ fi
 
 print_message "$GREEN" "SAM bootstrap bucket cleanup complete"
 
-# Step 8: Delete IAM roles and policies
+# Step 9: Delete IAM roles and policies
 print_message "$BLUE" "=========================================="
-print_message "$BLUE" "Step 8: Cleaning up IAM roles and policies"
+print_message "$BLUE" "Step 9: Cleaning up IAM roles and policies"
 print_message "$BLUE" "=========================================="
 
 # List IAM roles with lab4 in the name
@@ -562,9 +583,9 @@ else
     print_message "$YELLOW" "  No IAM roles found"
 fi
 
-# Step 9: Verify cleanup
+# Step 10: Verify cleanup
 print_message "$BLUE" "=========================================="
-print_message "$BLUE" "Step 9: Verifying cleanup"
+print_message "$BLUE" "Step 10: Verifying cleanup"
 print_message "$BLUE" "=========================================="
 
 REMAINING_RESOURCES=0
