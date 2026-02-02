@@ -65,15 +65,6 @@ Parameters:
   TenantTemporaryPassword:
     Type: String
     Default: ""
-    Description: "Temporary password for tenant admin user (set during deployment)"
-    NoEcho: true
-  TenantUsername:
-    Type: String
-    Default: ""
-    Description: "Tenant admin username (set during deployment)"
-  TenantTemporaryPassword:
-    Type: String
-    Default: ""
     Description: "Temporary password for tenant admin (set during deployment)"
     NoEcho: true
 Conditions:
