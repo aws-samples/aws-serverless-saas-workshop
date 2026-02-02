@@ -848,7 +848,6 @@ if [[ $DEPLOY_BOOTSTRAP -eq 1 ]] && [[ $DEPLOY_TENANT -eq 1 ]] && [ ! -z "$TENAN
               ParameterKey=AdminUserPoolCallbackURLParameter,UsePreviousValue=true \
               ParameterKey=TenantUserPoolCallbackURLParameter,UsePreviousValue=true \
               ParameterKey=CreateCloudWatchRole,UsePreviousValue=true \
-              ParameterKey=AdminTemporaryPassword,ParameterValue="admin-user-password-not-set" \
               ParameterKey=TenantUsername,ParameterValue="tenant1-admin" \
               ParameterKey=TenantTemporaryPassword,ParameterValue="$TENANT1_PASSWORD" \
             --capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND \
@@ -869,7 +868,6 @@ if [[ $DEPLOY_BOOTSTRAP -eq 1 ]] && [[ $DEPLOY_TENANT -eq 1 ]] && [ ! -z "$TENAN
               ParameterKey=AdminUserPoolCallbackURLParameter,UsePreviousValue=true \
               ParameterKey=TenantUserPoolCallbackURLParameter,UsePreviousValue=true \
               ParameterKey=CreateCloudWatchRole,UsePreviousValue=true \
-              ParameterKey=AdminTemporaryPassword,ParameterValue="admin-user-password-not-set" \
               ParameterKey=TenantUsername,ParameterValue="tenant1-admin" \
               ParameterKey=TenantTemporaryPassword,ParameterValue="$TENANT1_PASSWORD" \
             --capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND \
