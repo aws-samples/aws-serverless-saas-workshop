@@ -58,6 +58,20 @@ Parameters:
     Default: "true"
     AllowedValues:
       - "true"
+  AdminTemporaryPassword:
+    Type: String
+    Default: ""
+    Description: "Temporary password for admin user (set during deployment)"
+    NoEcho: true
+  TenantUsername:
+    Type: String
+    Default: ""
+    Description: "Tenant admin username (set during deployment)"
+  TenantTemporaryPassword:
+    Type: String
+    Default: ""
+    Description: "Temporary password for tenant admin (set during deployment)"
+    NoEcho: true
       - "false"
     Description: "Whether to create the API Gateway CloudWatch role (set to false if role already exists)"
 Conditions:
@@ -214,3 +228,15 @@ Outputs:
     Value: !GetAtt Cognito.Outputs.CognitoUserPoolClientId
     Export:
       Name: "Serverless-SaaS-CognitoTenantAppClientId"  
+  AdminUsername:
+    Description: "Admin user username"
+    Value: "admin-user"
+  AdminTemporaryPassword:
+    Description: "Admin user temporary password (change on first login)"
+    Value: !Ref AdminTemporaryPassword
+  TenantUsername:
+    Description: "Tenant admin username (if tenant was created during deployment)"
+    Value: !Ref TenantUsername
+  TenantTemporaryPassword:
+    Description: "Tenant admin temporary password (if tenant was created during deployment)"
+    Value: !Ref TenantTemporaryPassword

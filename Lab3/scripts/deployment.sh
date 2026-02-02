@@ -827,6 +827,68 @@ if [[ $DEPLOY_BOOTSTRAP -eq 1 ]] && [[ $DEPLOY_TENANT -eq 1 ]] && [ ! -z "$TENAN
       fi
       print_message "$YELLOW" "  ⚠️  You will be required to change these passwords on first login"
       print_message "$YELLOW" "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      
+      # Update CloudFormation stack with tenant credentials (use Tenant One as primary)
+      if [[ -n "$TENANT1_PASSWORD" ]]; then
+        print_message "$YELLOW" "  Updating CloudFormation stack with tenant credentials..."
+        if [[ -n "$AWS_PROFILE" ]]; then
+          aws cloudformation update-stack \
+            --profile "$AWS_PROFILE" \
+            --stack-name "$STACK_NAME" \
+            --use-previous-template \
+            --parameters \
+              ParameterKey=Environment,UsePreviousValue=true \
+              ParameterKey=Owner,UsePreviousValue=true \
+              ParameterKey=CostCenter,UsePreviousValue=true \
+              ParameterKey=AdminEmailParameter,UsePreviousValue=true \
+              ParameterKey=TenantAdminEmailParameter,UsePreviousValue=true \
+              ParameterKey=SystemAdminRoleNameParameter,UsePreviousValue=true \
+              ParameterKey=StageName,UsePreviousValue=true \
+              ParameterKey=EventEngineParameter,UsePreviousValue=true \
+              ParameterKey=AdminUserPoolCallbackURLParameter,UsePreviousValue=true \
+              ParameterKey=TenantUserPoolCallbackURLParameter,UsePreviousValue=true \
+              ParameterKey=CreateCloudWatchRole,UsePreviousValue=true \
+              ParameterKey=AdminTemporaryPassword,ParameterValue="admin-user-password-not-set" \
+              ParameterKey=TenantUsername,ParameterValue="tenant1-admin" \
+              ParameterKey=TenantTemporaryPassword,ParameterValue="$TENANT1_PASSWORD" \
+            --capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND \
+            --region "$AWS_REGION" > /dev/null 2>&1
+        else
+          aws cloudformation update-stack \
+            --stack-name "$STACK_NAME" \
+            --use-previous-template \
+            --parameters \
+              ParameterKey=Environment,UsePreviousValue=true \
+              ParameterKey=Owner,UsePreviousValue=true \
+              ParameterKey=CostCenter,UsePreviousValue=true \
+              ParameterKey=AdminEmailParameter,UsePreviousValue=true \
+              ParameterKey=TenantAdminEmailParameter,UsePreviousValue=true \
+              ParameterKey=SystemAdminRoleNameParameter,UsePreviousValue=true \
+              ParameterKey=StageName,UsePreviousValue=true \
+              ParameterKey=EventEngineParameter,UsePreviousValue=true \
+              ParameterKey=AdminUserPoolCallbackURLParameter,UsePreviousValue=true \
+              ParameterKey=TenantUserPoolCallbackURLParameter,UsePreviousValue=true \
+              ParameterKey=CreateCloudWatchRole,UsePreviousValue=true \
+              ParameterKey=AdminTemporaryPassword,ParameterValue="admin-user-password-not-set" \
+              ParameterKey=TenantUsername,ParameterValue="tenant1-admin" \
+              ParameterKey=TenantTemporaryPassword,ParameterValue="$TENANT1_PASSWORD" \
+            --capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND \
+            --region "$AWS_REGION" > /dev/null 2>&1
+        fi
+        
+        UPDATE_EXIT_CODE=$?
+        if [[ $UPDATE_EXIT_CODE -eq 0 ]]; then
+          print_message "$GREEN" "  ✓ Stack updated with tenant credentials"
+          print_message "$YELLOW" "  💡 To retrieve credentials later, run:"
+          if [[ -n "$AWS_PROFILE" ]]; then
+            print_message "$YELLOW" "     aws cloudformation describe-stacks --stack-name $STACK_NAME --profile $AWS_PROFILE --query \"Stacks[0].Outputs\""
+          else
+            print_message "$YELLOW" "     aws cloudformation describe-stacks --stack-name $STACK_NAME --query \"Stacks[0].Outputs\""
+          fi
+        else
+          print_message "$YELLOW" "  ⚠️  Could not update stack with credentials (non-critical)"
+        fi
+      fi
     fi
   fi
   echo ""

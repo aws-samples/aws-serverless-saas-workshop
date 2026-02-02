@@ -53,6 +53,29 @@ Parameters:
       - "true"
       - "false"
     Description: "Whether to create the API Gateway CloudWatch role (set to false if role already exists)"
+  AdminTemporaryPassword:
+    Type: String
+    Default: ""
+    Description: "Temporary password for admin user (set during deployment)"
+    NoEcho: true
+  TenantUsername:
+    Type: String
+    Default: ""
+    Description: "Tenant admin username (set during deployment)"
+  TenantTemporaryPassword:
+    Type: String
+    Default: ""
+    Description: "Temporary password for tenant admin user (set during deployment)"
+    NoEcho: true
+  TenantUsername:
+    Type: String
+    Default: ""
+    Description: "Tenant admin username (set during deployment)"
+  TenantTemporaryPassword:
+    Type: String
+    Default: ""
+    Description: "Temporary password for tenant admin (set during deployment)"
+    NoEcho: true
 Conditions:
   IsNotRunningInEventEngine: !Not [ !Equals [ !Ref EventEngineParameter, true] ]   
 Resources:
@@ -211,3 +234,15 @@ Outputs:
     Value: !GetAtt LambdaFunctions.Outputs.AuthorizerExecutionRoleArn 
     Export:
       Name: "Serverless-SaaS-AuthorizerExecutionRoleArn-lab4"   
+  AdminUsername:
+    Description: "Admin user username"
+    Value: "admin-user"
+  AdminTemporaryPassword:
+    Description: "Admin user temporary password (change on first login)"
+    Value: !Ref AdminTemporaryPassword
+  TenantUsername:
+    Description: "Tenant admin username (if tenant was created during deployment)"
+    Value: !Ref TenantUsername
+  TenantTemporaryPassword:
+    Description: "Tenant admin temporary password (if tenant was created during deployment)"
+    Value: !Ref TenantTemporaryPassword

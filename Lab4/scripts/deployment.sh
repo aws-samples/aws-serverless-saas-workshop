@@ -729,6 +729,43 @@ if [[ $DEPLOY_BOOTSTRAP -eq 1 ]] && [ ! -z "$TENANT_ADMIN_EMAIL" ]; then
       print_message "$YELLOW" "  ⚠️  You will be required to change these passwords on first login"
       print_message "$YELLOW" "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     fi
+    
+    # Update CloudFormation stack with tenant credentials
+    if [[ -n "$TENANT1_PASSWORD" ]] || [[ -n "$TENANT2_PASSWORD" ]]; then
+      print_message "$YELLOW" "  Updating CloudFormation stack with tenant credentials..."
+      
+      # Build parameter overrides for stack update
+      STACK_UPDATE_PARAMS="ParameterKey=EventEngineParameter,UsePreviousValue=true"
+      STACK_UPDATE_PARAMS="$STACK_UPDATE_PARAMS ParameterKey=CreateCloudWatchRole,UsePreviousValue=true"
+      
+      if [ ! -z "$ADMIN_EMAIL" ]; then
+        STACK_UPDATE_PARAMS="$STACK_UPDATE_PARAMS ParameterKey=AdminEmailParameter,UsePreviousValue=true"
+      fi
+      
+      if [ ! -z "$TENANT_ADMIN_EMAIL" ]; then
+        STACK_UPDATE_PARAMS="$STACK_UPDATE_PARAMS ParameterKey=TenantAdminEmailParameter,UsePreviousValue=true"
+      fi
+      
+      # Add tenant credentials parameters
+      if [[ -n "$TENANT1_PASSWORD" ]]; then
+        STACK_UPDATE_PARAMS="$STACK_UPDATE_PARAMS ParameterKey=TenantUsername,ParameterValue=tenant1-admin"
+        STACK_UPDATE_PARAMS="$STACK_UPDATE_PARAMS ParameterKey=TenantTemporaryPassword,ParameterValue=$TENANT1_PASSWORD"
+      fi
+      
+      # Update the stack
+      aws cloudformation update-stack \
+        $PROFILE_ARG \
+        --region "$AWS_REGION" \
+        --stack-name "$SHARED_STACK_NAME" \
+        --use-previous-template \
+        --parameters $STACK_UPDATE_PARAMS \
+        --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND \
+        > /dev/null 2>&1 || true
+      
+      print_message "$GREEN" "  ✓ Stack updated with tenant credentials"
+      print_message "$YELLOW" "  📋 Retrieve credentials anytime with:"
+      print_message "$YELLOW" "     aws cloudformation describe-stacks --stack-name $SHARED_STACK_NAME --query \"Stacks[0].Outputs\" $PROFILE_ARG --region $AWS_REGION"
+    fi
   fi
 fi
 
