@@ -726,14 +726,88 @@ EoF
   echo ""
 fi
 
-# Automatically create sample tenants if email was provided
-# Tenants are created after BOTH bootstrap AND tenant stacks are deployed
-# because tenants need the Admin API (bootstrap) and Tenant API (tenant stack) to function
-if [[ $DEPLOY_BOOTSTRAP -eq 1 ]] && [[ $DEPLOY_TENANT -eq 1 ]] && [ ! -z "$TENANT_ADMIN_EMAIL" ]; then
-  echo ""
-  print_message "$BLUE" "=========================================="
-  print_message "$BLUE" "Step 6: Creating sample tenants"
-  print_message "$BLUE" "=========================================="
+# Automatically create admin user and sample tenants if email was provided
+# Users are created after BOTH bootstrap AND tenant stacks are deployed
+# because they need the Cognito user pools and Admin API to be ready
+if [[ $DEPLOY_BOOTSTRAP -eq 1 ]] && [[ $DEPLOY_TENANT -eq 1 ]]; then
+  
+  # Step 6: Create Admin User
+  if [ ! -z "$ADMIN_EMAIL" ]; then
+    echo ""
+    print_message "$BLUE" "=========================================="
+    print_message "$BLUE" "Step 6: Creating admin user"
+    print_message "$BLUE" "=========================================="
+    
+    # Get Cognito Operation Users Pool ID
+    if [[ -n "$AWS_PROFILE" ]]; then
+      ADMIN_USER_POOL_ID=$(aws cloudformation --profile "$AWS_PROFILE" describe-stacks --stack-name "$SHARED_STACK_NAME" --region "$AWS_REGION" --query "Stacks[0].Outputs[?OutputKey=='CognitoOperationUsersUserPoolId'].OutputValue" --output text 2>/dev/null)
+    else
+      ADMIN_USER_POOL_ID=$(aws cloudformation describe-stacks --stack-name "$SHARED_STACK_NAME" --region "$AWS_REGION" --query "Stacks[0].Outputs[?OutputKey=='CognitoOperationUsersUserPoolId'].OutputValue" --output text 2>/dev/null)
+    fi
+    
+    if [ -z "$ADMIN_USER_POOL_ID" ]; then
+      print_message "$YELLOW" "  Warning: Could not find Admin User Pool ID. Skipping admin user creation."
+    else
+      # Generate secure temporary password
+      ADMIN_USERNAME="admin-user"
+      ADMIN_PASSWORD="TempPass$(date +%s)!"
+      
+      print_message "$YELLOW" "  Creating admin user: $ADMIN_USERNAME"
+      
+      # Create admin user in Cognito
+      if [[ -n "$AWS_PROFILE" ]]; then
+        aws cognito-idp admin-create-user \
+          --profile "$AWS_PROFILE" \
+          --user-pool-id "$ADMIN_USER_POOL_ID" \
+          --username "$ADMIN_USERNAME" \
+          --user-attributes Name=email,Value="$ADMIN_EMAIL" Name=custom:tenantId,Value=system_admins Name=custom:userRole,Value=SystemAdmin \
+          --temporary-password "$ADMIN_PASSWORD" \
+          --message-action SUPPRESS \
+          --region "$AWS_REGION" > /dev/null 2>&1
+        
+        # Add user to SystemAdmins group
+        aws cognito-idp admin-add-user-to-group \
+          --profile "$AWS_PROFILE" \
+          --user-pool-id "$ADMIN_USER_POOL_ID" \
+          --username "$ADMIN_USERNAME" \
+          --group-name SystemAdmins \
+          --region "$AWS_REGION" > /dev/null 2>&1
+      else
+        aws cognito-idp admin-create-user \
+          --user-pool-id "$ADMIN_USER_POOL_ID" \
+          --username "$ADMIN_USERNAME" \
+          --user-attributes Name=email,Value="$ADMIN_EMAIL" Name=custom:tenantId,Value=system_admins Name=custom:userRole,Value=SystemAdmin \
+          --temporary-password "$ADMIN_PASSWORD" \
+          --message-action SUPPRESS \
+          --region "$AWS_REGION" > /dev/null 2>&1
+        
+        # Add user to SystemAdmins group
+        aws cognito-idp admin-add-user-to-group \
+          --user-pool-id "$ADMIN_USER_POOL_ID" \
+          --username "$ADMIN_USERNAME" \
+          --group-name SystemAdmins \
+          --region "$AWS_REGION" > /dev/null 2>&1
+      fi
+      
+      if [ $? -eq 0 ]; then
+        print_message "$GREEN" "  ✓ Admin user created successfully"
+        print_message "$GREEN" "    Username: $ADMIN_USERNAME"
+        print_message "$GREEN" "    Email: $ADMIN_EMAIL"
+        print_message "$GREEN" "    Temporary Password: $ADMIN_PASSWORD"
+      else
+        print_message "$RED" "  ✗ Failed to create admin user"
+        ADMIN_USERNAME=""
+        ADMIN_PASSWORD=""
+      fi
+    fi
+  fi
+  
+  # Step 7: Create Sample Tenants
+  if [ ! -z "$TENANT_ADMIN_EMAIL" ]; then
+    echo ""
+    print_message "$BLUE" "=========================================="
+    print_message "$BLUE" "Step 7: Creating sample tenants"
+    print_message "$BLUE" "=========================================="
   
   # Extract username and domain from email
   EMAIL_USERNAME=$(echo "$TENANT_ADMIN_EMAIL" | cut -d'@' -f1)
@@ -751,6 +825,7 @@ if [[ $DEPLOY_BOOTSTRAP -eq 1 ]] && [[ $DEPLOY_TENANT -eq 1 ]] && [ ! -z "$TENAN
   else
     # Create Tenant One
     TENANT1_EMAIL="${EMAIL_USERNAME}+lab3tenant1@${EMAIL_DOMAIN}"
+    TENANT1_USERNAME="tenant1-admin"
     print_message "$YELLOW" "  Creating Tenant One with email: $TENANT1_EMAIL"
     
     TENANT1_RESPONSE=$(curl -s -X POST "${ADMIN_API_URL}/registration" \
@@ -758,7 +833,7 @@ if [[ $DEPLOY_BOOTSTRAP -eq 1 ]] && [[ $DEPLOY_TENANT -eq 1 ]] && [ ! -z "$TENAN
       -d "{
         \"tenantName\": \"Tenant One\",
         \"tenantEmail\": \"$TENANT1_EMAIL\",
-        \"tenantAdminUserName\": \"tenant1-admin\",
+        \"tenantAdminUserName\": \"$TENANT1_USERNAME\",
         \"tenantTier\": \"standard\",
         \"tenantPhone\": \"+1-555-0001\",
         \"tenantAddress\": \"123 Main St, City, State 12345\"
@@ -768,7 +843,7 @@ if [[ $DEPLOY_BOOTSTRAP -eq 1 ]] && [[ $DEPLOY_TENANT -eq 1 ]] && [ ! -z "$TENAN
       # Extract temporary password from response
       TENANT1_PASSWORD=$(echo "$TENANT1_RESPONSE" | python3 -c "import sys, json; data=json.load(sys.stdin); print(data.get('message', {}).get('temporaryPassword', ''))" 2>/dev/null || echo "")
       print_message "$GREEN" "  ✓ Tenant One created successfully"
-      print_message "$GREEN" "    Username: tenant1-admin"
+      print_message "$GREEN" "    Username: $TENANT1_USERNAME"
       print_message "$GREEN" "    Email: $TENANT1_EMAIL"
       if [[ -n "$TENANT1_PASSWORD" ]]; then
         print_message "$GREEN" "    Temporary Password: $TENANT1_PASSWORD"
@@ -776,10 +851,13 @@ if [[ $DEPLOY_BOOTSTRAP -eq 1 ]] && [[ $DEPLOY_TENANT -eq 1 ]] && [ ! -z "$TENAN
     else
       print_message "$RED" "  ✗ Failed to create Tenant One"
       print_message "$RED" "    Response: $TENANT1_RESPONSE"
+      TENANT1_USERNAME=""
+      TENANT1_PASSWORD=""
     fi
     
     # Create Tenant Two
     TENANT2_EMAIL="${EMAIL_USERNAME}+lab3tenant2@${EMAIL_DOMAIN}"
+    TENANT2_USERNAME="tenant2-admin"
     echo ""
     print_message "$YELLOW" "  Creating Tenant Two with email: $TENANT2_EMAIL"
     
@@ -788,7 +866,7 @@ if [[ $DEPLOY_BOOTSTRAP -eq 1 ]] && [[ $DEPLOY_TENANT -eq 1 ]] && [ ! -z "$TENAN
       -d "{
         \"tenantName\": \"Tenant Two\",
         \"tenantEmail\": \"$TENANT2_EMAIL\",
-        \"tenantAdminUserName\": \"tenant2-admin\",
+        \"tenantAdminUserName\": \"$TENANT2_USERNAME\",
         \"tenantTier\": \"standard\",
         \"tenantPhone\": \"+1-555-0002\",
         \"tenantAddress\": \"456 Oak Ave, City, State 12345\"
@@ -798,7 +876,7 @@ if [[ $DEPLOY_BOOTSTRAP -eq 1 ]] && [[ $DEPLOY_TENANT -eq 1 ]] && [ ! -z "$TENAN
       # Extract temporary password from response
       TENANT2_PASSWORD=$(echo "$TENANT2_RESPONSE" | python3 -c "import sys, json; data=json.load(sys.stdin); print(data.get('message', {}).get('temporaryPassword', ''))" 2>/dev/null || echo "")
       print_message "$GREEN" "  ✓ Tenant Two created successfully"
-      print_message "$GREEN" "    Username: tenant2-admin"
+      print_message "$GREEN" "    Username: $TENANT2_USERNAME"
       print_message "$GREEN" "    Email: $TENANT2_EMAIL"
       if [[ -n "$TENANT2_PASSWORD" ]]; then
         print_message "$GREEN" "    Temporary Password: $TENANT2_PASSWORD"
@@ -806,108 +884,142 @@ if [[ $DEPLOY_BOOTSTRAP -eq 1 ]] && [[ $DEPLOY_TENANT -eq 1 ]] && [ ! -z "$TENAN
     else
       print_message "$RED" "  ✗ Failed to create Tenant Two"
       print_message "$RED" "    Response: $TENANT2_RESPONSE"
+      TENANT2_USERNAME=""
+      TENANT2_PASSWORD=""
     fi
     
     echo ""
     print_message "$GREEN" "  ✓ Sample tenant creation complete!"
-    if [[ -n "$TENANT1_PASSWORD" ]] || [[ -n "$TENANT2_PASSWORD" ]]; then
-      print_message "$YELLOW" "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-      print_message "$GREEN" "  📧 Tenant User Credentials:"
-      if [[ -n "$TENANT1_PASSWORD" ]]; then
-        print_message "$GREEN" "     Tenant One:"
-        print_message "$GREEN" "       Username: tenant1-admin"
-        print_message "$GREEN" "       Password: $TENANT1_PASSWORD"
-        print_message "$GREEN" "       Email: $TENANT1_EMAIL"
-      fi
-      if [[ -n "$TENANT2_PASSWORD" ]]; then
-        print_message "$GREEN" "     Tenant Two:"
-        print_message "$GREEN" "       Username: tenant2-admin"
-        print_message "$GREEN" "       Password: $TENANT2_PASSWORD"
-        print_message "$GREEN" "       Email: $TENANT2_EMAIL"
-      fi
-      print_message "$YELLOW" "  ⚠️  You will be required to change these passwords on first login"
-      print_message "$YELLOW" "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  fi
+  
+  # Display all credentials (admin + tenants) if any were created
+  if [[ -n "$ADMIN_PASSWORD" ]] || [[ -n "$TENANT1_PASSWORD" ]] || [[ -n "$TENANT2_PASSWORD" ]]; then
+    echo ""
+    print_message "$YELLOW" "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    print_message "$GREEN" "  🔐 User Credentials Created:"
+    echo ""
+    
+    if [[ -n "$ADMIN_PASSWORD" ]]; then
+      print_message "$GREEN" "  Admin User (Operation Users Pool):"
+      print_message "$GREEN" "    Username: $ADMIN_USERNAME"
+      print_message "$GREEN" "    Password: $ADMIN_PASSWORD"
+      print_message "$GREEN" "    Email: $ADMIN_EMAIL"
+      print_message "$GREEN" "    Login at: https://${ADMIN_SITE_URL}"
+      echo ""
+    fi
+    
+    if [[ -n "$TENANT1_PASSWORD" ]]; then
+      print_message "$GREEN" "  Tenant One (Pooled Tenant User Pool):"
+      print_message "$GREEN" "    Username: $TENANT1_USERNAME"
+      print_message "$GREEN" "    Password: $TENANT1_PASSWORD"
+      print_message "$GREEN" "    Email: $TENANT1_EMAIL"
+      echo ""
+    fi
+    
+    if [[ -n "$TENANT2_PASSWORD" ]]; then
+      print_message "$GREEN" "  Tenant Two (Pooled Tenant User Pool):"
+      print_message "$GREEN" "    Username: $TENANT2_USERNAME"
+      print_message "$GREEN" "    Password: $TENANT2_PASSWORD"
+      print_message "$GREEN" "    Email: $TENANT2_EMAIL"
+      echo ""
+    fi
+    
+    print_message "$GREEN" "  Tenant Login URL: https://${APP_SITE_URL}"
+    print_message "$YELLOW" "  ⚠️  You will be required to change these passwords on first login"
+    print_message "$YELLOW" "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    
+    # Update CloudFormation stack with all user credentials
+    print_message "$YELLOW" "  Updating CloudFormation stack with user credentials..."
+    
+    # Build parameter list with all credentials
+    STACK_PARAMS="ParameterKey=Environment,UsePreviousValue=true \
+      ParameterKey=Owner,UsePreviousValue=true \
+      ParameterKey=CostCenter,UsePreviousValue=true \
+      ParameterKey=AdminEmailParameter,UsePreviousValue=true \
+      ParameterKey=TenantAdminEmailParameter,UsePreviousValue=true \
+      ParameterKey=SystemAdminRoleNameParameter,UsePreviousValue=true \
+      ParameterKey=StageName,UsePreviousValue=true \
+      ParameterKey=EventEngineParameter,UsePreviousValue=true \
+      ParameterKey=AdminUserPoolCallbackURLParameter,UsePreviousValue=true \
+      ParameterKey=TenantUserPoolCallbackURLParameter,UsePreviousValue=true \
+      ParameterKey=CreateCloudWatchRole,UsePreviousValue=true"
+    
+    # Add admin credentials if created
+    if [[ -n "$ADMIN_PASSWORD" ]]; then
+      STACK_PARAMS="$STACK_PARAMS ParameterKey=AdminUsername,ParameterValue=\"$ADMIN_USERNAME\" \
+        ParameterKey=AdminTemporaryPassword,ParameterValue=\"$ADMIN_PASSWORD\""
+    else
+      STACK_PARAMS="$STACK_PARAMS ParameterKey=AdminUsername,UsePreviousValue=true \
+        ParameterKey=AdminTemporaryPassword,UsePreviousValue=true"
+    fi
+    
+    # Add tenant credentials if created
+    if [[ -n "$TENANT1_PASSWORD" ]]; then
+      STACK_PARAMS="$STACK_PARAMS ParameterKey=Tenant1Username,ParameterValue=\"$TENANT1_USERNAME\" \
+        ParameterKey=Tenant1TemporaryPassword,ParameterValue=\"$TENANT1_PASSWORD\""
+    else
+      STACK_PARAMS="$STACK_PARAMS ParameterKey=Tenant1Username,UsePreviousValue=true \
+        ParameterKey=Tenant1TemporaryPassword,UsePreviousValue=true"
+    fi
+    
+    if [[ -n "$TENANT2_PASSWORD" ]]; then
+      STACK_PARAMS="$STACK_PARAMS ParameterKey=Tenant2Username,ParameterValue=\"$TENANT2_USERNAME\" \
+        ParameterKey=Tenant2TemporaryPassword,ParameterValue=\"$TENANT2_PASSWORD\""
+    else
+      STACK_PARAMS="$STACK_PARAMS ParameterKey=Tenant2Username,UsePreviousValue=true \
+        ParameterKey=Tenant2TemporaryPassword,UsePreviousValue=true"
+    fi
+    
+    # Execute stack update
+    if [[ -n "$AWS_PROFILE" ]]; then
+      aws cloudformation update-stack \
+        --profile "$AWS_PROFILE" \
+        --stack-name "$SHARED_STACK_NAME" \
+        --use-previous-template \
+        --parameters $STACK_PARAMS \
+        --capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND \
+        --region "$AWS_REGION" > /dev/null 2>&1
+    else
+      aws cloudformation update-stack \
+        --stack-name "$SHARED_STACK_NAME" \
+        --use-previous-template \
+        --parameters $STACK_PARAMS \
+        --capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND \
+        --region "$AWS_REGION" > /dev/null 2>&1
+    fi
+    
+    UPDATE_EXIT_CODE=$?
+    if [[ $UPDATE_EXIT_CODE -eq 0 ]]; then
+      print_message "$GREEN" "  ✓ Stack update initiated"
+      print_message "$YELLOW" "  Waiting for stack update to complete..."
       
-      # Update CloudFormation stack with tenant credentials (use Tenant One as primary)
-      if [[ -n "$TENANT1_PASSWORD" ]]; then
-        print_message "$YELLOW" "  Updating CloudFormation stack with tenant credentials..."
-        if [[ -n "$AWS_PROFILE" ]]; then
-          aws cloudformation update-stack \
-            --profile "$AWS_PROFILE" \
-            --stack-name "$STACK_NAME" \
-            --use-previous-template \
-            --parameters \
-              ParameterKey=Environment,UsePreviousValue=true \
-              ParameterKey=Owner,UsePreviousValue=true \
-              ParameterKey=CostCenter,UsePreviousValue=true \
-              ParameterKey=AdminEmailParameter,UsePreviousValue=true \
-              ParameterKey=TenantAdminEmailParameter,UsePreviousValue=true \
-              ParameterKey=SystemAdminRoleNameParameter,UsePreviousValue=true \
-              ParameterKey=StageName,UsePreviousValue=true \
-              ParameterKey=EventEngineParameter,UsePreviousValue=true \
-              ParameterKey=AdminUserPoolCallbackURLParameter,UsePreviousValue=true \
-              ParameterKey=TenantUserPoolCallbackURLParameter,UsePreviousValue=true \
-              ParameterKey=CreateCloudWatchRole,UsePreviousValue=true \
-              ParameterKey=TenantUsername,ParameterValue="tenant1-admin" \
-              ParameterKey=TenantTemporaryPassword,ParameterValue="$TENANT1_PASSWORD" \
-            --capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND \
-            --region "$AWS_REGION" > /dev/null 2>&1
-        else
-          aws cloudformation update-stack \
-            --stack-name "$STACK_NAME" \
-            --use-previous-template \
-            --parameters \
-              ParameterKey=Environment,UsePreviousValue=true \
-              ParameterKey=Owner,UsePreviousValue=true \
-              ParameterKey=CostCenter,UsePreviousValue=true \
-              ParameterKey=AdminEmailParameter,UsePreviousValue=true \
-              ParameterKey=TenantAdminEmailParameter,UsePreviousValue=true \
-              ParameterKey=SystemAdminRoleNameParameter,UsePreviousValue=true \
-              ParameterKey=StageName,UsePreviousValue=true \
-              ParameterKey=EventEngineParameter,UsePreviousValue=true \
-              ParameterKey=AdminUserPoolCallbackURLParameter,UsePreviousValue=true \
-              ParameterKey=TenantUserPoolCallbackURLParameter,UsePreviousValue=true \
-              ParameterKey=CreateCloudWatchRole,UsePreviousValue=true \
-              ParameterKey=TenantUsername,ParameterValue="tenant1-admin" \
-              ParameterKey=TenantTemporaryPassword,ParameterValue="$TENANT1_PASSWORD" \
-            --capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND \
-            --region "$AWS_REGION" > /dev/null 2>&1
-        fi
-        
-        UPDATE_EXIT_CODE=$?
-        if [[ $UPDATE_EXIT_CODE -eq 0 ]]; then
-          print_message "$GREEN" "  ✓ Stack update initiated"
-          print_message "$YELLOW" "  Waiting for stack update to complete..."
-          
-          # Wait for stack update to complete
-          if [[ -n "$AWS_PROFILE" ]]; then
-            aws cloudformation wait stack-update-complete \
-              --profile "$AWS_PROFILE" \
-              --stack-name "$STACK_NAME" \
-              --region "$AWS_REGION"
-          else
-            aws cloudformation wait stack-update-complete \
-              --stack-name "$STACK_NAME" \
-              --region "$AWS_REGION"
-          fi
-          
-          WAIT_EXIT_CODE=$?
-          if [[ $WAIT_EXIT_CODE -eq 0 ]]; then
-            print_message "$GREEN" "  ✓ Stack updated with tenant credentials"
-            print_message "$GREEN" "  ℹ️  Credentials are now available in CloudFormation outputs"
-            print_message "$YELLOW" "  💡 To retrieve credentials later, run:"
-            if [[ -n "$AWS_PROFILE" ]]; then
-              print_message "$YELLOW" "     aws cloudformation describe-stacks --stack-name $STACK_NAME --profile $AWS_PROFILE --query \"Stacks[0].Outputs\""
-            else
-              print_message "$YELLOW" "     aws cloudformation describe-stacks --stack-name $STACK_NAME --query \"Stacks[0].Outputs\""
-            fi
-          else
-            print_message "$YELLOW" "  ⚠️  Stack update may have failed (exit code: $WAIT_EXIT_CODE)"
-          fi
-        else
-          print_message "$YELLOW" "  ⚠️  Could not update stack with credentials (non-critical)"
-        fi
+      # Wait for stack update to complete
+      if [[ -n "$AWS_PROFILE" ]]; then
+        aws cloudformation wait stack-update-complete \
+          --profile "$AWS_PROFILE" \
+          --stack-name "$SHARED_STACK_NAME" \
+          --region "$AWS_REGION"
+      else
+        aws cloudformation wait stack-update-complete \
+          --stack-name "$SHARED_STACK_NAME" \
+          --region "$AWS_REGION"
       fi
+      
+      WAIT_EXIT_CODE=$?
+      if [[ $WAIT_EXIT_CODE -eq 0 ]]; then
+        print_message "$GREEN" "  ✓ Stack updated with all user credentials"
+        print_message "$GREEN" "  ℹ️  Credentials are now available in CloudFormation outputs"
+        print_message "$YELLOW" "  💡 To retrieve credentials later, run:"
+        if [[ -n "$AWS_PROFILE" ]]; then
+          print_message "$YELLOW" "     aws cloudformation describe-stacks --stack-name $SHARED_STACK_NAME --profile $AWS_PROFILE --query \"Stacks[0].Outputs\""
+        else
+          print_message "$YELLOW" "     aws cloudformation describe-stacks --stack-name $SHARED_STACK_NAME --query \"Stacks[0].Outputs\""
+        fi
+      else
+        print_message "$YELLOW" "  ⚠️  Stack update may have failed (exit code: $WAIT_EXIT_CODE)"
+      fi
+    else
+      print_message "$YELLOW" "  ⚠️  Could not update stack with credentials (non-critical)"
     fi
   fi
   echo ""

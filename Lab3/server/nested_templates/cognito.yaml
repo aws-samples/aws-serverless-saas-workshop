@@ -177,26 +177,6 @@ Resources:
       Description: Admin user group
       Precedence: 0
       UserPoolId: !Ref CognitoOperationUsersUserPool
-  CognitoAdminUser:
-    Type: AWS::Cognito::UserPoolUser
-    Properties:
-      Username: admin
-      MessageAction: SUPPRESS  # Don't send welcome email (avoids SES sandbox issues)
-      ForceAliasCreation: true
-      UserAttributes:
-        - Name: email
-          Value: !Ref AdminEmailParameter
-        - Name: custom:tenantId
-          Value: system_admins
-        - Name: custom:userRole
-          Value: !Ref SystemAdminRoleNameParameter
-      UserPoolId: !Ref CognitoOperationUsersUserPool
-  CognitoAddUserToGroup:
-      Type: AWS::Cognito::UserPoolUserToGroupAttachment
-      Properties:
-        GroupName: !Ref CognitoAdminUserGroup
-        Username: !Ref CognitoAdminUser
-        UserPoolId: !Ref CognitoOperationUsersUserPool
   
   CognitoTenantAdminUserGroup:
     Type: AWS::Cognito::UserPoolGroup
@@ -205,28 +185,6 @@ Resources:
       Description: Tenant admin user group
       Precedence: 0
       UserPoolId: !Ref CognitoUserPool
-  
-  CognitoTenantAdminUser:
-    Type: AWS::Cognito::UserPoolUser
-    Properties:
-      Username: tenant-admin
-      MessageAction: SUPPRESS  # Don't send welcome email (avoids SES sandbox issues)
-      ForceAliasCreation: true
-      UserAttributes:
-        - Name: email
-          Value: !Ref TenantAdminEmailParameter
-        - Name: custom:tenantId
-          Value: default-tenant
-        - Name: custom:userRole
-          Value: TenantAdmin
-      UserPoolId: !Ref CognitoUserPool
-  
-  CognitoAddTenantAdminToGroup:
-      Type: AWS::Cognito::UserPoolUserToGroupAttachment
-      Properties:
-        GroupName: !Ref CognitoTenantAdminUserGroup
-        Username: !Ref CognitoTenantAdminUser
-        UserPoolId: !Ref CognitoUserPool
         
 Outputs:  
   CognitoUserPoolId:
