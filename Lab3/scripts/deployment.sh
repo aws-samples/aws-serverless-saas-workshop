@@ -878,12 +878,33 @@ if [[ $DEPLOY_BOOTSTRAP -eq 1 ]] && [[ $DEPLOY_TENANT -eq 1 ]] && [ ! -z "$TENAN
         
         UPDATE_EXIT_CODE=$?
         if [[ $UPDATE_EXIT_CODE -eq 0 ]]; then
-          print_message "$GREEN" "  ✓ Stack updated with tenant credentials"
-          print_message "$YELLOW" "  💡 To retrieve credentials later, run:"
+          print_message "$GREEN" "  ✓ Stack update initiated"
+          print_message "$YELLOW" "  Waiting for stack update to complete..."
+          
+          # Wait for stack update to complete
           if [[ -n "$AWS_PROFILE" ]]; then
-            print_message "$YELLOW" "     aws cloudformation describe-stacks --stack-name $STACK_NAME --profile $AWS_PROFILE --query \"Stacks[0].Outputs\""
+            aws cloudformation wait stack-update-complete \
+              --profile "$AWS_PROFILE" \
+              --stack-name "$STACK_NAME" \
+              --region "$AWS_REGION"
           else
-            print_message "$YELLOW" "     aws cloudformation describe-stacks --stack-name $STACK_NAME --query \"Stacks[0].Outputs\""
+            aws cloudformation wait stack-update-complete \
+              --stack-name "$STACK_NAME" \
+              --region "$AWS_REGION"
+          fi
+          
+          WAIT_EXIT_CODE=$?
+          if [[ $WAIT_EXIT_CODE -eq 0 ]]; then
+            print_message "$GREEN" "  ✓ Stack updated with tenant credentials"
+            print_message "$GREEN" "  ℹ️  Credentials are now available in CloudFormation outputs"
+            print_message "$YELLOW" "  💡 To retrieve credentials later, run:"
+            if [[ -n "$AWS_PROFILE" ]]; then
+              print_message "$YELLOW" "     aws cloudformation describe-stacks --stack-name $STACK_NAME --profile $AWS_PROFILE --query \"Stacks[0].Outputs\""
+            else
+              print_message "$YELLOW" "     aws cloudformation describe-stacks --stack-name $STACK_NAME --query \"Stacks[0].Outputs\""
+            fi
+          else
+            print_message "$YELLOW" "  ⚠️  Stack update may have failed (exit code: $WAIT_EXIT_CODE)"
           fi
         else
           print_message "$YELLOW" "  ⚠️  Could not update stack with credentials (non-critical)"

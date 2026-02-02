@@ -504,8 +504,28 @@ if [[ $DEPLOY_CLIENT -eq 1 ]]; then
     
     UPDATE_EXIT_CODE=$?
     if [[ $UPDATE_EXIT_CODE -eq 0 ]]; then
-      print_message "$GREEN" "  ✓ Stack updated with admin password"
-      print_message "$YELLOW" "  ℹ️  Password will be available in CloudFormation outputs after stack update completes"
+      print_message "$GREEN" "  ✓ Stack update initiated"
+      print_message "$YELLOW" "  Waiting for stack update to complete..."
+      
+      # Wait for stack update to complete
+      if [[ -n "$AWS_PROFILE" ]]; then
+        aws cloudformation wait stack-update-complete \
+          --profile "$AWS_PROFILE" \
+          --stack-name "$STACK_NAME" \
+          --region "$AWS_REGION"
+      else
+        aws cloudformation wait stack-update-complete \
+          --stack-name "$STACK_NAME" \
+          --region "$AWS_REGION"
+      fi
+      
+      WAIT_EXIT_CODE=$?
+      if [[ $WAIT_EXIT_CODE -eq 0 ]]; then
+        print_message "$GREEN" "  ✓ Stack updated with admin password"
+        print_message "$GREEN" "  ℹ️  Password is now available in CloudFormation outputs"
+      else
+        print_message "$YELLOW" "  ⚠️  Stack update may have failed (exit code: $WAIT_EXIT_CODE)"
+      fi
     else
       print_message "$YELLOW" "  ⚠️  Could not update stack with password (non-critical)"
     fi

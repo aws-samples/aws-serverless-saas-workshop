@@ -762,9 +762,29 @@ if [[ $DEPLOY_BOOTSTRAP -eq 1 ]] && [ ! -z "$TENANT_ADMIN_EMAIL" ]; then
         --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND \
         > /dev/null 2>&1 || true
       
-      print_message "$GREEN" "  ✓ Stack updated with tenant credentials"
-      print_message "$YELLOW" "  📋 Retrieve credentials anytime with:"
-      print_message "$YELLOW" "     aws cloudformation describe-stacks --stack-name $SHARED_STACK_NAME --query \"Stacks[0].Outputs\" $PROFILE_ARG --region $AWS_REGION"
+      UPDATE_EXIT_CODE=$?
+      if [[ $UPDATE_EXIT_CODE -eq 0 ]]; then
+        print_message "$GREEN" "  ✓ Stack update initiated"
+        print_message "$YELLOW" "  Waiting for stack update to complete..."
+        
+        # Wait for stack update to complete
+        aws cloudformation wait stack-update-complete \
+          $PROFILE_ARG \
+          --region "$AWS_REGION" \
+          --stack-name "$SHARED_STACK_NAME"
+        
+        WAIT_EXIT_CODE=$?
+        if [[ $WAIT_EXIT_CODE -eq 0 ]]; then
+          print_message "$GREEN" "  ✓ Stack updated with tenant credentials"
+          print_message "$GREEN" "  ℹ️  Credentials are now available in CloudFormation outputs"
+          print_message "$YELLOW" "  📋 Retrieve credentials anytime with:"
+          print_message "$YELLOW" "     aws cloudformation describe-stacks --stack-name $SHARED_STACK_NAME --query \"Stacks[0].Outputs\" $PROFILE_ARG --region $AWS_REGION"
+        else
+          print_message "$YELLOW" "  ⚠️  Stack update may have failed (exit code: $WAIT_EXIT_CODE)"
+        fi
+      else
+        print_message "$YELLOW" "  ⚠️  Could not update stack with credentials (non-critical)"
+      fi
     fi
   fi
 fi
