@@ -37,11 +37,19 @@ def register_tenant(event, context):
         create_tenant_response = __create_tenant(tenant_details, headers, auth, host, stage_name)
         logger.info (create_tenant_response)
 
+        # Extract temporary password from create_user_response to include in registration response
+        temporary_password = create_user_response['message'].get('temporaryPassword', '')
+
     except Exception as e:
         logger.error('Error registering a new tenant')
         raise Exception('Error registering a new tenant', e)
     else:
-        return utils.create_success_response("You have been registered in our system")
+        # Include temporary password in response for deployment script to capture
+        response_message = {
+            "message": "You have been registered in our system",
+            "temporaryPassword": temporary_password
+        }
+        return utils.create_success_response(response_message)
 
 def __create_tenant_admin_user(tenant_details, headers, auth, host, stage_name):
     try:
