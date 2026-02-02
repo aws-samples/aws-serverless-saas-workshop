@@ -748,8 +748,13 @@ if [[ $DEPLOY_BOOTSTRAP -eq 1 ]] && [ ! -z "$TENANT_ADMIN_EMAIL" ]; then
       
       # Add tenant credentials parameters
       if [[ -n "$TENANT1_PASSWORD" ]]; then
-        STACK_UPDATE_PARAMS="$STACK_UPDATE_PARAMS ParameterKey=TenantUsername,ParameterValue=tenant1-admin"
-        STACK_UPDATE_PARAMS="$STACK_UPDATE_PARAMS ParameterKey=TenantTemporaryPassword,ParameterValue=$TENANT1_PASSWORD"
+        STACK_UPDATE_PARAMS="$STACK_UPDATE_PARAMS ParameterKey=Tenant1Username,ParameterValue=tenant1-admin"
+        STACK_UPDATE_PARAMS="$STACK_UPDATE_PARAMS ParameterKey=Tenant1TemporaryPassword,ParameterValue=$TENANT1_PASSWORD"
+      fi
+      
+      if [[ -n "$TENANT2_PASSWORD" ]]; then
+        STACK_UPDATE_PARAMS="$STACK_UPDATE_PARAMS ParameterKey=Tenant2Username,ParameterValue=tenant2-admin"
+        STACK_UPDATE_PARAMS="$STACK_UPDATE_PARAMS ParameterKey=Tenant2TemporaryPassword,ParameterValue=$TENANT2_PASSWORD"
       fi
       
       # Update the stack

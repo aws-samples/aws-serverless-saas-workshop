@@ -53,14 +53,23 @@ Parameters:
       - "true"
       - "false"
     Description: "Whether to create the API Gateway CloudWatch role (set to false if role already exists)"
-  TenantUsername:
+  Tenant1Username:
     Type: String
     Default: ""
-    Description: "Tenant admin username (set during deployment)"
-  TenantTemporaryPassword:
+    Description: "Tenant 1 admin username (set during deployment)"
+  Tenant1TemporaryPassword:
     Type: String
     Default: ""
-    Description: "Temporary password for tenant admin (set during deployment)"
+    Description: "Temporary password for tenant 1 admin (set during deployment)"
+    NoEcho: true
+  Tenant2Username:
+    Type: String
+    Default: ""
+    Description: "Tenant 2 admin username (set during deployment)"
+  Tenant2TemporaryPassword:
+    Type: String
+    Default: ""
+    Description: "Temporary password for tenant 2 admin (set during deployment)"
     NoEcho: true
 Conditions:
   IsNotRunningInEventEngine: !Not [ !Equals [ !Ref EventEngineParameter, true] ]   
@@ -220,9 +229,15 @@ Outputs:
     Value: !GetAtt LambdaFunctions.Outputs.AuthorizerExecutionRoleArn 
     Export:
       Name: "Serverless-SaaS-AuthorizerExecutionRoleArn-lab4"   
-  TenantUsername:
-    Description: "Tenant admin username (if tenant was created during deployment)"
-    Value: !Ref TenantUsername
-  TenantTemporaryPassword:
-    Description: "Tenant admin temporary password (if tenant was created during deployment)"
-    Value: !Ref TenantTemporaryPassword
+  Tenant1Username:
+    Description: "Tenant 1 admin username (if tenant was created during deployment)"
+    Value: !Ref Tenant1Username
+  Tenant1TemporaryPassword:
+    Description: "Tenant 1 admin temporary password (if tenant was created during deployment)"
+    Value: !Ref Tenant1TemporaryPassword
+  Tenant2Username:
+    Description: "Tenant 2 admin username (if tenant was created during deployment)"
+    Value: !Ref Tenant2Username
+  Tenant2TemporaryPassword:
+    Description: "Tenant 2 admin temporary password (if tenant was created during deployment)"
+    Value: !Ref Tenant2TemporaryPassword
