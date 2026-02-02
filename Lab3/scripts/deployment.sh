@@ -847,6 +847,8 @@ if [[ $DEPLOY_BOOTSTRAP -eq 1 ]] && [[ $DEPLOY_TENANT -eq 1 ]]; then
       print_message "$GREEN" "    Email: $TENANT1_EMAIL"
       if [[ -n "$TENANT1_PASSWORD" ]]; then
         print_message "$GREEN" "    Temporary Password: $TENANT1_PASSWORD"
+      else
+        print_message "$YELLOW" "    ⚠️  Could not extract temporary password from API response"
       fi
     else
       print_message "$RED" "  ✗ Failed to create Tenant One"
@@ -880,6 +882,8 @@ if [[ $DEPLOY_BOOTSTRAP -eq 1 ]] && [[ $DEPLOY_TENANT -eq 1 ]]; then
       print_message "$GREEN" "    Email: $TENANT2_EMAIL"
       if [[ -n "$TENANT2_PASSWORD" ]]; then
         print_message "$GREEN" "    Temporary Password: $TENANT2_PASSWORD"
+      else
+        print_message "$YELLOW" "    ⚠️  Could not extract temporary password from API response"
       fi
     else
       print_message "$RED" "  ✗ Failed to create Tenant Two"

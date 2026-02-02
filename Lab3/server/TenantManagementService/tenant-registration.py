@@ -41,7 +41,14 @@ def register_tenant(event, context):
         logger.error('Error registering a new tenant')
         raise Exception('Error registering a new tenant', e)
     else:
-        return utils.create_success_response("You have been registered in our system")
+        # Include the temporary password in the response for deployment automation
+        response_message = {
+            "message": "You have been registered in our system",
+            "tenantId": tenant_id,
+            "tenantAdminUserName": create_user_response['message']['tenantAdminUserName'],
+            "temporaryPassword": create_user_response['message'].get('temporaryPassword', '')
+        }
+        return utils.create_success_response(response_message)
 
 def __create_tenant_admin_user(tenant_details, headers, auth, host, stage_name):
     try:
