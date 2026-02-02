@@ -1023,6 +1023,7 @@ if [[ $DEPLOY_BOOTSTRAP -eq 1 ]] && [[ $DEPLOY_TENANT -eq 1 ]]; then
     fi
   fi
   echo ""
+  fi  # Close: if [ ! -z "$TENANT_ADMIN_EMAIL" ]; then (from line 806)
 fi
 
 # Calculate duration
