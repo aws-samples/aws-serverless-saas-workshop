@@ -225,6 +225,9 @@ Outputs:
     Description: The name of the CloudFront url for Tenant Management site
     Value: !GetAtt UserInterface.Outputs.ApplicationSite
     Condition: IsNotRunningInEventEngine
+  CognitoOperationUsersUserPoolId:
+    Description: The Admin Management userpool id
+    Value: !GetAtt Cognito.Outputs.CognitoOperationUsersUserPoolId
   CognitoOperationUsersUserPoolProviderURL:
     Description: The Admin Management userpool provider url
     Value: !GetAtt Cognito.Outputs.CognitoOperationUsersUserPoolProviderURL
