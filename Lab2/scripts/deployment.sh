@@ -462,6 +462,53 @@ if [[ $DEPLOY_CLIENT -eq 1 ]]; then
     # Store credentials for display at the end
     ADMIN_USERNAME="admin-user"
     ADMIN_TEMP_PASSWORD="$TEMP_PASSWORD"
+    
+    # Update CloudFormation stack with the password
+    print_message "$YELLOW" "  Updating CloudFormation stack with admin password..."
+    if [[ -n "$AWS_PROFILE" ]]; then
+      aws cloudformation update-stack \
+        --profile "$AWS_PROFILE" \
+        --stack-name "$STACK_NAME" \
+        --use-previous-template \
+        --parameters \
+          ParameterKey=AdminEmailParameter,UsePreviousValue=true \
+          ParameterKey=SystemAdminRoleNameParameter,UsePreviousValue=true \
+          ParameterKey=StageName,UsePreviousValue=true \
+          ParameterKey=EventEngineParameter,UsePreviousValue=true \
+          ParameterKey=AdminUserPoolCallbackURLParameter,UsePreviousValue=true \
+          ParameterKey=Environment,UsePreviousValue=true \
+          ParameterKey=Owner,UsePreviousValue=true \
+          ParameterKey=CostCenter,UsePreviousValue=true \
+          ParameterKey=CreateCloudWatchRole,UsePreviousValue=true \
+          ParameterKey=AdminTemporaryPassword,ParameterValue="$TEMP_PASSWORD" \
+        --capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND \
+        --region "$AWS_REGION" > /dev/null 2>&1
+    else
+      aws cloudformation update-stack \
+        --stack-name "$STACK_NAME" \
+        --use-previous-template \
+        --parameters \
+          ParameterKey=AdminEmailParameter,UsePreviousValue=true \
+          ParameterKey=SystemAdminRoleNameParameter,UsePreviousValue=true \
+          ParameterKey=StageName,UsePreviousValue=true \
+          ParameterKey=EventEngineParameter,UsePreviousValue=true \
+          ParameterKey=AdminUserPoolCallbackURLParameter,UsePreviousValue=true \
+          ParameterKey=Environment,UsePreviousValue=true \
+          ParameterKey=Owner,UsePreviousValue=true \
+          ParameterKey=CostCenter,UsePreviousValue=true \
+          ParameterKey=CreateCloudWatchRole,UsePreviousValue=true \
+          ParameterKey=AdminTemporaryPassword,ParameterValue="$TEMP_PASSWORD" \
+        --capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND \
+        --region "$AWS_REGION" > /dev/null 2>&1
+    fi
+    
+    UPDATE_EXIT_CODE=$?
+    if [[ $UPDATE_EXIT_CODE -eq 0 ]]; then
+      print_message "$GREEN" "  ✓ Stack updated with admin password"
+      print_message "$YELLOW" "  ℹ️  Password will be available in CloudFormation outputs after stack update completes"
+    else
+      print_message "$YELLOW" "  ⚠️  Could not update stack with password (non-critical)"
+    fi
   else
     if echo "$CREATE_ADMIN_USER" | grep -q "UsernameExistsException"; then
       print_message "$YELLOW" "  Warning: Admin user already exists"
@@ -707,6 +754,13 @@ elif [[ $DEPLOY_CLIENT -eq 1 ]]; then
     print_message "$GREEN" "     Email: $ADMIN_EMAIL"
     print_message "$YELLOW" "  ⚠️  You will be required to change this password on first login"
     print_message "$YELLOW" "  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    print_message "$YELLOW" "  💡 To retrieve credentials later, run:"
+    if [[ -n "$AWS_PROFILE" ]]; then
+      print_message "$YELLOW" "     aws cloudformation describe-stacks --stack-name $STACK_NAME --profile $AWS_PROFILE --query \"Stacks[0].Outputs\""
+    else
+      print_message "$YELLOW" "     aws cloudformation describe-stacks --stack-name $STACK_NAME --query \"Stacks[0].Outputs\""
+    fi
     echo ""
   fi
   print_message "$YELLOW" "  1. Open the Admin Site URL in your browser"

@@ -48,6 +48,11 @@ Parameters:
   CreateCloudWatchRole:
     Type: String
     Default: "true"
+  AdminTemporaryPassword:
+    Type: String
+    Default: ""
+    Description: "Temporary password for admin user (set during deployment)"
+    NoEcho: true
     AllowedValues: ["true", "false"]
     Description: Whether to create the API Gateway CloudWatch role (set to false if role already exists)
 Conditions:
@@ -193,4 +198,10 @@ Outputs:
   CognitoAdminUserGroupName:
     Description: The Admin Management userpool admin user group name
     Value: !GetAtt Cognito.Outputs.CognitoAdminUserGroupName    
+  AdminUsername:
+    Description: "Admin user username"
+    Value: "admin-user"
+  AdminTemporaryPassword:
+    Description: "Admin user temporary password (change on first login)"
+    Value: !Ref AdminTemporaryPassword
     
