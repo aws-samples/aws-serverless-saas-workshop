@@ -53,6 +53,9 @@ Parameters:
     Default: ""
     Description: "Temporary password for admin user (set during deployment)"
     NoEcho: true
+  CreateCloudWatchRole:
+    Type: String
+    Default: "true"
     AllowedValues: ["true", "false"]
     Description: Whether to create the API Gateway CloudWatch role (set to false if role already exists)
 Conditions:
