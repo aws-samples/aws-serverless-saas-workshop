@@ -666,8 +666,8 @@ if [[ $DEPLOY_BOOTSTRAP -eq 1 ]] && [ ! -z "$TENANT_ADMIN_EMAIL" ]; then
       }")
     
     if echo "$TENANT1_RESPONSE" | grep -q "registered"; then
-      # Extract temporary password from response (password is at top level, not nested under 'message')
-      TENANT1_PASSWORD=$(echo "$TENANT1_RESPONSE" | python3 -c "import sys, json; data=json.load(sys.stdin); print(data.get('temporaryPassword', ''))" 2>/dev/null || echo "")
+      # Extract temporary password from response (password is nested under 'message' key)
+      TENANT1_PASSWORD=$(echo "$TENANT1_RESPONSE" | python3 -c "import sys, json; data=json.load(sys.stdin); print(data.get('message', {}).get('temporaryPassword', ''))" 2>/dev/null || echo "")
       print_message "$GREEN" "  ✓ Tenant One created successfully"
       print_message "$GREEN" "    Username: tenant1-admin"
       print_message "$GREEN" "    Email: $TENANT1_EMAIL"
@@ -696,8 +696,8 @@ if [[ $DEPLOY_BOOTSTRAP -eq 1 ]] && [ ! -z "$TENANT_ADMIN_EMAIL" ]; then
       }")
     
     if echo "$TENANT2_RESPONSE" | grep -q "registered"; then
-      # Extract temporary password from response (password is at top level, not nested under 'message')
-      TENANT2_PASSWORD=$(echo "$TENANT2_RESPONSE" | python3 -c "import sys, json; data=json.load(sys.stdin); print(data.get('temporaryPassword', ''))" 2>/dev/null || echo "")
+      # Extract temporary password from response (password is nested under 'message' key)
+      TENANT2_PASSWORD=$(echo "$TENANT2_RESPONSE" | python3 -c "import sys, json; data=json.load(sys.stdin); print(data.get('message', {}).get('temporaryPassword', ''))" 2>/dev/null || echo "")
       print_message "$GREEN" "  ✓ Tenant Two created successfully"
       print_message "$GREEN" "    Username: tenant2-admin"
       print_message "$GREEN" "    Email: $TENANT2_EMAIL"
