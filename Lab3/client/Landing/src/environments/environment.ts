@@ -1,4 +1,4 @@
   export const environment = {
     production: true,
-    apiGatewayUrl: 'https://ajkfipmhp9.execute-api.us-east-1.amazonaws.com/prod',
+    apiGatewayUrl: 'https://vtj3a4xfl4.execute-api.us-east-1.amazonaws.com/prod',
   };

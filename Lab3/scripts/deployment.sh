@@ -810,7 +810,9 @@ if [[ $DEPLOY_BOOTSTRAP -eq 1 ]] && [[ $DEPLOY_TENANT -eq 1 ]]; then
     print_message "$BLUE" "=========================================="
   
   # Extract username and domain from email
-  EMAIL_USERNAME=$(echo "$TENANT_ADMIN_EMAIL" | cut -d'@' -f1)
+  # Extract base username (before any + sign) to avoid double + in tenant emails
+  EMAIL_FULL_USERNAME=$(echo "$TENANT_ADMIN_EMAIL" | cut -d'@' -f1)
+  EMAIL_USERNAME=$(echo "$EMAIL_FULL_USERNAME" | cut -d'+' -f1)
   EMAIL_DOMAIN=$(echo "$TENANT_ADMIN_EMAIL" | cut -d'@' -f2)
   
   # Get the Admin API Gateway URL from Lab3 shared stack
