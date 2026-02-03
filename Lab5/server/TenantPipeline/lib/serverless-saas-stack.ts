@@ -90,7 +90,10 @@ export class ServerlessSaaSStack extends cdk.Stack {
     //Declare a new CodeBuild project
     const buildProject = new codebuild.PipelineProject(this, 'Build', {
       buildSpec : codebuild.BuildSpec.fromSourceFilename("Lab5/server/tenant-buildspec.yml"),
-      environment: { buildImage: codebuild.LinuxBuildImage.AMAZON_LINUX_2_4 },
+      environment: { 
+        buildImage: codebuild.LinuxBuildImage.STANDARD_7_0,
+        privileged: true  // Required for Docker builds in SAM
+      },
       environmentVariables: {
         'PACKAGE_BUCKET': {
           value: artifactsBucket.bucketName
