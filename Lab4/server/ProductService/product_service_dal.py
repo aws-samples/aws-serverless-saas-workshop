@@ -156,7 +156,7 @@ def __get_tenant_data(partition_id, get_all_products_response, table, event):
 
     metrics_manager.record_metric(event, "ReadCapacityUnits", "Count", response['ConsumedCapacity']['CapacityUnits'])        
 
-#Implement this method
+#TODO: Implement this method
 def __get_dynamodb_table(event, dynamodb):    
     accesskey = event['requestContext']['authorizer']['accesskey']
     secretkey = event['requestContext']['authorizer']['secretkey']

@@ -23,75 +23,45 @@ def calculate_daily_dynamodb_attribution_by_tenant(event, context):
     end_date_time =  __get_end_date_time() #next day epoch
     print("Processing attribution for current day")
     
-    #Get total dynamodb cost for the given duration
     #TODO: Get total cost of DynamoDB for the current date
     total_dynamodb_cost = __get_total_service_cost('AmazonDynamoDB', start_date_time, end_date_time)
 
     log_group_names = __get_list_of_log_group_names()
-    print( log_group_names)
+    print(log_group_names)
     
     # Check if log groups exist before querying
     if not log_group_names or len(log_group_names) == 0:
         print("No log groups found. Skipping DynamoDB cost attribution.")
         return
-        
-    #TODO: Write the query to get the DynamoDB WCU and RCUs consumption grouped by TenantId
-    # Query logs for exact consumed_rcu and consumed_wcu values logged by Lambda functions
-    usage_by_tenant_by_day_query = 'filter ispresent(consumed_rcu) or ispresent(consumed_wcu) \
-    | fields tenant_id as TenantId, consumed_rcu as RCapacityUnits, consumed_wcu as WCapacityUnits \
-    | stats sum(RCapacityUnits) as ReadCapacityUnits, sum(WCapacityUnits) as WriteCapacityUnits by TenantId, dateceil(@timestamp, 1d) as timestamp'
     
-    usage_by_tenant_by_day = __query_cloudwatch_logs(logs, log_group_names, usage_by_tenant_by_day_query, start_date_time, end_date_time)
-    print(usage_by_tenant_by_day)        
+    # Use filter_log_events API instead of Logs Insights for accurate counting
+    # Logs Insights has an indexing limitation where cold start logs may not be indexed
+    tenant_usage, total_RCU, total_WCU = __get_dynamodb_usage_by_tenant(
+        logs, log_group_names, start_date_time, end_date_time
+    )
     
-    #TODO: Write the query to get the Total DynamoDB WCU and RCUs consumption across all tenants
-    # Query logs for total consumed_rcu and consumed_wcu values
-    total_usage_by_day_query = 'filter ispresent(consumed_rcu) or ispresent(consumed_wcu) \
-    | fields consumed_rcu as RCapacityUnits, consumed_wcu as WCapacityUnits \
-    | stats sum(RCapacityUnits) as ReadCapacityUnits, sum(WCapacityUnits) as WriteCapacityUnits by dateceil(@timestamp, 1d) as timestamp'
+    print(f"Total RCU: {total_RCU}, Total WCU: {total_WCU}")
+    print(f"Usage by tenant: {tenant_usage}")
     
-    total_usage_by_day = __query_cloudwatch_logs(logs, log_group_names, total_usage_by_day_query, start_date_time, end_date_time)
-    print(total_usage_by_day)  
-    
-    total_RCU = Decimal('0.0') 
-    total_WCU = Decimal('0.0')
-    
-    # Check if results exist before accessing
-    if not total_usage_by_day.get('results') or len(total_usage_by_day['results']) == 0:
+    # Check if we have any usage data
+    if total_RCU + total_WCU == 0:
         print("No DynamoDB usage data found in CloudWatch Logs. Skipping DynamoDB cost attribution.")
         return
     
-    for result in total_usage_by_day['results'][0]:
-        if 'ReadCapacityUnits' in result['field']:
-            total_RCU = Decimal(result['value'])
-        if 'WriteCapacityUnits' in result['field']:
-            total_WCU = Decimal(result['value'])
-    
-    print (total_RCU)
-    print (total_WCU)
-    
-    if (total_RCU + total_WCU > 0):
-        total_RCU_By_Tenant = Decimal('0.0')
-        total_WCU_By_Tenant = Decimal('0.0')
+    # Process each tenant's usage
+    for tenant_id, usage in tenant_usage.items():
+        total_RCU_By_Tenant = usage['rcu']
+        total_WCU_By_Tenant = usage['wcu']
         
-        for result in usage_by_tenant_by_day['results']:
-            for field in result:
-                if 'TenantId' in field['field']:
-                    tenant_id = field['value']
-                if 'ReadCapacityUnits' in field['field']:
-                    total_RCU_By_Tenant = Decimal(field['value'])
-                if 'WriteCapacityUnits' in field['field']:
-                    total_WCU_By_Tenant = Decimal(field['value'])
-            
-            #RCU is about 5 times cheaper
-            tenant_attribution_percentage_numerator= Decimal(str(total_RCU_By_Tenant * Decimal('5.0'))) + Decimal(str(total_WCU_By_Tenant)) 
-            tenant_attribution_percentage_denominator= Decimal(str(total_RCU *  Decimal('5.0')))  + Decimal(str(total_WCU))
-            tenant_attribution_percentage = tenant_attribution_percentage_numerator/tenant_attribution_percentage_denominator        
-            tenant_dynamodb_cost = tenant_attribution_percentage * total_dynamodb_cost
-            
-            try:
-                #TODO: Save the tenant attribution data inside a dynamodb table
-                response = attribution_table.put_item(
+        #RCU is about 5 times cheaper
+        tenant_attribution_percentage_numerator = Decimal(str(total_RCU_By_Tenant * Decimal('5.0'))) + Decimal(str(total_WCU_By_Tenant))
+        tenant_attribution_percentage_denominator = Decimal(str(total_RCU * Decimal('5.0'))) + Decimal(str(total_WCU))
+        tenant_attribution_percentage = tenant_attribution_percentage_numerator / tenant_attribution_percentage_denominator
+        tenant_dynamodb_cost = tenant_attribution_percentage * total_dynamodb_cost
+        
+        #TODO: Save the tenant attribution data inside a dynamodb table
+        try:
+            response = attribution_table.put_item(
                 Item=
                     {
                         "Date": start_date_time,
@@ -105,16 +75,12 @@ def calculate_daily_dynamodb_attribution_by_tenant(event, context):
                         "TenantServiceCost": Decimal(str(tenant_dynamodb_cost)),
                         "TotalServiceCost": Decimal(str(total_dynamodb_cost))
                     }
-                )
-            except ClientError as e:
-                print(e.response['Error']['Message'])
-                raise Exception('Error adding a product', e)
-            else:
-                print("PutItem succeeded:")
-                
-            tenant_id = 'unknown'
-            total_RCU_By_Tenant = 0.0
-            total_WCU_By_Tenant = 0.0
+            )
+        except ClientError as e:
+            print(e.response['Error']['Message'])
+            raise Exception('Error adding a product', e)
+        else:
+            print("PutItem succeeded:")
         
     
     
@@ -126,7 +92,7 @@ def calculate_daily_lambda_attribution_by_tenant(event, context):
     end_date_time =  __get_end_date_time() #next day epoch
     print("Processing attribution for current day")
 
-    #Get total dynamodb cost for the given duration
+    #Get total Lambda cost for the given duration
     total_lambda_cost = __get_total_service_cost('AWSLambda', start_date_time, end_date_time)
 
     log_group_names = __get_list_of_log_group_names()
@@ -136,70 +102,46 @@ def calculate_daily_lambda_attribution_by_tenant(event, context):
         print("No log groups found. Skipping Lambda cost attribution.")
         return
     
-    #TODO: Write the below query to get the total lambda invocations grouped by tenants
-    usage_by_tenant_by_day_query='filter @message like /Request completed/ \
-        | fields tenant_id as TenantId , CountLambdaInvocations.0 As LambdaInvocations\
-        | stats count (tenant_id) as CountLambdaInvocations by TenantId, dateceil(@timestamp, 1d) as timestamp'
-
-    usage_by_tenant_by_day = __query_cloudwatch_logs(logs, log_group_names, usage_by_tenant_by_day_query, start_date_time, end_date_time)
-    print(usage_by_tenant_by_day) 
-
-    #TODO: Write the below query to get the total lambda invocations across all tenants
-    total_usage_by_day_query = 'filter @message like /Request completed/ \
-        | fields CountLambdaInvocations.0 As LambdaInvocations, timestamp\
-        | stats count (tenant_id) as CountLambdaInvocations by dateceil(@timestamp, 1d) as timestamp'
+    # Use filter_log_events API instead of Logs Insights for accurate counting
+    # Logs Insights has an indexing limitation where cold start logs may not be indexed
+    tenant_invocations, total_invocations = __get_lambda_invocations_by_tenant(
+        logs, log_group_names, start_date_time, end_date_time
+    )
     
-    total_usage_by_day = __query_cloudwatch_logs(logs,  log_group_names, total_usage_by_day_query, start_date_time, end_date_time)
-    print(total_usage_by_day) 
+    print(f"Total Lambda invocations: {total_invocations}")
+    print(f"Invocations by tenant: {tenant_invocations}")
     
-    total_invocations = 1 #to avoid divide by zero
-    
-    # Check if results exist before accessing
-    if not total_usage_by_day.get('results') or len(total_usage_by_day['results']) == 0:
+    # Check if we have any invocations
+    if total_invocations == 0:
         print("No Lambda invocation data found in CloudWatch Logs. Skipping Lambda cost attribution.")
         return
     
-    for result in total_usage_by_day['results'][0]:
-        if 'LambdaInvocations' in result['field']:
-            total_invocations = Decimal(result['value'])
+    # Process each tenant's invocations
+    for tenant_id, invocation_count in tenant_invocations.items():
+        total_invocations_by_tenant = Decimal(str(invocation_count))
         
-    print (total_invocations)
-    
-    if (total_invocations>0):
-        total_invocations_by_tenant = 0
+        tenant_attribution_percentage = total_invocations_by_tenant / Decimal(str(total_invocations))
+        tenant_lambda_cost = tenant_attribution_percentage * total_lambda_cost
         
-        for result in usage_by_tenant_by_day['results']:
-            for field in result:
-                if 'TenantId' in field['field']:
-                    tenant_id = field['value']
-                if 'LambdaInvocations' in field['field']:
-                    total_invocations_by_tenant = Decimal(field['value'])
-                
-            tenant_attribution_percentage= (total_invocations_by_tenant / total_invocations) 
-            tenant_lambda_cost = tenant_attribution_percentage * total_lambda_cost
-            
-            try:
-                response = attribution_table.put_item(
-                    Item=
-                        {
-                            "Date": start_date_time,
-                            "TenantId#ServiceName": tenant_id+"#"+"AWSLambda",
-                            "TenantId": tenant_id,
-                            "TotalInvocations": total_invocations,
-                            "TenantTotalInvocations": total_invocations_by_tenant,
-                            "TenantAttributionPercentage": tenant_attribution_percentage,
-                            "TenantServiceCost": tenant_lambda_cost,
-                            "TotalServiceCost": total_lambda_cost
-                        }
-                )
-            except ClientError as e:
-                print(e.response['Error']['Message'])
-                raise Exception('Error adding a product', e)
-            else:
-                print("PutItem succeeded:")
-            
-            tenant_id = 'unknown'
-            total_invocations_by_tenant = 0
+        try:
+            response = attribution_table.put_item(
+                Item=
+                    {
+                        "Date": start_date_time,
+                        "TenantId#ServiceName": tenant_id+"#"+"AWSLambda",
+                        "TenantId": tenant_id,
+                        "TotalInvocations": Decimal(str(total_invocations)),
+                        "TenantTotalInvocations": total_invocations_by_tenant,
+                        "TenantAttributionPercentage": tenant_attribution_percentage,
+                        "TenantServiceCost": tenant_lambda_cost,
+                        "TotalServiceCost": total_lambda_cost
+                    }
+            )
+        except ClientError as e:
+            print(e.response['Error']['Message'])
+            raise Exception('Error adding a product', e)
+        else:
+            print("PutItem succeeded:")
             
 
 def __get_total_service_cost(servicename, start_date_time, end_date_time):
@@ -270,6 +212,125 @@ def __query_cloudwatch_logs(logs, log_group_names, query_string, start_time, end
         query_results = logs.get_query_results(queryId=query["queryId"])
 
     return query_results
+
+
+def __filter_log_events_with_pattern(logs_client, log_group_name, filter_pattern, start_time, end_time):
+    """
+    Use filter_log_events API instead of Logs Insights for accurate log counting.
+    Logs Insights has an indexing limitation where the first batch of log events
+    in a new log stream (cold start logs) may not be indexed.
+    filter_log_events returns ALL matching log events reliably.
+    """
+    events = []
+    paginator = logs_client.get_paginator('filter_log_events')
+    
+    # Convert epoch seconds to milliseconds for filter_log_events
+    start_time_ms = start_time * 1000
+    end_time_ms = end_time * 1000
+    
+    try:
+        response_iterator = paginator.paginate(
+            logGroupName=log_group_name,
+            filterPattern=filter_pattern,
+            startTime=start_time_ms,
+            endTime=end_time_ms
+        )
+        
+        for page in response_iterator:
+            events.extend(page.get('events', []))
+    except ClientError as e:
+        print(f"Error filtering log events from {log_group_name}: {e}")
+        
+    return events
+
+
+def __get_lambda_invocations_by_tenant(logs_client, log_group_names, start_time, end_time):
+    """
+    Get Lambda invocation counts by tenant using filter_log_events API.
+    This is more accurate than Logs Insights which may miss cold start logs.
+    """
+    import json
+    
+    tenant_invocations = {}
+    total_invocations = 0
+    
+    for log_group_name in log_group_names:
+        events = __filter_log_events_with_pattern(
+            logs_client, 
+            log_group_name, 
+            '"Request completed"',  # Filter pattern for completed requests
+            start_time, 
+            end_time
+        )
+        
+        for event in events:
+            try:
+                # Parse the JSON log message
+                message = event.get('message', '{}')
+                log_data = json.loads(message)
+                
+                # Extract tenant_id from the log
+                tenant_id = log_data.get('tenant_id', 'unknown')
+                
+                # Count invocations by tenant
+                if tenant_id not in tenant_invocations:
+                    tenant_invocations[tenant_id] = 0
+                tenant_invocations[tenant_id] += 1
+                total_invocations += 1
+                
+            except json.JSONDecodeError:
+                # Skip non-JSON log entries
+                continue
+    
+    return tenant_invocations, total_invocations
+
+
+def __get_dynamodb_usage_by_tenant(logs_client, log_group_names, start_time, end_time):
+    """
+    Get DynamoDB RCU/WCU usage by tenant using filter_log_events API.
+    This is more accurate than Logs Insights which may miss cold start logs.
+    """
+    import json
+    
+    tenant_usage = {}
+    total_rcu = Decimal('0.0')
+    total_wcu = Decimal('0.0')
+    
+    for log_group_name in log_group_names:
+        events = __filter_log_events_with_pattern(
+            logs_client, 
+            log_group_name, 
+            '"Request completed"',  # Filter pattern for completed requests
+            start_time, 
+            end_time
+        )
+        
+        for event in events:
+            try:
+                # Parse the JSON log message
+                message = event.get('message', '{}')
+                log_data = json.loads(message)
+                
+                # Extract tenant_id and capacity units from the log
+                tenant_id = log_data.get('tenant_id', 'unknown')
+                consumed_rcu = Decimal(str(log_data.get('consumed_rcu', 0)))
+                consumed_wcu = Decimal(str(log_data.get('consumed_wcu', 0)))
+                
+                # Aggregate usage by tenant
+                if tenant_id not in tenant_usage:
+                    tenant_usage[tenant_id] = {'rcu': Decimal('0.0'), 'wcu': Decimal('0.0')}
+                tenant_usage[tenant_id]['rcu'] += consumed_rcu
+                tenant_usage[tenant_id]['wcu'] += consumed_wcu
+                
+                # Track totals
+                total_rcu += consumed_rcu
+                total_wcu += consumed_wcu
+                
+            except json.JSONDecodeError:
+                # Skip non-JSON log entries
+                continue
+    
+    return tenant_usage, total_rcu, total_wcu
 
 def __is_log_group_exists(logs_client, log_group_name):
     

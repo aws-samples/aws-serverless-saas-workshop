@@ -23,7 +23,7 @@ def provision_tenant(event, context):
     tenant_details = json.loads(event['body'])
     
     try:          
-        
+        #TODO: Add code to provision tenant infrastructure using CodePipeline
         response_ddb = table_tenant_stack_mapping.put_item(
         Item={
                 'tenantId': tenant_details['tenantId'],
