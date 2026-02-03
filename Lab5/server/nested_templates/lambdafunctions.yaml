@@ -1010,7 +1010,7 @@ Resources:
                 Action:
                   - codepipeline:StartPipelineExecution
                 Resource:
-                  - !Sub arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:serverless-saas-pipeline
+                  - !Sub arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:serverless-saas-pipeline-lab5
               - Effect: Allow
                 Action:
                   - cloudformation:DeleteStack
