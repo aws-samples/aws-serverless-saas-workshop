@@ -5,6 +5,9 @@
 
 set -e
 
+# Get the directory where the script is located and change to it
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$SCRIPT_DIR"
 
 # Colors for output
 RED='\033[0;31m'
