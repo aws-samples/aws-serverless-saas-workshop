@@ -479,9 +479,31 @@ class UserManagement:
         import secrets
         import string
         
-        # Generate a secure temporary password
-        alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
-        temp_password = ''.join(secrets.choice(alphabet) for _ in range(12))
+        # Generate a secure temporary password that meets Cognito requirements:
+        # - At least one lowercase letter
+        # - At least one uppercase letter  
+        # - At least one digit
+        # - At least one symbol
+        lowercase = string.ascii_lowercase
+        uppercase = string.ascii_uppercase
+        digits = string.digits
+        symbols = "!@#$%^&*"
+        
+        # Ensure at least one of each required character type
+        password_chars = [
+            secrets.choice(lowercase),
+            secrets.choice(uppercase),
+            secrets.choice(digits),
+            secrets.choice(symbols),
+        ]
+        
+        # Fill remaining characters randomly from all allowed characters
+        all_chars = lowercase + uppercase + digits + symbols
+        password_chars.extend(secrets.choice(all_chars) for _ in range(8))
+        
+        # Shuffle to avoid predictable pattern
+        secrets.SystemRandom().shuffle(password_chars)
+        temp_password = ''.join(password_chars)
         
         response = client.admin_create_user(
             Username=tenant_admin_user_name,
