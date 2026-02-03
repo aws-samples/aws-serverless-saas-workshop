@@ -510,7 +510,6 @@ class UserManagement:
             UserPoolId=user_pool_id,
             ForceAliasCreation=True,
             TemporaryPassword=temp_password,
-            MessageAction='SUPPRESS',  # Don't send email
             UserAttributes=[
                 {
                     'Name': 'email',
