@@ -737,16 +737,17 @@ if [[ $DEPLOY_BOOTSTRAP -eq 1 ]] && [ ! -z "$TENANT_ADMIN_EMAIL" ]; then
       print_message "$YELLOW" "  Updating CloudFormation stack with tenant credentials..."
       
       # Build parameter overrides for stack update
+      # Must include UsePreviousValue=true for ALL existing parameters
       STACK_UPDATE_PARAMS="ParameterKey=EventEngineParameter,UsePreviousValue=true"
       STACK_UPDATE_PARAMS="$STACK_UPDATE_PARAMS ParameterKey=CreateCloudWatchRole,UsePreviousValue=true"
-      
-      if [ ! -z "$ADMIN_EMAIL" ]; then
-        STACK_UPDATE_PARAMS="$STACK_UPDATE_PARAMS ParameterKey=AdminEmailParameter,UsePreviousValue=true"
-      fi
-      
-      if [ ! -z "$TENANT_ADMIN_EMAIL" ]; then
-        STACK_UPDATE_PARAMS="$STACK_UPDATE_PARAMS ParameterKey=TenantAdminEmailParameter,UsePreviousValue=true"
-      fi
+      STACK_UPDATE_PARAMS="$STACK_UPDATE_PARAMS ParameterKey=AdminEmailParameter,UsePreviousValue=true"
+      STACK_UPDATE_PARAMS="$STACK_UPDATE_PARAMS ParameterKey=AdminUserPoolCallbackURLParameter,UsePreviousValue=true"
+      STACK_UPDATE_PARAMS="$STACK_UPDATE_PARAMS ParameterKey=TenantUserPoolCallbackURLParameter,UsePreviousValue=true"
+      STACK_UPDATE_PARAMS="$STACK_UPDATE_PARAMS ParameterKey=Owner,UsePreviousValue=true"
+      STACK_UPDATE_PARAMS="$STACK_UPDATE_PARAMS ParameterKey=StageName,UsePreviousValue=true"
+      STACK_UPDATE_PARAMS="$STACK_UPDATE_PARAMS ParameterKey=SystemAdminRoleNameParameter,UsePreviousValue=true"
+      STACK_UPDATE_PARAMS="$STACK_UPDATE_PARAMS ParameterKey=CostCenter,UsePreviousValue=true"
+      STACK_UPDATE_PARAMS="$STACK_UPDATE_PARAMS ParameterKey=Environment,UsePreviousValue=true"
       
       # Add tenant credentials parameters (always provide both, use empty string if not set)
       if [[ -n "$TENANT1_PASSWORD" ]]; then
@@ -766,6 +767,8 @@ if [[ $DEPLOY_BOOTSTRAP -eq 1 ]] && [ ! -z "$TENANT_ADMIN_EMAIL" ]; then
       fi
       
       # Update the stack - capture output to check for "No updates" message
+      # Temporarily disable set -e to handle update-stack errors gracefully
+      set +e
       UPDATE_OUTPUT=$(aws cloudformation update-stack \
         $PROFILE_ARG \
         --region "$AWS_REGION" \
@@ -775,6 +778,7 @@ if [[ $DEPLOY_BOOTSTRAP -eq 1 ]] && [ ! -z "$TENANT_ADMIN_EMAIL" ]; then
         --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND 2>&1)
       
       UPDATE_EXIT_CODE=$?
+      set -e
       
       # Check if update was successful or if there were no updates to perform
       if [[ $UPDATE_EXIT_CODE -eq 0 ]]; then
