@@ -765,17 +765,18 @@ if [[ $DEPLOY_BOOTSTRAP -eq 1 ]] && [ ! -z "$TENANT_ADMIN_EMAIL" ]; then
         STACK_UPDATE_PARAMS="$STACK_UPDATE_PARAMS ParameterKey=Tenant2TemporaryPassword,ParameterValue=''"
       fi
       
-      # Update the stack
-      aws cloudformation update-stack \
+      # Update the stack - capture output to check for "No updates" message
+      UPDATE_OUTPUT=$(aws cloudformation update-stack \
         $PROFILE_ARG \
         --region "$AWS_REGION" \
         --stack-name "$SHARED_STACK_NAME" \
         --use-previous-template \
         --parameters $STACK_UPDATE_PARAMS \
-        --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND \
-        > /dev/null 2>&1 || true
+        --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND 2>&1)
       
       UPDATE_EXIT_CODE=$?
+      
+      # Check if update was successful or if there were no updates to perform
       if [[ $UPDATE_EXIT_CODE -eq 0 ]]; then
         print_message "$GREEN" "  ✓ Stack update initiated"
         print_message "$YELLOW" "  Waiting for stack update to complete..."
@@ -793,10 +794,16 @@ if [[ $DEPLOY_BOOTSTRAP -eq 1 ]] && [ ! -z "$TENANT_ADMIN_EMAIL" ]; then
           print_message "$YELLOW" "  📋 Retrieve credentials anytime with:"
           print_message "$YELLOW" "     aws cloudformation describe-stacks --stack-name $SHARED_STACK_NAME --query \"Stacks[0].Outputs\" $PROFILE_ARG --region $AWS_REGION"
         else
-          print_message "$YELLOW" "  ⚠️  Stack update may have failed (exit code: $WAIT_EXIT_CODE)"
+          print_message "$YELLOW" "  ⚠️  Stack update wait failed (exit code: $WAIT_EXIT_CODE)"
+          print_message "$YELLOW" "  ℹ️  Credentials may still be available in CloudFormation outputs"
         fi
+      elif echo "$UPDATE_OUTPUT" | grep -q "No updates are to be performed"; then
+        print_message "$YELLOW" "  ℹ️  No stack updates needed (credentials already set or no changes detected)"
+        print_message "$YELLOW" "  ℹ️  Credentials should be available in CloudFormation outputs"
       else
-        print_message "$YELLOW" "  ⚠️  Could not update stack with credentials (non-critical)"
+        print_message "$YELLOW" "  ⚠️  Stack update failed (exit code: $UPDATE_EXIT_CODE)"
+        print_message "$YELLOW" "  Error: $UPDATE_OUTPUT"
+        print_message "$YELLOW" "  ℹ️  This is non-critical - credentials were captured during deployment"
       fi
     fi
   fi
