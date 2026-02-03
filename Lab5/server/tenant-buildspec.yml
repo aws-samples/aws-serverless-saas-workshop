@@ -5,11 +5,12 @@ version: 0.2
 phases:
   install:    
     runtime-versions:
-      python: 3.9
+      python: 3.13
     commands:
       # Install packages or any pre-reqs in this phase.
-      # Upgrading SAM CLI to 1.33.0 version
-      - python -m pip install aws-sam-cli==1.33.0
+      # Install latest SAM CLI that supports Python 3.13/3.14
+      - python -m pip install --upgrade pip
+      - python -m pip install aws-sam-cli
       - sam --version
       # Installing project dependencies
       - cd Lab5/server/ProductService
