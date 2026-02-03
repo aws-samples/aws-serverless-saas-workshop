@@ -56,16 +56,16 @@ Parameters:
   AdminTemporaryPassword:
     Type: String
     Default: ""
-    Description: "Temporary password for admin user (set during deployment)"
+    Description: "Not used in Lab5 - users are created manually via Admin UI"
     NoEcho: true
   TenantUsername:
     Type: String
     Default: ""
-    Description: "Tenant admin username (set during deployment)"
+    Description: "Not used in Lab5 - tenants are created manually via Admin UI or self-registration"
   TenantTemporaryPassword:
     Type: String
     Default: ""
-    Description: "Temporary password for tenant admin user (set during deployment)"
+    Description: "Not used in Lab5 - tenants are created manually via Admin UI or self-registration"
     NoEcho: true
 Conditions:
   IsNotRunningInEventEngine: !Not [ !Equals [ !Ref EventEngineParameter, true] ]
@@ -258,15 +258,5 @@ Outputs:
     Value: !GetAtt LambdaFunctions.Outputs.AuthorizerExecutionRoleArn
     Export:
       Name: "Serverless-SaaS-AuthorizerExecutionRoleArn-lab5"
-  AdminUsername:
-    Description: "Admin user username"
-    Value: "admin-user"
-  AdminTemporaryPassword:
-    Description: "Admin user temporary password (change on first login)"
-    Value: !Ref AdminTemporaryPassword
-  TenantUsername:
-    Description: "Tenant admin username (if tenant was created via Admin UI)"
-    Value: !Ref TenantUsername
-  TenantTemporaryPassword:
-    Description: "Tenant admin temporary password (if tenant was created via Admin UI)"
-    Value: !Ref TenantTemporaryPassword
+  # Note: Lab5 does NOT auto-create admin or tenant users
+  # Users are created manually via Admin UI or self-registration on Landing site
