@@ -180,11 +180,11 @@ Resources:
       Description: Utilities for project
       ContentUri: layers/
       CompatibleRuntimes:
-        - python3.14          
+        - python3.13          
       LicenseInfo: 'MIT'
       RetentionPolicy: Retain      
     Metadata:
-      BuildMethod: python3.14   
+      BuildMethod: python3.13   
   
   ProductTable:
     Type: AWS::DynamoDB::Table
@@ -307,7 +307,7 @@ Resources:
       FunctionName: !Sub 'get-prod-lab5-${TenantIdParameter}'
       CodeUri: ProductService/
       Handler: product_service.get_product
-      Runtime: python3.14  
+      Runtime: python3.13  
       Tracing: Active
       Role: !GetAtt ProductFunctionExecutionRole.Arn
       Layers: 
@@ -334,7 +334,7 @@ Resources:
       FunctionName: !Sub 'get-prods-lab5-${TenantIdParameter}'
       CodeUri: ProductService/
       Handler: product_service.get_products
-      Runtime: python3.14  
+      Runtime: python3.13  
       Tracing: Active
       Role: !GetAtt ProductFunctionExecutionRole.Arn
       Layers: 
@@ -361,7 +361,7 @@ Resources:
       FunctionName: !Sub 'create-prod-lab5-${TenantIdParameter}'
       CodeUri: ProductService/
       Handler: product_service.create_product
-      Runtime: python3.14  
+      Runtime: python3.13  
       Tracing: Active 
       Role: !GetAtt ProductFunctionExecutionRole.Arn 
       Layers: 
@@ -388,7 +388,7 @@ Resources:
       FunctionName: !Sub 'update-prod-lab5-${TenantIdParameter}'
       CodeUri: ProductService/
       Handler: product_service.update_product
-      Runtime: python3.14 
+      Runtime: python3.13 
       Tracing: Active
       Role: !GetAtt ProductFunctionExecutionRole.Arn 
       Layers: 
@@ -415,7 +415,7 @@ Resources:
       FunctionName: !Sub 'delete-prod-lab5-${TenantIdParameter}'
       CodeUri: ProductService/
       Handler: product_service.delete_product
-      Runtime: python3.14 
+      Runtime: python3.13 
       Tracing: Active
       Role: !GetAtt ProductFunctionExecutionRole.Arn 
       Layers: 
@@ -494,7 +494,7 @@ Resources:
       FunctionName: !Sub 'get-orders-lab5-${TenantIdParameter}'
       CodeUri: OrderService/
       Handler: order_service.get_orders
-      Runtime: python3.14  
+      Runtime: python3.13  
       Tracing: Active
       Role: !GetAtt OrderFunctionExecutionRole.Arn
       Layers: 
@@ -521,7 +521,7 @@ Resources:
       FunctionName: !Sub 'get-order-lab5-${TenantIdParameter}'
       CodeUri: OrderService/
       Handler: order_service.get_order
-      Runtime: python3.14  
+      Runtime: python3.13  
       Tracing: Active
       Role: !GetAtt OrderFunctionExecutionRole.Arn
       Layers: 
@@ -548,7 +548,7 @@ Resources:
       FunctionName: !Sub 'create-order-lab5-${TenantIdParameter}'
       CodeUri: OrderService/
       Handler: order_service.create_order
-      Runtime: python3.14  
+      Runtime: python3.13  
       Tracing: Active 
       Role: !GetAtt OrderFunctionExecutionRole.Arn 
       Layers: 
@@ -575,7 +575,7 @@ Resources:
       FunctionName: !Sub 'update-order-lab5-${TenantIdParameter}'
       CodeUri: OrderService/
       Handler: order_service.update_order
-      Runtime: python3.14 
+      Runtime: python3.13 
       Tracing: Active
       Role: !GetAtt OrderFunctionExecutionRole.Arn 
       Layers: 
@@ -602,7 +602,7 @@ Resources:
       FunctionName: !Sub 'delete-order-lab5-${TenantIdParameter}'
       CodeUri: OrderService/
       Handler: order_service.delete_order
-      Runtime: python3.14 
+      Runtime: python3.13 
       Tracing: Active
       Role: !GetAtt OrderFunctionExecutionRole.Arn 
       Layers: 
@@ -628,7 +628,7 @@ Resources:
       FunctionName: !Sub 'authorizer-lab5-${TenantIdParameter}'
       CodeUri: Resources/
       Handler: tenant_authorizer.lambda_handler
-      Runtime: python3.14
+      Runtime: python3.13
       Role: !ImportValue Serverless-SaaS-AuthorizerExecutionRoleArn-lab5
       MemorySize: 256
       Tracing: Active
@@ -1285,7 +1285,7 @@ Resources:
       FunctionName: !Sub 'update-apigw-lab5-${TenantIdParameter}'
       CodeUri: custom_resources/
       Handler: update_tenant_apigatewayurl.handler
-      Runtime: python3.14
+      Runtime: python3.13
       Role: !GetAtt UpdateTenantApiGatewayUrlLambdaExecutionRole.Arn
       Layers: 
           - !Ref ServerlessSaaSLayers
