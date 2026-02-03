@@ -3,20 +3,20 @@
 
 version: 0.2
 phases:
-  install:    
-    runtime-versions:
-      python: 3.13
+  install:
     commands:
+      # Use the system Python that comes with the CodeBuild image
+      # This avoids pyenv SSL compilation issues when requesting Python 3.13+
+      - python3 --version
       # Install packages or any pre-reqs in this phase.
-      # Install latest SAM CLI that supports Python 3.13/3.14
-      - python -m pip install --upgrade pip
-      - python -m pip install aws-sam-cli
+      # Use latest SAM CLI version that supports LoggingConfig and Python 3.13
+      - python3 -m pip install --upgrade aws-sam-cli
       - sam --version
       # Installing project dependencies
       - cd Lab5/server/ProductService
-      - python -m pip install -r requirements.txt 
+      - python3 -m pip install -r requirements.txt 
       - cd ../OrderService
-      - python -m pip install -r requirements.txt 
+      - python3 -m pip install -r requirements.txt 
       
 
   pre_build:
@@ -30,11 +30,13 @@ phases:
   build:
     commands:
       # Use Build phase to build your artifacts (compile, etc.)
-      - sam build -t tenant-template.yaml
+      # Use --use-container to build Lambda functions in Docker containers with correct Python version
+      - sam build -t tenant-template.yaml --use-container
 
   post_build:
     commands:
       # Use Post-Build for notifications, git tags, upload artifacts to S3
+      # Package the template and upload to S3 - deployment is handled by Lambda in Deploy stage
       - sam package --s3-bucket $PACKAGE_BUCKET --output-template-file packaged.yaml
 
 artifacts:
