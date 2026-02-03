@@ -640,7 +640,9 @@ if [[ $DEPLOY_BOOTSTRAP -eq 1 ]] && [ ! -z "$TENANT_ADMIN_EMAIL" ]; then
   echo "Creating sample tenants..."
   
   # Extract username and domain from email
-  EMAIL_USERNAME=$(echo "$TENANT_ADMIN_EMAIL" | cut -d'@' -f1)
+  # Extract base username (before any + sign) to avoid double + in tenant emails
+  EMAIL_FULL_USERNAME=$(echo "$TENANT_ADMIN_EMAIL" | cut -d'@' -f1)
+  EMAIL_USERNAME=$(echo "$EMAIL_FULL_USERNAME" | cut -d'+' -f1)
   EMAIL_DOMAIN=$(echo "$TENANT_ADMIN_EMAIL" | cut -d'@' -f2)
   
   # Get the Admin API Gateway URL from Lab4 shared stack
