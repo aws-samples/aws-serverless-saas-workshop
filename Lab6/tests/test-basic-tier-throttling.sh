@@ -60,7 +60,7 @@ if [[ -n "$AWS_PROFILE" ]]; then
     PROFILE_ARG="--profile $AWS_PROFILE"
 fi
 
-APP_APIGATEWAYURL=$(aws cloudformation $PROFILE_ARG describe-stacks --stack-name stack-lab6-pooled --query "Stacks[0].Outputs[?OutputKey=='TenantAPI'].OutputValue" --output text)
+APP_APIGATEWAYURL=$(aws cloudformation describe-stacks --stack-name stack-lab6-pooled --query "Stacks[0].Outputs[?OutputKey=='TenantAPI'].OutputValue" --output text $PROFILE_ARG)
 
 get_product() {
    

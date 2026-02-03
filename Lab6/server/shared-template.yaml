@@ -73,20 +73,6 @@ Parameters:
       - "true"
       - "false"
     Description: "Whether to create the API Gateway CloudWatch role (set to false if role already exists)"
-  AdminTemporaryPassword:
-    Type: String
-    Default: ""
-    Description: "Temporary password for admin user (set during deployment)"
-    NoEcho: true
-  TenantUsername:
-    Type: String
-    Default: ""
-    Description: "Tenant admin username (set during deployment)"
-  TenantTemporaryPassword:
-    Type: String
-    Default: ""
-    Description: "Temporary password for tenant admin user (set during deployment)"
-    NoEcho: true
 Conditions:
   IsNotRunningInEventEngine: !Not [ !Equals [ !Ref EventEngineParameter, true] ]
 Resources:
@@ -316,15 +302,3 @@ Outputs:
     Value: !Ref ApiKeyOperationUsersParameter
     Export:
       Name: "Serverless-SaaS-ApiKeyOperationUsers-lab6"
-  AdminUsername:
-    Description: "Admin user username"
-    Value: "admin-user"
-  AdminTemporaryPassword:
-    Description: "Admin user temporary password (change on first login)"
-    Value: !Ref AdminTemporaryPassword
-  TenantUsername:
-    Description: "Tenant admin username (if tenant was created via Admin UI)"
-    Value: !Ref TenantUsername
-  TenantTemporaryPassword:
-    Description: "Tenant admin temporary password (if tenant was created via Admin UI)"
-    Value: !Ref TenantTemporaryPassword
