@@ -317,9 +317,9 @@ If you're familiar with AWS and want to deploy quickly:
 # 1. Configure AWS profile
 aws configure --profile <your-profile-name>
 
-# 2. Deploy all labs (sequential)
-cd workshop/scripts
-./deploy-all-labs.sh --profile <your-profile-name>
+# 2. Deploy all labs (recommended - parallel deployment)
+cd workshop
+./deploy-all.sh --email your-email@example.com --profile <your-profile-name>
 
 # 3. Or deploy individual labs
 cd workshop/Lab1/scripts
@@ -329,26 +329,30 @@ cd workshop/Lab1/scripts
 ./geturl.sh --profile <your-profile-name>
 
 # 5. Clean up when done
-cd workshop/scripts
-./cleanup-all-labs.sh --profile <your-profile-name>
+cd workshop
+./cleanup-all.sh --profile <your-profile-name>
 ```
 
 ## Deployment Steps
 
 ### Option 1: Deploy All Labs (Recommended for First-Time Users)
 
-Deploy all labs sequentially using the orchestration script:
+Deploy all labs using the orchestration script with TRUE PARALLEL deployment:
 
 ```
-cd workshop/scripts
+cd workshop
 
-# Deploy all labs with default settings
-./deploy-all-labs.sh --profile <your-profile-name> --email your-email@example.com
+# Deploy all labs with automatic user creation (recommended)
+./deploy-all.sh --email your-email@example.com --profile <your-profile-name>
 ```
 
-**Note**: The script handles parallel deployment internally for optimal performance.
+**Features**:
+- TRUE PARALLEL deployment using CloudFormation nested stacks
+- All 7 labs deploy simultaneously for maximum speed
+- Automatic Cognito user creation when `--email` is provided
+- 60-day log retention automatically configured
 
-**Expected Duration**: 60-90 minutes for all labs
+**Expected Duration**: 15-20 minutes for all labs
 
 ### Option 2: Deploy Individual Labs
 
@@ -491,17 +495,21 @@ Lab-specific parameters:
 | Lab 3-6 | `-c` | Deploy client UIs | No |
 | All Labs | `--stack-name` | Custom stack name | No |
 
-**Orchestration Script Parameters**:
+**Orchestration Script Parameters** (`./deploy-all.sh`):
 
 ```
-./deploy-all-labs.sh [OPTIONS]
+./deploy-all.sh [OPTIONS]
 
 Options:
-  --profile PROFILE    AWS CLI profile (default: machine's default)
-  --email EMAIL        Email for admin and tenant users
-  --parallel           Deploy labs in parallel (faster but more resources)
-  --skip-lab N         Skip specific lab number (1-7)
-  --help               Show help message
+  --profile PROFILE         AWS CLI profile (REQUIRED)
+  --email EMAIL             Admin email address (triggers automatic user creation)
+  --tenant-email EMAIL      Tenant email for auto-tenant creation in Labs 3-4
+  --password PASSWORD       Admin temporary password (default: SaaS#Workshop2026)
+  --environment ENV         Deployment environment: dev, staging, prod (default: dev)
+  --stack-name NAME         Main orchestration stack name (default: serverless-saas-lab)
+  --region REGION           AWS region (default: us-east-1)
+  --disable-rollback        Disable CloudFormation rollback on failure (for debugging)
+  --help                    Show help message
 ```
 
 ## Verification
@@ -596,16 +604,16 @@ echo "yes" | ./cleanup.sh --profile <your-profile-name>
 Remove all workshop resources:
 
 ```
-cd workshop/scripts
+cd workshop
 
 # Non-interactive cleanup (recommended)
-./cleanup-all-labs.sh -y --profile <your-profile-name>
+echo "yes" | ./cleanup-all.sh --profile <your-profile-name>
 
-# Or use long form
-./cleanup-all-labs.sh --yes --profile <your-profile-name>
+# Or with auto-confirm flag
+./cleanup-all.sh -y --profile <your-profile-name>
 ```
 
-**Expected Duration**: 30-45 minutes for all labs
+**Expected Duration**: 15-30 minutes for all labs (CloudFront propagation takes time)
 
 ### Verify Cleanup
 
