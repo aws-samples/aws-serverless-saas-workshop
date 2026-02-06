@@ -105,19 +105,9 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: /aws/api-gateway/access-logs-serverless-saas-lab2-admin-api
-      RetentionInDays: 60
-      Tags:
-        - Key: Application
-          Value: serverless-saas-workshop
-        - Key: Lab
-          Value: lab2
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: Owner
-          Value: !Ref Owner
-        - Key: CostCenter
-          Value: !Ref CostCenter
-  
+
+  # Note: Tags removed from log groups to avoid CloudFormation race condition bug
+  # where tagging during creation can fail with "The specified log group does not exist"
   AdminApiGatewayApi:
     Type: AWS::Serverless::Api
     Properties:

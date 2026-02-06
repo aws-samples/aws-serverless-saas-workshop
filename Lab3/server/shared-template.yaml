@@ -117,8 +117,8 @@ Resources:
       Location: nested_templates/cognito.yaml
       Parameters:
         AdminEmailParameter: !Ref AdminEmailParameter
-        TenantAdminEmailParameter: !Ref TenantAdminEmailParameter
         SystemAdminRoleNameParameter: !Ref SystemAdminRoleNameParameter
+        TenantAdminEmailParameter: !Ref TenantAdminEmailParameter
         AdminUserPoolCallbackURLParameter: !If [IsNotRunningInEventEngine, !GetAtt UserInterface.Outputs.AdminAppSite, !Ref AdminUserPoolCallbackURLParameter]
         TenantUserPoolCallbackURLParameter: !If [IsNotRunningInEventEngine, !GetAtt UserInterface.Outputs.ApplicationSite, !Ref TenantUserPoolCallbackURLParameter]
         Environment: !Ref Environment
@@ -244,21 +244,5 @@ Outputs:
     Value: !GetAtt Cognito.Outputs.CognitoUserPoolClientId
     Export:
       Name: "Serverless-SaaS-CognitoTenantAppClientId"  
-  AdminUsername:
-    Description: "Admin user username"
-    Value: !Ref AdminUsername
-  AdminTemporaryPassword:
-    Description: "Admin user temporary password (change on first login)"
-    Value: !Ref AdminTemporaryPassword
-  Tenant1Username:
-    Description: "Tenant 1 admin username (if tenant was created during deployment)"
-    Value: !Ref Tenant1Username
-  Tenant1TemporaryPassword:
-    Description: "Tenant 1 admin temporary password (if tenant was created during deployment)"
-    Value: !Ref Tenant1TemporaryPassword
-  Tenant2Username:
-    Description: "Tenant 2 admin username (if tenant was created during deployment)"
-    Value: !Ref Tenant2Username
-  Tenant2TemporaryPassword:
-    Description: "Tenant 2 admin temporary password (if tenant was created during deployment)"
-    Value: !Ref Tenant2TemporaryPassword
+  # NOTE: Cognito users are NOT created by CloudFormation
+  # Run create-workshop-users.sh after deployment to create admin users

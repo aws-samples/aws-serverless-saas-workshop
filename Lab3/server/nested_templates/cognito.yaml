@@ -76,7 +76,7 @@ Resources:
   CognitoUserPoolClient:
     Type: "AWS::Cognito::UserPoolClient"
     Properties:
-      ClientName: ServerlessSaaSClient
+      ClientName: ServerlessSaaS-lab3-Client
       GenerateSecret: false
       UserPoolId: !Ref CognitoUserPool
       AllowedOAuthFlowsUserPoolClient: True
@@ -100,12 +100,14 @@ Resources:
   CognitoUserPoolDomain:
     Type: AWS::Cognito::UserPoolDomain
     Properties:
-      Domain: !Join ["-", [pooledtenant-serverlesssaas,!Ref "AWS::AccountId"]]
+      Domain: !Sub 
+        - 'pooledtenant-serverlesssaas-lab3-${ShortId}'
+        - ShortId: !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref 'AWS::StackId']]]]
       UserPoolId: !Ref CognitoUserPool
   CognitoOperationUsersUserPool:
     Type: "AWS::Cognito::UserPool"
     Properties:
-      UserPoolName: OperationUsers-ServerlessSaas-lab3-UserPool
+      UserPoolName: OperationUsers-ServerlessSaaS-lab3-UserPool
       AutoVerifiedAttributes:
         - "email"
       AccountRecoverySetting:
@@ -144,7 +146,7 @@ Resources:
   CognitoOperationUsersUserPoolClient:
     Type: "AWS::Cognito::UserPoolClient"
     Properties:
-      ClientName: ServerlessSaaSOperationUsersPoolClient
+      ClientName: ServerlessSaaS-lab3-OperationUsersPoolClient
       GenerateSecret: false
       UserPoolId: !Ref CognitoOperationUsersUserPool
       AllowedOAuthFlowsUserPoolClient: True
@@ -168,7 +170,9 @@ Resources:
   CognitoOperationUsersUserPoolDomain:
     Type: AWS::Cognito::UserPoolDomain
     Properties:
-      Domain: !Join ["-", [operationsusers-serverlesssaas,!Ref "AWS::AccountId"]]
+      Domain: !Sub 
+        - 'operationsusers-serverlesssaas-lab3-${ShortId}'
+        - ShortId: !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref 'AWS::StackId']]]]
       UserPoolId: !Ref CognitoOperationUsersUserPool
   CognitoAdminUserGroup:
     Type: AWS::Cognito::UserPoolGroup

@@ -31,50 +31,22 @@ Globals:
     Timeout: 29
 
 Resources: 
-  # CloudWatch Log Groups with 60-day retention
-  GetDynamoDBUsageAndCostByTenantLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: /aws/lambda/serverless-saas-lab7-dynamodb-cost
-      RetentionInDays: 60
-      Tags:
-        - Key: Application
-          Value: serverless-saas-workshop
-        - Key: Lab
-          Value: lab7
-
-  GetLambdaUsageAndCostByTenantLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: /aws/lambda/serverless-saas-lab7-lambda-cost
-      RetentionInDays: 60
-      Tags:
-        - Key: Application
-          Value: serverless-saas-workshop
-        - Key: Lab
-          Value: lab7
-
+  # CloudWatch Log Groups for Lambda functions
+  # Note: Retention and tags are set by post-deployment script to avoid race conditions
   AWSCURInitializerFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: /aws/lambda/serverless-saas-lab7-aws-cur-initializer
-      RetentionInDays: 60
-      Tags:
-        - Key: Application
-          Value: serverless-saas-workshop
-        - Key: Lab
-          Value: lab7
 
-  AWSCURCrawlerLogGroup:
+  GetDynamoDBUsageAndCostByTenantFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: /aws-glue/crawlers/AWSCURCrawler-Multi-tenant-lab7
-      RetentionInDays: 60
-      Tags:
-        - Key: Application
-          Value: serverless-saas-workshop
-        - Key: Lab
-          Value: lab7
+      LogGroupName: /aws/lambda/serverless-saas-lab7-dynamodb-cost
+
+  GetLambdaUsageAndCostByTenantFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/serverless-saas-lab7-lambda-cost
 
   CURBucket:
     Type: AWS::S3::Bucket
@@ -221,7 +193,6 @@ Resources:
     DependsOn:
       - AWSCURDatabase
       - AWSCURCrawlerComponentFunction
-      - AWSCURCrawlerLogGroup
     Properties:
       Name: AWSCURCrawler-Multi-tenant-lab7
       Description: A recurring crawler that keeps your CUR table in Athena up-to-date.
@@ -244,7 +215,7 @@ Resources:
 
   AWSCURInitializerFunction:
     Type: 'AWS::Lambda::Function'
-    DependsOn: 
+    DependsOn:
       - AWSCURCrawler
       - AWSCURInitializerFunctionLogGroup
     Properties:
@@ -306,8 +277,6 @@ Resources:
       Timeout: 30
       Runtime: python3.14
       ReservedConcurrentExecutions: 1
-      LoggingConfig:
-        LogGroup: !Ref AWSCURInitializerFunctionLogGroup
       Role: !GetAtt AWSCURCrawlerLambdaExecutor.Arn
 
 
@@ -406,17 +375,15 @@ Resources:
                   
   GetDynamoDBUsageAndCostByTenantFunction:
     Type: AWS::Serverless::Function 
-    DependsOn: 
+    DependsOn:
       - QueryLogInsightsExecutionRole
-      - GetDynamoDBUsageAndCostByTenantLogGroup 
+      - GetDynamoDBUsageAndCostByTenantFunctionLogGroup
     Properties:
       FunctionName: serverless-saas-lab7-dynamodb-cost
       CodeUri: TenantUsageAndCost/
       Handler: tenant_usage_and_cost.calculate_daily_dynamodb_attribution_by_tenant
       Runtime: python3.14  
       Role: !GetAtt QueryLogInsightsExecutionRole.Arn
-      LoggingConfig:
-        LogGroup: !Ref GetDynamoDBUsageAndCostByTenantLogGroup
       Tags:
         Application: serverless-saas-workshop
         Lab: lab7
@@ -435,17 +402,15 @@ Resources:
   
   GetLambdaUsageAndCostByTenantFunction:
     Type: AWS::Serverless::Function 
-    DependsOn: 
+    DependsOn:
       - QueryLogInsightsExecutionRole
-      - GetLambdaUsageAndCostByTenantLogGroup 
+      - GetLambdaUsageAndCostByTenantFunctionLogGroup
     Properties:
       FunctionName: serverless-saas-lab7-lambda-cost
       CodeUri: TenantUsageAndCost/
       Handler: tenant_usage_and_cost.calculate_daily_lambda_attribution_by_tenant
       Runtime: python3.14  
       Role: !GetAtt QueryLogInsightsExecutionRole.Arn
-      LoggingConfig:
-        LogGroup: !Ref GetLambdaUsageAndCostByTenantLogGroup
       Tags:
         Application: serverless-saas-workshop
         Lab: lab7

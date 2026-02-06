@@ -35,9 +35,6 @@ Parameters:
     Default: serverless-saas-workshop
     Description: Cost center for billing allocation  
 
-Conditions:
-  CreateAdminUserInCloudFormation: !Not [!Equals [!Ref AdminEmailParameter, ""]]
-
 Resources:  
   CognitoUserPool:
     Type: "AWS::Cognito::UserPool"
@@ -103,7 +100,7 @@ Resources:
     Type: AWS::Cognito::UserPoolDomain
     Properties:
       Domain: !Sub 
-        - 'serverless-saas-lab2-pool-${ShortId}'
+        - 'pooledtenant-serverlesssaas-lab2-${ShortId}'
         - ShortId: !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref 'AWS::StackId']]]]
       UserPoolId: !Ref CognitoUserPool
   CognitoOperationUsersUserPool:
@@ -173,7 +170,7 @@ Resources:
     Type: AWS::Cognito::UserPoolDomain
     Properties:
       Domain: !Sub 
-        - 'serverless-saas-lab2-ops-${ShortId}'
+        - 'operationsusers-serverlesssaas-lab2-${ShortId}'
         - ShortId: !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref 'AWS::StackId']]]]
       UserPoolId: !Ref CognitoOperationUsersUserPool
   CognitoAdminUserGroup:
@@ -183,28 +180,6 @@ Resources:
       Description: Admin user group
       Precedence: 0
       UserPoolId: !Ref CognitoOperationUsersUserPool
-  CognitoAdminUser:
-    Type: AWS::Cognito::UserPoolUser
-    Condition: CreateAdminUserInCloudFormation
-    Properties:
-      Username: admin
-      MessageAction: SUPPRESS  # Don't send welcome email (avoids conflicts with same email across labs)
-      ForceAliasCreation: true
-      UserAttributes:
-        - Name: email
-          Value: !Ref AdminEmailParameter
-        - Name: custom:tenantId
-          Value: system_admins
-        - Name: custom:userRole
-          Value: !Ref SystemAdminRoleNameParameter
-      UserPoolId: !Ref CognitoOperationUsersUserPool
-  CognitoAddUserToGroup:
-      Type: AWS::Cognito::UserPoolUserToGroupAttachment
-      Condition: CreateAdminUserInCloudFormation
-      Properties:
-        GroupName: !Ref CognitoAdminUserGroup
-        Username: !Ref CognitoAdminUser
-        UserPoolId: !Ref CognitoOperationUsersUserPool
         
 Outputs:  
   CognitoUserPoolId:

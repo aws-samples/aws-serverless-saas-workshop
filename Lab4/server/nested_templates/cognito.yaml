@@ -77,7 +77,7 @@ Resources:
   CognitoUserPoolClient:
     Type: "AWS::Cognito::UserPoolClient"
     Properties:
-      ClientName: ServerlessSaaSClient 
+      ClientName: ServerlessSaaS-lab4-Client 
       GenerateSecret: false
       UserPoolId: !Ref CognitoUserPool
       AllowedOAuthFlowsUserPoolClient: True
@@ -101,12 +101,14 @@ Resources:
   CognitoUserPoolDomain:
     Type: AWS::Cognito::UserPoolDomain
     Properties:
-      Domain: pooledtenant-serverlesssaas-lab4
+      Domain: !Sub 
+        - 'pooledtenant-serverlesssaas-lab4-${ShortId}'
+        - ShortId: !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref 'AWS::StackId']]]]
       UserPoolId: !Ref CognitoUserPool
   CognitoOperationUsersUserPool:
     Type: "AWS::Cognito::UserPool"
     Properties:
-      UserPoolName: OperationUsers-ServerlessSaas-lab4-UserPool
+      UserPoolName: OperationUsers-ServerlessSaaS-lab4-UserPool
       AutoVerifiedAttributes:
         - "email"
       AccountRecoverySetting:
@@ -145,7 +147,7 @@ Resources:
   CognitoOperationUsersUserPoolClient:
     Type: "AWS::Cognito::UserPoolClient"
     Properties:
-      ClientName: ServerlessSaaSOperationUsersPoolClient
+      ClientName: ServerlessSaaS-lab4-OperationUsersPoolClient
       GenerateSecret: false
       UserPoolId: !Ref CognitoOperationUsersUserPool
       AllowedOAuthFlowsUserPoolClient: True
@@ -169,7 +171,9 @@ Resources:
   CognitoOperationUsersUserPoolDomain:
     Type: AWS::Cognito::UserPoolDomain
     Properties:
-      Domain: !Join ["-", [operationsusers-serverlesssaas-lab4,!Ref "AWS::AccountId"]]
+      Domain: !Sub 
+        - 'operationsusers-serverlesssaas-lab4-${ShortId}'
+        - ShortId: !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref 'AWS::StackId']]]]
       UserPoolId: !Ref CognitoOperationUsersUserPool
   CognitoAdminUserGroup:
     Type: AWS::Cognito::UserPoolGroup
@@ -178,26 +182,6 @@ Resources:
       Description: Admin user group
       Precedence: 0
       UserPoolId: !Ref CognitoOperationUsersUserPool
-  CognitoAdminUser:
-    Type: AWS::Cognito::UserPoolUser
-    Properties:
-      Username: admin
-      MessageAction: SUPPRESS  # Don't send welcome email (avoids conflicts with same email across labs)
-      ForceAliasCreation: true
-      UserAttributes:
-        - Name: email
-          Value: !Ref AdminEmailParameter
-        - Name: custom:tenantId
-          Value: system_admins
-        - Name: custom:userRole
-          Value: !Ref SystemAdminRoleNameParameter
-      UserPoolId: !Ref CognitoOperationUsersUserPool
-  CognitoAddUserToGroup:
-      Type: AWS::Cognito::UserPoolUserToGroupAttachment
-      Properties:
-        GroupName: !Ref CognitoAdminUserGroup
-        Username: !Ref CognitoAdminUser
-        UserPoolId: !Ref CognitoOperationUsersUserPool
         
 Outputs:  
   CognitoUserPoolId:

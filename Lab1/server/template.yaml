@@ -44,225 +44,8 @@ Resources:
 
 
   # CloudWatch Log Groups with 60-day retention
-  GetProductFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-GetProductFunction
-      RetentionInDays: 60
-      Tags:
-        - Key: Application
-          Value: serverless-saas-workshop
-        - Key: Lab
-          Value: lab1
-
-  GetProductsFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-GetProductsFunction
-      RetentionInDays: 60
-      Tags:
-        - Key: Application
-          Value: serverless-saas-workshop
-        - Key: Lab
-          Value: lab1
-
-  CreateProductFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-CreateProductFunction
-      RetentionInDays: 60
-      Tags:
-        - Key: Application
-          Value: serverless-saas-workshop
-        - Key: Lab
-          Value: lab1
-
-  UpdateProductFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-UpdateProductFunction
-      RetentionInDays: 60
-      Tags:
-        - Key: Application
-          Value: serverless-saas-workshop
-        - Key: Lab
-          Value: lab1
-
-  DeleteProductFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-DeleteProductFunction
-      RetentionInDays: 60
-      Tags:
-        - Key: Application
-          Value: serverless-saas-workshop
-        - Key: Lab
-          Value: lab1
-
-  GetOrdersFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-GetOrdersFunction
-      RetentionInDays: 60
-      Tags:
-        - Key: Application
-          Value: serverless-saas-workshop
-        - Key: Lab
-          Value: lab1
-
-  GetOrderFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-GetOrderFunction
-      RetentionInDays: 60
-      Tags:
-        - Key: Application
-          Value: serverless-saas-workshop
-        - Key: Lab
-          Value: lab1
-
-  CreateOrderFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-CreateOrderFunction
-      RetentionInDays: 60
-      Tags:
-        - Key: Application
-          Value: serverless-saas-workshop
-        - Key: Lab
-          Value: lab1
-
-  UpdateOrderFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-UpdateOrderFunction
-      RetentionInDays: 60
-      Tags:
-        - Key: Application
-          Value: serverless-saas-workshop
-        - Key: Lab
-          Value: lab1
-
-  DeleteOrderFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-DeleteOrderFunction
-      RetentionInDays: 60
-      Tags:
-        - Key: Application
-          Value: serverless-saas-workshop
-        - Key: Lab
-          Value: lab1
-
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-GetProductFunction
-      RetentionInDays: 60
-      Tags:
-        - Key: Application
-          Value: serverless-saas-workshop
-        - Key: Lab
-          Value: lab1
-
-  GetProductsFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-GetProductsFunction
-      RetentionInDays: 60
-      Tags:
-        - Key: Application
-          Value: serverless-saas-workshop
-        - Key: Lab
-          Value: lab1
-
-  CreateProductFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-CreateProductFunction
-      RetentionInDays: 60
-      Tags:
-        - Key: Application
-          Value: serverless-saas-workshop
-        - Key: Lab
-          Value: lab1
-
-  UpdateProductFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-UpdateProductFunction
-      RetentionInDays: 60
-      Tags:
-        - Key: Application
-          Value: serverless-saas-workshop
-        - Key: Lab
-          Value: lab1
-
-  DeleteProductFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-DeleteProductFunction
-      RetentionInDays: 60
-      Tags:
-        - Key: Application
-          Value: serverless-saas-workshop
-        - Key: Lab
-          Value: lab1
-
-  GetOrdersFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-GetOrdersFunction
-      RetentionInDays: 60
-      Tags:
-        - Key: Application
-          Value: serverless-saas-workshop
-        - Key: Lab
-          Value: lab1
-
-  GetOrderFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-GetOrderFunction
-      RetentionInDays: 60
-      Tags:
-        - Key: Application
-          Value: serverless-saas-workshop
-        - Key: Lab
-          Value: lab1
-
-  CreateOrderFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-CreateOrderFunction
-      RetentionInDays: 60
-      Tags:
-        - Key: Application
-          Value: serverless-saas-workshop
-        - Key: Lab
-          Value: lab1
-
-  UpdateOrderFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-UpdateOrderFunction
-      RetentionInDays: 60
-      Tags:
-        - Key: Application
-          Value: serverless-saas-workshop
-        - Key: Lab
-          Value: lab1
-
-  DeleteOrderFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-DeleteOrderFunction
-      RetentionInDays: 60
-      Tags:
-        - Key: Application
-          Value: serverless-saas-workshop
-        - Key: Lab
-          Value: lab1
-
+  # Tags restored - the 120-second stabilization delay in orchestration template
+  # mitigates the CloudFormation race condition with RetentionInDays
   ServerlessSaaSLayers:
     Type: AWS::Serverless::LayerVersion
     Properties:
@@ -367,10 +150,19 @@ Resources:
                 Resource:
                   - !GetAtt ProductTable.Arn
              
+  # Product Service Lambda Functions with explicit names and log groups
+  GetProductFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/serverless-saas-lab1-get-product
+
   GetProductFunction:
     Type: AWS::Serverless::Function 
-    DependsOn: ProductFunctionExecutionRole 
+    DependsOn: 
+      - ProductFunctionExecutionRole
+      - GetProductFunctionLogGroup
     Properties:
+      FunctionName: serverless-saas-lab1-get-product
       CodeUri: ProductService/
       Handler: product_service.get_product
       Runtime: python3.14  
@@ -378,8 +170,6 @@ Resources:
       Role: !GetAtt ProductFunctionExecutionRole.Arn
       Layers: 
         - !Ref ServerlessSaaSLayers
-      LoggingConfig:
-        LogGroup: !Ref GetProductFunctionLogGroup
       Tags:
         Application: serverless-saas-workshop
         Lab: lab1
@@ -391,11 +181,18 @@ Resources:
           POWERTOOLS_SERVICE_NAME: "ProductService"
           PRODUCT_TABLE_NAME: !Ref ProductTable      
   
-  
+  GetProductsFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/serverless-saas-lab1-get-products
+
   GetProductsFunction:
     Type: AWS::Serverless::Function 
-    DependsOn: ProductFunctionExecutionRole 
+    DependsOn: 
+      - ProductFunctionExecutionRole
+      - GetProductsFunctionLogGroup
     Properties:
+      FunctionName: serverless-saas-lab1-get-products
       CodeUri: ProductService/
       Handler: product_service.get_products
       Runtime: python3.14  
@@ -403,8 +200,6 @@ Resources:
       Role: !GetAtt ProductFunctionExecutionRole.Arn
       Layers: 
         - !Ref ServerlessSaaSLayers
-      LoggingConfig:
-        LogGroup: !Ref GetProductsFunctionLogGroup
       Tags:
         Application: serverless-saas-workshop
         Lab: lab1
@@ -416,10 +211,18 @@ Resources:
           POWERTOOLS_SERVICE_NAME: "ProductService"
           PRODUCT_TABLE_NAME: !Ref ProductTable      
   
+  CreateProductFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/serverless-saas-lab1-create-product
+
   CreateProductFunction:
     Type: AWS::Serverless::Function
-    DependsOn: ProductFunctionExecutionRole 
+    DependsOn: 
+      - ProductFunctionExecutionRole
+      - CreateProductFunctionLogGroup
     Properties:
+      FunctionName: serverless-saas-lab1-create-product
       CodeUri: ProductService/
       Handler: product_service.create_product
       Runtime: python3.14  
@@ -427,8 +230,6 @@ Resources:
       Role: !GetAtt ProductFunctionExecutionRole.Arn 
       Layers: 
         - !Ref ServerlessSaaSLayers
-      LoggingConfig:
-        LogGroup: !Ref CreateProductFunctionLogGroup
       Tags:
         Application: serverless-saas-workshop
         Lab: lab1
@@ -440,10 +241,18 @@ Resources:
           POWERTOOLS_SERVICE_NAME: "ProductService"
           PRODUCT_TABLE_NAME: !Ref ProductTable
       
+  UpdateProductFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/serverless-saas-lab1-update-product
+
   UpdateProductFunction:
     Type: AWS::Serverless::Function
-    DependsOn: ProductFunctionExecutionRole 
+    DependsOn: 
+      - ProductFunctionExecutionRole
+      - UpdateProductFunctionLogGroup
     Properties:
+      FunctionName: serverless-saas-lab1-update-product
       CodeUri: ProductService/
       Handler: product_service.update_product
       Runtime: python3.14 
@@ -451,8 +260,6 @@ Resources:
       Role: !GetAtt ProductFunctionExecutionRole.Arn 
       Layers: 
         - !Ref ServerlessSaaSLayers
-      LoggingConfig:
-        LogGroup: !Ref UpdateProductFunctionLogGroup
       Tags:
         Application: serverless-saas-workshop
         Lab: lab1
@@ -464,10 +271,18 @@ Resources:
           POWERTOOLS_SERVICE_NAME: "ProductService"
           PRODUCT_TABLE_NAME: !Ref ProductTable
   
+  DeleteProductFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/serverless-saas-lab1-delete-product
+
   DeleteProductFunction:
     Type: AWS::Serverless::Function
-    DependsOn: ProductFunctionExecutionRole 
+    DependsOn: 
+      - ProductFunctionExecutionRole
+      - DeleteProductFunctionLogGroup
     Properties:
+      FunctionName: serverless-saas-lab1-delete-product
       CodeUri: ProductService/
       Handler: product_service.delete_product
       Runtime: python3.14 
@@ -475,8 +290,6 @@ Resources:
       Role: !GetAtt ProductFunctionExecutionRole.Arn 
       Layers: 
         - !Ref ServerlessSaaSLayers
-      LoggingConfig:
-        LogGroup: !Ref DeleteProductFunctionLogGroup
       Tags:
         Application: serverless-saas-workshop
         Lab: lab1
@@ -533,10 +346,19 @@ Resources:
                 Resource:
                   - !GetAtt OrderTable.Arn
                 
+  # Order Service Lambda Functions with explicit names and log groups
+  GetOrdersFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/serverless-saas-lab1-get-orders
+
   GetOrdersFunction:
     Type: AWS::Serverless::Function 
-    DependsOn: OrderFunctionExecutionRole 
+    DependsOn: 
+      - OrderFunctionExecutionRole
+      - GetOrdersFunctionLogGroup
     Properties:
+      FunctionName: serverless-saas-lab1-get-orders
       CodeUri: OrderService/
       Handler: order_service.get_orders
       Runtime: python3.14  
@@ -544,8 +366,6 @@ Resources:
       Role: !GetAtt OrderFunctionExecutionRole.Arn
       Layers: 
         - !Ref ServerlessSaaSLayers
-      LoggingConfig:
-        LogGroup: !Ref GetOrdersFunctionLogGroup
       Tags:
         Application: serverless-saas-workshop
         Lab: lab1
@@ -557,10 +377,18 @@ Resources:
           POWERTOOLS_SERVICE_NAME: "OrderService"
           ORDER_TABLE_NAME: !Ref OrderTable
   
+  GetOrderFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/serverless-saas-lab1-get-order
+
   GetOrderFunction:
     Type: AWS::Serverless::Function 
-    DependsOn: OrderFunctionExecutionRole 
+    DependsOn: 
+      - OrderFunctionExecutionRole
+      - GetOrderFunctionLogGroup
     Properties:
+      FunctionName: serverless-saas-lab1-get-order
       CodeUri: OrderService/
       Handler: order_service.get_order
       Runtime: python3.14  
@@ -568,8 +396,6 @@ Resources:
       Role: !GetAtt OrderFunctionExecutionRole.Arn
       Layers: 
         - !Ref ServerlessSaaSLayers
-      LoggingConfig:
-        LogGroup: !Ref GetOrderFunctionLogGroup
       Tags:
         Application: serverless-saas-workshop
         Lab: lab1
@@ -581,10 +407,18 @@ Resources:
           POWERTOOLS_SERVICE_NAME: "OrderService"
           ORDER_TABLE_NAME: !Ref OrderTable
       
+  CreateOrderFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/serverless-saas-lab1-create-order
+
   CreateOrderFunction:
     Type: AWS::Serverless::Function
-    DependsOn: OrderFunctionExecutionRole 
+    DependsOn: 
+      - OrderFunctionExecutionRole
+      - CreateOrderFunctionLogGroup
     Properties:
+      FunctionName: serverless-saas-lab1-create-order
       CodeUri: OrderService/
       Handler: order_service.create_order
       Runtime: python3.14  
@@ -592,8 +426,6 @@ Resources:
       Role: !GetAtt OrderFunctionExecutionRole.Arn 
       Layers: 
         - !Ref ServerlessSaaSLayers
-      LoggingConfig:
-        LogGroup: !Ref CreateOrderFunctionLogGroup
       Tags:
         Application: serverless-saas-workshop
         Lab: lab1
@@ -605,10 +437,18 @@ Resources:
           POWERTOOLS_SERVICE_NAME: "OrderService"
           ORDER_TABLE_NAME: !Ref OrderTable
       
+  UpdateOrderFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/serverless-saas-lab1-update-order
+
   UpdateOrderFunction:
     Type: AWS::Serverless::Function
-    DependsOn: OrderFunctionExecutionRole 
+    DependsOn: 
+      - OrderFunctionExecutionRole
+      - UpdateOrderFunctionLogGroup
     Properties:
+      FunctionName: serverless-saas-lab1-update-order
       CodeUri: OrderService/
       Handler: order_service.update_order
       Runtime: python3.14 
@@ -616,8 +456,6 @@ Resources:
       Role: !GetAtt OrderFunctionExecutionRole.Arn 
       Layers: 
         - !Ref ServerlessSaaSLayers
-      LoggingConfig:
-        LogGroup: !Ref UpdateOrderFunctionLogGroup
       Tags:
         Application: serverless-saas-workshop
         Lab: lab1
@@ -629,10 +467,18 @@ Resources:
           POWERTOOLS_SERVICE_NAME: "OrderService"
           ORDER_TABLE_NAME: !Ref OrderTable
       
+  DeleteOrderFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/serverless-saas-lab1-delete-order
+
   DeleteOrderFunction:
     Type: AWS::Serverless::Function
-    DependsOn: OrderFunctionExecutionRole 
+    DependsOn: 
+      - OrderFunctionExecutionRole
+      - DeleteOrderFunctionLogGroup
     Properties:
+      FunctionName: serverless-saas-lab1-delete-order
       CodeUri: OrderService/
       Handler: order_service.delete_order
       Runtime: python3.14 
@@ -640,8 +486,6 @@ Resources:
       Role: !GetAtt OrderFunctionExecutionRole.Arn 
       Layers: 
         - !Ref ServerlessSaaSLayers
-      LoggingConfig:
-        LogGroup: !Ref DeleteOrderFunctionLogGroup
       Tags:
         Application: serverless-saas-workshop
         Lab: lab1
@@ -656,19 +500,8 @@ Resources:
   ApiGatewayAccessLogs:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: /aws/api-gateway/access-logs-serverless-saas-workshop-lab1-api
-      RetentionInDays: 60
-      Tags:
-        - Key: Application
-          Value: serverless-saas-workshop
-        - Key: Lab
-          Value: lab1
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: Owner
-          Value: !Ref Owner
-        - Key: CostCenter
-          Value: !Ref CostCenter
+      LogGroupName: /aws/api-gateway/access-logs-serverless-saas-lab1-api
+
   ApiGatewayApi:
     Type: AWS::Serverless::Api
     Properties:

@@ -57,237 +57,112 @@ Globals:
         POWERTOOLS_METRICS_NAMESPACE: "ServerlessSaaS"
         
 Resources:
-  # CloudWatch Log Groups with 60-day retention
+  # CloudWatch Log Groups for Lambda functions
+  # Note: Retention and tags are set by post-deployment script to avoid race conditions
   SharedServicesAuthorizerFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: /aws/lambda/serverless-saas-lab6-shared-services-authorizer
-      RetentionInDays: 60
-      Tags:
-        - Key: Application
-          Value: serverless-saas-workshop
-        - Key: Lab
-          Value: lab6
 
   CreateTenantAdminUserFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: /aws/lambda/serverless-saas-lab6-create-tenant-admin-user
-      RetentionInDays: 60
-      Tags:
-        - Key: Application
-          Value: serverless-saas-workshop
-        - Key: Lab
-          Value: lab6
 
   CreateUserFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: /aws/lambda/serverless-saas-lab6-create-user
-      RetentionInDays: 60
-      Tags:
-        - Key: Application
-          Value: serverless-saas-workshop
-        - Key: Lab
-          Value: lab6
 
   UpdateUserFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: /aws/lambda/serverless-saas-lab6-update-user
-      RetentionInDays: 60
-      Tags:
-        - Key: Application
-          Value: serverless-saas-workshop
-        - Key: Lab
-          Value: lab6
 
   DisableUserFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: /aws/lambda/serverless-saas-lab6-disable-user
-      RetentionInDays: 60
-      Tags:
-        - Key: Application
-          Value: serverless-saas-workshop
-        - Key: Lab
-          Value: lab6
 
   DisableUsersByTenantFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: /aws/lambda/serverless-saas-lab6-disable-users-by-tenant
-      RetentionInDays: 60
-      Tags:
-        - Key: Application
-          Value: serverless-saas-workshop
-        - Key: Lab
-          Value: lab6
 
   EnableUsersByTenantFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: /aws/lambda/serverless-saas-lab6-enable-users-by-tenant
-      RetentionInDays: 60
-      Tags:
-        - Key: Application
-          Value: serverless-saas-workshop
-        - Key: Lab
-          Value: lab6
 
   GetUserFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: /aws/lambda/serverless-saas-lab6-get-user
-      RetentionInDays: 60
-      Tags:
-        - Key: Application
-          Value: serverless-saas-workshop
-        - Key: Lab
-          Value: lab6
 
   GetUsersFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: /aws/lambda/serverless-saas-lab6-get-users
-      RetentionInDays: 60
-      Tags:
-        - Key: Application
-          Value: serverless-saas-workshop
-        - Key: Lab
-          Value: lab6
 
   CreateTenantFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: /aws/lambda/serverless-saas-lab6-create-tenant
-      RetentionInDays: 60
-      Tags:
-        - Key: Application
-          Value: serverless-saas-workshop
-        - Key: Lab
-          Value: lab6
 
   ActivateTenantFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: /aws/lambda/serverless-saas-lab6-activate-tenant
-      RetentionInDays: 60
-      Tags:
-        - Key: Application
-          Value: serverless-saas-workshop
-        - Key: Lab
-          Value: lab6
 
   GetTenantFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: /aws/lambda/serverless-saas-lab6-get-tenant
-      RetentionInDays: 60
-      Tags:
-        - Key: Application
-          Value: serverless-saas-workshop
-        - Key: Lab
-          Value: lab6
 
   DeactivateTenantFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: /aws/lambda/serverless-saas-lab6-deactivate-tenant
-      RetentionInDays: 60
-      Tags:
-        - Key: Application
-          Value: serverless-saas-workshop
-        - Key: Lab
-          Value: lab6
 
   UpdateTenantFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: /aws/lambda/serverless-saas-lab6-update-tenant
-      RetentionInDays: 60
-      Tags:
-        - Key: Application
-          Value: serverless-saas-workshop
-        - Key: Lab
-          Value: lab6
 
   GetTenantsFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: /aws/lambda/serverless-saas-lab6-get-tenants
-      RetentionInDays: 60
-      Tags:
-        - Key: Application
-          Value: serverless-saas-workshop
-        - Key: Lab
-          Value: lab6
 
   GetTenantConfigFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: /aws/lambda/serverless-saas-lab6-get-tenant-config
-      RetentionInDays: 60
-      Tags:
-        - Key: Application
-          Value: serverless-saas-workshop
-        - Key: Lab
-          Value: lab6
 
   RegisterTenantFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: /aws/lambda/serverless-saas-lab6-register-tenant
-      RetentionInDays: 60
-      Tags:
-        - Key: Application
-          Value: serverless-saas-workshop
-        - Key: Lab
-          Value: lab6
 
   ProvisionTenantFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: /aws/lambda/serverless-saas-lab6-provision-tenant
-      RetentionInDays: 60
-      Tags:
-        - Key: Application
-          Value: serverless-saas-workshop
-        - Key: Lab
-          Value: lab6
 
   DeProvisionTenantFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: /aws/lambda/serverless-saas-lab6-de-provision-tenant
-      RetentionInDays: 60
-      Tags:
-        - Key: Application
-          Value: serverless-saas-workshop
-        - Key: Lab
-          Value: lab6
 
   UpdateSettingsTableFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: /aws/lambda/serverless-saas-lab6-update-settings-table
-      RetentionInDays: 60
-      Tags:
-        - Key: Application
-          Value: serverless-saas-workshop
-        - Key: Lab
-          Value: lab6
 
   UpdateTenantStackMapTableFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: /aws/lambda/serverless-saas-lab6-update-tenant-stack-map-table
-      RetentionInDays: 60
-      Tags:
-        - Key: Application
-          Value: serverless-saas-workshop
-        - Key: Lab
-          Value: lab6
 
   ServerlessSaaSLayers:
     Type: AWS::Serverless::LayerVersion
@@ -296,11 +171,11 @@ Resources:
       Description: Utilities for project
       ContentUri: ../layers/
       CompatibleRuntimes:
-        - python3.14
+        - python3.12
       LicenseInfo: "MIT"
       RetentionPolicy: Retain
     Metadata:
-      BuildMethod: python3.14
+      BuildMethod: python3.12
 
   #Tenant Authorizer
   AuthorizerExecutionRole:
@@ -391,19 +266,19 @@ Resources:
           Value: !Ref CostCenter
   SharedServicesAuthorizerFunction:
     Type: AWS::Serverless::Function 
-    DependsOn: AuthorizerAccessRole
+    DependsOn:
+      - AuthorizerAccessRole
+      - SharedServicesAuthorizerFunctionLogGroup
     Properties:
       FunctionName: serverless-saas-lab6-shared-services-authorizer
       CodeUri: ../Resources/
       Handler: shared_service_authorizer.lambda_handler
-      Runtime: python3.14
+      Runtime: python3.12
       Role: !GetAtt AuthorizerExecutionRole.Arn
       MemorySize: 256
       Tracing: Active
       Layers: 
         - !Ref ServerlessSaaSLayers
-      LoggingConfig:
-        LogGroup: !Ref SharedServicesAuthorizerFunctionLogGroup
       Environment:
         Variables:
           OPERATION_USERS_USER_POOL: !Ref CognitoOperationUsersUserPoolId
@@ -518,18 +393,18 @@ Resources:
           Value: !Ref CostCenter
   CreateTenantAdminUserFunction:
     Type: AWS::Serverless::Function
-    DependsOn: CreateUserLambdaExecutionRole
+    DependsOn:
+      - CreateUserLambdaExecutionRole
+      - CreateTenantAdminUserFunctionLogGroup
     Properties:
       FunctionName: serverless-saas-lab6-create-tenant-admin-user
       CodeUri: ../TenantManagementService/
       Handler: user-management.create_tenant_admin_user
-      Runtime: python3.14
+      Runtime: python3.12
       Role: !GetAtt CreateUserLambdaExecutionRole.Arn      
       Tracing: Active
       Layers:
         - !Ref ServerlessSaaSLayers
-      LoggingConfig:
-        LogGroup: !Ref CreateTenantAdminUserFunctionLogGroup
       Environment:
         Variables:
           TENANT_USER_POOL_ID: !Ref CognitoUserPoolId
@@ -546,18 +421,18 @@ Resources:
   #User management
   CreateUserFunction:
     Type: AWS::Serverless::Function
-    DependsOn: CreateUserLambdaExecutionRole
+    DependsOn:
+      - CreateUserLambdaExecutionRole
+      - CreateUserFunctionLogGroup
     Properties:
       FunctionName: serverless-saas-lab6-create-user
       CodeUri: ../TenantManagementService/
       Handler: user-management.create_user
-      Runtime: python3.14
+      Runtime: python3.12
       Role: !GetAtt CreateUserLambdaExecutionRole.Arn
       Tracing: Active
       Layers:
         - !Ref ServerlessSaaSLayers
-      LoggingConfig:
-        LogGroup: !Ref CreateUserFunctionLogGroup
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "UserManagement.CreateUser"
@@ -570,18 +445,18 @@ Resources:
 
   UpdateUserFunction:
     Type: AWS::Serverless::Function
-    DependsOn: TenantUserPoolLambdaExecutionRole
+    DependsOn:
+      - TenantUserPoolLambdaExecutionRole
+      - UpdateUserFunctionLogGroup
     Properties:
       FunctionName: serverless-saas-lab6-update-user
       CodeUri: ../TenantManagementService/
       Handler: user-management.update_user
-      Runtime: python3.14
+      Runtime: python3.12
       Role: !GetAtt TenantUserPoolLambdaExecutionRole.Arn
       Tracing: Active
       Layers:
         - !Ref ServerlessSaaSLayers
-      LoggingConfig:
-        LogGroup: !Ref UpdateUserFunctionLogGroup
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "UserManagement.UpdateUser"
@@ -594,18 +469,18 @@ Resources:
 
   DisableUserFunction:
     Type: AWS::Serverless::Function
-    DependsOn: TenantUserPoolLambdaExecutionRole
+    DependsOn:
+      - TenantUserPoolLambdaExecutionRole
+      - DisableUserFunctionLogGroup
     Properties:
       FunctionName: serverless-saas-lab6-disable-user
       CodeUri: ../TenantManagementService/
       Handler: user-management.disable_user
-      Runtime: python3.14
+      Runtime: python3.12
       Role: !GetAtt TenantUserPoolLambdaExecutionRole.Arn
       Tracing: Active
       Layers:
         - !Ref ServerlessSaaSLayers
-      LoggingConfig:
-        LogGroup: !Ref DisableUserFunctionLogGroup
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "UserManagement.DisableUser"
@@ -618,18 +493,18 @@ Resources:
          
   DisableUsersByTenantFunction:
     Type: AWS::Serverless::Function
-    DependsOn: TenantUserPoolLambdaExecutionRole
+    DependsOn:
+      - TenantUserPoolLambdaExecutionRole
+      - DisableUsersByTenantFunctionLogGroup
     Properties:
       FunctionName: serverless-saas-lab6-disable-users-by-tenant
       CodeUri: ../TenantManagementService/
       Handler: user-management.disable_users_by_tenant
-      Runtime: python3.14
+      Runtime: python3.12
       Role: !GetAtt TenantUserPoolLambdaExecutionRole.Arn
       Tracing: Active
       Layers:
         - !Ref ServerlessSaaSLayers
-      LoggingConfig:
-        LogGroup: !Ref DisableUsersByTenantFunctionLogGroup
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "UserManagement.DisableUsersByTenant"
@@ -642,18 +517,18 @@ Resources:
            
   EnableUsersByTenantFunction:
     Type: AWS::Serverless::Function
-    DependsOn: TenantUserPoolLambdaExecutionRole
+    DependsOn:
+      - TenantUserPoolLambdaExecutionRole
+      - EnableUsersByTenantFunctionLogGroup
     Properties:
       FunctionName: serverless-saas-lab6-enable-users-by-tenant
       CodeUri: ../TenantManagementService/
       Handler: user-management.enable_users_by_tenant
-      Runtime: python3.14
+      Runtime: python3.12
       Role: !GetAtt TenantUserPoolLambdaExecutionRole.Arn
       Tracing: Active
       Layers:
         - !Ref ServerlessSaaSLayers
-      LoggingConfig:
-        LogGroup: !Ref EnableUsersByTenantFunctionLogGroup
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "UserManagement.EnableUsersByTenant"
@@ -666,18 +541,18 @@ Resources:
         
   GetUserFunction:
     Type: AWS::Serverless::Function
-    DependsOn: TenantUserPoolLambdaExecutionRole
+    DependsOn:
+      - TenantUserPoolLambdaExecutionRole
+      - GetUserFunctionLogGroup
     Properties:
       FunctionName: serverless-saas-lab6-get-user
       CodeUri: ../TenantManagementService/
       Handler: user-management.get_user
-      Runtime: python3.14
+      Runtime: python3.12
       Role: !GetAtt TenantUserPoolLambdaExecutionRole.Arn
       Tracing: Active
       Layers:
         - !Ref ServerlessSaaSLayers
-      LoggingConfig:
-        LogGroup: !Ref GetUserFunctionLogGroup
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "UserManagement.GetUser"
@@ -690,18 +565,18 @@ Resources:
          
   GetUsersFunction:
     Type: AWS::Serverless::Function
-    DependsOn: TenantUserPoolLambdaExecutionRole
+    DependsOn:
+      - TenantUserPoolLambdaExecutionRole
+      - GetUsersFunctionLogGroup
     Properties:
       FunctionName: serverless-saas-lab6-get-users
       CodeUri: ../TenantManagementService/
       Handler: user-management.get_users
-      Runtime: python3.14
+      Runtime: python3.12
       Role: !GetAtt TenantUserPoolLambdaExecutionRole.Arn
       Tracing: Active
       Layers:
         - !Ref ServerlessSaaSLayers
-      LoggingConfig:
-        LogGroup: !Ref GetUsersFunctionLogGroup
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "UserManagement.GetUsers"
@@ -765,18 +640,18 @@ Resources:
           Value: !Ref CostCenter                 
   CreateTenantFunction:
     Type: AWS::Serverless::Function
-    DependsOn: TenantManagementLambdaExecutionRole
+    DependsOn:
+      - TenantManagementLambdaExecutionRole
+      - CreateTenantFunctionLogGroup
     Properties:
       FunctionName: serverless-saas-lab6-create-tenant
       CodeUri: ../TenantManagementService/
       Handler: tenant-management.create_tenant
-      Runtime: python3.14
+      Runtime: python3.12
       Role: !GetAtt TenantManagementLambdaExecutionRole.Arn
       Tracing: Active
       Layers:
         - !Ref ServerlessSaaSLayers
-      LoggingConfig:
-        LogGroup: !Ref CreateTenantFunctionLogGroup
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "TenantManagement.CreateTenant"
@@ -789,18 +664,18 @@ Resources:
           
   ActivateTenantFunction:
     Type: AWS::Serverless::Function
-    DependsOn: TenantManagementLambdaExecutionRole
+    DependsOn:
+      - TenantManagementLambdaExecutionRole
+      - ActivateTenantFunctionLogGroup
     Properties:
       FunctionName: serverless-saas-lab6-activate-tenant
       CodeUri: ../TenantManagementService/
       Handler: tenant-management.activate_tenant
-      Runtime: python3.14
+      Runtime: python3.12
       Role: !GetAtt TenantManagementLambdaExecutionRole.Arn
       Tracing: Active
       Layers:
         - !Ref ServerlessSaaSLayers
-      LoggingConfig:
-        LogGroup: !Ref ActivateTenantFunctionLogGroup
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "TenantManagement.ActivateTenant"
@@ -815,18 +690,18 @@ Resources:
           
   GetTenantFunction:
     Type: AWS::Serverless::Function
-    DependsOn: TenantManagementLambdaExecutionRole
+    DependsOn:
+      - TenantManagementLambdaExecutionRole
+      - GetTenantFunctionLogGroup
     Properties:
       FunctionName: serverless-saas-lab6-get-tenant
       CodeUri: ../TenantManagementService/
       Handler: tenant-management.get_tenant
-      Runtime: python3.14
+      Runtime: python3.12
       Role: !GetAtt TenantManagementLambdaExecutionRole.Arn
       Tracing: Active
       Layers:
         - !Ref ServerlessSaaSLayers
-      LoggingConfig:
-        LogGroup: !Ref GetTenantFunctionLogGroup
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "TenantManagement.GetTenant"
@@ -839,18 +714,18 @@ Resources:
         
   DeactivateTenantFunction:
     Type: AWS::Serverless::Function
-    DependsOn: TenantManagementLambdaExecutionRole
+    DependsOn:
+      - TenantManagementLambdaExecutionRole
+      - DeactivateTenantFunctionLogGroup
     Properties:
       FunctionName: serverless-saas-lab6-deactivate-tenant
       CodeUri: ../TenantManagementService/
       Handler: tenant-management.deactivate_tenant
-      Runtime: python3.14
+      Runtime: python3.12
       Role: !GetAtt TenantManagementLambdaExecutionRole.Arn
       Tracing: Active
       Layers:
         - !Ref ServerlessSaaSLayers
-      LoggingConfig:
-        LogGroup: !Ref DeactivateTenantFunctionLogGroup
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "TenantManagement.DeactivateTenant"
@@ -865,18 +740,18 @@ Resources:
                  
   UpdateTenantFunction:
     Type: AWS::Serverless::Function
-    DependsOn: TenantManagementLambdaExecutionRole
+    DependsOn:
+      - TenantManagementLambdaExecutionRole
+      - UpdateTenantFunctionLogGroup
     Properties:
       FunctionName: serverless-saas-lab6-update-tenant
       CodeUri: ../TenantManagementService/
       Handler: tenant-management.update_tenant
-      Runtime: python3.14
+      Runtime: python3.12
       Role: !GetAtt TenantManagementLambdaExecutionRole.Arn
       Tracing: Active
       Layers:
         - !Ref ServerlessSaaSLayers
-      LoggingConfig:
-        LogGroup: !Ref UpdateTenantFunctionLogGroup
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "TenantManagement.UpdateTenant"
@@ -893,18 +768,18 @@ Resources:
                  
   GetTenantsFunction:
     Type: AWS::Serverless::Function
-    DependsOn: TenantManagementLambdaExecutionRole
+    DependsOn:
+      - TenantManagementLambdaExecutionRole
+      - GetTenantsFunctionLogGroup
     Properties:
       FunctionName: serverless-saas-lab6-get-tenants
       CodeUri: ../TenantManagementService/
       Handler: tenant-management.get_tenants
-      Runtime: python3.14
+      Runtime: python3.12
       Role: !GetAtt TenantManagementLambdaExecutionRole.Arn
       Tracing: Active
       Layers:
         - !Ref ServerlessSaaSLayers
-      LoggingConfig:
-        LogGroup: !Ref GetTenantsFunctionLogGroup
       Tags:
         Application: serverless-saas-workshop
         Lab: lab6
@@ -914,18 +789,18 @@ Resources:
       
   GetTenantConfigFunction:
     Type: AWS::Serverless::Function
-    DependsOn: TenantManagementLambdaExecutionRole
+    DependsOn:
+      - TenantManagementLambdaExecutionRole
+      - GetTenantConfigFunctionLogGroup
     Properties:
       FunctionName: serverless-saas-lab6-get-tenant-config
       CodeUri: ../TenantManagementService/
       Handler: tenant-management.load_tenant_config
-      Runtime: python3.14
+      Runtime: python3.12
       Role: !GetAtt TenantManagementLambdaExecutionRole.Arn
       Tracing: Active
       Layers:
         - !Ref ServerlessSaaSLayers
-      LoggingConfig:
-        LogGroup: !Ref GetTenantConfigFunctionLogGroup
       Tags:
         Application: serverless-saas-workshop
         Lab: lab6
@@ -966,18 +841,18 @@ Resources:
           Value: !Ref CostCenter      
   RegisterTenantFunction:
     Type: AWS::Serverless::Function
-    DependsOn: RegisterTenantLambdaExecutionRole
+    DependsOn:
+      - RegisterTenantLambdaExecutionRole
+      - RegisterTenantFunctionLogGroup
     Properties:
       FunctionName: serverless-saas-lab6-register-tenant
       CodeUri: ../TenantManagementService/
       Handler: tenant-registration.register_tenant
-      Runtime: python3.14
+      Runtime: python3.12
       Role: !GetAtt RegisterTenantLambdaExecutionRole.Arn
       Tracing: Active
       Layers:
         - !Ref ServerlessSaaSLayers
-      LoggingConfig:
-        LogGroup: !Ref RegisterTenantFunctionLogGroup
       Environment:
         Variables: # Need to find a better way than hard coding resource paths
           CREATE_TENANT_ADMIN_USER_RESOURCE_PATH: "/user/tenant-admin"
@@ -1047,18 +922,18 @@ Resources:
           Value: !Ref CostCenter                        
   ProvisionTenantFunction:
     Type: AWS::Serverless::Function
-    DependsOn: ProvisionTenantLambdaExecutionRole
+    DependsOn:
+      - ProvisionTenantLambdaExecutionRole
+      - ProvisionTenantFunctionLogGroup
     Properties:
       FunctionName: serverless-saas-lab6-provision-tenant
       CodeUri: ../TenantManagementService/
       Handler: tenant-provisioning.provision_tenant
-      Runtime: python3.14
+      Runtime: python3.12
       Role: !GetAtt ProvisionTenantLambdaExecutionRole.Arn
       Tracing: Active
       Layers:
         - !Ref ServerlessSaaSLayers
-      LoggingConfig:
-        LogGroup: !Ref ProvisionTenantFunctionLogGroup
       Environment:
         Variables: 
           TENANT_STACK_MAPPING_TABLE_NAME: !Ref TenantStackMappingTableName
@@ -1110,18 +985,18 @@ Resources:
           Value: !Ref CostCenter                     
   DeProvisionTenantFunction:
     Type: AWS::Serverless::Function
-    DependsOn: DeProvisionTenantLambdaExecutionRole
+    DependsOn:
+      - DeProvisionTenantLambdaExecutionRole
+      - DeProvisionTenantFunctionLogGroup
     Properties:
       FunctionName: serverless-saas-lab6-de-provision-tenant
       CodeUri: ../TenantManagementService/
       Handler: tenant-provisioning.deprovision_tenant
-      Runtime: python3.14
+      Runtime: python3.12
       Role: !GetAtt DeProvisionTenantLambdaExecutionRole.Arn
       Tracing: Active
       Layers:
         - !Ref ServerlessSaaSLayers
-      LoggingConfig:
-        LogGroup: !Ref DeProvisionTenantFunctionLogGroup
       Environment:
         Variables: 
           TENANT_STACK_MAPPING_TABLE_NAME: !Ref TenantStackMappingTableName
@@ -1172,17 +1047,19 @@ Resources:
           Value: !Ref CostCenter
   UpdateSettingsTableFunction:
     Type: AWS::Serverless::Function
-    DependsOn: UpdateSettingsTableLambdaExecutionRole
+    DependsOn:
+      - UpdateSettingsTableLambdaExecutionRole
+      - UpdateSettingsTableFunctionLogGroup
     Properties:
       FunctionName: serverless-saas-lab6-update-settings-table
       CodeUri: ../custom_resources/
       Handler: update_settings_table.handler
-      Runtime: python3.14
+      Runtime: python3.12
+      Timeout: 60
+      MemorySize: 256
       Role: !GetAtt UpdateSettingsTableLambdaExecutionRole.Arn
       Layers: 
           - !Ref ServerlessSaaSLayers
-      LoggingConfig:
-        LogGroup: !Ref UpdateSettingsTableFunctionLogGroup
       Tags:
         Application: serverless-saas-workshop
         Lab: lab6
@@ -1229,17 +1106,19 @@ Resources:
           Value: !Ref CostCenter
   UpdateTenantStackMapTableFunction:
     Type: AWS::Serverless::Function
-    DependsOn: UpdateTenantStackMapTableLambdaExecutionRole
+    DependsOn:
+      - UpdateTenantStackMapTableLambdaExecutionRole
+      - UpdateTenantStackMapTableFunctionLogGroup
     Properties:
       FunctionName: serverless-saas-lab6-update-tenant-stack-map-table
       CodeUri: ../custom_resources/
       Handler: update_tenantstackmap_table.handler
-      Runtime: python3.14
+      Runtime: python3.12
+      Timeout: 60
+      MemorySize: 256
       Role: !GetAtt UpdateTenantStackMapTableLambdaExecutionRole.Arn
       Layers: 
           - !Ref ServerlessSaaSLayers
-      LoggingConfig:
-        LogGroup: !Ref UpdateTenantStackMapTableFunctionLogGroup
       Tags:
         Application: serverless-saas-workshop
         Lab: lab6

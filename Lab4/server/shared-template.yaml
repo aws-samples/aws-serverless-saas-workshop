@@ -26,6 +26,10 @@ Parameters:
     Type: String
     Default: "test@test.com"
     Description: "Enter system admin email address"
+  TenantAdminEmailParameter:
+    Type: String
+    Default: "tenant-admin@test.com"
+    Description: "Enter tenant admin email address"
   SystemAdminRoleNameParameter:
     Type: String
     Default: "SystemAdmin"
@@ -208,12 +212,19 @@ Outputs:
     Description: The name of the CloudFront url for Tenant Management site
     Value: !GetAtt UserInterface.Outputs.ApplicationSite
     Condition: IsNotRunningInEventEngine
+  CognitoOperationUsersUserPoolId:
+    Description: The user pool id of Admin Management userpool
+    Value: !GetAtt Cognito.Outputs.CognitoOperationUsersUserPoolId
+    Export:
+      Name: "Serverless-SaaS-CognitoOperationUsersUserPoolId-lab4"
   CognitoOperationUsersUserPoolProviderURL:
     Description: The Admin Management userpool provider url
     Value: !GetAtt Cognito.Outputs.CognitoOperationUsersUserPoolProviderURL
   CognitoOperationUsersUserPoolClientId:
     Description: The Admin Management userpool client id
     Value: !GetAtt Cognito.Outputs.CognitoOperationUsersUserPoolClientId
+    Export:
+      Name: "Serverless-SaaS-CognitoOperationUsersUserPoolClientId-lab4"
   CognitoTenantUserPoolId:
     Description: The user pool id for tenant user pool
     Value: !GetAtt Cognito.Outputs.CognitoUserPoolId
@@ -229,15 +240,5 @@ Outputs:
     Value: !GetAtt LambdaFunctions.Outputs.AuthorizerExecutionRoleArn 
     Export:
       Name: "Serverless-SaaS-AuthorizerExecutionRoleArn-lab4"   
-  Tenant1Username:
-    Description: "Tenant 1 admin username (if tenant was created during deployment)"
-    Value: !Ref Tenant1Username
-  Tenant1TemporaryPassword:
-    Description: "Tenant 1 admin temporary password (if tenant was created during deployment)"
-    Value: !Ref Tenant1TemporaryPassword
-  Tenant2Username:
-    Description: "Tenant 2 admin username (if tenant was created during deployment)"
-    Value: !Ref Tenant2Username
-  Tenant2TemporaryPassword:
-    Description: "Tenant 2 admin temporary password (if tenant was created during deployment)"
-    Value: !Ref Tenant2TemporaryPassword
+  # NOTE: Cognito users are NOT created by CloudFormation
+  # Run create-workshop-users.sh after deployment to create admin users
