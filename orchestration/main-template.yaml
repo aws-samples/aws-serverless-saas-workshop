@@ -1,0 +1,335 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  AWS Serverless SaaS Workshop - Main Orchestration Template
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Optional Parameters"
+        Parameters:
+          - AdminEmail
+          - TenantEmail
+          - AdminTemporaryPassword
+          - Environment
+    ParameterLabels:
+      AdminEmail:
+        default: "Admin Email Address (optional - use create-workshop-users.sh post-deployment)"
+      TenantEmail:
+        default: "Tenant Email (for auto-tenant creation)"
+      AdminTemporaryPassword:
+        default: "Admin Temporary Password"
+      Environment:
+        default: "Deployment Environment"
+
+Parameters:
+  AdminEmail:
+    Type: String
+    Description: Email address for admin user (optional - leave empty and use create-workshop-users.sh post-deployment to create users)
+    Default: ''
+    AllowedPattern: ^$|^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$
+    ConstraintDescription: Must be a valid email address or empty for post-deployment user creation
+    
+  TenantEmail:
+    Type: String
+    Description: Email for auto-tenant creation in Labs 3-4 (optional)
+    Default: ''
+    
+  AdminTemporaryPassword:
+    Type: String
+    Description: Temporary password for admin user (min 8 chars)
+    Default: 'SaaS#Workshop2026'
+    NoEcho: true
+    MinLength: 8
+    
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+    Description: Deployment environment
+    
+  AdminUserPoolCallbackURL:
+    Type: String
+    Description: Callback URL for admin user pool (CloudFront URL)
+    Default: 'http://example.com'
+    
+  TenantUserPoolCallbackURL:
+    Type: String
+    Description: Callback URL for tenant user pool (CloudFront URL)
+    Default: 'http://example.com'
+
+Conditions:
+  HasTenantEmail: !Not [!Equals [!Ref TenantEmail, '']]
+  HasAdminEmail: !Not [!Equals [!Ref AdminEmail, '']]
+
+Resources:
+  # =============================================================
+  # PRE-DEPLOYMENT RESOURCES
+  # =============================================================
+  # These resources must be created BEFORE lab stacks to avoid
+  # race conditions when all labs deploy in parallel.
+
+  APIGatewayCloudWatchRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: apigateway-cloudwatch-publish-role
+      Description: Allows API Gateway to push logs to CloudWatch Logs
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: apigateway.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs
+      Tags:
+        - Key: Workshop
+          Value: serverless-saas
+        - Key: Purpose
+          Value: api-gateway-logging
+
+  # Configure API Gateway account to use the CloudWatch role
+  # This is CRITICAL - creating the role alone is NOT enough!
+  # API Gateway needs to be told at the ACCOUNT level which role to use
+  APIGatewayAccount:
+    Type: AWS::ApiGateway::Account
+    DependsOn: APIGatewayCloudWatchRole
+    Properties:
+      CloudWatchRoleArn: !GetAtt APIGatewayCloudWatchRole.Arn
+
+  # =============================================================
+  # ALL LAB STACKS - PARALLEL DEPLOYMENT
+  # =============================================================
+  # All labs deploy in PARALLEL after APIGatewayAccount is created.
+  # Each lab only depends on APIGatewayAccount, enabling maximum parallelism.
+  #
+  # LOG GROUP RETENTION STRATEGY:
+  # Instead of creating log groups in CloudFormation (which has a race condition
+  # with RetentionInDays), we let Lambda create log groups automatically on first
+  # invocation. The set-log-retention.sh script runs AFTER deployment to set
+  # retention policies on all log groups. This eliminates the race condition
+  # entirely and removes the need for a 120-second stabilization delay.
+
+  # ==================== LAB 1 ====================
+  # Basic Serverless Application
+  Lab1Stack:
+    Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    DependsOn: APIGatewayAccount
+    Properties:
+      TemplateURL: ../Lab1/server/template.yaml
+      TimeoutInMinutes: 20
+      Parameters:
+        Environment: !Ref Environment
+      Tags:
+        - Key: Workshop
+          Value: serverless-saas
+        - Key: Lab
+          Value: lab1
+
+  # ==================== LAB 2 ====================
+  # SaaS Shared Services (Cognito, Tenant/User Management)
+  Lab2Stack:
+    Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    DependsOn: APIGatewayAccount
+    Properties:
+      TemplateURL: ../Lab2/server/template.yaml
+      TimeoutInMinutes: 25
+      Parameters:
+        AdminEmailParameter: !Ref AdminEmail
+        AdminTemporaryPassword: !Ref AdminTemporaryPassword
+        Environment: !Ref Environment
+        CreateCloudWatchRole: "false"
+      Tags:
+        - Key: Workshop
+          Value: serverless-saas
+        - Key: Lab
+          Value: lab2
+
+  # ==================== LAB 3 ====================
+  # Multi-tenancy in Microservices (Lambda Authorizer, Tenant Context)
+  Lab3Stack:
+    Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    DependsOn: APIGatewayAccount
+    Properties:
+      TemplateURL: ../Lab3/server/shared-template.yaml
+      TimeoutInMinutes: 25
+      Parameters:
+        AdminEmailParameter: !Ref AdminEmail
+        TenantAdminEmailParameter: !If 
+          - HasTenantEmail
+          - !Ref TenantEmail
+          - 'tenant-admin@test.com'
+        AdminTemporaryPassword: !Ref AdminTemporaryPassword
+        AdminUserPoolCallbackURLParameter: !Ref AdminUserPoolCallbackURL
+        TenantUserPoolCallbackURLParameter: !Ref TenantUserPoolCallbackURL
+        Environment: !Ref Environment
+        CreateCloudWatchRole: "false"
+      Tags:
+        - Key: Workshop
+          Value: serverless-saas
+        - Key: Lab
+          Value: lab3
+
+  # ==================== LAB 4 ====================
+  # Tenant Data Isolation (IAM Policies, Cross-tenant Prevention)
+  Lab4Stack:
+    Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    DependsOn: APIGatewayAccount
+    Properties:
+      TemplateURL: ../Lab4/server/shared-template.yaml
+      TimeoutInMinutes: 25
+      Parameters:
+        AdminEmailParameter: !Ref AdminEmail
+        TenantAdminEmailParameter: !If 
+          - HasTenantEmail
+          - !Ref TenantEmail
+          - 'tenant-admin@test.com'
+        AdminUserPoolCallbackURLParameter: !Ref AdminUserPoolCallbackURL
+        TenantUserPoolCallbackURLParameter: !Ref TenantUserPoolCallbackURL
+        Environment: !Ref Environment
+        CreateCloudWatchRole: "false"
+      Tags:
+        - Key: Workshop
+          Value: serverless-saas
+        - Key: Lab
+          Value: lab4
+
+  # ==================== LAB 5 ====================
+  # CI/CD Pipeline (CodePipeline, CodeCommit, Tiered Deployments)
+  # Note: Dynamic tenant stacks (stack-{tenantId}-lab5) created by pipeline
+  Lab5Stack:
+    Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    DependsOn: APIGatewayAccount
+    Properties:
+      TemplateURL: ../Lab5/server/shared-template.yaml
+      TimeoutInMinutes: 25
+      Parameters:
+        Environment: !Ref Environment
+        AdminEmailParameter: !Ref AdminEmail
+        CreateCloudWatchRole: "false"
+      Tags:
+        - Key: Workshop
+          Value: serverless-saas
+        - Key: Lab
+          Value: lab5
+
+  # ==================== LAB 6 ====================
+  # API Throttling & Usage Plans (API Keys, Rate Limiting)
+  # Note: Dynamic tenant stacks (stack-{tier}-lab6) created by pipeline
+  Lab6Stack:
+    Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    DependsOn: APIGatewayAccount
+    Properties:
+      TemplateURL: ../Lab6/server/shared-template.yaml
+      TimeoutInMinutes: 25
+      Parameters:
+        Environment: !Ref Environment
+        AdminEmailParameter: !Ref AdminEmail
+        CreateCloudWatchRole: "false"
+      Tags:
+        - Key: Workshop
+          Value: serverless-saas
+        - Key: Lab
+          Value: lab6
+
+  # ==================== LAB 7 ====================
+  # Cost Attribution (Tenant Usage Tracking, Cost Analysis)
+  Lab7Stack:
+    Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    DependsOn: APIGatewayAccount
+    Properties:
+      TemplateURL: ../Lab7/template.yaml
+      TimeoutInMinutes: 20
+      Parameters:
+        Environment: !Ref Environment
+      Tags:
+        - Key: Workshop
+          Value: serverless-saas
+        - Key: Lab
+          Value: lab7
+
+  # Lab7 Pooled Stack - Tenant resources for cost attribution demo
+  Lab7PooledStack:
+    Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    DependsOn: APIGatewayAccount
+    Properties:
+      TemplateURL: ../Lab7/tenant-template.yaml
+      TimeoutInMinutes: 20
+      Parameters:
+        Environment: !Ref Environment
+      Tags:
+        - Key: Workshop
+          Value: serverless-saas
+        - Key: Lab
+          Value: lab7
+
+Outputs:
+  # ==================== LAB 1 OUTPUTS (2) ====================
+  Lab1APIGatewayURL:
+    Description: Lab1 API Gateway endpoint URL
+    Value: !GetAtt Lab1Stack.Outputs.APIGatewayURL
+    
+  Lab1ApplicationSite:
+    Description: Lab1 CloudFront Application URL
+    Value: !GetAtt Lab1Stack.Outputs.ApplicationSite
+
+  # ==================== LAB 2 OUTPUTS (2) ====================
+  Lab2AdminAppSite:
+    Description: Lab2 Admin Application CloudFront URL
+    Value: !GetAtt Lab2Stack.Outputs.AdminAppSite
+    
+  Lab2LandingApplicationSite:
+    Description: Lab2 Landing Application CloudFront URL
+    Value: !GetAtt Lab2Stack.Outputs.LandingApplicationSite
+
+  # ==================== LAB 3 OUTPUTS (1) ====================
+  Lab3ApplicationSite:
+    Description: Lab3 Application CloudFront URL
+    Value: !GetAtt Lab3Stack.Outputs.ApplicationSite
+
+  # ==================== LAB 4 OUTPUTS (1) ====================
+  Lab4LandingApplicationSite:
+    Description: Lab4 Landing Application CloudFront URL
+    Value: !GetAtt Lab4Stack.Outputs.LandingApplicationSite
+
+  # ==================== LAB 5 OUTPUTS (2) ====================
+  Lab5LandingApplicationSite:
+    Description: Lab5 Landing Application CloudFront URL
+    Value: !GetAtt Lab5Stack.Outputs.LandingApplicationSite
+    
+  Lab5ApplicationSite:
+    Description: Lab5 Application CloudFront URL
+    Value: !GetAtt Lab5Stack.Outputs.ApplicationSite
+
+  # ==================== LAB 6 OUTPUTS (2) ====================
+  Lab6LandingApplicationSite:
+    Description: Lab6 Landing Application CloudFront URL
+    Value: !GetAtt Lab6Stack.Outputs.LandingApplicationSite
+    
+  Lab6ApplicationSite:
+    Description: Lab6 Application CloudFront URL
+    Value: !GetAtt Lab6Stack.Outputs.ApplicationSite
+
+  # ==================== USER CREATION NOTE ====================
+  # NOTE: Cognito users are NOT created by CloudFormation
+  # Run create-workshop-users.sh after deployment to create admin users:
+  #   ./create-workshop-users.sh --email <your-email> --profile <profile> --stack-name serverless-saas-lab
