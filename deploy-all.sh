@@ -2562,62 +2562,18 @@ print('true' if d.get('IsTruncated', False) else 'false')
     log_message "INFO" "  Pushing code to CodeCommit..."
     export AWS_PROFILE="$PROFILE"
 
-    # Find git-remote-codecommit binary (needed for codecommit:: protocol)
-    local grc_path=""
-    for candidate in \
-        "${VIRTUAL_ENV:-__none__}/bin/git-remote-codecommit" \
-        "$GIT_ROOT/.venv/bin/git-remote-codecommit" \
-        "$GIT_ROOT/../.venv/bin/git-remote-codecommit" \
-        "$SCRIPT_DIR/.venv/bin/git-remote-codecommit" \
-        "$SCRIPT_DIR/../.venv/bin/git-remote-codecommit" \
-        /Library/Frameworks/Python.framework/Versions/*/bin/git-remote-codecommit \
-        /usr/local/bin/git-remote-codecommit \
-        /opt/homebrew/bin/git-remote-codecommit \
-        "$HOME/.local/bin/git-remote-codecommit"; do
-        if [[ -x "$candidate" ]]; then
-            grc_path="$candidate"
-            break
-        fi
-    done
+    # Strategy: Use git credential helper for CodeCommit (aws codecommit credential-helper).
+    # The codecommit:: protocol with git-remote-codecommit is unreliable because git
+    # spawns it as a subprocess and often can't find it in PATH, even after export.
+    # Instead, we configure git to use the AWS CLI credential helper for HTTPS push.
+    local CC_HTTPS_URL="https://git-codecommit.${REGION}.amazonaws.com/v1/repos/aws-serverless-saas-workshop"
 
-    if [[ -n "$grc_path" ]]; then
-        local grc_dir
-        grc_dir=$(dirname "$grc_path")
-        export PATH="$grc_dir:$PATH"
-        log_message "INFO" "  git-remote-codecommit: $grc_path"
+    # Configure git credential helper for CodeCommit (scoped to this repo)
+    git -C "$GIT_ROOT" config "credential.${CC_HTTPS_URL}.helper" '!aws codecommit credential-helper --profile '"$PROFILE"' $@'
+    git -C "$GIT_ROOT" config "credential.${CC_HTTPS_URL}.UseHttpPath" true
 
-        # WORKAROUND: The codecommit:: protocol requires git to find
-        # 'git-remote-codecommit' in PATH as a subprocess. In some terminal
-        # environments, git's subprocess doesn't inherit PATH correctly even
-        # after export. To guarantee it works, we create a symlink in a
-        # well-known PATH directory pointing to the actual binary.
-        if ! command -v git-remote-codecommit &>/dev/null; then
-            # Try user-local bin first (no sudo needed), then /usr/local/bin
-            local symlink_created=false
-            for symlink_dir in "$HOME/.local/bin" "/usr/local/bin"; do
-                if [[ -d "$symlink_dir" ]] || mkdir -p "$symlink_dir" 2>/dev/null; then
-                    if ln -sf "$grc_path" "$symlink_dir/git-remote-codecommit" 2>/dev/null; then
-                        export PATH="$symlink_dir:$PATH"
-                        log_message "INFO" "  Created symlink: $symlink_dir/git-remote-codecommit -> $grc_path"
-                        symlink_created=true
-                        break
-                    fi
-                fi
-            done
-            if [[ "$symlink_created" != "true" ]]; then
-                log_message "WARN" "  Could not create symlink (non-fatal, PATH export may suffice)"
-            fi
-        fi
-    else
-        log_message "WARN" "  git-remote-codecommit not found, installing via pip..."
-        pip install git-remote-codecommit >> "$LOG_FILE" 2>&1 || pip3 install git-remote-codecommit >> "$LOG_FILE" 2>&1 || true
-        if command -v git-remote-codecommit &>/dev/null; then
-            log_message "INFO" "  ✓ git-remote-codecommit installed"
-        else
-            log_message "ERROR" "  ✗ git-remote-codecommit not found - CodeCommit push will fail"
-            log_message "ERROR" "  Install it: pip install git-remote-codecommit"
-        fi
-    fi
+    # Update remote to use HTTPS URL (not codecommit:: protocol)
+    git -C "$GIT_ROOT" remote set-url cc "$CC_HTTPS_URL" 2>/dev/null || git -C "$GIT_ROOT" remote add cc "$CC_HTTPS_URL" 2>/dev/null
 
     local push_attempts=0
     local push_max=5
