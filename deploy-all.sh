@@ -2459,7 +2459,7 @@ deploy_pipelines() {
             return 1
         fi
         log_message "INFO" "  ✓ Repository created"
-        sleep 5
+        sleep 10
     else
         log_message "INFO" "  ✓ Repository exists"
     fi
@@ -2486,8 +2486,22 @@ deploy_pipelines() {
     # Push to CodeCommit (export AWS_PROFILE for git-remote-codecommit)
     log_message "INFO" "  Pushing code to CodeCommit..."
     export AWS_PROFILE="$PROFILE"
-    if ! git -C "$GIT_ROOT" push cc "$CURRENT_BRANCH:main" --force >> "$LOG_FILE" 2>&1; then
-        log_message "ERROR" "✗ Failed to push code to CodeCommit"
+    local push_attempts=0
+    local push_max=5
+    local push_success=false
+    while [[ $push_attempts -lt $push_max ]]; do
+        push_attempts=$((push_attempts + 1))
+        if git -C "$GIT_ROOT" push cc "$CURRENT_BRANCH:main" --force >> "$LOG_FILE" 2>&1; then
+            push_success=true
+            break
+        fi
+        if [[ $push_attempts -lt $push_max ]]; then
+            log_message "WARN" "  Push attempt $push_attempts/$push_max failed, retrying in 10s..."
+            sleep 10
+        fi
+    done
+    if [[ "$push_success" != "true" ]]; then
+        log_message "ERROR" "✗ Failed to push code to CodeCommit after $push_max attempts"
         return 1
     fi
     log_message "INFO" "  ✓ Code pushed to CodeCommit main branch"
