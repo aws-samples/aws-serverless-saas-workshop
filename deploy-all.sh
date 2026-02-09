@@ -2488,17 +2488,50 @@ deploy_pipelines() {
     export AWS_PROFILE="$PROFILE"
 
     # Ensure git-remote-codecommit is in PATH (may be missing if running inside a venv)
-    local GRC_PATH
-    GRC_PATH=$(which git-remote-codecommit 2>/dev/null || true)
-    if [[ -z "$GRC_PATH" ]]; then
+    if ! command -v git-remote-codecommit &>/dev/null; then
+        log_message "WARN" "  git-remote-codecommit not found in PATH, searching..."
+        local found_grc=false
+        # Check active venv first
+        if [[ -n "$VIRTUAL_ENV" && -x "$VIRTUAL_ENV/bin/git-remote-codecommit" ]]; then
+            export PATH="$VIRTUAL_ENV/bin:$PATH"
+            found_grc=true
+            log_message "INFO" "  Found in venv: $VIRTUAL_ENV/bin"
+        fi
+        # Check workspace .venv
+        if [[ "$found_grc" != "true" && -x "$GIT_ROOT/.venv/bin/git-remote-codecommit" ]]; then
+            export PATH="$GIT_ROOT/.venv/bin:$PATH"
+            found_grc=true
+            log_message "INFO" "  Found in workspace venv: $GIT_ROOT/.venv/bin"
+        fi
+        # Check parent directory .venv (workspace root may be parent of git root)
+        if [[ "$found_grc" != "true" && -x "$GIT_ROOT/../.venv/bin/git-remote-codecommit" ]]; then
+            export PATH="$GIT_ROOT/../.venv/bin:$PATH"
+            found_grc=true
+            log_message "INFO" "  Found in parent venv: $GIT_ROOT/../.venv/bin"
+        fi
         # Try common Python install locations
-        for p in /Library/Frameworks/Python.framework/Versions/*/bin /usr/local/bin /opt/homebrew/bin "$HOME/.local/bin"; do
-            if [[ -x "$p/git-remote-codecommit" ]]; then
-                export PATH="$p:$PATH"
-                log_message "INFO" "  Added $p to PATH for git-remote-codecommit"
-                break
-            fi
-        done
+        if [[ "$found_grc" != "true" ]]; then
+            for p in /Library/Frameworks/Python.framework/Versions/*/bin /usr/local/bin /opt/homebrew/bin "$HOME/.local/bin"; do
+                if [[ -x "$p/git-remote-codecommit" ]]; then
+                    export PATH="$p:$PATH"
+                    found_grc=true
+                    log_message "INFO" "  Found in: $p"
+                    break
+                fi
+            done
+        fi
+        # Last resort: try pip install
+        if [[ "$found_grc" != "true" ]]; then
+            log_message "WARN" "  git-remote-codecommit not found anywhere, installing via pip..."
+            pip install git-remote-codecommit >> "$LOG_FILE" 2>&1 || pip3 install git-remote-codecommit >> "$LOG_FILE" 2>&1 || true
+        fi
+        # Final check
+        if command -v git-remote-codecommit &>/dev/null; then
+            log_message "INFO" "  ✓ git-remote-codecommit available"
+        else
+            log_message "ERROR" "  ✗ git-remote-codecommit not found - CodeCommit push will fail"
+            log_message "ERROR" "  Install it: pip install git-remote-codecommit"
+        fi
     fi
     local push_attempts=0
     local push_max=2
