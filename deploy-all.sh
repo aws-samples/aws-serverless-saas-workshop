@@ -2486,8 +2486,22 @@ deploy_pipelines() {
     # Push to CodeCommit (export AWS_PROFILE for git-remote-codecommit)
     log_message "INFO" "  Pushing code to CodeCommit..."
     export AWS_PROFILE="$PROFILE"
+
+    # Ensure git-remote-codecommit is in PATH (may be missing if running inside a venv)
+    local GRC_PATH
+    GRC_PATH=$(which git-remote-codecommit 2>/dev/null || true)
+    if [[ -z "$GRC_PATH" ]]; then
+        # Try common Python install locations
+        for p in /Library/Frameworks/Python.framework/Versions/*/bin /usr/local/bin /opt/homebrew/bin "$HOME/.local/bin"; do
+            if [[ -x "$p/git-remote-codecommit" ]]; then
+                export PATH="$p:$PATH"
+                log_message "INFO" "  Added $p to PATH for git-remote-codecommit"
+                break
+            fi
+        done
+    fi
     local push_attempts=0
-    local push_max=5
+    local push_max=8
     local push_success=false
     while [[ $push_attempts -lt $push_max ]]; do
         push_attempts=$((push_attempts + 1))
@@ -2496,8 +2510,8 @@ deploy_pipelines() {
             break
         fi
         if [[ $push_attempts -lt $push_max ]]; then
-            log_message "WARN" "  Push attempt $push_attempts/$push_max failed, retrying in 10s..."
-            sleep 10
+            log_message "WARN" "  Push attempt $push_attempts/$push_max failed, retrying in 15s..."
+            sleep 15
         fi
     done
     if [[ "$push_success" != "true" ]]; then
