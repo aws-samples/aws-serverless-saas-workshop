@@ -40,19 +40,18 @@ export class UnauthorizedComponent implements OnInit {
     private _snackBar: MatSnackBar,
     private router: Router
   ) {
-    if (
-      'userPoolId' in environment &&
-      'appClientId' in environment &&
-      'apiGatewayUrl' in environment
-    ) {
+    // Check if tenant's cognito configuration is provided AND has actual values
+    // (not just empty strings from the default environment template)
+    const env = environment as any;
+    if (env.userPoolId && env.appClientId && env.apiGatewayUrl) {
       // If a tenant's cognito configuration is provided in the
       // "environment" object, then we take that instead of asking
       // the visitor to provide the name of their tenant in order
       // to do a look-up for that tenant's cognito configuration.
       localStorage.setItem('tenantName', 'PooledTenants');
-      localStorage.setItem('userPoolId', (environment as any).userPoolId);
-      localStorage.setItem('appClientId', (environment as any).appClientId);
-      localStorage.setItem('apiGatewayUrl', (environment as any).apiGatewayUrl);
+      localStorage.setItem('userPoolId', env.userPoolId);
+      localStorage.setItem('appClientId', env.appClientId);
+      localStorage.setItem('apiGatewayUrl', env.apiGatewayUrl);
       this.tenantNameRequired = false;
     }
   }
