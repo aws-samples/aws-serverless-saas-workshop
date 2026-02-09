@@ -2442,7 +2442,7 @@ deploy_pipelines() {
     # =========================================================================
     log_message "INFO" "Step 2: Setting up CodeCommit repository..."
 
-    local REPO_URL="codecommit::${REGION}://aws-serverless-saas-workshop"
+    local REPO_URL="codecommit::${REGION}://${PROFILE}@aws-serverless-saas-workshop"
 
     set +e
     local REPO_CHECK=$(aws codecommit get-repository --repository-name aws-serverless-saas-workshop --profile "$PROFILE" --region "$REGION" 2>&1)
