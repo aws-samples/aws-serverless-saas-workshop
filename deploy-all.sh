@@ -2562,17 +2562,13 @@ print('true' if d.get('IsTruncated', False) else 'false')
     log_message "INFO" "  Pushing code to CodeCommit..."
     export AWS_PROFILE="$PROFILE"
 
-    # Strategy: Use git credential helper for CodeCommit (aws codecommit credential-helper).
-    # The codecommit:: protocol with git-remote-codecommit is unreliable because git
-    # spawns it as a subprocess and often can't find it in PATH, even after export.
-    # Instead, we configure git to use the AWS CLI credential helper for HTTPS push.
+    # Strategy: Use AWS CLI credential helper with HTTPS URL.
+    # We pass credential config via git -c flags on the push command itself.
+    # This bypasses any global credential helpers (e.g. macOS osxkeychain)
+    # that would otherwise intercept and serve stale/wrong credentials.
     local CC_HTTPS_URL="https://git-codecommit.${REGION}.amazonaws.com/v1/repos/aws-serverless-saas-workshop"
 
-    # Configure git credential helper for CodeCommit (scoped to this repo)
-    git -C "$GIT_ROOT" config "credential.${CC_HTTPS_URL}.helper" '!aws codecommit credential-helper --profile '"$PROFILE"' $@'
-    git -C "$GIT_ROOT" config "credential.${CC_HTTPS_URL}.UseHttpPath" true
-
-    # Update remote to use HTTPS URL (not codecommit:: protocol)
+    # Set remote to HTTPS URL
     git -C "$GIT_ROOT" remote set-url cc "$CC_HTTPS_URL" 2>/dev/null || git -C "$GIT_ROOT" remote add cc "$CC_HTTPS_URL" 2>/dev/null
 
     local push_attempts=0
@@ -2581,7 +2577,15 @@ print('true' if d.get('IsTruncated', False) else 'false')
     while [[ $push_attempts -lt $push_max ]]; do
         push_attempts=$((push_attempts + 1))
         local push_err
-        push_err=$(git -C "$GIT_ROOT" push cc "$CURRENT_BRANCH:main" --force 2>&1)
+        # Use -c flags to override credential helpers at invocation time:
+        #   credential.helper="" resets the helper chain (blocks osxkeychain)
+        #   credential.helper=!aws... sets the AWS credential helper
+        #   credential.UseHttpPath=true ensures path-based credential matching
+        push_err=$(GIT_TERMINAL_PROMPT=0 git -C "$GIT_ROOT" \
+            -c credential.helper="" \
+            -c credential.helper='!aws codecommit credential-helper --profile '"$PROFILE"' $@' \
+            -c credential.UseHttpPath=true \
+            push cc "$CURRENT_BRANCH:main" --force 2>&1)
         local push_rc=$?
         if [[ $push_rc -eq 0 ]]; then
             push_success=true
