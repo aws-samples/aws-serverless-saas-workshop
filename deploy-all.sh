@@ -2589,13 +2589,24 @@ print('true' if d.get('IsTruncated', False) else 'false')
         # WORKAROUND: The codecommit:: protocol requires git to find
         # 'git-remote-codecommit' in PATH as a subprocess. In some terminal
         # environments, git's subprocess doesn't inherit PATH correctly even
-        # after export. To guarantee it works, we create a symlink in /usr/local/bin
-        # (which is always in PATH) pointing to the actual binary.
-        if [[ ! -x "/usr/local/bin/git-remote-codecommit" ]]; then
-            log_message "INFO" "  Creating symlink: /usr/local/bin/git-remote-codecommit -> $grc_path"
-            ln -sf "$grc_path" /usr/local/bin/git-remote-codecommit 2>/dev/null || \
-                sudo ln -sf "$grc_path" /usr/local/bin/git-remote-codecommit 2>/dev/null || \
-                log_message "WARN" "  Could not create symlink (non-fatal)"
+        # after export. To guarantee it works, we create a symlink in a
+        # well-known PATH directory pointing to the actual binary.
+        if ! command -v git-remote-codecommit &>/dev/null; then
+            # Try user-local bin first (no sudo needed), then /usr/local/bin
+            local symlink_created=false
+            for symlink_dir in "$HOME/.local/bin" "/usr/local/bin"; do
+                if [[ -d "$symlink_dir" ]] || mkdir -p "$symlink_dir" 2>/dev/null; then
+                    if ln -sf "$grc_path" "$symlink_dir/git-remote-codecommit" 2>/dev/null; then
+                        export PATH="$symlink_dir:$PATH"
+                        log_message "INFO" "  Created symlink: $symlink_dir/git-remote-codecommit -> $grc_path"
+                        symlink_created=true
+                        break
+                    fi
+                fi
+            done
+            if [[ "$symlink_created" != "true" ]]; then
+                log_message "WARN" "  Could not create symlink (non-fatal, PATH export may suffice)"
+            fi
         fi
     else
         log_message "WARN" "  git-remote-codecommit not found, installing via pip..."
