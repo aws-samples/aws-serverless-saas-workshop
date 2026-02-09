@@ -2533,17 +2533,25 @@ deploy_pipelines() {
             log_message "ERROR" "  Install it: pip install git-remote-codecommit"
         fi
     fi
+    # Debug: show PATH and git-remote-codecommit status at push time
+    log_message "INFO" "  DEBUG: git-remote-codecommit at: $(which git-remote-codecommit 2>&1)"
+    log_message "INFO" "  DEBUG: AWS_PROFILE=$AWS_PROFILE"
+    log_message "INFO" "  DEBUG: REPO_URL=$REPO_URL"
+
     local push_attempts=0
     local push_max=2
     local push_success=false
     while [[ $push_attempts -lt $push_max ]]; do
         push_attempts=$((push_attempts + 1))
-        if git -C "$GIT_ROOT" push cc "$CURRENT_BRANCH:main" --force >> "$LOG_FILE" 2>&1; then
+        local push_err
+        push_err=$(git -C "$GIT_ROOT" push cc "$CURRENT_BRANCH:main" --force 2>&1)
+        local push_rc=$?
+        if [[ $push_rc -eq 0 ]]; then
             push_success=true
             break
         fi
+        log_message "WARN" "  Push attempt $push_attempts/$push_max failed (rc=$push_rc): $push_err"
         if [[ $push_attempts -lt $push_max ]]; then
-            log_message "WARN" "  Push attempt $push_attempts/$push_max failed, retrying in 15s..."
             sleep 15
         fi
     done
