@@ -2539,13 +2539,8 @@ deploy_pipelines() {
             log_message "ERROR" "  Install it: pip install git-remote-codecommit"
         fi
     fi
-    # Debug: show PATH and git-remote-codecommit status at push time
-    log_message "INFO" "  DEBUG: git-remote-codecommit at: $(which git-remote-codecommit 2>&1)"
-    log_message "INFO" "  DEBUG: AWS_PROFILE=$AWS_PROFILE"
-    log_message "INFO" "  DEBUG: REPO_URL=$REPO_URL"
-
     local push_attempts=0
-    local push_max=2
+    local push_max=5
     local push_success=false
     while [[ $push_attempts -lt $push_max ]]; do
         push_attempts=$((push_attempts + 1))
