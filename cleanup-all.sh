@@ -632,12 +632,11 @@ delete_pipeline_stacks() {
 
         # Empty the pipeline artifacts bucket first (blocks stack deletion if not empty)
         local artifacts_bucket=$(aws s3 ls --profile "$PROFILE" --region "$REGION" 2>/dev/null \
-            | grep "${pipeline_stack}.*artifactsbucket" | awk '{print $3}')
+            | grep "${pipeline_stack}.*artifacts" | awk '{print $3}')
 
         if [[ -n "$artifacts_bucket" ]]; then
             log_message "INFO" "  Emptying pipeline artifacts bucket: $artifacts_bucket"
-            aws s3 rb "s3://$artifacts_bucket" --force --profile "$PROFILE" >> "$LOG_FILE" 2>&1 || true
-            log_message "INFO" "  ✓ Artifacts bucket removed"
+            _delete_single_bucket "$artifacts_bucket"
         fi
 
         # Fix CDK role issues if stack is in DELETE_FAILED state
@@ -1040,9 +1039,92 @@ delete_orphaned_log_groups() {
     log_message "INFO" "✓ CloudWatch log group cleanup complete"
 }
 
+# Helper: Delete a single S3 bucket, handling versioned objects and delete markers.
+# 'aws s3 rb --force' only removes current object versions. Buckets with versioning
+# enabled (CloudFormation default) also contain old versions and delete markers that
+# must be purged via the list-object-versions / delete-objects API before the bucket
+# can be removed.
+#
+# Strategy:
+#   1. Try 'aws s3 rb --force' first (fast path for non-versioned buckets).
+#   2. If the bucket still exists, loop through list-object-versions and batch-delete
+#      all remaining versions and delete markers.
+#   3. Delete the now-empty bucket.
+_delete_single_bucket() {
+    local bucket="$1"
+
+    # Quick existence check
+    if ! aws s3api head-bucket --profile "$PROFILE" --bucket "$bucket" 2>/dev/null; then
+        log_message "INFO" "  ✓ Bucket already deleted: $bucket"
+        DELETED_BUCKETS+=("$bucket")
+        return 0
+    fi
+
+    # Fast path — works for non-versioned or empty buckets
+    aws s3 rb "s3://$bucket" --force --profile "$PROFILE" >> "$LOG_FILE" 2>&1
+
+    # Re-check: if the bucket is gone we're done
+    if ! aws s3api head-bucket --profile "$PROFILE" --bucket "$bucket" 2>/dev/null; then
+        log_message "INFO" "  ✓ Deleted: $bucket"
+        DELETED_BUCKETS+=("$bucket")
+        return 0
+    fi
+
+    # Slow path — purge versioned objects and delete markers in batches of 1000
+    log_message "INFO" "  Bucket has versioned objects, purging..."
+    local round=0
+    while true; do
+        round=$((round + 1))
+        local payload
+        payload=$(aws s3api list-object-versions \
+            --bucket "$bucket" \
+            --profile "$PROFILE" \
+            --max-items 1000 \
+            --output json 2>/dev/null \
+        | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+objs = []
+for v in data.get('Versions', []):
+    objs.append({'Key': v['Key'], 'VersionId': v['VersionId']})
+for m in data.get('DeleteMarkers', []):
+    objs.append({'Key': m['Key'], 'VersionId': m['VersionId']})
+if objs:
+    print(json.dumps({'Objects': objs[:1000], 'Quiet': True}))
+else:
+    print('EMPTY')
+" 2>/dev/null)
+
+        if [[ "$payload" == "EMPTY" || -z "$payload" ]]; then
+            break
+        fi
+
+        echo "$payload" > /tmp/_s3_version_delete.json
+        aws s3api delete-objects \
+            --bucket "$bucket" \
+            --profile "$PROFILE" \
+            --delete "file:///tmp/_s3_version_delete.json" >> "$LOG_FILE" 2>&1
+        log_message "DEBUG" "  Purged version batch $round"
+    done
+    rm -f /tmp/_s3_version_delete.json
+
+    # Final bucket deletion
+    if aws s3api delete-bucket --bucket "$bucket" --profile "$PROFILE" --region "$REGION" 2>/dev/null; then
+        log_message "INFO" "  ✓ Deleted: $bucket"
+        DELETED_BUCKETS+=("$bucket")
+    else
+        # One more existence check (concurrent deletion)
+        if ! aws s3api head-bucket --profile "$PROFILE" --bucket "$bucket" 2>/dev/null; then
+            log_message "INFO" "  ✓ Bucket deleted (concurrent): $bucket"
+            DELETED_BUCKETS+=("$bucket")
+        else
+            log_error "S3_BUCKET_DELETE_FAILED" "$bucket" "Failed after purging versions"
+        fi
+    fi
+}
+
 # Delete orphaned S3 buckets
-# OPTIMIZED: Uses 'aws s3 rb --force' which handles emptying and deletion in one efficient command
-# This avoids the slow list-object-versions API calls that can hang on buckets with many versions
+# Uses _delete_single_bucket helper which handles both versioned and non-versioned buckets
 delete_orphaned_s3_buckets() {
     log_message "INFO" "========================================"
     log_message "INFO" "Step 4: Cleaning Up Orphaned S3 Buckets"
@@ -1075,49 +1157,12 @@ delete_orphaned_s3_buckets() {
     done
     echo ""
     
-    # Delete buckets using 'aws s3 rb --force' which:
-    # 1. Empties all objects (including versioned objects and delete markers)
-    # 2. Deletes the bucket
-    # This is much faster and more reliable than manual emptying with list-object-versions
+    # Delete buckets using _delete_single_bucket helper
+    # Handles both versioned and non-versioned buckets reliably
     for bucket in $buckets; do
         if [[ -n "$bucket" && "$bucket" != "None" ]]; then
             log_message "INFO" "Deleting bucket: $bucket"
-            
-            # First check if bucket still exists (might have been deleted by CloudFormation or another process)
-            # This prevents 'aws s3 rb --force' from failing with NoSuchBucket error
-            local check_output
-            check_output=$(aws s3api head-bucket --profile "$PROFILE" --bucket "$bucket" 2>&1)
-            local check_result=$?
-            
-            if [[ $check_result -ne 0 ]]; then
-                # Bucket doesn't exist - already deleted (race condition with CloudFormation)
-                log_message "INFO" "  ✓ Bucket already deleted: $bucket"
-                DELETED_BUCKETS+=("$bucket")
-                continue
-            fi
-            
-            # Use 'aws s3 rb --force' for efficient bucket deletion
-            # --force flag handles emptying the bucket (including all versions) before deletion
-            local delete_output
-            delete_output=$(aws s3 rb "s3://$bucket" --force --profile "$PROFILE" 2>&1)
-            local delete_result=$?
-            
-            if [[ $delete_result -eq 0 ]]; then
-                log_message "INFO" "  ✓ Deleted: $bucket"
-                DELETED_BUCKETS+=("$bucket")
-            else
-                # Double-check if bucket was deleted between our check and delete attempt (rare race condition)
-                check_output=$(aws s3api head-bucket --profile "$PROFILE" --bucket "$bucket" 2>&1)
-                check_result=$?
-                
-                if [[ $check_result -ne 0 ]]; then
-                    # Bucket doesn't exist - was deleted during our operation
-                    log_message "INFO" "  ✓ Bucket deleted (concurrent): $bucket"
-                    DELETED_BUCKETS+=("$bucket")
-                else
-                    log_error "S3_BUCKET_DELETE_FAILED" "$bucket" "$delete_output"
-                fi
-            fi
+            _delete_single_bucket "$bucket"
         fi
     done
     
@@ -1353,26 +1398,9 @@ delete_cdk_assets_bucket() {
     fi
     
     log_message "INFO" "Found CDK assets bucket: $cdk_assets_bucket"
-    log_message "INFO" "Emptying bucket..."
+    log_message "INFO" "Deleting bucket (with version purge if needed)..."
     
-    # Empty the bucket
-    if aws s3 rm "s3://$cdk_assets_bucket" --recursive --profile "$PROFILE" 2>/dev/null; then
-        log_message "DEBUG" "  Bucket emptied"
-    else
-        log_message "WARN" "  Failed to empty bucket (may already be empty)"
-    fi
-    
-    # Delete the bucket
-    log_message "INFO" "Deleting bucket..."
-    if aws s3api delete-bucket \
-        --profile "$PROFILE" \
-        --bucket "$cdk_assets_bucket" \
-        --region "$REGION" 2>/dev/null; then
-        log_message "INFO" "✓ CDK assets bucket deleted: $cdk_assets_bucket"
-        DELETED_BUCKETS+=("$cdk_assets_bucket")
-    else
-        log_error "S3_BUCKET_DELETE_FAILED" "$cdk_assets_bucket" "Failed to delete CDK assets bucket"
-    fi
+    _delete_single_bucket "$cdk_assets_bucket"
     
     echo ""
 }
