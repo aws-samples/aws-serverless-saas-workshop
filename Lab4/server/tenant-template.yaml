@@ -17,7 +17,7 @@ Globals:
           POWERTOOLS_METRICS_NAMESPACE: "ServerlessSaaS"
           
 Parameters:
-  TenantId:
+  TenantIdParameter:
     Type: String
     Description: Tenant identifier for multi-tenant tracking
   Environment:
@@ -134,7 +134,7 @@ Resources:
         - Key: Application
           Value: serverless-saas-workshop
         - Key: TenantId
-          Value: !Ref TenantId
+          Value: !Ref TenantIdParameter
         - Key: Lab
           Value: lab4
         - Key: Environment
@@ -165,7 +165,7 @@ Resources:
         - Key: Application
           Value: serverless-saas-workshop
         - Key: TenantId
-          Value: !Ref TenantId
+          Value: !Ref TenantIdParameter
         - Key: Lab
           Value: lab4
         - Key: Environment
@@ -211,7 +211,7 @@ Resources:
         - Key: Application
           Value: serverless-saas-workshop
         - Key: TenantId
-          Value: !Ref TenantId
+          Value: !Ref TenantIdParameter
         - Key: Lab
           Value: lab4
         - Key: Environment
@@ -241,7 +241,7 @@ Resources:
           PRODUCT_TABLE_NAME: !Ref ProductTable
       Tags:
         Application: serverless-saas-workshop
-        TenantId: !Ref TenantId
+        TenantId: !Ref TenantIdParameter
         Lab: lab4
         Environment: !Ref Environment
         Owner: !Ref Owner
@@ -267,7 +267,7 @@ Resources:
           PRODUCT_TABLE_NAME: !Ref ProductTable
       Tags:
         Application: serverless-saas-workshop
-        TenantId: !Ref TenantId
+        TenantId: !Ref TenantIdParameter
         Lab: lab4
         Environment: !Ref Environment
         Owner: !Ref Owner
@@ -293,7 +293,7 @@ Resources:
           PRODUCT_TABLE_NAME: !Ref ProductTable
       Tags:
         Application: serverless-saas-workshop
-        TenantId: !Ref TenantId
+        TenantId: !Ref TenantIdParameter
         Lab: lab4
         Environment: !Ref Environment
         Owner: !Ref Owner
@@ -319,7 +319,7 @@ Resources:
           PRODUCT_TABLE_NAME: !Ref ProductTable
       Tags:
         Application: serverless-saas-workshop
-        TenantId: !Ref TenantId
+        TenantId: !Ref TenantIdParameter
         Lab: lab4
         Environment: !Ref Environment
         Owner: !Ref Owner
@@ -345,7 +345,7 @@ Resources:
           PRODUCT_TABLE_NAME: !Ref ProductTable
       Tags:
         Application: serverless-saas-workshop
-        TenantId: !Ref TenantId
+        TenantId: !Ref TenantIdParameter
         Lab: lab4
         Environment: !Ref Environment
         Owner: !Ref Owner
@@ -387,7 +387,7 @@ Resources:
         - Key: Application
           Value: serverless-saas-workshop
         - Key: TenantId
-          Value: !Ref TenantId
+          Value: !Ref TenantIdParameter
         - Key: Lab
           Value: lab4
         - Key: Environment
@@ -417,7 +417,7 @@ Resources:
           ORDER_TABLE_NAME: !Ref OrderTable
       Tags:
         Application: serverless-saas-workshop
-        TenantId: !Ref TenantId
+        TenantId: !Ref TenantIdParameter
         Lab: lab4
         Environment: !Ref Environment
         Owner: !Ref Owner
@@ -443,7 +443,7 @@ Resources:
           ORDER_TABLE_NAME: !Ref OrderTable
       Tags:
         Application: serverless-saas-workshop
-        TenantId: !Ref TenantId
+        TenantId: !Ref TenantIdParameter
         Lab: lab4
         Environment: !Ref Environment
         Owner: !Ref Owner
@@ -469,7 +469,7 @@ Resources:
           ORDER_TABLE_NAME: !Ref OrderTable
       Tags:
         Application: serverless-saas-workshop
-        TenantId: !Ref TenantId
+        TenantId: !Ref TenantIdParameter
         Lab: lab4
         Environment: !Ref Environment
         Owner: !Ref Owner
@@ -495,7 +495,7 @@ Resources:
           ORDER_TABLE_NAME: !Ref OrderTable
       Tags:
         Application: serverless-saas-workshop
-        TenantId: !Ref TenantId
+        TenantId: !Ref TenantIdParameter
         Lab: lab4
         Environment: !Ref Environment
         Owner: !Ref Owner
@@ -521,7 +521,7 @@ Resources:
           ORDER_TABLE_NAME: !Ref OrderTable
       Tags:
         Application: serverless-saas-workshop
-        TenantId: !Ref TenantId
+        TenantId: !Ref TenantIdParameter
         Lab: lab4
         Environment: !Ref Environment
         Owner: !Ref Owner
@@ -547,7 +547,7 @@ Resources:
           TENANT_APP_CLIENT: !ImportValue Serverless-SaaS-CognitoTenantAppClientId-lab4
       Tags:
         Application: serverless-saas-workshop
-        TenantId: !Ref TenantId
+        TenantId: !Ref TenantIdParameter
         Lab: lab4
         Environment: !Ref Environment
         Owner: !Ref Owner
@@ -556,7 +556,7 @@ Resources:
   ApiGatewayAccessLogs:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub /aws/api-gateway/access-logs-serverless-saas-lab4-tenant-${TenantId}
+      LogGroupName: !Sub /aws/api-gateway/access-logs-serverless-saas-lab4-tenant-${TenantIdParameter}
           
   # Note: Tags removed from log groups to avoid CloudFormation race condition bug
   # where tagging during creation can fail with "The specified log group does not exist"
@@ -952,7 +952,7 @@ Resources:
       StageName: !Ref StageName
       Tags:
         Application: serverless-saas-workshop
-        TenantId: !Ref TenantId
+        TenantId: !Ref TenantIdParameter
         Lab: lab4
         Environment: !Ref Environment
         Owner: !Ref Owner

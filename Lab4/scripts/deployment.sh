@@ -416,7 +416,7 @@ if [[ $DEPLOY_TENANT -eq 1 ]]; then
   
   # Deploy SAM application with TenantId parameter
   print_message "$YELLOW" "  Deploying SAM application to stack: $TENANT_STACK_NAME"
-  sam deploy $PROFILE_ARG --config-file tenant-samconfig.toml --region="$AWS_REGION" --stack-name "$TENANT_STACK_NAME" --parameter-overrides TenantId=$TENANT_ID --no-fail-on-empty-changeset || {
+  sam deploy $PROFILE_ARG --config-file tenant-samconfig.toml --region="$AWS_REGION" --stack-name "$TENANT_STACK_NAME" --parameter-overrides TenantIdParameter=$TENANT_ID --no-fail-on-empty-changeset || {
     print_message "$RED" "Error: SAM deployment failed"
     exit 1
   }

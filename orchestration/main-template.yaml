@@ -236,7 +236,7 @@ Resources:
       TemplateURL: ../Lab4/server/tenant-template.yaml
       TimeoutInMinutes: 20
       Parameters:
-        TenantId: pooled
+        TenantIdParameter: pooled
         Environment: !Ref Environment
       Tags:
         - Key: Workshop
