@@ -572,7 +572,7 @@ Resources:
   ApiGatewayAccessLogs:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub /aws/api-gateway/access-logs-serverless-saas-lab5-tenant-${TenantId}
+      LogGroupName: !Sub /aws/api-gateway/access-logs-serverless-saas-lab5-tenant-${TenantIdParameter}
           
   # CloudWatch Log Groups with 60-day retention
   # Tags restored - the 120-second stabilization delay in orchestration template
