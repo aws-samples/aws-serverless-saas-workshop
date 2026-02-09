@@ -18,7 +18,7 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Default values
-STACK_NAME="serverless-saas-workshop"
+STACK_NAME="serverless-saas-lab"
 AWS_REGION="us-east-1"
 AWS_PROFILE=""
 ADMIN_EMAIL=""
@@ -349,6 +349,37 @@ else
 fi
 
 # =============================================================================
+# LAB 3 - Tenant Admin User (Tenant User Pool)
+# =============================================================================
+print_header "Lab 3: Tenant Admin User"
+
+if [[ -n "$LAB3_STACK_ID" ]]; then
+    LAB3_TENANT_POOL_ID=$(get_nested_stack_output "$LAB3_STACK_ID" "CognitoTenantUserPoolId")
+    
+    if [[ -n "$LAB3_TENANT_POOL_ID" ]]; then
+        if create_admin_user \
+            "$LAB3_TENANT_POOL_ID" \
+            "tenant1-admin" \
+            "$TENANT_EMAIL" \
+            "$ADMIN_PASSWORD" \
+            "tenant1" \
+            "TenantAdmin" \
+            "" \
+            "Lab3 Tenant"; then
+            ((USERS_CREATED++)) || true
+        else
+            ((USERS_FAILED++)) || true
+        fi
+    else
+        print_message "$YELLOW" "  Lab3 Tenant User Pool ID not found in outputs"
+        ((USERS_SKIPPED++)) || true
+    fi
+else
+    print_message "$YELLOW" "  Lab3 not deployed"
+    ((USERS_SKIPPED++)) || true
+fi
+
+# =============================================================================
 # LAB 4 - Admin User (Operations User Pool)
 # =============================================================================
 print_header "Lab 4: Admin User"
@@ -374,6 +405,51 @@ if [[ -n "$LAB4_STACK_ID" ]]; then
         fi
     else
         print_message "$YELLOW" "  Lab4 User Pool ID not found in outputs"
+        ((USERS_SKIPPED++)) || true
+    fi
+else
+    print_message "$YELLOW" "  Lab4 not deployed"
+    ((USERS_SKIPPED++)) || true
+fi
+
+# =============================================================================
+# LAB 4 - Tenant Admin User (Tenant User Pool)
+# =============================================================================
+print_header "Lab 4: Tenant Admin User"
+
+if [[ -n "$LAB4_STACK_ID" ]]; then
+    LAB4_TENANT_POOL_ID=$(get_nested_stack_output "$LAB4_STACK_ID" "CognitoTenantUserPoolId")
+    
+    if [[ -n "$LAB4_TENANT_POOL_ID" ]]; then
+        if create_admin_user \
+            "$LAB4_TENANT_POOL_ID" \
+            "tenant1-admin" \
+            "$TENANT_EMAIL" \
+            "$ADMIN_PASSWORD" \
+            "tenant1" \
+            "TenantAdmin" \
+            "" \
+            "Lab4 Tenant"; then
+            ((USERS_CREATED++)) || true
+        else
+            ((USERS_FAILED++)) || true
+        fi
+        
+        if create_admin_user \
+            "$LAB4_TENANT_POOL_ID" \
+            "tenant2-admin" \
+            "$TENANT_EMAIL" \
+            "$ADMIN_PASSWORD" \
+            "tenant2" \
+            "TenantAdmin" \
+            "" \
+            "Lab4 Tenant"; then
+            ((USERS_CREATED++)) || true
+        else
+            ((USERS_FAILED++)) || true
+        fi
+    else
+        print_message "$YELLOW" "  Lab4 Tenant User Pool ID not found in outputs"
         ((USERS_SKIPPED++)) || true
     fi
 else
@@ -459,11 +535,31 @@ echo ""
 
 if [[ $USERS_CREATED -gt 0 ]] || [[ $USERS_SKIPPED -gt 0 && $USERS_FAILED -eq 0 ]]; then
     print_message "$GREEN" "═══════════════════════════════════════════════════"
-    print_message "$GREEN" "  Admin Credentials"
+    print_message "$GREEN" "  Admin Credentials (Operations)"
     print_message "$GREEN" "═══════════════════════════════════════════════════"
     echo ""
     print_message "$CYAN" "  Username:           admin"
     print_message "$CYAN" "  Email:              $ADMIN_EMAIL"
+    print_message "$CYAN" "  Temporary Password: $ADMIN_PASSWORD"
+    echo ""
+    print_message "$GREEN" "═══════════════════════════════════════════════════"
+    print_message "$GREEN" "  Tenant Credentials (Lab3 Application)"
+    print_message "$GREEN" "═══════════════════════════════════════════════════"
+    echo ""
+    print_message "$CYAN" "  Username:           tenant1-admin"
+    print_message "$CYAN" "  Email:              $TENANT_EMAIL"
+    print_message "$CYAN" "  Temporary Password: $ADMIN_PASSWORD"
+    echo ""
+    print_message "$GREEN" "═══════════════════════════════════════════════════"
+    print_message "$GREEN" "  Tenant Credentials (Lab4 Application)"
+    print_message "$GREEN" "═══════════════════════════════════════════════════"
+    echo ""
+    print_message "$CYAN" "  Username:           tenant1-admin"
+    print_message "$CYAN" "  Email:              $TENANT_EMAIL"
+    print_message "$CYAN" "  Temporary Password: $ADMIN_PASSWORD"
+    echo ""
+    print_message "$CYAN" "  Username:           tenant2-admin"
+    print_message "$CYAN" "  Email:              $TENANT_EMAIL"
     print_message "$CYAN" "  Temporary Password: $ADMIN_PASSWORD"
     echo ""
     print_message "$YELLOW" "  Note: Users must change password on first login."
@@ -473,15 +569,30 @@ if [[ $USERS_CREATED -gt 0 ]] || [[ $USERS_SKIPPED -gt 0 && $USERS_FAILED -eq 0 
     CREDENTIALS_FILE="$SCRIPT_DIR/workshop-credentials.txt"
     {
         echo "═══════════════════════════════════════════════════"
-        echo "  AWS Serverless SaaS Workshop - Admin Credentials"
+        echo "  AWS Serverless SaaS Workshop - Credentials"
         echo "═══════════════════════════════════════════════════"
         echo ""
         echo "  Generated: $(date)"
         echo "  Stack:     $STACK_NAME"
         echo "  Region:    $AWS_REGION"
         echo ""
+        echo "  --- Admin Credentials (Operations) ---"
         echo "  Username:           admin"
         echo "  Email:              $ADMIN_EMAIL"
+        echo "  Temporary Password: $ADMIN_PASSWORD"
+        echo ""
+        echo "  --- Tenant Credentials (Lab3 Application) ---"
+        echo "  Username:           tenant1-admin"
+        echo "  Email:              $TENANT_EMAIL"
+        echo "  Temporary Password: $ADMIN_PASSWORD"
+        echo ""
+        echo "  --- Tenant Credentials (Lab4 Application) ---"
+        echo "  Username:           tenant1-admin"
+        echo "  Email:              $TENANT_EMAIL"
+        echo "  Temporary Password: $ADMIN_PASSWORD"
+        echo ""
+        echo "  Username:           tenant2-admin"
+        echo "  Email:              $TENANT_EMAIL"
         echo "  Temporary Password: $ADMIN_PASSWORD"
         echo ""
         echo "  Note: Users must change password on first login."

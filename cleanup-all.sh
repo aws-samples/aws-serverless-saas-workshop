@@ -321,6 +321,45 @@ verify_stack_for_deletion() {
 # MAIN STACK DELETION (Task 5.2)
 # =============================================================================
 
+# Delete the main orchestration stack with automatic retry
+# On first failure, runs orphaned resource cleanup to remove blockers (e.g. non-empty S3 buckets),
+# then retries the stack deletion.
+delete_main_stack_with_retry() {
+    local max_attempts=2
+    local attempt=1
+
+    while [[ $attempt -le $max_attempts ]]; do
+        if delete_main_stack; then
+            return 0
+        fi
+
+        if [[ $attempt -lt $max_attempts ]]; then
+            log_message "WARN" "========================================"
+            log_message "WARN" "Main stack deletion failed — cleaning up blockers before retry"
+            log_message "WARN" "========================================"
+            echo ""
+
+            # Empty any S3 buckets that blocked nested stack deletion
+            delete_orphaned_s3_buckets
+
+            # Reset tracking arrays so the retry starts clean
+            FAILED_STACKS=()
+            ERRORS=()
+
+            log_message "INFO" ""
+            log_message "INFO" "========================================"
+            log_message "INFO" "Retry Attempt $((attempt + 1)) of $max_attempts"
+            log_message "INFO" "========================================"
+            echo ""
+        fi
+
+        ((attempt++))
+    done
+
+    log_message "ERROR" "Main stack deletion failed after $max_attempts attempts"
+    return 1
+}
+
 # Delete the main orchestration stack
 # CloudFormation automatically handles nested stack deletion in correct order
 # (CloudFront distributions are deleted before S3 buckets)
@@ -559,6 +598,106 @@ delete_dynamic_tenant_stacks() {
     
     echo ""
     log_message "INFO" "✓ Dynamic tenant stack cleanup complete"
+}
+
+# =============================================================================
+# CDK PIPELINE STACK CLEANUP
+# =============================================================================
+
+# Delete CDK pipeline stacks (serverless-saas-pipeline-lab5, lab6) and CodeCommit repo
+# These are CDK-deployed stacks, not part of the nested CloudFormation hierarchy.
+# Must be deleted BEFORE CDKToolkit since they reference the CDK execution role.
+delete_pipeline_stacks() {
+    log_message "INFO" "========================================"
+    log_message "INFO" "Step 2b: Deleting CDK Pipeline Stacks"
+    log_message "INFO" "========================================"
+    echo ""
+
+    local any_found=false
+
+    for lab_num in 5 6; do
+        local pipeline_stack="serverless-saas-pipeline-lab${lab_num}"
+
+        if ! stack_exists "$pipeline_stack"; then
+            log_message "INFO" "  Pipeline stack $pipeline_stack not found (skipping)"
+            continue
+        fi
+
+        any_found=true
+        local status=$(get_stack_status "$pipeline_stack")
+        log_message "INFO" "  Found $pipeline_stack (Status: $status)"
+
+        # Empty the pipeline artifacts bucket first (blocks stack deletion if not empty)
+        local artifacts_bucket=$(aws s3 ls --profile "$PROFILE" --region "$REGION" 2>/dev/null \
+            | grep "${pipeline_stack}.*artifactsbucket" | awk '{print $3}')
+
+        if [[ -n "$artifacts_bucket" ]]; then
+            log_message "INFO" "  Emptying pipeline artifacts bucket: $artifacts_bucket"
+            aws s3 rb "s3://$artifacts_bucket" --force --profile "$PROFILE" >> "$LOG_FILE" 2>&1 || true
+            log_message "INFO" "  ✓ Artifacts bucket removed"
+        fi
+
+        # Fix CDK role issues if stack is in DELETE_FAILED state
+        if [[ "$status" == "DELETE_FAILED" ]]; then
+            fix_pipeline_stack_cdk_role "$pipeline_stack"
+            fix_delete_failed_pipeline_stack "$pipeline_stack"
+        fi
+
+        # Delete the pipeline stack
+        log_message "INFO" "  Deleting stack: $pipeline_stack"
+        if aws cloudformation delete-stack \
+            --profile "$PROFILE" \
+            --region "$REGION" \
+            --stack-name "$pipeline_stack" 2>/dev/null; then
+
+            log_message "INFO" "  Waiting for $pipeline_stack deletion..."
+            if aws cloudformation wait stack-delete-complete \
+                --profile "$PROFILE" \
+                --region "$REGION" \
+                --stack-name "$pipeline_stack" 2>/dev/null; then
+                log_message "INFO" "  ✓ $pipeline_stack deleted successfully"
+                DELETED_STACKS+=("$pipeline_stack")
+            else
+                local final_status=$(get_stack_status "$pipeline_stack")
+                if [[ "$final_status" == "NOT_FOUND" || "$final_status" == "DELETE_COMPLETE" ]]; then
+                    log_message "INFO" "  ✓ $pipeline_stack deleted successfully"
+                    DELETED_STACKS+=("$pipeline_stack")
+                else
+                    log_message "WARN" "  ⚠ $pipeline_stack deletion may have failed (status: $final_status)"
+                    FAILED_STACKS+=("$pipeline_stack")
+                fi
+            fi
+        else
+            log_message "WARN" "  ⚠ Failed to initiate deletion of $pipeline_stack"
+            FAILED_STACKS+=("$pipeline_stack")
+        fi
+        echo ""
+    done
+
+    if [[ "$any_found" == false ]]; then
+        log_message "INFO" "  ✓ No pipeline stacks found"
+    fi
+
+    # Delete CodeCommit repository (shared by both pipelines)
+    log_message "INFO" "  Checking for CodeCommit repository: aws-serverless-saas-workshop"
+    if aws codecommit get-repository \
+        --repository-name aws-serverless-saas-workshop \
+        --profile "$PROFILE" --region "$REGION" &>/dev/null; then
+
+        log_message "INFO" "  Deleting CodeCommit repository: aws-serverless-saas-workshop"
+        if aws codecommit delete-repository \
+            --repository-name aws-serverless-saas-workshop \
+            --profile "$PROFILE" --region "$REGION" >> "$LOG_FILE" 2>&1; then
+            log_message "INFO" "  ✓ CodeCommit repository deleted"
+        else
+            log_message "WARN" "  ⚠ Failed to delete CodeCommit repository"
+        fi
+    else
+        log_message "INFO" "  ✓ CodeCommit repository not found (already deleted or never created)"
+    fi
+
+    echo ""
+    log_message "INFO" "✓ Pipeline stack cleanup complete"
 }
 
 # =============================================================================
@@ -1140,16 +1279,6 @@ delete_cdk_toolkit() {
     log_message "INFO" "========================================"
     echo ""
     
-    # First, fix any pipeline stacks that might need CDK execution role
-    log_message "DEBUG" "Checking for pipeline stacks that need CDK role fix..."
-    for lab_num in 5 6; do
-        local pipeline_stack="serverless-saas-pipeline-lab${lab_num}"
-        if stack_exists "$pipeline_stack"; then
-            fix_pipeline_stack_cdk_role "$pipeline_stack"
-            fix_delete_failed_pipeline_stack "$pipeline_stack"
-        fi
-    done
-    
     # Check if CDKToolkit stack exists
     if ! stack_exists "CDKToolkit"; then
         log_message "INFO" "✓ CDKToolkit stack not found (already deleted or never created)"
@@ -1387,6 +1516,86 @@ delete_credentials_file() {
         fi
     else
         log_message "INFO" "✓ No credentials file found (already deleted or never created)"
+    fi
+    
+    echo ""
+}
+
+# Clean up generated frontend environment files
+# These files are created by deployment scripts but not tracked in git
+cleanup_frontend_environment_files() {
+    log_message "INFO" "========================================"
+    log_message "INFO" "Step 11: Cleaning Up Generated Frontend Environment Files"
+    log_message "INFO" "========================================"
+    echo ""
+    
+    log_message "INFO" "Searching for generated environment files..."
+    
+    local files_deleted=0
+    local files_failed=0
+    
+    # Define all lab client directories that may have generated environment files
+    local client_dirs=(
+        "$WORKSHOP_ROOT/Lab1/client"
+        "$WORKSHOP_ROOT/Lab2/client/Admin"
+        "$WORKSHOP_ROOT/Lab2/client/Landing"
+        "$WORKSHOP_ROOT/Lab3/client/Admin"
+        "$WORKSHOP_ROOT/Lab3/client/Landing"
+        "$WORKSHOP_ROOT/Lab3/client/Application"
+        "$WORKSHOP_ROOT/Lab4/client/Admin"
+        "$WORKSHOP_ROOT/Lab4/client/Landing"
+        "$WORKSHOP_ROOT/Lab4/client/Application"
+        "$WORKSHOP_ROOT/Lab5/client/Admin"
+        "$WORKSHOP_ROOT/Lab5/client/Landing"
+        "$WORKSHOP_ROOT/Lab5/client/Application"
+        "$WORKSHOP_ROOT/Lab6/client/Admin"
+        "$WORKSHOP_ROOT/Lab6/client/Landing"
+        "$WORKSHOP_ROOT/Lab6/client/Application"
+    )
+    
+    # Files to delete in each client directory
+    local files_to_delete=(
+        "src/environments/environment.ts"
+        "src/environments/environment.prod.ts"
+        "src/aws-exports.ts"
+    )
+    
+    for client_dir in "${client_dirs[@]}"; do
+        if [[ -d "$client_dir" ]]; then
+            for file in "${files_to_delete[@]}"; do
+                local full_path="$client_dir/$file"
+                if [[ -f "$full_path" ]]; then
+                    if rm -f "$full_path" 2>/dev/null; then
+                        log_message "DEBUG" "  ✓ Deleted: $full_path"
+                        ((files_deleted++))
+                    else
+                        log_message "WARN" "  ✗ Failed to delete: $full_path"
+                        ((files_failed++))
+                    fi
+                fi
+            done
+            
+            # Also remove the environments directory if it's empty
+            local env_dir="$client_dir/src/environments"
+            if [[ -d "$env_dir" ]]; then
+                # Check if directory is empty
+                if [[ -z "$(ls -A "$env_dir" 2>/dev/null)" ]]; then
+                    if rmdir "$env_dir" 2>/dev/null; then
+                        log_message "DEBUG" "  ✓ Removed empty directory: $env_dir"
+                    fi
+                fi
+            fi
+        fi
+    done
+    
+    if [[ $files_deleted -gt 0 ]]; then
+        log_message "INFO" "✓ Deleted $files_deleted generated environment file(s)"
+    else
+        log_message "INFO" "✓ No generated environment files found (already cleaned or never created)"
+    fi
+    
+    if [[ $files_failed -gt 0 ]]; then
+        log_message "WARN" "⚠ Failed to delete $files_failed file(s)"
     fi
     
     echo ""
@@ -1765,12 +1974,15 @@ main() {
         print_message "$RED" "This includes:"
         print_message "$RED" "  - Main orchestration stack and all nested stacks"
         print_message "$RED" "  - Dynamic tenant stacks (stack-*-lab5, stack-*-lab6, stack-pooled-lab7)"
+        print_message "$RED" "  - CDK pipeline stacks (serverless-saas-pipeline-lab5, lab6)"
+        print_message "$RED" "  - CodeCommit repository (aws-serverless-saas-workshop)"
         print_message "$RED" "  - Orphaned Cognito user pools"
         print_message "$RED" "  - Orphaned DynamoDB tables"
         print_message "$RED" "  - Orphaned IAM roles"
         print_message "$RED" "  - Orphaned CloudWatch log groups"
         print_message "$RED" "  - Orphaned S3 buckets"
         print_message "$RED" "  - CDKToolkit stack"
+        print_message "$RED" "  - Generated frontend environment files"
         print_message "$RED" ""
         print_message "$RED" "This action cannot be undone."
         echo ""
@@ -1786,11 +1998,14 @@ main() {
     local start_time=$(date +%s)
     
     # Execute cleanup steps
-    # Step 1: Delete main orchestration stack (CloudFormation handles nested stacks)
-    delete_main_stack
+    # Step 1: Delete main orchestration stack (with automatic retry)
+    delete_main_stack_with_retry
     
     # Step 2: Delete dynamic tenant stacks (not part of nested hierarchy)
     delete_dynamic_tenant_stacks
+    
+    # Step 2b: Delete CDK pipeline stacks and CodeCommit repo
+    delete_pipeline_stacks
     
     # Step 3a: Delete orphaned Cognito user pools
     delete_orphaned_cognito_pools
@@ -1824,6 +2039,9 @@ main() {
     
     # Step 10: Delete workshop credentials file (security cleanup)
     delete_credentials_file
+    
+    # Step 11: Clean up generated frontend environment files
+    cleanup_frontend_environment_files
     
     # Verify cleanup
     verify_cleanup

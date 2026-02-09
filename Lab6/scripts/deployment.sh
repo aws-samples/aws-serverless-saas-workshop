@@ -442,6 +442,9 @@ if [[ $client -eq 1 ]]; then
   echo "=========================================="
   cd ../client/Admin
   
+  # Create environments directory if it doesn't exist
+  mkdir -p ./src/environments
+
   cat << EoF > ./src/environments/environment.prod.ts
 export const environment = {
   production: true,
@@ -509,6 +512,9 @@ EoF
   echo "=========================================="
   cd ../Landing
 
+  # Create environments directory if it doesn't exist
+  mkdir -p ./src/environments
+
   cat << EoF > ./src/environments/environment.prod.ts
 export const environment = {
   production: true,
@@ -563,6 +569,9 @@ EoF
   echo "Deploying Application UI..."
   echo "=========================================="
   cd ../Application
+
+  # Create environments directory if it doesn't exist
+  mkdir -p ./src/environments
 
   cat << EoF > ./src/environments/environment.prod.ts
 export const environment = {

@@ -179,6 +179,25 @@ Resources:
         - Key: Lab
           Value: lab3
 
+  # Lab3 Tenant Stack - Business microservices (Products, Orders) with Tenant API Gateway
+  # This stack uses CloudFormation Exports from Lab3Stack (Cognito User Pool IDs)
+  # so it MUST depend on Lab3Stack completing first
+  Lab3TenantStack:
+    Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    DependsOn: Lab3Stack
+    Properties:
+      TemplateURL: ../Lab3/server/tenant-template.yaml
+      TimeoutInMinutes: 20
+      Parameters:
+        Environment: !Ref Environment
+      Tags:
+        - Key: Workshop
+          Value: serverless-saas
+        - Key: Lab
+          Value: lab3
+
   # ==================== LAB 4 ====================
   # Tenant Data Isolation (IAM Policies, Cross-tenant Prevention)
   Lab4Stack:
@@ -199,6 +218,26 @@ Resources:
         TenantUserPoolCallbackURLParameter: !Ref TenantUserPoolCallbackURL
         Environment: !Ref Environment
         CreateCloudWatchRole: "false"
+      Tags:
+        - Key: Workshop
+          Value: serverless-saas
+        - Key: Lab
+          Value: lab4
+
+  # Lab4 Tenant Stack - Business microservices (Products, Orders) with Tenant API Gateway
+  # This stack uses CloudFormation Exports from Lab4Stack (Cognito User Pool IDs)
+  # so it MUST depend on Lab4Stack completing first
+  Lab4TenantStack:
+    Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    DependsOn: Lab4Stack
+    Properties:
+      TemplateURL: ../Lab4/server/tenant-template.yaml
+      TimeoutInMinutes: 20
+      Parameters:
+        TenantId: pooled
+        Environment: !Ref Environment
       Tags:
         - Key: Workshop
           Value: serverless-saas
@@ -301,15 +340,15 @@ Outputs:
     Description: Lab2 Landing Application CloudFront URL
     Value: !GetAtt Lab2Stack.Outputs.LandingApplicationSite
 
-  # ==================== LAB 3 OUTPUTS (1) ====================
+  # ==================== LAB 3 OUTPUTS (2) ====================
   Lab3ApplicationSite:
     Description: Lab3 Application CloudFront URL
     Value: !GetAtt Lab3Stack.Outputs.ApplicationSite
 
   # ==================== LAB 4 OUTPUTS (1) ====================
-  Lab4LandingApplicationSite:
-    Description: Lab4 Landing Application CloudFront URL
-    Value: !GetAtt Lab4Stack.Outputs.LandingApplicationSite
+  Lab4ApplicationSite:
+    Description: Lab4 Application CloudFront URL
+    Value: !GetAtt Lab4Stack.Outputs.ApplicationSite
 
   # ==================== LAB 5 OUTPUTS (2) ====================
   Lab5LandingApplicationSite:

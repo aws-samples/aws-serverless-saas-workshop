@@ -417,7 +417,9 @@ validate_base_template() {
         "Lab1Stack"
         "Lab2Stack"
         "Lab3Stack"
+        "Lab3TenantStack"
         "Lab4Stack"
+        "Lab4TenantStack"
         "Lab5Stack"
         "Lab6Stack"
         "Lab7Stack"
@@ -507,7 +509,9 @@ package_all_labs() {
     local LAB1_TEMPLATE="$WORKSHOP_ROOT/Lab1/server/template.yaml"
     local LAB2_TEMPLATE="$WORKSHOP_ROOT/Lab2/server/template.yaml"
     local LAB3_TEMPLATE="$WORKSHOP_ROOT/Lab3/server/shared-template.yaml"
+    local LAB3T_TEMPLATE="$WORKSHOP_ROOT/Lab3/server/tenant-template.yaml"
     local LAB4_TEMPLATE="$WORKSHOP_ROOT/Lab4/server/shared-template.yaml"
+    local LAB4T_TEMPLATE="$WORKSHOP_ROOT/Lab4/server/tenant-template.yaml"
     local LAB5_TEMPLATE="$WORKSHOP_ROOT/Lab5/server/shared-template.yaml"
     local LAB6_TEMPLATE="$WORKSHOP_ROOT/Lab6/server/shared-template.yaml"
     local LAB7_TEMPLATE="$WORKSHOP_ROOT/Lab7/template.yaml"
@@ -540,7 +544,7 @@ package_all_labs() {
     local failed=false
     
     # Package all labs in parallel
-    for lab_info in "1:$LAB1_TEMPLATE" "2:$LAB2_TEMPLATE" "3:$LAB3_TEMPLATE" "4:$LAB4_TEMPLATE" "5:$LAB5_TEMPLATE" "6:$LAB6_TEMPLATE" "7:$LAB7_TEMPLATE" "7p:$LAB7P_TEMPLATE"; do
+    for lab_info in "1:$LAB1_TEMPLATE" "2:$LAB2_TEMPLATE" "3:$LAB3_TEMPLATE" "3t:$LAB3T_TEMPLATE" "4:$LAB4_TEMPLATE" "4t:$LAB4T_TEMPLATE" "5:$LAB5_TEMPLATE" "6:$LAB6_TEMPLATE" "7:$LAB7_TEMPLATE" "7p:$LAB7P_TEMPLATE"; do
         IFS=':' read -r lab_num template <<< "$lab_info"
         
         if [[ -f "$template" ]]; then
@@ -582,14 +586,16 @@ package_all_labs() {
     LAB1_URL=$(grep "^https://" "$LOG_DIR/package-lab-1.log" 2>/dev/null | tail -1)
     LAB2_URL=$(grep "^https://" "$LOG_DIR/package-lab-2.log" 2>/dev/null | tail -1)
     LAB3_URL=$(grep "^https://" "$LOG_DIR/package-lab-3.log" 2>/dev/null | tail -1)
+    LAB3T_URL=$(grep "^https://" "$LOG_DIR/package-lab-3t.log" 2>/dev/null | tail -1)
     LAB4_URL=$(grep "^https://" "$LOG_DIR/package-lab-4.log" 2>/dev/null | tail -1)
+    LAB4T_URL=$(grep "^https://" "$LOG_DIR/package-lab-4t.log" 2>/dev/null | tail -1)
     LAB5_URL=$(grep "^https://" "$LOG_DIR/package-lab-5.log" 2>/dev/null | tail -1)
     LAB6_URL=$(grep "^https://" "$LOG_DIR/package-lab-6.log" 2>/dev/null | tail -1)
     LAB7_URL=$(grep "^https://" "$LOG_DIR/package-lab-7.log" 2>/dev/null | tail -1)
     LAB7P_URL=$(grep "^https://" "$LOG_DIR/package-lab-7p.log" 2>/dev/null | tail -1)
     
     # Export URLs for use in template generation
-    export LAB1_URL LAB2_URL LAB3_URL LAB4_URL LAB5_URL LAB6_URL LAB7_URL LAB7P_URL
+    export LAB1_URL LAB2_URL LAB3_URL LAB3T_URL LAB4_URL LAB4T_URL LAB5_URL LAB6_URL LAB7_URL LAB7P_URL
     
     log_message "INFO" "✓ All templates packaged successfully"
     return 0
@@ -726,6 +732,9 @@ configure_lab2_admin_environment() {
     local original_dir=$(pwd)
     cd "$client_dir" || return 1
     
+    # Create environments directory if it doesn't exist
+    mkdir -p ./src/environments
+    
     # Create environment.ts with apiUrl (Lab 2 Admin uses apiUrl, not apiGatewayUrl)
     cat <<EoF >./src/environments/environment.ts
 export const environment = {
@@ -779,6 +788,9 @@ configure_lab2_landing_environment() {
     local original_dir=$(pwd)
     cd "$client_dir" || return 1
     
+    # Create environments directory if it doesn't exist
+    mkdir -p ./src/environments
+    
     # Create environment.ts with apiGatewayUrl (Lab 2 Landing uses apiGatewayUrl)
     cat <<EoF >./src/environments/environment.ts
 export const environment = {
@@ -824,6 +836,9 @@ configure_labs36_admin_environment() {
     
     local original_dir=$(pwd)
     cd "$client_dir" || return 1
+    
+    # Create environments directory if it doesn't exist
+    mkdir -p ./src/environments
     
     # Create environment.ts with apiUrl (Labs 3-6 Admin use apiUrl, not apiGatewayUrl)
     cat <<EoF >./src/environments/environment.ts
@@ -880,6 +895,9 @@ configure_labs36_landing_environment() {
     local original_dir=$(pwd)
     cd "$client_dir" || return 1
     
+    # Create environments directory if it doesn't exist
+    mkdir -p ./src/environments
+    
     # Create environment.ts with apiGatewayUrl (Labs 3-6 Landing use apiGatewayUrl)
     cat <<EoF >./src/environments/environment.ts
 export const environment = {
@@ -897,6 +915,121 @@ EoF
 
     echo "  ✓ Lab $lab_num Landing environment configured" >&2
     echo "[$(date -u +"%Y-%m-%dT%H:%M:%SZ")] [INFO]   ✓ Lab $lab_num Landing environment configured" >> "$LOG_FILE"
+    
+    cd "$original_dir"
+    return 0
+}
+
+# =============================================================================
+# Lab 3 Application Environment Configuration
+# Lab 3 Application needs BOTH regApiGatewayUrl (admin API for tenant init)
+# AND apiGatewayUrl (tenant API for /products, /orders endpoints)
+# =============================================================================
+configure_lab3_app_environment() {
+    local client_dir=$1
+    local reg_api_url=$2
+    local tenant_api_url=$3
+    local user_pool_id=$4
+    local client_id=$5
+    local region=$6
+    
+    if [[ ! -d "$client_dir" ]]; then
+        echo "  ✗ Lab 3 App client directory not found: $client_dir" >&2
+        echo "[$(date -u +"%Y-%m-%dT%H:%M:%SZ")] [ERROR]   Lab 3 App client directory not found" >> "$LOG_FILE"
+        return 1
+    fi
+    
+    echo "  Configuring Lab 3 App environment (with tenant API)..." >&2
+    
+    local original_dir=$(pwd)
+    cd "$client_dir" || return 1
+    
+    # Create environments directory if it doesn't exist
+    mkdir -p ./src/environments
+    
+    # Lab 3 App needs:
+    # - regApiGatewayUrl: Admin API (for /tenant/init/{tenantName} to get tenant config)
+    # - apiGatewayUrl: Tenant API (for /products, /orders business endpoints)
+    # - userPoolId, appClientId: Pre-populated so the app can authenticate immediately
+    cat <<EoF >./src/environments/environment.prod.ts
+export const environment = {
+  production: true,
+  regApiGatewayUrl: '$reg_api_url',
+  userPoolId: '$user_pool_id',
+  appClientId: '$client_id',
+  apiGatewayUrl: '$tenant_api_url'
+};
+EoF
+
+    cat <<EoF >./src/environments/environment.ts
+export const environment = {
+  production: true,
+  regApiGatewayUrl: '$reg_api_url',
+  userPoolId: '$user_pool_id',
+  appClientId: '$client_id',
+  apiGatewayUrl: '$tenant_api_url'
+};
+EoF
+
+    echo "  ✓ Lab 3 App environment configured (tenant API: $tenant_api_url)" >&2
+    echo "[$(date -u +"%Y-%m-%dT%H:%M:%SZ")] [INFO]   ✓ Lab 3 App environment configured" >> "$LOG_FILE"
+    
+    cd "$original_dir"
+    return 0
+}
+
+# =============================================================================
+# Lab 4 Application needs BOTH regApiGatewayUrl (admin API for tenant init)
+# AND apiGatewayUrl (tenant API for /products, /orders endpoints)
+# =============================================================================
+configure_lab4_app_environment() {
+    local client_dir=$1
+    local reg_api_url=$2
+    local tenant_api_url=$3
+    local user_pool_id=$4
+    local client_id=$5
+    local region=$6
+    
+    if [[ ! -d "$client_dir" ]]; then
+        echo "  ✗ Lab 4 App client directory not found: $client_dir" >&2
+        echo "[$(date -u +"%Y-%m-%dT%H:%M:%SZ")] [ERROR]   Lab 4 App client directory not found" >> "$LOG_FILE"
+        return 1
+    fi
+    
+    echo "  Configuring Lab 4 App environment (with tenant API)..." >&2
+    
+    local original_dir=$(pwd)
+    cd "$client_dir" || return 1
+    
+    # Create environments directory if it doesn't exist
+    mkdir -p ./src/environments
+    
+    # Lab 4 App needs:
+    # - regApiGatewayUrl: Admin API (for /tenant/init/{tenantName} to get tenant config)
+    # - apiGatewayUrl: Tenant API (for /products, /orders business endpoints)
+    # - userPoolId, appClientId: Pre-populated so the app can authenticate immediately
+    cat <<EoF >./src/environments/environment.prod.ts
+export const environment = {
+  production: true,
+  regApiGatewayUrl: '$reg_api_url',
+  userPoolId: '$user_pool_id',
+  appClientId: '$client_id',
+  apiGatewayUrl: '$tenant_api_url'
+};
+EoF
+
+    cat <<EoF >./src/environments/environment.ts
+export const environment = {
+  production: true,
+  regApiGatewayUrl: '$reg_api_url',
+  userPoolId: '$user_pool_id',
+  appClientId: '$client_id',
+  apiGatewayUrl: '$tenant_api_url'
+};
+EoF
+
+    echo "  ✓ Lab 4 App environment configured (tenant API: $tenant_api_url)" >&2
+    echo "[$(date -u +"%Y-%m-%dT%H:%M:%SZ")] [INFO]   ✓ Lab 4 App environment configured" >> "$LOG_FILE"
     
     cd "$original_dir"
     return 0
@@ -967,6 +1100,9 @@ configure_frontend_environment() {
         echo "[$(date -u +"%Y-%m-%dT%H:%M:%SZ")] [ERROR]   Could not navigate to $client_dir" >> "$LOG_FILE"
         return 1
     }
+    
+    # Create environments directory if it doesn't exist
+    mkdir -p ./src/environments
     
     # Create environment files based on lab configuration
     # IMPORTANT: Labs 1-2 use 'apiGatewayUrl', Labs 3-6 use 'regApiGatewayUrl'
@@ -1198,16 +1334,20 @@ deploy_frontends() {
     local lab1_stack=$(get_main_lab_stack "${STACK_NAME}-Lab1Stack")
     local lab2_stack=$(get_main_lab_stack "${STACK_NAME}-Lab2Stack")
     local lab3_stack=$(get_main_lab_stack "${STACK_NAME}-Lab3Stack")
+    local lab3t_stack=$(get_main_lab_stack "${STACK_NAME}-Lab3TenantStack")
     local lab4_stack=$(get_main_lab_stack "${STACK_NAME}-Lab4Stack")
+    local lab4t_stack=$(get_main_lab_stack "${STACK_NAME}-Lab4TenantStack")
     local lab5_stack=$(get_main_lab_stack "${STACK_NAME}-Lab5Stack")
     local lab6_stack=$(get_main_lab_stack "${STACK_NAME}-Lab6Stack")
     
-    # Fetch all outputs in PARALLEL (6 API calls running simultaneously)
+    # Fetch all outputs in PARALLEL (7 API calls running simultaneously)
     log_message "INFO" "  Fetching outputs for Labs 1-6 in parallel..."
     fetch_lab_outputs 1 "$lab1_stack" &
     fetch_lab_outputs 2 "$lab2_stack" &
     fetch_lab_outputs 3 "$lab3_stack" &
+    fetch_lab_outputs "3t" "$lab3t_stack" &
     fetch_lab_outputs 4 "$lab4_stack" &
+    fetch_lab_outputs "4t" "$lab4t_stack" &
     fetch_lab_outputs 5 "$lab5_stack" &
     fetch_lab_outputs 6 "$lab6_stack" &
     wait
@@ -1252,6 +1392,12 @@ deploy_frontends() {
         lab3_landing_cf=$(get_output_value "$LOG_DIR/outputs-lab3.json" "LandingDistributionId")
     fi
     
+    # Parse Lab 3 Tenant outputs (local - instant)
+    local lab3_tenant_api_url=""
+    if [[ -n "$lab3t_stack" ]]; then
+        lab3_tenant_api_url=$(get_output_value "$LOG_DIR/outputs-lab3t.json" "TenantAPI")
+    fi
+    
     # Parse Lab 4 outputs (local - instant)
     local lab4_api_url="" lab4_app_bucket="" lab4_admin_bucket="" lab4_landing_bucket=""
     local lab4_ops_user_pool="" lab4_ops_client_id="" lab4_tenant_user_pool="" lab4_tenant_client_id=""
@@ -1268,6 +1414,12 @@ deploy_frontends() {
         lab4_admin_cf=$(get_output_value "$LOG_DIR/outputs-lab4.json" "AdminDistributionId")
         lab4_app_cf=$(get_output_value "$LOG_DIR/outputs-lab4.json" "DistributionId")
         lab4_landing_cf=$(get_output_value "$LOG_DIR/outputs-lab4.json" "LandingDistributionId")
+    fi
+    
+    # Parse Lab 4 Tenant outputs (local - instant)
+    local lab4_tenant_api_url=""
+    if [[ -n "$lab4t_stack" ]]; then
+        lab4_tenant_api_url=$(get_output_value "$LOG_DIR/outputs-lab4t.json" "TenantAPI")
     fi
     
     # Parse Lab 5 outputs (local - instant)
@@ -1347,8 +1499,10 @@ deploy_frontends() {
             log_message "DEBUG" "Queued: Lab3-Admin"
         fi
         if [[ -n "$lab3_app_bucket" ]]; then
-            job_queue+=("Lab3-App|$WORKSHOP_ROOT/Lab3/client/Application|$lab3_app_bucket|$lab3_api_url|lab36_app|3|$lab3_tenant_user_pool|$lab3_tenant_client_id|$lab3_stack|$lab3_app_cf")
-            log_message "DEBUG" "Queued: Lab3-App"
+            # Lab3-App uses lab3_app config type (NOT lab36_app) because it needs the tenant API URL
+            # for apiGatewayUrl in addition to regApiGatewayUrl (admin API)
+            job_queue+=("Lab3-App|$WORKSHOP_ROOT/Lab3/client/Application|$lab3_app_bucket|$lab3_api_url|lab3_app|3|$lab3_tenant_user_pool|$lab3_tenant_client_id|$lab3_tenant_api_url|$lab3_stack|$lab3_app_cf")
+            log_message "DEBUG" "Queued: Lab3-App (tenant API: $lab3_tenant_api_url)"
         fi
         if [[ -n "$lab3_landing_bucket" ]]; then
             job_queue+=("Lab3-Landing|$WORKSHOP_ROOT/Lab3/client/Landing|$lab3_landing_bucket|$lab3_api_url|lab36_landing|3|$lab3_stack|$lab3_landing_cf")
@@ -1365,8 +1519,10 @@ deploy_frontends() {
             log_message "DEBUG" "Queued: Lab4-Admin"
         fi
         if [[ -n "$lab4_app_bucket" ]]; then
-            job_queue+=("Lab4-App|$WORKSHOP_ROOT/Lab4/client/Application|$lab4_app_bucket|$lab4_api_url|lab36_app|4|$lab4_tenant_user_pool|$lab4_tenant_client_id|$lab4_stack|$lab4_app_cf")
-            log_message "DEBUG" "Queued: Lab4-App"
+            # Lab4-App uses lab4_app config type (NOT lab36_app) because it needs the tenant API URL
+            # for apiGatewayUrl in addition to regApiGatewayUrl (admin API)
+            job_queue+=("Lab4-App|$WORKSHOP_ROOT/Lab4/client/Application|$lab4_app_bucket|$lab4_api_url|lab4_app|4|$lab4_tenant_user_pool|$lab4_tenant_client_id|$lab4_tenant_api_url|$lab4_stack|$lab4_app_cf")
+            log_message "DEBUG" "Queued: Lab4-App (tenant API: $lab4_tenant_api_url)"
         fi
         if [[ -n "$lab4_landing_bucket" ]]; then
             job_queue+=("Lab4-Landing|$WORKSHOP_ROOT/Lab4/client/Landing|$lab4_landing_bucket|$lab4_api_url|lab36_landing|4|$lab4_stack|$lab4_landing_cf")
@@ -1477,6 +1633,22 @@ deploy_frontends() {
                     local client_id="${parts[7]}"
                     configure_frontend_environment "$lab_num" "$client_dir" "$api_url" "$user_pool" "$client_id" "$REGION" || { echo "  ✗ Config failed"; exit 1; }
                     ;;
+                lab3_app)
+                    # Lab3-App needs BOTH regApiGatewayUrl (admin API) AND apiGatewayUrl (tenant API)
+                    local lab_num="${parts[5]}"
+                    local user_pool="${parts[6]}"
+                    local client_id="${parts[7]}"
+                    local tenant_api_url="${parts[8]}"
+                    configure_lab3_app_environment "$client_dir" "$api_url" "$tenant_api_url" "$user_pool" "$client_id" "$REGION" || { echo "  ✗ Config failed"; exit 1; }
+                    ;;
+                lab4_app)
+                    # Lab4-App needs BOTH regApiGatewayUrl (admin API) AND apiGatewayUrl (tenant API)
+                    local lab_num="${parts[5]}"
+                    local user_pool="${parts[6]}"
+                    local client_id="${parts[7]}"
+                    local tenant_api_url="${parts[8]}"
+                    configure_lab4_app_environment "$client_dir" "$api_url" "$tenant_api_url" "$user_pool" "$client_id" "$REGION" || { echo "  ✗ Config failed"; exit 1; }
+                    ;;
                 lab36_landing)
                     local lab_num="${parts[5]}"
                     configure_labs36_landing_environment "$lab_num" "$client_dir" "$api_url" || { echo "  ✗ Config failed"; exit 1; }
@@ -1509,6 +1681,14 @@ deploy_frontends() {
                 lab36_admin|lab36_app)
                     stack_name="${parts[8]}"
                     cf_dist="${parts[9]}"
+                    ;;
+                lab3_app)
+                    stack_name="${parts[9]}"
+                    cf_dist="${parts[10]}"
+                    ;;
+                lab4_app)
+                    stack_name="${parts[9]}"
+                    cf_dist="${parts[10]}"
                     ;;
                 lab36_landing)
                     stack_name="${parts[6]}"
@@ -1657,7 +1837,9 @@ generate_orchestration_template() {
         -e "s|TemplateURL: ../Lab1/server/template.yaml|TemplateURL: ${LAB1_URL}|g" \
         -e "s|TemplateURL: ../Lab2/server/template.yaml|TemplateURL: ${LAB2_URL}|g" \
         -e "s|TemplateURL: ../Lab3/server/shared-template.yaml|TemplateURL: ${LAB3_URL}|g" \
+        -e "s|TemplateURL: ../Lab3/server/tenant-template.yaml|TemplateURL: ${LAB3T_URL}|g" \
         -e "s|TemplateURL: ../Lab4/server/shared-template.yaml|TemplateURL: ${LAB4_URL}|g" \
+        -e "s|TemplateURL: ../Lab4/server/tenant-template.yaml|TemplateURL: ${LAB4T_URL}|g" \
         -e "s|TemplateURL: ../Lab5/server/shared-template.yaml|TemplateURL: ${LAB5_URL}|g" \
         -e "s|TemplateURL: ../Lab6/server/shared-template.yaml|TemplateURL: ${LAB6_URL}|g" \
         -e "s|TemplateURL: ../Lab7/template.yaml|TemplateURL: ${LAB7_URL}|g" \
@@ -2191,6 +2373,287 @@ deploy_stack() {
 }
 
 # =============================================================================
+# DEPLOY CDK PIPELINE STACKS (Labs 5 and 6)
+# =============================================================================
+# Labs 5 and 6 have CDK-based CI/CD pipeline stacks that cannot be deployed
+# as CloudFormation nested stacks. They require:
+#   1. CDK bootstrap (CDKToolkit stack + staging bucket)
+#   2. CodeCommit repository creation + code push
+#   3. CDK deploy for each pipeline
+#   4. (Lab6 only) Wait for pipeline to create stack-lab6-pooled
+#
+# These must run AFTER the CloudFormation orchestration stack deploys
+# (Lab5Stack and Lab6Stack must exist first).
+# =============================================================================
+
+deploy_pipelines() {
+    log_message "INFO" "========================================"
+    log_message "INFO" "Deploying CDK Pipeline Stacks (Labs 5 & 6)"
+    log_message "INFO" "========================================"
+    echo ""
+
+    # Check if CDK CLI is available
+    if ! command -v cdk &> /dev/null; then
+        log_message "WARN" "⚠ CDK CLI not found - skipping pipeline deployment"
+        log_message "INFO" "  Install CDK: npm install -g aws-cdk"
+        log_message "INFO" "  Then deploy pipelines manually using individual lab scripts"
+        return 0
+    fi
+
+    # Check if npm is available
+    if ! command -v npm &> /dev/null; then
+        log_message "WARN" "⚠ npm not found - skipping pipeline deployment"
+        return 0
+    fi
+
+    local ACCOUNT_ID=$(aws sts get-caller-identity --profile "$PROFILE" --query Account --output text)
+
+    # =========================================================================
+    # Step 1: CDK Bootstrap (shared by both pipelines)
+    # =========================================================================
+    log_message "INFO" "Step 1: Checking CDK bootstrap..."
+
+    local CDK_NEEDS_BOOTSTRAP=false
+    local CDK_BUCKET="cdk-hnb659fds-assets-${ACCOUNT_ID}-${REGION}"
+
+    if ! aws cloudformation describe-stacks --stack-name "CDKToolkit" --profile "$PROFILE" --region "$REGION" &> /dev/null; then
+        log_message "INFO" "  CDKToolkit stack not found"
+        CDK_NEEDS_BOOTSTRAP=true
+    else
+        if ! aws s3 ls "s3://${CDK_BUCKET}" --profile "$PROFILE" --region "$REGION" &> /dev/null; then
+            log_message "INFO" "  CDKToolkit stack exists but staging bucket missing: $CDK_BUCKET"
+            CDK_NEEDS_BOOTSTRAP=true
+        else
+            log_message "INFO" "  ✓ CDKToolkit stack and staging bucket verified"
+        fi
+    fi
+
+    if [[ "$CDK_NEEDS_BOOTSTRAP" == "true" ]]; then
+        log_message "INFO" "  Bootstrapping CDK..."
+        if ! cdk bootstrap "aws://${ACCOUNT_ID}/${REGION}" --profile "$PROFILE" >> "$LOG_FILE" 2>&1; then
+            log_message "ERROR" "✗ CDK bootstrap failed"
+            return 1
+        fi
+        log_message "INFO" "  ✓ CDKToolkit bootstrapped successfully"
+    fi
+
+    # =========================================================================
+    # Step 2: CodeCommit repository + code push
+    # =========================================================================
+    log_message "INFO" "Step 2: Setting up CodeCommit repository..."
+
+    local REPO_URL="codecommit::${REGION}://aws-serverless-saas-workshop"
+
+    set +e
+    local REPO_CHECK=$(aws codecommit get-repository --repository-name aws-serverless-saas-workshop --profile "$PROFILE" --region "$REGION" 2>&1)
+    local REPO_CHECK_EXIT=$?
+    set -e
+
+    if [[ $REPO_CHECK_EXIT -ne 0 ]]; then
+        log_message "INFO" "  Creating CodeCommit repository: aws-serverless-saas-workshop"
+        if ! aws codecommit create-repository \
+            --repository-name aws-serverless-saas-workshop \
+            --repository-description "Serverless SaaS workshop repository" \
+            --profile "$PROFILE" --region "$REGION" >> "$LOG_FILE" 2>&1; then
+            log_message "ERROR" "✗ Failed to create CodeCommit repository"
+            return 1
+        fi
+        log_message "INFO" "  ✓ Repository created"
+        sleep 5
+    else
+        log_message "INFO" "  ✓ Repository exists"
+    fi
+
+    # Set up git remote
+    local GIT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
+    if [[ -z "$GIT_ROOT" ]]; then
+        log_message "ERROR" "✗ Not in a git repository"
+        return 1
+    fi
+
+    git -C "$GIT_ROOT" remote set-url cc "$REPO_URL" 2>/dev/null || git -C "$GIT_ROOT" remote add cc "$REPO_URL" 2>/dev/null
+
+    local CURRENT_BRANCH=$(git -C "$GIT_ROOT" rev-parse --abbrev-ref HEAD)
+    log_message "INFO" "  Current branch: $CURRENT_BRANCH"
+
+    # Check for uncommitted changes
+    if [[ -n $(git -C "$GIT_ROOT" status -s) ]]; then
+        log_message "WARN" "  ⚠ Uncommitted changes detected, committing now..."
+        git -C "$GIT_ROOT" add -A
+        git -C "$GIT_ROOT" commit -m "chore: Auto-commit before pipeline deployment"
+    fi
+
+    # Push to CodeCommit (export AWS_PROFILE for git-remote-codecommit)
+    log_message "INFO" "  Pushing code to CodeCommit..."
+    export AWS_PROFILE="$PROFILE"
+    if ! git -C "$GIT_ROOT" push cc "$CURRENT_BRANCH:main" --force >> "$LOG_FILE" 2>&1; then
+        log_message "ERROR" "✗ Failed to push code to CodeCommit"
+        return 1
+    fi
+    log_message "INFO" "  ✓ Code pushed to CodeCommit main branch"
+
+    # =========================================================================
+    # Step 3: Deploy Lab5 & Lab6 pipelines IN PARALLEL
+    # =========================================================================
+    log_message "INFO" "Step 3: Deploying Lab5 & Lab6 pipelines in parallel..."
+
+    local LAB5_PIPELINE_DIR="$WORKSHOP_ROOT/Lab5/server/TenantPipeline"
+    local LAB6_PIPELINE_DIR="$WORKSHOP_ROOT/Lab6/server/TenantPipeline"
+    local original_dir=$(pwd)
+    local LAB5_LOG="${LOG_DIR}/pipeline-lab5.log"
+    local LAB6_LOG="${LOG_DIR}/pipeline-lab6.log"
+    local lab5_pid="" lab6_pid=""
+    local lab5_exit=0 lab6_exit=0
+
+    # --- Lab5 pipeline deploy (background) ---
+    if [[ -d "$LAB5_PIPELINE_DIR" ]]; then
+        (
+            cd "$LAB5_PIPELINE_DIR" || exit 1
+            echo "[$(date '+%H:%M:%S')] Cleaning previous npm installation..." >> "$LAB5_LOG"
+            rm -rf node_modules package-lock.json 2>/dev/null || true
+
+            echo "[$(date '+%H:%M:%S')] Installing dependencies..." >> "$LAB5_LOG"
+            npm install >> "$LAB5_LOG" 2>&1 || exit 1
+
+            echo "[$(date '+%H:%M:%S')] Building..." >> "$LAB5_LOG"
+            npm run build >> "$LAB5_LOG" 2>&1 || exit 1
+
+            echo "[$(date '+%H:%M:%S')] Deploying CDK stack..." >> "$LAB5_LOG"
+            cdk deploy --require-approval never --profile "$PROFILE" --region "$REGION" >> "$LAB5_LOG" 2>&1 || exit 1
+
+            echo "[$(date '+%H:%M:%S')] ✓ Lab5 pipeline deployed successfully" >> "$LAB5_LOG"
+        ) &
+        lab5_pid=$!
+        log_message "INFO" "  Lab5 pipeline started (PID: $lab5_pid, log: $LAB5_LOG)"
+    else
+        log_message "WARN" "  ⚠ Lab5 TenantPipeline directory not found, skipping"
+    fi
+
+    # --- Lab6 pipeline deploy (background) ---
+    if [[ -d "$LAB6_PIPELINE_DIR" ]]; then
+        (
+            cd "$LAB6_PIPELINE_DIR" || exit 1
+            echo "[$(date '+%H:%M:%S')] Cleaning previous npm installation..." >> "$LAB6_LOG"
+            rm -rf node_modules package-lock.json 2>/dev/null || true
+
+            echo "[$(date '+%H:%M:%S')] Installing dependencies..." >> "$LAB6_LOG"
+            npm install >> "$LAB6_LOG" 2>&1 || exit 1
+
+            echo "[$(date '+%H:%M:%S')] Building..." >> "$LAB6_LOG"
+            npm run build >> "$LAB6_LOG" 2>&1 || exit 1
+
+            echo "[$(date '+%H:%M:%S')] Deploying CDK stack..." >> "$LAB6_LOG"
+            cdk deploy --require-approval never --profile "$PROFILE" --region "$REGION" >> "$LAB6_LOG" 2>&1 || exit 1
+
+            echo "[$(date '+%H:%M:%S')] ✓ Lab6 pipeline deployed successfully" >> "$LAB6_LOG"
+        ) &
+        lab6_pid=$!
+        log_message "INFO" "  Lab6 pipeline started (PID: $lab6_pid, log: $LAB6_LOG)"
+    else
+        log_message "WARN" "  ⚠ Lab6 TenantPipeline directory not found, skipping"
+    fi
+
+    # --- Wait for both to finish ---
+    if [[ -n "$lab5_pid" ]]; then
+        log_message "INFO" "  Waiting for Lab5 pipeline (PID: $lab5_pid)..."
+        set +e
+        wait "$lab5_pid"
+        lab5_exit=$?
+        set -e
+        if [[ $lab5_exit -eq 0 ]]; then
+            log_message "INFO" "  ✓ Lab5 pipeline deployed successfully"
+        else
+            log_message "ERROR" "  ✗ Lab5 pipeline failed (exit code: $lab5_exit)"
+            log_message "INFO" "    Check log: $LAB5_LOG"
+        fi
+    fi
+
+    if [[ -n "$lab6_pid" ]]; then
+        log_message "INFO" "  Waiting for Lab6 pipeline (PID: $lab6_pid)..."
+        set +e
+        wait "$lab6_pid"
+        lab6_exit=$?
+        set -e
+        if [[ $lab6_exit -eq 0 ]]; then
+            log_message "INFO" "  ✓ Lab6 pipeline deployed successfully"
+        else
+            log_message "ERROR" "  ✗ Lab6 pipeline failed (exit code: $lab6_exit)"
+            log_message "INFO" "    Check log: $LAB6_LOG"
+        fi
+    fi
+
+    if [[ $lab5_exit -ne 0 || $lab6_exit -ne 0 ]]; then
+        log_message "WARN" "⚠ One or both pipeline deployments failed"
+        [[ $lab5_exit -ne 0 ]] && log_message "INFO" "  Lab5 log: $LAB5_LOG"
+        [[ $lab6_exit -ne 0 ]] && log_message "INFO" "  Lab6 log: $LAB6_LOG"
+        return 1
+    fi
+
+    # =========================================================================
+    # Step 4: Wait for Lab6 pipeline to create pooled stack
+    # =========================================================================
+    log_message "INFO" "Step 4: Waiting for Lab6 pipeline to create stack-lab6-pooled..."
+    log_message "INFO" "  The pipeline auto-triggers and creates the pooled tenant stack"
+    log_message "INFO" "  This typically takes 5-10 minutes..."
+    echo ""
+
+    sleep 30  # Wait for pipeline execution to start
+
+    local MAX_WAIT=900  # 15 minutes
+    local ELAPSED=0
+    local INTERVAL=30
+
+    while [[ $ELAPSED -lt $MAX_WAIT ]]; do
+        set +e
+        local PIPELINE_STATUS=$(aws codepipeline get-pipeline-state \
+            --name serverless-saas-pipeline-lab6 \
+            --profile "$PROFILE" --region "$REGION" \
+            --query 'stageStates[?stageName==`Deploy`].latestExecution.status' \
+            --output text 2>/dev/null)
+        set -e
+
+        if [[ "$PIPELINE_STATUS" == "Succeeded" ]]; then
+            log_message "INFO" "  ✓ Lab6 pipeline Deploy stage completed successfully"
+            break
+        elif [[ "$PIPELINE_STATUS" == "Failed" ]]; then
+            log_message "WARN" "  ⚠ Lab6 pipeline Deploy stage failed"
+            log_message "INFO" "    Check: https://console.aws.amazon.com/codesuite/codepipeline/pipelines/serverless-saas-pipeline-lab6/view"
+            break
+        elif [[ -n "$PIPELINE_STATUS" ]]; then
+            log_message "INFO" "  Pipeline Deploy stage status: $PIPELINE_STATUS (waiting...)"
+        fi
+
+        sleep $INTERVAL
+        ELAPSED=$((ELAPSED + INTERVAL))
+    done
+
+    if [[ $ELAPSED -ge $MAX_WAIT ]]; then
+        log_message "WARN" "  ⚠ Timeout waiting for Lab6 pipeline (15 minutes)"
+        log_message "INFO" "    The pipeline may still be running. Check the console:"
+        log_message "INFO" "    https://console.aws.amazon.com/codesuite/codepipeline/pipelines/serverless-saas-pipeline-lab6/view"
+    fi
+
+    # Wait for pooled stack to be fully created
+    log_message "INFO" "  Waiting for stack-lab6-pooled to be ready..."
+    set +e
+    aws cloudformation wait stack-create-complete \
+        --stack-name stack-lab6-pooled \
+        --profile "$PROFILE" --region "$REGION" 2>/dev/null
+    local pooled_wait_result=$?
+    set -e
+
+    if [[ $pooled_wait_result -eq 0 ]]; then
+        log_message "INFO" "  ✓ stack-lab6-pooled created successfully"
+    else
+        log_message "WARN" "  ⚠ stack-lab6-pooled may not be ready yet (non-fatal)"
+    fi
+
+    echo ""
+    log_message "INFO" "✓ Pipeline deployment completed"
+    return 0
+}
+
+# =============================================================================
 # DISPLAY OUTPUTS
 # =============================================================================
 
@@ -2284,6 +2747,14 @@ main() {
         fi
         echo ""
         
+        # Deploy CDK pipeline stacks for Labs 5 and 6
+        if deploy_pipelines; then
+            log_message "INFO" "✓ Pipeline deployment completed"
+        else
+            log_message "WARN" "⚠ Pipeline deployment had issues (see details above)"
+        fi
+        echo ""
+        
         # Deploy frontends after CloudFormation deployment
         if deploy_frontends; then
             log_message "INFO" "✓ Frontend deployment completed"
@@ -2303,15 +2774,38 @@ main() {
             
             local user_script="$ORCHESTRATION_DIR/create-workshop-users.sh"
             if [[ -x "$user_script" ]]; then
-                local user_cmd="$user_script --email $EMAIL --profile $PROFILE --region $REGION --stack-name $STACK_NAME"
+                local -a user_cmd=("$user_script" --email "$EMAIL" --profile "$PROFILE" --region "$REGION" --stack-name "$STACK_NAME")
                 if [[ -n "$TENANT_EMAIL" ]]; then
-                    user_cmd="$user_cmd --tenant-email $TENANT_EMAIL"
+                    user_cmd+=(--tenant-email "$TENANT_EMAIL")
                 fi
                 
-                if $user_cmd; then
+                # Capture output to a temp file so we can log it
+                local user_output_file="${LOG_DIR}/user-creation-output.log"
+                
+                if "${user_cmd[@]}" > "$user_output_file" 2>&1; then
                     log_message "INFO" "✓ Workshop users created successfully"
+                    # Log the output for reference
+                    if [[ -f "$user_output_file" ]]; then
+                        log_message "INFO" "User creation output:"
+                        cat "$user_output_file" >> "$LOG_FILE"
+                        cat "$user_output_file"
+                    fi
                 else
-                    log_message "WARN" "⚠ User creation had issues (see output above)"
+                    local exit_code=$?
+                    log_message "WARN" "⚠ User creation failed with exit code: $exit_code"
+                    # Log the error output for debugging
+                    if [[ -f "$user_output_file" && -s "$user_output_file" ]]; then
+                        log_message "ERROR" "User creation script output:"
+                        echo "--- User Creation Error Output Start ---" >> "$LOG_FILE"
+                        cat "$user_output_file" >> "$LOG_FILE"
+                        echo "--- User Creation Error Output End ---" >> "$LOG_FILE"
+                        # Also display to console
+                        echo "--- User Creation Error Output ---"
+                        cat "$user_output_file"
+                        echo "--- End Error Output ---"
+                    else
+                        log_message "ERROR" "No output captured from user creation script"
+                    fi
                     log_message "INFO" "You can retry manually:"
                     log_message "INFO" "  ./orchestration/create-workshop-users.sh --email $EMAIL --profile $PROFILE --stack-name $STACK_NAME"
                 fi

@@ -565,6 +565,10 @@ if [[ $DEPLOY_CLIENT -eq 1 ]]; then
   cd ../client/Admin || exit
 
   print_message "$YELLOW" "  Configuring environment for Admin Client"
+  
+  # Create environments directory if it doesn't exist
+  mkdir -p ./src/environments
+  
   cat << EoF > ./src/environments/environment.prod.ts
   export const environment = {
     production: true,
@@ -625,6 +629,10 @@ EoF
   cd ../Landing || exit
 
   print_message "$YELLOW" "  Configuring environment for Landing Client"
+  
+  # Create environments directory if it doesn't exist
+  mkdir -p ./src/environments
+  
   cat << EoF > ./src/environments/environment.prod.ts
   export const environment = {
     production: true,
@@ -673,6 +681,10 @@ EoF
   cd ../Application || exit
 
   print_message "$YELLOW" "  Configuring environment for App Client"
+  
+  # Create environments directory if it doesn't exist
+  mkdir -p ./src/environments
+  
   cat << EoF > ./src/environments/environment.prod.ts
   export const environment = {
     production: true,

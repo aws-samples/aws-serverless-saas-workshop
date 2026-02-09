@@ -422,6 +422,9 @@ if [[ $DEPLOY_CLIENT -eq 1 ]]; then
     # Configure environment files
     print_message "$YELLOW" "  Configuring Angular environment files..."
     
+    # Create environments directory if it doesn't exist
+    mkdir -p ./src/environments
+    
     cat <<EoF >./src/environments/environment.prod.ts
 export const environment = {
   production: true,

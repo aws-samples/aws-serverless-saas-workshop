@@ -646,6 +646,9 @@ if [[ $DEPLOY_CLIENT -eq 1 ]]; then
   print_message "$YELLOW" "  Deploying Admin UI..."
   cd ../client/Admin || exit
 
+  # Create environments directory if it doesn't exist
+  mkdir -p ./src/environments
+
   cat << EoF > ./src/environments/environment.prod.ts
 export const environment = {
   production: true,
@@ -695,6 +698,9 @@ EoF
   print_message "$YELLOW" "  Deploying Landing UI..."
   cd ../Landing || exit
 
+  # Create environments directory if it doesn't exist
+  mkdir -p ./src/environments
+
   cat << EoF > ./src/environments/environment.prod.ts
 export const environment = {
   production: true,
@@ -731,6 +737,9 @@ EoF
   # Deploy App UI
   print_message "$YELLOW" "  Deploying App UI..."
   cd ../Application || exit
+
+  # Create environments directory if it doesn't exist
+  mkdir -p ./src/environments
 
   cat << EoF > ./src/environments/environment.prod.ts
 export const environment = {
