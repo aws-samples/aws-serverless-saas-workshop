@@ -1998,14 +1998,17 @@ main() {
     local start_time=$(date +%s)
     
     # Execute cleanup steps
-    # Step 1: Delete main orchestration stack (with automatic retry)
-    delete_main_stack_with_retry
-    
-    # Step 2: Delete dynamic tenant stacks (not part of nested hierarchy)
+    # Step 1: Delete dynamic tenant stacks FIRST (they import exports from nested stacks)
+    # These must be deleted before the main stack, otherwise CloudFormation refuses to
+    # delete nested stacks whose exports are still referenced by tenant stacks
+    # (e.g., stack-lab6-pooled references Serverless-SaaS-AuthorizerExecutionRoleArn-lab6)
     delete_dynamic_tenant_stacks
     
-    # Step 2b: Delete CDK pipeline stacks and CodeCommit repo
+    # Step 1b: Delete CDK pipeline stacks and CodeCommit repo
     delete_pipeline_stacks
+    
+    # Step 2: Delete main orchestration stack (with automatic retry)
+    delete_main_stack_with_retry
     
     # Step 3a: Delete orphaned Cognito user pools
     delete_orphaned_cognito_pools
