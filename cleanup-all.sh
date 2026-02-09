@@ -485,16 +485,16 @@ delete_dynamic_tenant_stacks() {
     local lab7_stacks=""
     
     for stack in $tenant_stacks; do
-        # Lab5 tenant stacks: stack-*-lab5
-        if [[ "$stack" =~ ^stack-.*-lab5$ ]]; then
+        # Lab5 tenant stacks: stack-*-lab5 or stack-lab5-*
+        if [[ "$stack" =~ ^stack-.*-lab5$ || "$stack" =~ ^stack-lab5- ]]; then
             lab5_stacks+="$stack "
         fi
-        # Lab6 tenant stacks: stack-*-lab6 or stack-lab6-pooled
-        if [[ "$stack" =~ ^stack-.*-lab6$ || "$stack" == "stack-lab6-pooled" ]]; then
+        # Lab6 tenant stacks: stack-*-lab6 or stack-lab6-*
+        if [[ "$stack" =~ ^stack-.*-lab6$ || "$stack" =~ ^stack-lab6- ]]; then
             lab6_stacks+="$stack "
         fi
-        # Lab7 pooled stack: stack-pooled-lab7
-        if [[ "$stack" == "stack-pooled-lab7" ]]; then
+        # Lab7 pooled stack: stack-pooled-lab7 or stack-*-lab7 or stack-lab7-*
+        if [[ "$stack" =~ ^stack-.*-lab7$ || "$stack" =~ ^stack-lab7- || "$stack" == "stack-pooled-lab7" ]]; then
             lab7_stacks+="$stack "
         fi
     done
