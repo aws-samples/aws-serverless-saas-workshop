@@ -301,9 +301,12 @@ verify_stack_for_deletion() {
         "serverless-saas-tenant-lab"
         "serverless-saas-pipeline-lab"
         "stack-.*-lab5"
+        "stack-lab5-"
         "stack-.*-lab6"
+        "stack-lab6-"
+        "stack-.*-lab7"
+        "stack-lab7-"
         "stack-pooled-lab7"
-        "stack-lab6-pooled"
         "$STACK_NAME"
     )
     
