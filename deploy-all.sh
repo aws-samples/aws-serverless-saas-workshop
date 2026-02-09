@@ -2501,7 +2501,7 @@ deploy_pipelines() {
         done
     fi
     local push_attempts=0
-    local push_max=8
+    local push_max=2
     local push_success=false
     while [[ $push_attempts -lt $push_max ]]; do
         push_attempts=$((push_attempts + 1))
