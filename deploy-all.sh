@@ -2416,15 +2416,75 @@ deploy_pipelines() {
     local CDK_NEEDS_BOOTSTRAP=false
     local CDK_BUCKET="cdk-hnb659fds-assets-${ACCOUNT_ID}-${REGION}"
 
-    if ! aws cloudformation describe-stacks --stack-name "CDKToolkit" --profile "$PROFILE" --region "$REGION" &> /dev/null; then
-        log_message "INFO" "  CDKToolkit stack not found"
-        CDK_NEEDS_BOOTSTRAP=true
+    local cdk_stack_exists=false
+    local cdk_bucket_exists=false
+
+    if aws cloudformation describe-stacks --stack-name "CDKToolkit" --profile "$PROFILE" --region "$REGION" &> /dev/null; then
+        cdk_stack_exists=true
+    fi
+    if aws s3api head-bucket --bucket "$CDK_BUCKET" --profile "$PROFILE" 2>/dev/null; then
+        cdk_bucket_exists=true
+    fi
+
+    if [[ "$cdk_stack_exists" == "true" && "$cdk_bucket_exists" == "true" ]]; then
+        log_message "INFO" "  ✓ CDKToolkit stack and staging bucket verified"
     else
-        if ! aws s3 ls "s3://${CDK_BUCKET}" --profile "$PROFILE" --region "$REGION" &> /dev/null; then
-            log_message "INFO" "  CDKToolkit stack exists but staging bucket missing: $CDK_BUCKET"
-            CDK_NEEDS_BOOTSTRAP=true
+        CDK_NEEDS_BOOTSTRAP=true
+
+        if [[ "$cdk_stack_exists" == "true" && "$cdk_bucket_exists" == "false" ]]; then
+            # Stack exists but bucket was deleted — stale stack blocks bootstrap
+            log_message "INFO" "  CDKToolkit stack exists but staging bucket missing"
+            log_message "INFO" "  Deleting stale CDKToolkit stack before re-bootstrap..."
+            aws cloudformation delete-stack --stack-name "CDKToolkit" --profile "$PROFILE" --region "$REGION" 2>/dev/null
+            aws cloudformation wait stack-delete-complete --stack-name "CDKToolkit" --profile "$PROFILE" --region "$REGION" 2>/dev/null || true
+
+        elif [[ "$cdk_stack_exists" == "false" && "$cdk_bucket_exists" == "true" ]]; then
+            # Bucket orphaned after stack deletion (Retain policy) — must delete before bootstrap
+            log_message "INFO" "  CDKToolkit stack not found but orphan bucket exists: $CDK_BUCKET"
+            log_message "INFO" "  Deleting orphan CDK bucket before bootstrap..."
+            # Remove current objects
+            aws s3 rm "s3://${CDK_BUCKET}" --recursive --profile "$PROFILE" --region "$REGION" >> "$LOG_FILE" 2>&1 || true
+            # Purge all versioned objects and delete markers in batches
+            local truncated="true"
+            while [[ "$truncated" == "true" ]]; do
+                local page
+                page=$(aws s3api list-object-versions --bucket "$CDK_BUCKET" --profile "$PROFILE" \
+                    --max-items 1000 --output json 2>/dev/null || echo '{}')
+                # Build delete payload from Versions + DeleteMarkers
+                local delete_payload
+                delete_payload=$(echo "$page" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+objs = []
+for v in d.get('Versions', []):
+    objs.append({'Key': v['Key'], 'VersionId': v['VersionId']})
+for m in d.get('DeleteMarkers', []):
+    objs.append({'Key': m['Key'], 'VersionId': m['VersionId']})
+if objs:
+    print(json.dumps({'Objects': objs, 'Quiet': True}))
+else:
+    print('')
+" 2>/dev/null)
+                if [[ -z "$delete_payload" ]]; then
+                    break
+                fi
+                echo "$delete_payload" > /tmp/_cdk_bucket_delete.json
+                aws s3api delete-objects --bucket "$CDK_BUCKET" --delete "file:///tmp/_cdk_bucket_delete.json" \
+                    --profile "$PROFILE" >> "$LOG_FILE" 2>&1 || true
+                rm -f /tmp/_cdk_bucket_delete.json
+                # Check if there are more
+                truncated=$(echo "$page" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+print('true' if d.get('IsTruncated', False) else 'false')
+" 2>/dev/null || echo "false")
+            done
+            aws s3api delete-bucket --bucket "$CDK_BUCKET" --profile "$PROFILE" --region "$REGION" >> "$LOG_FILE" 2>&1 || \
+                log_message "WARN" "  Could not delete orphan CDK bucket (non-fatal, bootstrap may still work)"
+            log_message "INFO" "  ✓ Orphan CDK bucket cleaned up"
+
         else
-            log_message "INFO" "  ✓ CDKToolkit stack and staging bucket verified"
+            log_message "INFO" "  CDKToolkit stack not found"
         fi
     fi
 
@@ -2498,14 +2558,11 @@ deploy_pipelines() {
         git -C "$GIT_ROOT" commit -m "chore: Auto-commit before pipeline deployment"
     fi
 
-    # Push to CodeCommit (export AWS_PROFILE for git-remote-codecommit)
+    # Push to CodeCommit
     log_message "INFO" "  Pushing code to CodeCommit..."
     export AWS_PROFILE="$PROFILE"
 
-    # Ensure git-remote-codecommit is in PATH
-    # IMPORTANT: We ALWAYS add known paths unconditionally, because even if 'command -v'
-    # finds the binary in the current shell, git spawns a subprocess that may not see it.
-    # The codecommit:: protocol requires git to find 'git-remote-codecommit' in PATH.
+    # Find git-remote-codecommit binary (needed for codecommit:: protocol)
     local grc_path=""
     for candidate in \
         "${VIRTUAL_ENV:-__none__}/bin/git-remote-codecommit" \
@@ -2528,9 +2585,20 @@ deploy_pipelines() {
         grc_dir=$(dirname "$grc_path")
         export PATH="$grc_dir:$PATH"
         log_message "INFO" "  git-remote-codecommit: $grc_path"
+
+        # WORKAROUND: The codecommit:: protocol requires git to find
+        # 'git-remote-codecommit' in PATH as a subprocess. In some terminal
+        # environments, git's subprocess doesn't inherit PATH correctly even
+        # after export. To guarantee it works, we create a symlink in /usr/local/bin
+        # (which is always in PATH) pointing to the actual binary.
+        if [[ ! -x "/usr/local/bin/git-remote-codecommit" ]]; then
+            log_message "INFO" "  Creating symlink: /usr/local/bin/git-remote-codecommit -> $grc_path"
+            ln -sf "$grc_path" /usr/local/bin/git-remote-codecommit 2>/dev/null || \
+                sudo ln -sf "$grc_path" /usr/local/bin/git-remote-codecommit 2>/dev/null || \
+                log_message "WARN" "  Could not create symlink (non-fatal)"
+        fi
     else
-        # Last resort: try pip install
-        log_message "WARN" "  git-remote-codecommit not found anywhere, installing via pip..."
+        log_message "WARN" "  git-remote-codecommit not found, installing via pip..."
         pip install git-remote-codecommit >> "$LOG_FILE" 2>&1 || pip3 install git-remote-codecommit >> "$LOG_FILE" 2>&1 || true
         if command -v git-remote-codecommit &>/dev/null; then
             log_message "INFO" "  ✓ git-remote-codecommit installed"
@@ -2539,6 +2607,7 @@ deploy_pipelines() {
             log_message "ERROR" "  Install it: pip install git-remote-codecommit"
         fi
     fi
+
     local push_attempts=0
     local push_max=5
     local push_success=false

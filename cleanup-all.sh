@@ -1334,6 +1334,21 @@ delete_cdk_toolkit() {
     fi
     
     log_message "INFO" "Found CDKToolkit stack - initiating deletion..."
+
+    # Pre-delete: Empty the CDK assets bucket BEFORE deleting the stack.
+    # The CDKToolkit stack creates the bucket with DeletionPolicy: Retain,
+    # so CloudFormation won't delete it. We empty it first so that
+    # delete_cdk_assets_bucket (or a future cdk bootstrap) doesn't choke
+    # on an orphaned bucket with versioned objects.
+    local account_id
+    account_id=$(aws sts get-caller-identity --profile "$PROFILE" --query Account --output text 2>/dev/null || echo "")
+    if [[ -n "$account_id" ]]; then
+        local cdk_bucket="cdk-hnb659fds-assets-${account_id}-${REGION}"
+        if aws s3api head-bucket --bucket "$cdk_bucket" --profile "$PROFILE" 2>/dev/null; then
+            log_message "INFO" "  Emptying CDK assets bucket before stack deletion: $cdk_bucket"
+            _delete_single_bucket "$cdk_bucket"
+        fi
+    fi
     
     # Delete the CDKToolkit stack
     if aws cloudformation delete-stack \
