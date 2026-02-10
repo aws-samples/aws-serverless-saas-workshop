@@ -38,7 +38,7 @@ NC='\033[0m' # No Color
 # =============================================================================
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 WORKSHOP_ROOT="$SCRIPT_DIR"
-ORCHESTRATION_DIR="$SCRIPT_DIR/orchestration"
+ORCHESTRATION_DIR="$SCRIPT_DIR/scripts"
 
 # =============================================================================
 # DEFAULT CONFIGURATION
@@ -941,10 +941,17 @@ delete_orphaned_log_groups() {
     echo ""
     
     # Find lab-related log groups
+    # Patterns to match:
+    #   - serverless-saas-lab*  : Most Lambda/API GW log groups (Lab1-Lab7 shared services)
+    #   - stack-lab*            : Tenant stack log groups (Lab5/Lab6 tenant stacks)
+    #   - stack-pooled*         : Pooled stack log groups
+    #   - *-lab5-*              : Lab5 tenant Lambda functions (e.g., get-prod-lab5-{tenantId})
+    #   - *-lab6-*              : Lab6 tenant Lambda functions
+    #   - *-pooled-lab7         : Lab7 pooled Lambda functions (e.g., create-product-pooled-lab7)
     local log_groups=$(aws logs describe-log-groups \
         --profile "$PROFILE" \
         --region "$REGION" \
-        --query "logGroups[?contains(logGroupName, 'serverless-saas-lab') || contains(logGroupName, 'stack-lab') || contains(logGroupName, 'stack-pooled')].logGroupName" \
+        --query "logGroups[?contains(logGroupName, 'serverless-saas-lab') || contains(logGroupName, 'stack-lab') || contains(logGroupName, 'stack-pooled') || contains(logGroupName, '-lab5-') || contains(logGroupName, '-lab6-') || contains(logGroupName, '-pooled-lab7')].logGroupName" \
         --output text 2>/dev/null || echo "")
     
     # Also check for common orphaned log groups

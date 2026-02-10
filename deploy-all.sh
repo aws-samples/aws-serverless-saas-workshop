@@ -56,7 +56,7 @@
 #
 # TWO-PHASE DEPLOYMENT (alternative):
 #   Phase 1: ./deploy-all.sh --profile <aws-profile>
-#   Phase 2: ./orchestration/create-workshop-users.sh --email <admin-email> --profile <aws-profile>
+#   Phase 2: ./scripts/create-workshop-users.sh --email <admin-email> --profile <aws-profile>
 #
 # CRITICAL: Execute this script directly (./deploy-all.sh), NEVER with bash command
 # =============================================================================
@@ -78,7 +78,7 @@ NC='\033[0m' # No Color
 # =============================================================================
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 WORKSHOP_ROOT="$SCRIPT_DIR"
-ORCHESTRATION_DIR="$SCRIPT_DIR/orchestration"
+ORCHESTRATION_DIR="$SCRIPT_DIR/scripts"
 
 # =============================================================================
 # DEFAULT CONFIGURATION
@@ -195,7 +195,7 @@ TWO-PHASE DEPLOYMENT (alternative):
         ./deploy-all.sh --profile my-profile
     
     Phase 2: Create users after deployment
-        ./orchestration/create-workshop-users.sh --email admin@example.com --profile my-profile
+        ./scripts/create-workshop-users.sh --email admin@example.com --profile my-profile
     
     This approach allows:
     - Faster infrastructure deployment without email dependency
@@ -2979,7 +2979,7 @@ display_outputs() {
         log_message "INFO" "Admin users were NOT created in Cognito."
         log_message "INFO" ""
         log_message "INFO" "To create admin users, run:"
-        log_message "INFO" "  ./orchestration/create-workshop-users.sh --email <your-email> --profile $PROFILE --stack-name $STACK_NAME"
+        log_message "INFO" "  ./scripts/create-workshop-users.sh --email <your-email> --profile $PROFILE --stack-name $STACK_NAME"
         echo ""
     fi
 }
@@ -3112,12 +3112,12 @@ main() {
                         log_message "ERROR" "No output captured from user creation script"
                     fi
                     log_message "INFO" "You can retry manually:"
-                    log_message "INFO" "  ./orchestration/create-workshop-users.sh --email $EMAIL --profile $PROFILE --stack-name $STACK_NAME"
+                    log_message "INFO" "  ./scripts/create-workshop-users.sh --email $EMAIL --profile $PROFILE --stack-name $STACK_NAME"
                 fi
             else
                 log_message "WARN" "⚠ User creation script not found or not executable: $user_script"
                 log_message "INFO" "Create users manually:"
-                log_message "INFO" "  ./orchestration/create-workshop-users.sh --email $EMAIL --profile $PROFILE --stack-name $STACK_NAME"
+                log_message "INFO" "  ./scripts/create-workshop-users.sh --email $EMAIL --profile $PROFILE --stack-name $STACK_NAME"
             fi
             echo ""
         fi
