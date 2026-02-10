@@ -12,7 +12,9 @@ import { Order } from './models/order.interface';
 })
 export class OrdersService {
   orders: Order[] = [];
-  baseUrl = `${localStorage.getItem('apiGatewayUrl')}`;
+  get baseUrl(): string {
+    return localStorage.getItem('apiGatewayUrl') || '';
+  }
   constructor(private http: HttpClient) {}
 
   fetch(): Observable<Order[]> {

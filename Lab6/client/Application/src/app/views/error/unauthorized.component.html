@@ -6,9 +6,9 @@
     <form [formGroup]="tenantForm" (submit)="login()">
       <mat-card class="card">
         <mat-card-title>Unauthorized</mat-card-title>
-        <mat-card-subtitle *ngIf="tenantNameRequired">Enter your tenant name and click submit below</mat-card-subtitle>
+        <mat-card-subtitle *ngIf="showTenantInput">Enter your tenant name and click submit below</mat-card-subtitle>
         <mat-card-content>
-          <mat-form-field appearance="outline" *ngIf="tenantNameRequired">
+          <mat-form-field appearance="outline" *ngIf="showTenantInput">
             <mat-label>Tenant Name</mat-label>
             <input
             matInput
@@ -29,9 +29,9 @@
                 mat-raised-button
                 color="primary"
                 type="submit"
-                [disabled]="!tenantForm.valid && tenantNameRequired"
+                [disabled]="showTenantInput && !tenantForm.valid"
               >
-                <div *ngIf="tenantNameRequired; else loginTextBlock">Submit</div>
+                <div *ngIf="showTenantInput; else loginTextBlock">Submit</div>
                 <ng-template #loginTextBlock>Login</ng-template>
               </button>
             </div>

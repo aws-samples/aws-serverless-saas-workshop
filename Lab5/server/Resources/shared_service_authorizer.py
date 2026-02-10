@@ -102,7 +102,7 @@ def lambda_handler(event, context):
     iam_policy = auth_manager.getPolicyForUser(user_role, utils.Service_Identifier.SHARED_SERVICES.value, tenant_id, region, aws_account_id)
     logger.info(iam_policy)
     
-    role_arn = "arn:aws:iam::{}:role/authorizer-access-role".format(aws_account_id)
+    role_arn = "arn:aws:iam::{}:role/authorizer-access-role-lab5".format(aws_account_id)
     
     assumed_role = sts_client.assume_role(
         RoleArn=role_arn,

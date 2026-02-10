@@ -351,52 +351,62 @@ def __add_log_group_name(logs_client, log_group_name, log_group_names_list):
 def __get_list_of_log_group_names():
     log_group_names = []
     log_group_prefix = '/aws/lambda/'
+    
+    # Known function names for Lab7 pooled tenant stack
+    known_function_names = [
+        'create-product-pooled-lab7',
+        'update-product-pooled-lab7',
+        'get-products-pooled-lab7'
+    ]
+    
+    # Try CloudFormation stack discovery first (works for individual lab deployment)
+    # Then fall back to known function names (works for orchestration deployment
+    # where the nested stack name differs from 'stack-pooled-lab7')
+    stack_names_to_try = ['stack-pooled-lab7']
+    
+    # Also try to find the orchestration nested stack
+    try:
+        cfn_paginator = cloudformation.get_paginator('list_stacks')
+        for page in cfn_paginator.paginate(StackStatusFilter=['CREATE_COMPLETE', 'UPDATE_COMPLETE']):
+            for stack in page['StackSummaries']:
+                if 'Lab7PooledStack' in stack['StackName'] or 'lab7-pooled' in stack['StackName'].lower():
+                    stack_names_to_try.insert(0, stack['StackName'])
+    except ClientError:
+        pass  # Non-critical - we'll fall back to known names
+    
     cloudformation_paginator = cloudformation.get_paginator('list_stack_resources')
     
-    # Implement exponential backoff retry logic for race condition
-    # where tenant stack might not exist yet when Lambda first executes
-    max_retries = 3  # Total wait time: 9 minutes (1min + 3min + 5min)
-    wait_times = [60, 180, 300]  # 1 minute, 3 minutes, 5 minutes
-    retry_count = 0
-    
-    while retry_count <= max_retries:
+    for stack_name in stack_names_to_try:
         try:
-            response_iterator = cloudformation_paginator.paginate(StackName='stack-pooled-lab7')
+            response_iterator = cloudformation_paginator.paginate(StackName=stack_name)
             for stack_resources in response_iterator:
                 for resource in stack_resources['StackResourceSummaries']:
-                    if (resource["LogicalResourceId"] == "CreateProductFunction"):
-                        __add_log_group_name(logs, ''.join([log_group_prefix,resource["PhysicalResourceId"]]), 
+                    if resource["LogicalResourceId"] in ("CreateProductFunction", "UpdateProductFunction", "GetProductsFunction"):
+                        __add_log_group_name(logs, ''.join([log_group_prefix, resource["PhysicalResourceId"]]), 
                          log_group_names)
-                        continue    
-                    if (resource["LogicalResourceId"] == "UpdateProductFunction"):
-                        __add_log_group_name(logs, ''.join([log_group_prefix,resource["PhysicalResourceId"]]), 
-                         log_group_names) 
-                        continue
-                    if (resource["LogicalResourceId"] == "GetProductsFunction"):
-                        __add_log_group_name(logs, ''.join([log_group_prefix,resource["PhysicalResourceId"]]), 
-                         log_group_names)
-                        continue
             
-            # Success - break out of retry loop
-            break
-            
+            if log_group_names:
+                print(f"Found log groups via stack '{stack_name}': {log_group_names}")
+                return log_group_names
+                
         except ClientError as e:
             if e.response['Error']['Code'] == 'ValidationException':
-                # Stack doesn't exist yet - this is expected during initial deployment
-                if retry_count < max_retries:
-                    wait_time = wait_times[retry_count]
-                    wait_minutes = wait_time / 60
-                    print(f"Stack 'stack-pooled-lab7' not found. Retry {retry_count + 1}/{max_retries} after {wait_minutes:.0f} minute(s)...")
-                    time.sleep(wait_time)
-                    retry_count += 1
-                else:
-                    # All retries exhausted - return empty list for graceful degradation
-                    print(f"Stack 'stack-pooled-lab7' still not found after {max_retries} retries. Returning empty log group list.")
-                    return []
+                print(f"Stack '{stack_name}' not found, trying next option...")
+                continue
             else:
-                # Different error - re-raise it
-                raise
-
+                print(f"Error querying stack '{stack_name}': {e}")
+                continue
+    
+    # Fallback: use known function names directly
+    print("CloudFormation stack discovery failed. Using known function names as fallback.")
+    for fn_name in known_function_names:
+        __add_log_group_name(logs, log_group_prefix + fn_name, log_group_names)
+    
+    if log_group_names:
+        print(f"Found log groups via fallback: {log_group_names}")
+    else:
+        print("No log groups found even with fallback. Lambda functions may not have been invoked yet.")
+    
     return log_group_names          
 
                   

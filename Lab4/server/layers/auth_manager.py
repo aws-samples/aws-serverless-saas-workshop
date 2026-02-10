@@ -93,8 +93,8 @@ def __getPolicyForTenantAdmin(tenant_id, sevice_identifier, region, aws_account_
                         "dynamodb:Query"                   
                     ],
                     "Resource": [
-                        "arn:aws:dynamodb:{0}:{1}:table/ServerlessSaaS-TenantUserMapping".format(region, aws_account_id),
-                        "arn:aws:dynamodb:{0}:{1}:table/ServerlessSaaS-TenantDetails".format(region, aws_account_id)
+                        "arn:aws:dynamodb:{0}:{1}:table/ServerlessSaaS-TenantUserMapping-lab4".format(region, aws_account_id),
+                        "arn:aws:dynamodb:{0}:{1}:table/ServerlessSaaS-TenantDetails-lab4".format(region, aws_account_id)
                     ],
                     "Condition": {
                         "ForAllValues:StringEquals": {

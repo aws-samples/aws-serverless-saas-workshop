@@ -12,7 +12,9 @@ import { Product } from './models/product.interface';
 })
 export class ProductService {
   constructor(private http: HttpClient) {}
-  baseUrl = `${localStorage.getItem('apiGatewayUrl')}`;
+  get baseUrl(): string {
+    return localStorage.getItem('apiGatewayUrl') || '';
+  }
 
   fetch(): Observable<Product[]> {
     return this.http.get<Product[]>(`${this.baseUrl}/products`);

@@ -33,6 +33,7 @@ export class UnauthorizedComponent implements OnInit {
   error = false;
   errorMessage: string;
   tenantNameRequired: boolean = true;
+  showTenantInput: boolean = false;
 
   constructor(
     private fb: FormBuilder,
@@ -89,6 +90,12 @@ export class UnauthorizedComponent implements OnInit {
     if (!this.tenantNameRequired) {
       this.router.navigate(['/dashboard']);
       return true;
+    }
+
+    // Two-step flow: first click shows tenant input, second click submits
+    if (!this.showTenantInput) {
+      this.showTenantInput = true;
+      return false;
     }
 
     let tenantName = this.tenantForm.value.tenantName;

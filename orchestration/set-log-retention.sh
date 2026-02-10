@@ -247,9 +247,10 @@ process_log_group() {
         success=false
     fi
     
-    # Add tags
-    if aws logs tag-log-group \
-        --log-group-name "$log_group_name" \
+    # Add tags (using tag-resource API — tag-log-group is deprecated)
+    local log_group_arn="arn:aws:logs:${REGION}:${ACCOUNT_ID}:log-group:${log_group_name}"
+    if aws logs tag-resource \
+        --resource-arn "$log_group_arn" \
         --tags "Application=$TAG_APPLICATION,Lab=$lab_tag,Environment=$TAG_ENVIRONMENT,Owner=$TAG_OWNER,CostCenter=$TAG_COST_CENTER" \
         --profile "$PROFILE" \
         --region "$REGION" 2>/dev/null; then
@@ -299,10 +300,11 @@ set_retention_by_tags() {
     while IFS= read -r log_group; do
         [[ -z "$log_group" ]] && continue
         
-        # Get tags for this log group
+        # Get tags for this log group (using list-tags-for-resource — list-tags-log-group is deprecated)
+        local log_group_arn="arn:aws:logs:${REGION}:${ACCOUNT_ID}:log-group:${log_group}"
         local tags
-        tags=$(aws logs list-tags-log-group \
-            --log-group-name "$log_group" \
+        tags=$(aws logs list-tags-for-resource \
+            --resource-arn "$log_group_arn" \
             --profile "$PROFILE" \
             --region "$REGION" \
             --query "tags" \
@@ -377,10 +379,11 @@ set_retention_by_any_tag() {
     while IFS= read -r log_group; do
         [[ -z "$log_group" ]] && continue
         
-        # Get tags for this log group
+        # Get tags for this log group (using list-tags-for-resource — list-tags-log-group is deprecated)
+        local log_group_arn="arn:aws:logs:${REGION}:${ACCOUNT_ID}:log-group:${log_group}"
         local tags
-        tags=$(aws logs list-tags-log-group \
-            --log-group-name "$log_group" \
+        tags=$(aws logs list-tags-for-resource \
+            --resource-arn "$log_group_arn" \
             --profile "$PROFILE" \
             --region "$REGION" \
             --query "tags" \
@@ -445,11 +448,14 @@ main() {
     log_info "Profile: $PROFILE"
     log_info "Region: $REGION"
     
-    # Verify AWS credentials
-    if ! aws sts get-caller-identity --profile "$PROFILE" &> /dev/null; then
+    # Verify AWS credentials and get account ID (needed for tag-resource ARN)
+    local caller_identity
+    caller_identity=$(aws sts get-caller-identity --profile "$PROFILE" --output json 2>/dev/null || echo "")
+    if [[ -z "$caller_identity" ]]; then
         log_error "ERROR: AWS profile '$PROFILE' is not configured or credentials are invalid"
         exit 1
     fi
+    ACCOUNT_ID=$(echo "$caller_identity" | python3 -c "import sys,json; print(json.load(sys.stdin)['Account'])" 2>/dev/null || echo "")
     
     # Check if tag-based mode is enabled
     if [[ "$USE_TAG_MODE" == true ]]; then

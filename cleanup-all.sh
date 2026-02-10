@@ -62,6 +62,8 @@ DELETED_BUCKETS=()
 DELETED_LOG_GROUPS=()
 ERRORS=()
 
+# Deduplication flag: CDK bucket is targeted by multiple functions
+CDK_BUCKET_DELETED=false
 # =============================================================================
 # LOGGING SETUP
 # =============================================================================
@@ -715,49 +717,29 @@ delete_orphaned_cognito_pools() {
     
     log_message "INFO" "Searching for orphaned Cognito user pools..."
     
-    # Find all user pools
-    local user_pools=$(aws cognito-idp list-user-pools \
+    # Find all user pools — list-user-pools already returns Name, no need for describe-user-pool
+    local pool_data=$(aws cognito-idp list-user-pools \
         --profile "$PROFILE" \
         --region "$REGION" \
         --max-results 60 \
-        --query "UserPools[].Id" \
-        --output text 2>/dev/null || echo "")
+        --query "UserPools[?contains(Name, 'lab') || contains(Name, 'serverless-saas') || contains(Name, 'workshop')].{Id:Id,Name:Name}" \
+        --output json 2>/dev/null || echo "[]")
     
-    if [[ -z "$user_pools" ]]; then
-        log_message "INFO" "✓ No Cognito user pools found"
-        return 0
-    fi
+    local pool_count=$(echo "$pool_data" | python3 -c "import sys,json; print(len(json.load(sys.stdin)))" 2>/dev/null || echo "0")
     
-    # Filter to only lab-related pools
-    local lab_pools=""
-    
-    for pool_id in $user_pools; do
-        # Get pool details
-        local pool_name=$(aws cognito-idp describe-user-pool \
-            --profile "$PROFILE" \
-            --region "$REGION" \
-            --user-pool-id "$pool_id" \
-            --query "UserPool.Name" \
-            --output text 2>/dev/null || echo "")
-        
-        # Check if pool name contains lab references
-        if [[ "$pool_name" == *"lab"* || "$pool_name" == *"serverless-saas"* || "$pool_name" == *"workshop"* ]]; then
-            lab_pools+="$pool_id:$pool_name "
-        fi
-    done
-    
-    if [[ -z "$lab_pools" ]]; then
+    if [[ "$pool_count" == "0" ]]; then
         log_message "INFO" "✓ No lab-related Cognito user pools found"
         return 0
     fi
     
     # Display found pools
-    log_message "INFO" "Found lab-related Cognito user pools:"
-    for pool_info in $lab_pools; do
-        local pool_id="${pool_info%%:*}"
-        local pool_name="${pool_info##*:}"
-        log_message "INFO" "  - $pool_name ($pool_id)"
-    done
+    log_message "INFO" "Found $pool_count lab-related Cognito user pools:"
+    echo "$pool_data" | python3 -c "
+import sys, json
+pools = json.load(sys.stdin)
+for p in pools:
+    print(f\"  - {p['Name']} ({p['Id']})\")
+" 2>/dev/null
     
     echo ""
     
@@ -773,10 +755,12 @@ delete_orphaned_cognito_pools() {
     # Delete pools
     log_message "INFO" "Deleting Cognito user pools..."
     
-    for pool_info in $lab_pools; do
-        local pool_id="${pool_info%%:*}"
-        local pool_name="${pool_info##*:}"
-        
+    echo "$pool_data" | python3 -c "
+import sys, json
+pools = json.load(sys.stdin)
+for p in pools:
+    print(f\"{p['Id']}:{p['Name']}\")
+" 2>/dev/null | while IFS=: read -r pool_id pool_name; do
         if aws cognito-idp delete-user-pool \
             --profile "$PROFILE" \
             --region "$REGION" \
@@ -871,26 +855,11 @@ delete_orphaned_iam_roles() {
     
     log_message "INFO" "Searching for orphaned IAM roles..."
     
-    # Find all roles
-    local roles=$(aws iam list-roles \
+    # Find lab-related roles using server-side JMESPath filtering (avoids fetching ALL roles in the account)
+    local lab_roles=$(aws iam list-roles \
         --profile "$PROFILE" \
-        --query "Roles[].RoleName" \
+        --query "Roles[?contains(RoleName, 'lab') || contains(RoleName, 'serverless-saas') || contains(RoleName, 'workshop') || starts_with(RoleName, 'stack-')].RoleName" \
         --output text 2>/dev/null || echo "")
-    
-    if [[ -z "$roles" ]]; then
-        log_message "INFO" "✓ No IAM roles found"
-        return 0
-    fi
-    
-    # Filter to only lab-related roles
-    local lab_roles=""
-    
-    for role in $roles; do
-        # Check if role name contains lab references
-        if [[ "$role" == *"lab"* || "$role" == *"serverless-saas"* || "$role" == *"workshop"* || "$role" == *"stack-"* ]]; then
-            lab_roles+="$role "
-        fi
-    done
     
     if [[ -z "$lab_roles" ]]; then
         log_message "INFO" "✓ No lab-related IAM roles found"
@@ -1054,46 +1023,65 @@ _delete_single_bucket() {
     local bucket="$1"
 
     # Quick existence check
-    if ! aws s3api head-bucket --profile "$PROFILE" --bucket "$bucket" 2>/dev/null; then
+    if ! aws s3api head-bucket --profile "$PROFILE" --bucket "$bucket" &>/dev/null; then
         log_message "INFO" "  ✓ Bucket already deleted: $bucket"
         DELETED_BUCKETS+=("$bucket")
+        # Track CDK bucket deletion to avoid redundant work in later functions
+        [[ "$bucket" == cdk-hnb659fds-* ]] && CDK_BUCKET_DELETED=true
         return 0
     fi
 
     # Fast path — works for non-versioned or empty buckets
-    aws s3 rb "s3://$bucket" --force --profile "$PROFILE" >> "$LOG_FILE" 2>&1
+    aws s3 rb "s3://$bucket" --force --profile "$PROFILE" >> "$LOG_FILE" 2>&1 || true
 
     # Re-check: if the bucket is gone we're done
-    if ! aws s3api head-bucket --profile "$PROFILE" --bucket "$bucket" 2>/dev/null; then
+    if ! aws s3api head-bucket --profile "$PROFILE" --bucket "$bucket" &>/dev/null; then
         log_message "INFO" "  ✓ Deleted: $bucket"
         DELETED_BUCKETS+=("$bucket")
+        [[ "$bucket" == cdk-hnb659fds-* ]] && CDK_BUCKET_DELETED=true
         return 0
     fi
 
     # Slow path — purge versioned objects and delete markers in batches of 1000
-    log_message "INFO" "  Bucket has versioned objects, purging..."
+    # The 'rb --force' above only removes current versions. For versioned buckets,
+    # old versions and delete markers remain. We must list and batch-delete them.
+    log_message "INFO" "  Bucket has versioned objects, purging (this may take a while)..."
     local round=0
-    while true; do
+    local max_rounds=500
+    while [[ $round -lt $max_rounds ]]; do
         round=$((round + 1))
-        local payload
-        payload=$(aws s3api list-object-versions \
+
+        # List up to 1000 versions + delete markers.
+        # We use --no-paginate to get a single page (up to 1000 keys by default)
+        # instead of --max-items which interacts poorly with the JSON structure.
+        local raw_json
+        raw_json=$(aws s3api list-object-versions \
             --bucket "$bucket" \
             --profile "$PROFILE" \
-            --max-items 1000 \
-            --output json 2>/dev/null \
-        | python3 -c "
+            --no-paginate \
+            --output json 2>/dev/null || echo '{}')
+
+        # Build the delete payload with python. The || true ensures set -e
+        # doesn't kill us if python fails on unexpected input.
+        local payload
+        payload=$(echo "$raw_json" | python3 -c "
 import json, sys
-data = json.load(sys.stdin)
+try:
+    data = json.load(sys.stdin)
+except Exception:
+    print('EMPTY')
+    sys.exit(0)
 objs = []
 for v in data.get('Versions', []):
     objs.append({'Key': v['Key'], 'VersionId': v['VersionId']})
 for m in data.get('DeleteMarkers', []):
     objs.append({'Key': m['Key'], 'VersionId': m['VersionId']})
 if objs:
+    # delete-objects accepts max 1000 keys per call
     print(json.dumps({'Objects': objs[:1000], 'Quiet': True}))
 else:
     print('EMPTY')
-" 2>/dev/null)
+" 2>/dev/null || echo 'EMPTY')
 
         if [[ "$payload" == "EMPTY" || -z "$payload" ]]; then
             break
@@ -1103,20 +1091,26 @@ else:
         aws s3api delete-objects \
             --bucket "$bucket" \
             --profile "$PROFILE" \
-            --delete "file:///tmp/_s3_version_delete.json" >> "$LOG_FILE" 2>&1
-        log_message "DEBUG" "  Purged version batch $round"
+            --delete "file:///tmp/_s3_version_delete.json" >> "$LOG_FILE" 2>&1 || true
+        echo "    Purged version batch $round (up to 1000 objects per batch)"
     done
     rm -f /tmp/_s3_version_delete.json
+
+    if [[ $round -ge $max_rounds ]]; then
+        log_message "WARN" "  Exceeded $max_rounds rounds purging $bucket — possible infinite loop"
+    fi
 
     # Final bucket deletion
     if aws s3api delete-bucket --bucket "$bucket" --profile "$PROFILE" --region "$REGION" 2>/dev/null; then
         log_message "INFO" "  ✓ Deleted: $bucket"
         DELETED_BUCKETS+=("$bucket")
+        [[ "$bucket" == cdk-hnb659fds-* ]] && CDK_BUCKET_DELETED=true
     else
         # One more existence check (concurrent deletion)
-        if ! aws s3api head-bucket --profile "$PROFILE" --bucket "$bucket" 2>/dev/null; then
+        if ! aws s3api head-bucket --profile "$PROFILE" --bucket "$bucket" &>/dev/null; then
             log_message "INFO" "  ✓ Bucket deleted (concurrent): $bucket"
             DELETED_BUCKETS+=("$bucket")
+            [[ "$bucket" == cdk-hnb659fds-* ]] && CDK_BUCKET_DELETED=true
         else
             log_error "S3_BUCKET_DELETE_FAILED" "$bucket" "Failed after purging versions"
         fi
@@ -1344,7 +1338,7 @@ delete_cdk_toolkit() {
     account_id=$(aws sts get-caller-identity --profile "$PROFILE" --query Account --output text 2>/dev/null || echo "")
     if [[ -n "$account_id" ]]; then
         local cdk_bucket="cdk-hnb659fds-assets-${account_id}-${REGION}"
-        if aws s3api head-bucket --bucket "$cdk_bucket" --profile "$PROFILE" 2>/dev/null; then
+        if aws s3api head-bucket --bucket "$cdk_bucket" --profile "$PROFILE" &>/dev/null; then
             log_message "INFO" "  Emptying CDK assets bucket before stack deletion: $cdk_bucket"
             _delete_single_bucket "$cdk_bucket"
         fi
@@ -1359,7 +1353,7 @@ delete_cdk_toolkit() {
         log_message "INFO" "✓ CDKToolkit stack deletion initiated"
         
         # Wait for deletion
-        log_message "INFO" "Waiting for CDKToolkit stack deletion to complete..."
+        log_message "INFO" "Waiting for CDKToolkit stack deletion to complete (this may take a few minutes)..."
         
         if aws cloudformation wait stack-delete-complete \
             --profile "$PROFILE" \
@@ -1391,6 +1385,12 @@ delete_cdk_assets_bucket() {
     log_message "INFO" "Step 5b: Cleaning Up CDK Assets Bucket"
     log_message "INFO" "========================================"
     echo ""
+    
+    # Skip if CDK bucket was already deleted by an earlier function
+    if [[ "$CDK_BUCKET_DELETED" == "true" ]]; then
+        log_message "INFO" "✓ CDK assets bucket already deleted (by earlier cleanup step)"
+        return 0
+    fi
     
     # Get account ID
     local account_id=$(aws sts get-caller-identity \

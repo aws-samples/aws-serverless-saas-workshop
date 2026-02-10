@@ -124,7 +124,7 @@ fi
 
 # Set defaults
 TENANT_EMAIL="${TENANT_EMAIL:-$ADMIN_EMAIL}"
-ADMIN_PASSWORD="${ADMIN_PASSWORD:-SaaS#Workshop$(date +%s)!}"
+ADMIN_PASSWORD="${ADMIN_PASSWORD:-SaaS#Workshop2026}"
 
 # Build AWS CLI base command
 aws_cmd() {

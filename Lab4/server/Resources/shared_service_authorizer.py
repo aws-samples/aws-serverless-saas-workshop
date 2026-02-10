@@ -16,7 +16,7 @@ import auth_manager
 region = os.environ['AWS_REGION']
 sts_client = boto3.client("sts", region_name=region)
 dynamodb = boto3.resource('dynamodb')
-table_tenant_details = dynamodb.Table('ServerlessSaaS-TenantDetails')
+table_tenant_details = dynamodb.Table('ServerlessSaaS-TenantDetails-lab4')
 user_pool_operation_user = os.environ['OPERATION_USERS_USER_POOL']
 app_client_operation_user = os.environ['OPERATION_USERS_APP_CLIENT']
 tenant_userpool_id = os.environ['TENANT_USER_POOL']
@@ -95,7 +95,7 @@ def lambda_handler(event, context):
     iam_policy = auth_manager.getPolicyForUser(user_role, utils.Service_Identifier.SHARED_SERVICES.value, tenant_id, region, aws_account_id)
     logger.info(iam_policy)
     
-    role_arn = "arn:aws:iam::{}:role/authorizer-access-role".format(aws_account_id)
+    role_arn = "arn:aws:iam::{}:role/authorizer-access-role-lab4-{}".format(aws_account_id, region)
     
     assumed_role = sts_client.assume_role(
         RoleArn=role_arn,

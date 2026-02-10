@@ -43,8 +43,9 @@
 #   3. Generate main template with S3 URLs for nested stacks
 #   4. Deploy the orchestration stack (with automatic retry on failure)
 #   5. Set log retention on all Lambda log groups (60 days)
-#   6. Build and deploy frontend applications
-#   7. Create Cognito users (if --email provided)
+#   6. Run Lab7 post-deployment (CUR data, Glue Crawler, sample invocations)
+#   7. Build and deploy frontend applications
+#   8. Create Cognito users (if --email provided)
 #
 # USAGE:
 #   ./deploy-all.sh --profile <aws-profile> [--email <admin-email>]
@@ -239,8 +240,9 @@ DEPLOYMENT DETAILS:
     4. Deploys single CloudFormation stack with all labs as nested stacks (parallel)
        - Automatically retries once on failure
     5. Sets log retention on all Lambda log groups (60 days)
-    6. Builds and deploys frontend applications
-    7. Creates Cognito users (if --email provided)
+    6. Runs Lab7 post-deployment (CUR data upload, Glue Crawler, sample Lambda invocations)
+    7. Builds and deploys frontend applications
+    8. Creates Cognito users (if --email provided)
 
     Total deployment time: ~15-20 minutes (parallel deployment)
 
@@ -642,13 +644,20 @@ build_frontend() {
     # (configure_lab1_environment, configure_lab2_admin_environment, configure_labs36_admin_environment, etc.)
     # before build_frontend is called. Do NOT overwrite them here.
     
-    # Clean previous npm installation to avoid stale dependencies
-    echo "  Cleaning previous npm installation..." >&2
-    rm -rf node_modules package-lock.json || true
-    
-    # Install dependencies
+    # Install dependencies (use npm ci for speed if lockfile exists, else npm install)
     echo "  Installing npm dependencies..." >&2
-    if ! npm install >> "$LOG_FILE" 2>&1; then
+    if [[ -f "package-lock.json" ]]; then
+        if ! npm ci >> "$LOG_FILE" 2>&1; then
+            echo "  ✗ npm ci failed for Lab $lab_num, retrying with clean install..." >&2
+            rm -rf node_modules || true
+            if ! npm install >> "$LOG_FILE" 2>&1; then
+                echo "  ✗ npm install failed for Lab $lab_num" >&2
+                echo "[$(date -u +"%Y-%m-%dT%H:%M:%SZ")] [ERROR]   npm install failed for Lab $lab_num" >> "$LOG_FILE"
+                cd "$original_dir"
+                return 1
+            fi
+        fi
+    elif ! npm install >> "$LOG_FILE" 2>&1; then
         echo "  ✗ npm install failed for Lab $lab_num" >&2
         echo "[$(date -u +"%Y-%m-%dT%H:%M:%SZ")] [ERROR]   npm install failed for Lab $lab_num" >> "$LOG_FILE"
         cd "$original_dir"
@@ -2386,6 +2395,135 @@ deploy_stack() {
 # (Lab5Stack and Lab6Stack must exist first).
 # =============================================================================
 
+# =============================================================================
+# LAB7 POST-DEPLOYMENT: Sample Data Generation
+# =============================================================================
+# Lab7's CloudFormation stack deploys the infrastructure, but the following
+# post-deployment steps are needed for the cost attribution demo to work:
+#   1. Upload sample CUR data to S3
+#   2. Invoke the AWSCURInitializer Lambda to trigger the Glue Crawler
+#   3. Wait for the Glue Crawler to complete and create the Athena table
+#   4. Generate 30 Lambda invocations for CloudWatch Logs cost attribution
+#
+# These steps mirror what Lab7's individual deployment.sh does in Steps 2-5.
+# =============================================================================
+
+run_lab7_post_deployment() {
+    log_message "INFO" "========================================"
+    log_message "INFO" "Lab7 Post-Deployment: Sample Data Generation"
+    log_message "INFO" "========================================"
+    echo ""
+
+    # Step 1: Upload sample CUR data
+    log_message "INFO" "  Uploading sample CUR data to S3..."
+    local CUR_BUCKET
+    CUR_BUCKET=$(aws cloudformation list-exports --region "$REGION" --profile "$PROFILE" \
+        --query "Exports[?Name=='CURBucketname'].Value" --output text 2>/dev/null)
+
+    if [[ -z "$CUR_BUCKET" || "$CUR_BUCKET" == "None" ]]; then
+        log_message "WARN" "  ⚠ Could not find CUR bucket from stack exports - skipping Lab7 post-deployment"
+        log_message "WARN" "  Run Lab7 post-deployment manually: workshop/Lab7/scripts/deployment.sh --profile $PROFILE"
+        return 0
+    fi
+
+    local SAMPLE_CUR_DIR="$WORKSHOP_ROOT/Lab7/SampleCUR"
+    if [[ ! -d "$SAMPLE_CUR_DIR" ]]; then
+        log_message "WARN" "  ⚠ SampleCUR directory not found at $SAMPLE_CUR_DIR - skipping"
+        return 0
+    fi
+
+    if aws s3 cp "$SAMPLE_CUR_DIR/" "s3://$CUR_BUCKET/curoutput/year=2022/month=10/" \
+        --recursive --region "$REGION" --profile "$PROFILE" >> "$LOG_FILE" 2>&1; then
+        log_message "INFO" "  ✓ Sample CUR data uploaded to s3://$CUR_BUCKET"
+    else
+        log_message "WARN" "  ⚠ Failed to upload CUR data (non-critical)"
+    fi
+
+    # Step 2: Initialize CUR crawler
+    log_message "INFO" "  Initializing CUR crawler..."
+    local INITIALIZER_FN
+    INITIALIZER_FN=$(aws cloudformation list-exports --region "$REGION" --profile "$PROFILE" \
+        --query "Exports[?Name=='AWSCURInitializerFunctionName'].Value" --output text 2>/dev/null)
+
+    if [[ -n "$INITIALIZER_FN" && "$INITIALIZER_FN" != "None" ]]; then
+        if aws lambda invoke --function-name "$INITIALIZER_FN" --region "$REGION" --profile "$PROFILE" \
+            /tmp/lab7-cur-init-output.json >> "$LOG_FILE" 2>&1; then
+            log_message "INFO" "  ✓ CUR crawler initialized"
+            rm -f /tmp/lab7-cur-init-output.json
+        else
+            log_message "WARN" "  ⚠ Failed to invoke CUR initializer (non-critical)"
+        fi
+    else
+        log_message "WARN" "  ⚠ AWSCURInitializerFunctionName export not found - skipping crawler init"
+    fi
+
+    # Step 3: Wait for Glue Crawler to complete
+    log_message "INFO" "  Waiting for Glue Crawler to complete (up to 5 minutes)..."
+    local CRAWLER_NAME="AWSCURCrawler-Multi-tenant-lab7"
+    local MAX_WAIT=300
+    local ELAPSED=0
+    local CRAWLER_DONE=false
+
+    while [[ $ELAPSED -lt $MAX_WAIT ]]; do
+        local CRAWLER_STATE
+        CRAWLER_STATE=$(aws glue get-crawler --name "$CRAWLER_NAME" --region "$REGION" --profile "$PROFILE" \
+            --query 'Crawler.State' --output text 2>/dev/null || echo "UNKNOWN")
+
+        if [[ "$CRAWLER_STATE" == "READY" ]]; then
+            local LAST_CRAWL
+            LAST_CRAWL=$(aws glue get-crawler --name "$CRAWLER_NAME" --region "$REGION" --profile "$PROFILE" \
+                --query 'Crawler.LastCrawl.Status' --output text 2>/dev/null || echo "NONE")
+
+            if [[ "$LAST_CRAWL" == "SUCCEEDED" ]]; then
+                log_message "INFO" "  ✓ Glue Crawler completed successfully"
+                CRAWLER_DONE=true
+                break
+            elif [[ "$LAST_CRAWL" == "FAILED" ]]; then
+                log_message "WARN" "  ⚠ Glue Crawler failed - check CloudWatch logs for: $CRAWLER_NAME"
+                break
+            fi
+        fi
+
+        echo "    Crawler state: $CRAWLER_STATE (${ELAPSED}s elapsed)"
+        sleep 15
+        ELAPSED=$((ELAPSED + 15))
+    done
+
+    if [[ "$CRAWLER_DONE" != "true" && $ELAPSED -ge $MAX_WAIT ]]; then
+        log_message "WARN" "  ⚠ Crawler did not complete within ${MAX_WAIT}s - attribution may not work until it finishes"
+    fi
+
+    # Step 4: Generate Lambda invocations for cost attribution
+    log_message "INFO" "  Generating 30 Lambda invocations for cost attribution demo..."
+    local invoke_errors=0
+    for i in {1..10}; do
+        aws lambda invoke --function-name create-product-pooled-lab7 --region "$REGION" --profile "$PROFILE" \
+            --cli-binary-format raw-in-base64-out \
+            --payload '{"productId":"prod-'"$i"'","productName":"Product '"$i"'","price":99.99}' \
+            /dev/null >> "$LOG_FILE" 2>&1 || ((invoke_errors++))
+        aws lambda invoke --function-name update-product-pooled-lab7 --region "$REGION" --profile "$PROFILE" \
+            --cli-binary-format raw-in-base64-out \
+            --payload '{"productId":"prod-'"$i"'","productName":"Updated Product '"$i"'","price":149.99}' \
+            /dev/null >> "$LOG_FILE" 2>&1 || ((invoke_errors++))
+        aws lambda invoke --function-name get-products-pooled-lab7 --region "$REGION" --profile "$PROFILE" \
+            --cli-binary-format raw-in-base64-out \
+            --payload '{}' \
+            /dev/null >> "$LOG_FILE" 2>&1 || ((invoke_errors++))
+    done
+
+    if [[ $invoke_errors -eq 0 ]]; then
+        log_message "INFO" "  ✓ 30 Lambda invocations generated successfully"
+    else
+        log_message "WARN" "  ⚠ $invoke_errors invocations failed (non-critical - attribution will use available data)"
+    fi
+
+    log_message "INFO" "  Note: CloudWatch Logs Insights needs a few minutes to index logs."
+    log_message "INFO" "  The scheduled attribution Lambdas run every 5 minutes."
+    log_message "INFO" "✓ Lab7 post-deployment complete"
+    echo ""
+    return 0
+}
+
 deploy_pipelines() {
     log_message "INFO" "========================================"
     log_message "INFO" "Deploying CDK Pipeline Stacks (Labs 5 & 6)"
@@ -2446,15 +2584,21 @@ deploy_pipelines() {
             aws s3 rm "s3://${CDK_BUCKET}" --recursive --profile "$PROFILE" --region "$REGION" >> "$LOG_FILE" 2>&1 || true
             # Purge all versioned objects and delete markers in batches
             local truncated="true"
-            while [[ "$truncated" == "true" ]]; do
+            local max_rounds=500
+            local round=0
+            while [[ "$truncated" == "true" && $round -lt $max_rounds ]]; do
+                round=$((round + 1))
                 local page
                 page=$(aws s3api list-object-versions --bucket "$CDK_BUCKET" --profile "$PROFILE" \
-                    --max-items 1000 --output json 2>/dev/null || echo '{}')
+                    --no-paginate --output json 2>/dev/null || echo '{}')
                 # Build delete payload from Versions + DeleteMarkers
                 local delete_payload
                 delete_payload=$(echo "$page" | python3 -c "
 import sys, json
-d = json.load(sys.stdin)
+try:
+    d = json.load(sys.stdin)
+except (json.JSONDecodeError, ValueError):
+    d = {}
 objs = []
 for v in d.get('Versions', []):
     objs.append({'Key': v['Key'], 'VersionId': v['VersionId']})
@@ -2475,7 +2619,10 @@ else:
                 # Check if there are more
                 truncated=$(echo "$page" | python3 -c "
 import sys, json
-d = json.load(sys.stdin)
+try:
+    d = json.load(sys.stdin)
+except (json.JSONDecodeError, ValueError):
+    d = {}
 print('true' if d.get('IsTruncated', False) else 'false')
 " 2>/dev/null || echo "false")
             done
@@ -2619,11 +2766,12 @@ print('true' if d.get('IsTruncated', False) else 'false')
     if [[ -d "$LAB5_PIPELINE_DIR" ]]; then
         (
             cd "$LAB5_PIPELINE_DIR" || exit 1
-            echo "[$(date '+%H:%M:%S')] Cleaning previous npm installation..." >> "$LAB5_LOG"
-            rm -rf node_modules package-lock.json 2>/dev/null || true
-
             echo "[$(date '+%H:%M:%S')] Installing dependencies..." >> "$LAB5_LOG"
-            npm install >> "$LAB5_LOG" 2>&1 || exit 1
+            if [[ -f "package-lock.json" ]]; then
+                npm ci >> "$LAB5_LOG" 2>&1 || { rm -rf node_modules; npm install >> "$LAB5_LOG" 2>&1 || exit 1; }
+            else
+                npm install >> "$LAB5_LOG" 2>&1 || exit 1
+            fi
 
             echo "[$(date '+%H:%M:%S')] Building..." >> "$LAB5_LOG"
             npm run build >> "$LAB5_LOG" 2>&1 || exit 1
@@ -2643,11 +2791,12 @@ print('true' if d.get('IsTruncated', False) else 'false')
     if [[ -d "$LAB6_PIPELINE_DIR" ]]; then
         (
             cd "$LAB6_PIPELINE_DIR" || exit 1
-            echo "[$(date '+%H:%M:%S')] Cleaning previous npm installation..." >> "$LAB6_LOG"
-            rm -rf node_modules package-lock.json 2>/dev/null || true
-
             echo "[$(date '+%H:%M:%S')] Installing dependencies..." >> "$LAB6_LOG"
-            npm install >> "$LAB6_LOG" 2>&1 || exit 1
+            if [[ -f "package-lock.json" ]]; then
+                npm ci >> "$LAB6_LOG" 2>&1 || { rm -rf node_modules; npm install >> "$LAB6_LOG" 2>&1 || exit 1; }
+            else
+                npm install >> "$LAB6_LOG" 2>&1 || exit 1
+            fi
 
             echo "[$(date '+%H:%M:%S')] Building..." >> "$LAB6_LOG"
             npm run build >> "$LAB6_LOG" 2>&1 || exit 1
@@ -2857,6 +3006,14 @@ main() {
         fi
         echo ""
         
+        # Run Lab7 post-deployment steps (CUR data, crawler, sample invocations)
+        if run_lab7_post_deployment; then
+            log_message "INFO" "✓ Lab7 post-deployment completed"
+        else
+            log_message "WARN" "⚠ Lab7 post-deployment had issues (non-critical)"
+        fi
+        echo ""
+
         # Deploy CDK pipeline stacks for Labs 5 and 6
         if deploy_pipelines; then
             log_message "INFO" "✓ Pipeline deployment completed"
