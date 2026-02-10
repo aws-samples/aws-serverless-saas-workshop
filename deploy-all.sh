@@ -2650,6 +2650,47 @@ print('true' if d.get('IsTruncated', False) else 'false')
     log_message "INFO" "Step 2: Setting up CodeCommit repository..."
 
     local REPO_URL="codecommit::${REGION}://${PROFILE}@aws-serverless-saas-workshop"
+    local CC_HTTPS_URL="https://git-codecommit.${REGION}.amazonaws.com/v1/repos/aws-serverless-saas-workshop"
+
+    # Helper: create repo and wait for HTTPS endpoint to be reachable
+    _ensure_codecommit_repo() {
+        log_message "INFO" "  Creating CodeCommit repository: aws-serverless-saas-workshop"
+        if ! aws codecommit create-repository \
+            --repository-name aws-serverless-saas-workshop \
+            --repository-description "Serverless SaaS workshop repository" \
+            --profile "$PROFILE" --region "$REGION" >> "$LOG_FILE" 2>&1; then
+            # If it already exists (race condition), that's fine
+            if ! aws codecommit get-repository --repository-name aws-serverless-saas-workshop \
+                --profile "$PROFILE" --region "$REGION" &>/dev/null; then
+                log_message "ERROR" "✗ Failed to create CodeCommit repository"
+                return 1
+            fi
+        fi
+        log_message "INFO" "  ✓ Repository created, waiting for HTTPS endpoint propagation..."
+        # Wait for the HTTPS git endpoint to be reachable (not just the API).
+        # The control-plane API (get-repository) can return success before the
+        # data-plane HTTPS endpoint is ready, causing "repository not found" on push.
+        local endpoint_ready=false
+        for i in $(seq 1 12); do
+            sleep 10
+            # Use git ls-remote to test the HTTPS endpoint directly
+            if GIT_TERMINAL_PROMPT=0 git \
+                -c credential.helper="" \
+                -c credential.helper='!aws codecommit credential-helper --profile '"$PROFILE"' $@' \
+                -c credential.UseHttpPath=true \
+                ls-remote "$CC_HTTPS_URL" HEAD &>/dev/null; then
+                endpoint_ready=true
+                break
+            fi
+            log_message "INFO" "  Waiting for HTTPS endpoint (attempt $i/12)..."
+        done
+        if [[ "$endpoint_ready" != "true" ]]; then
+            log_message "ERROR" "✗ Repository created but HTTPS endpoint not reachable after 120s"
+            return 1
+        fi
+        log_message "INFO" "  ✓ Repository HTTPS endpoint ready"
+        return 0
+    }
 
     set +e
     local REPO_CHECK=$(aws codecommit get-repository --repository-name aws-serverless-saas-workshop --profile "$PROFILE" --region "$REGION" 2>&1)
@@ -2657,33 +2698,26 @@ print('true' if d.get('IsTruncated', False) else 'false')
     set -e
 
     if [[ $REPO_CHECK_EXIT -ne 0 ]]; then
-        log_message "INFO" "  Creating CodeCommit repository: aws-serverless-saas-workshop"
-        if ! aws codecommit create-repository \
-            --repository-name aws-serverless-saas-workshop \
-            --repository-description "Serverless SaaS workshop repository" \
-            --profile "$PROFILE" --region "$REGION" >> "$LOG_FILE" 2>&1; then
-            log_message "ERROR" "✗ Failed to create CodeCommit repository"
-            return 1
-        fi
-        log_message "INFO" "  ✓ Repository created, waiting for propagation..."
-        # Wait for repo to be fully accessible (API propagation delay)
-        local repo_ready=false
-        for i in 1 2 3 4 5 6; do
-            sleep 5
-            if aws codecommit get-repository --repository-name aws-serverless-saas-workshop \
-                --profile "$PROFILE" --region "$REGION" &>/dev/null; then
-                repo_ready=true
-                break
-            fi
-            log_message "INFO" "  Waiting for repository propagation (attempt $i/6)..."
-        done
-        if [[ "$repo_ready" != "true" ]]; then
-            log_message "ERROR" "✗ Repository created but not accessible after 30s"
-            return 1
-        fi
-        log_message "INFO" "  ✓ Repository ready"
+        _ensure_codecommit_repo || return 1
     else
-        log_message "INFO" "  ✓ Repository exists"
+        # API says repo exists — but verify the HTTPS endpoint is actually reachable.
+        # After a recent delete, get-repository can return stale success while the
+        # HTTPS endpoint returns "not found".
+        log_message "INFO" "  API reports repository exists, verifying HTTPS endpoint..."
+        if GIT_TERMINAL_PROMPT=0 git \
+            -c credential.helper="" \
+            -c credential.helper='!aws codecommit credential-helper --profile '"$PROFILE"' $@' \
+            -c credential.UseHttpPath=true \
+            ls-remote "$CC_HTTPS_URL" HEAD &>/dev/null; then
+            log_message "INFO" "  ✓ Repository exists and HTTPS endpoint is reachable"
+        else
+            log_message "WARN" "  ⚠ API says repo exists but HTTPS endpoint unreachable — recreating..."
+            # Delete the stale repo and recreate
+            aws codecommit delete-repository --repository-name aws-serverless-saas-workshop \
+                --profile "$PROFILE" --region "$REGION" >> "$LOG_FILE" 2>&1 || true
+            sleep 10
+            _ensure_codecommit_repo || return 1
+        fi
     fi
 
     # Set up git remote
@@ -2709,13 +2743,7 @@ print('true' if d.get('IsTruncated', False) else 'false')
     log_message "INFO" "  Pushing code to CodeCommit..."
     export AWS_PROFILE="$PROFILE"
 
-    # Strategy: Use AWS CLI credential helper with HTTPS URL.
-    # We pass credential config via git -c flags on the push command itself.
-    # This bypasses any global credential helpers (e.g. macOS osxkeychain)
-    # that would otherwise intercept and serve stale/wrong credentials.
-    local CC_HTTPS_URL="https://git-codecommit.${REGION}.amazonaws.com/v1/repos/aws-serverless-saas-workshop"
-
-    # Set remote to HTTPS URL
+    # Set remote to HTTPS URL (CC_HTTPS_URL defined at top of Step 2)
     git -C "$GIT_ROOT" remote set-url cc "$CC_HTTPS_URL" 2>/dev/null || git -C "$GIT_ROOT" remote add cc "$CC_HTTPS_URL" 2>/dev/null
 
     local push_attempts=0
@@ -2739,8 +2767,18 @@ print('true' if d.get('IsTruncated', False) else 'false')
             break
         fi
         log_message "WARN" "  Push attempt $push_attempts/$push_max failed (rc=$push_rc): $push_err"
+
+        # If "not found", the repo may have been deleted or the endpoint is stale — recreate
+        if echo "$push_err" | grep -qi "not found"; then
+            log_message "WARN" "  Repository endpoint not found — attempting to recreate..."
+            aws codecommit delete-repository --repository-name aws-serverless-saas-workshop \
+                --profile "$PROFILE" --region "$REGION" >> "$LOG_FILE" 2>&1 || true
+            sleep 10
+            _ensure_codecommit_repo || true
+        fi
+
         if [[ $push_attempts -lt $push_max ]]; then
-            sleep 15
+            sleep 20
         fi
     done
     if [[ "$push_success" != "true" ]]; then
