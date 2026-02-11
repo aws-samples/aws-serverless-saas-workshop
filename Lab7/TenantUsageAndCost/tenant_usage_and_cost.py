@@ -359,20 +359,27 @@ def __get_list_of_log_group_names():
         'get-products-pooled-lab7'
     ]
     
-    # Try CloudFormation stack discovery first (works for individual lab deployment)
-    # Then fall back to known function names (works for orchestration deployment
-    # where the nested stack name differs from 'stack-pooled-lab7')
-    stack_names_to_try = ['stack-pooled-lab7']
+    # Two deployment modes:
+    #   1. Individual lab deployment: stack is named 'stack-pooled-lab7'
+    #   2. Orchestration deployment: stack is a nested stack named 'serverless-saas-lab-Lab7PooledStack-XXXXX'
+    # We try to discover the orchestration nested stack first, then fall back to the individual name,
+    # and finally use known function names as a last resort.
+    stack_names_to_try = []
     
-    # Also try to find the orchestration nested stack
+    # Discover orchestration nested stack
+    print("Discovering Lab7 pooled tenant stack...")
     try:
         cfn_paginator = cloudformation.get_paginator('list_stacks')
         for page in cfn_paginator.paginate(StackStatusFilter=['CREATE_COMPLETE', 'UPDATE_COMPLETE']):
             for stack in page['StackSummaries']:
                 if 'Lab7PooledStack' in stack['StackName'] or 'lab7-pooled' in stack['StackName'].lower():
-                    stack_names_to_try.insert(0, stack['StackName'])
+                    print(f"  Found orchestration nested stack: {stack['StackName']}")
+                    stack_names_to_try.append(stack['StackName'])
     except ClientError:
-        pass  # Non-critical - we'll fall back to known names
+        pass  # Non-critical - we'll try other options
+    
+    # Also try the individual lab deployment stack name
+    stack_names_to_try.append('stack-pooled-lab7')
     
     cloudformation_paginator = cloudformation.get_paginator('list_stack_resources')
     
@@ -386,26 +393,27 @@ def __get_list_of_log_group_names():
                          log_group_names)
             
             if log_group_names:
-                print(f"Found log groups via stack '{stack_name}': {log_group_names}")
+                print(f"  Resolved log groups via stack '{stack_name}': {log_group_names}")
                 return log_group_names
                 
         except ClientError as e:
             if e.response['Error']['Code'] == 'ValidationException':
-                print(f"Stack '{stack_name}' not found, trying next option...")
+                # Stack doesn't exist — expected when running in the other deployment mode
+                print(f"  Stack '{stack_name}' not found (expected if using {'individual' if 'Lab7PooledStack' in stack_name else 'orchestration'} deployment), skipping.")
                 continue
             else:
-                print(f"Error querying stack '{stack_name}': {e}")
+                print(f"  Unexpected error querying stack '{stack_name}': {e}")
                 continue
     
     # Fallback: use known function names directly
-    print("CloudFormation stack discovery failed. Using known function names as fallback.")
+    print("  No stack found. Using known function names as fallback.")
     for fn_name in known_function_names:
         __add_log_group_name(logs, log_group_prefix + fn_name, log_group_names)
     
     if log_group_names:
-        print(f"Found log groups via fallback: {log_group_names}")
+        print(f"  Resolved log groups via fallback: {log_group_names}")
     else:
-        print("No log groups found even with fallback. Lambda functions may not have been invoked yet.")
+        print("  No log groups found. Lambda functions may not have been invoked yet.")
     
     return log_group_names          
 
