@@ -752,7 +752,7 @@ for p in pools:
         fi
     fi
     
-    # Delete pools
+    # Delete pools (must delete users and domain first)
     log_message "INFO" "Deleting Cognito user pools..."
     
     echo "$pool_data" | python3 -c "
@@ -761,6 +761,44 @@ pools = json.load(sys.stdin)
 for p in pools:
     print(f\"{p['Id']}:{p['Name']}\")
 " 2>/dev/null | while IFS=: read -r pool_id pool_name; do
+        # Step 1: Delete all users in the pool (prevents deletion failures)
+        log_message "INFO" "  Cleaning up users in pool: $pool_name ($pool_id)"
+        local users=$(aws cognito-idp list-users \
+            --profile "$PROFILE" \
+            --region "$REGION" \
+            --user-pool-id "$pool_id" \
+            --query 'Users[].Username' \
+            --output text 2>/dev/null || echo "")
+        
+        if [[ -n "$users" && "$users" != "None" ]]; then
+            for username in $users; do
+                aws cognito-idp admin-delete-user \
+                    --profile "$PROFILE" \
+                    --region "$REGION" \
+                    --user-pool-id "$pool_id" \
+                    --username "$username" 2>/dev/null || true
+            done
+            log_message "INFO" "    ✓ Users deleted from pool"
+        fi
+        
+        # Step 2: Delete the Cognito domain (blocks pool deletion if present)
+        local domain=$(aws cognito-idp describe-user-pool \
+            --profile "$PROFILE" \
+            --region "$REGION" \
+            --user-pool-id "$pool_id" \
+            --query 'UserPool.Domain' \
+            --output text 2>/dev/null || echo "")
+        
+        if [[ -n "$domain" && "$domain" != "None" ]]; then
+            log_message "INFO" "    Deleting Cognito domain: $domain"
+            aws cognito-idp delete-user-pool-domain \
+                --profile "$PROFILE" \
+                --region "$REGION" \
+                --domain "$domain" \
+                --user-pool-id "$pool_id" 2>/dev/null || true
+        fi
+        
+        # Step 3: Delete the user pool
         if aws cognito-idp delete-user-pool \
             --profile "$PROFILE" \
             --region "$REGION" \
