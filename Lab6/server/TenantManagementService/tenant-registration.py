@@ -22,6 +22,10 @@ basic_tier_api_key = os.environ['BASIC_TIER_API_KEY']
 
 lambda_client = boto3.client('lambda')
 
+# Timeout for internal API calls (seconds). Must be less than the 29s API Gateway timeout
+# to allow time for error handling before API GW cuts the connection.
+INTERNAL_API_TIMEOUT = 25
+
 
 def register_tenant(event, context):
     try:
@@ -77,9 +81,15 @@ def __create_tenant_admin_user(tenant_details, headers, auth, host, stage_name):
     try:
         url = ''.join(['https://', host, '/', stage_name, create_tenant_admin_user_resource_path])
         logger.info(url)
-        response = requests.post(url, data=json.dumps(tenant_details), auth=auth, headers=headers) 
+        response = requests.post(url, data=json.dumps(tenant_details), auth=auth, headers=headers, timeout=INTERNAL_API_TIMEOUT)
         response_json = response.json()
-    except Exception as e:
+        if response.status_code != 200:
+            logger.error('Create tenant admin user failed with status: %s, response: %s', response.status_code, response_json)
+            raise Exception('Create tenant admin user service returned status {}'.format(response.status_code))
+        if not isinstance(response_json.get('message'), dict):
+            logger.error('Unexpected response format from create tenant admin user: %s', response_json)
+            raise Exception('Unexpected response format: message is not a dict')
+    except requests.exceptions.RequestException as e:
         logger.error('Error occured while calling the create tenant admin user service')
         raise Exception('Error occured while calling the create tenant admin user service', e)
     else:
@@ -88,7 +98,7 @@ def __create_tenant_admin_user(tenant_details, headers, auth, host, stage_name):
 def __create_tenant(tenant_details, headers, auth, host, stage_name):
     try:
         url = ''.join(['https://', host, '/', stage_name, create_tenant_resource_path])
-        response = requests.post(url, data=json.dumps(tenant_details), auth=auth, headers=headers) 
+        response = requests.post(url, data=json.dumps(tenant_details), auth=auth, headers=headers, timeout=INTERNAL_API_TIMEOUT)
         response_json = response.json()
     except Exception as e:
         logger.error('Error occured while creating the tenant record in table')
@@ -100,7 +110,7 @@ def __provision_tenant(tenant_details, headers, auth, host, stage_name):
     try:
         url = ''.join(['https://', host, '/', stage_name, provision_tenant_resource_path])
         logger.info(url)
-        response = requests.post(url, data=json.dumps(tenant_details), auth=auth, headers=headers) 
+        response = requests.post(url, data=json.dumps(tenant_details), auth=auth, headers=headers, timeout=INTERNAL_API_TIMEOUT)
         response_json = response.json()['message']
     except Exception as e:
         logger.error('Error occured while provisioning the tenant')
