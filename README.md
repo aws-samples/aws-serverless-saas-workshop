@@ -47,6 +47,23 @@ cd workshop
 ./scripts/create-workshop-users.sh --email <your-email> --profile <your-profile>
 ```
 
+### Rollback Behavior
+
+By default, `deploy-all.sh` runs with `--disable-rollback`. This means if a stack fails, CloudFormation preserves the failed resources instead of rolling back, so you can inspect what went wrong and re-run the same command to retry without needing cleanup first.
+
+```bash
+# Default behavior (rollback disabled — recommended for workshop/debugging)
+./deploy-all.sh --email <your-email> --profile <your-profile>
+
+# Explicitly enable rollback (production-style — failed stacks auto-rollback)
+./deploy-all.sh --email <your-email> --profile <your-profile> --enable-rollback
+```
+
+Why disable rollback is the default:
+- Failed stacks are preserved for analysis — you can inspect CloudFormation events and logs
+- Re-running the same command updates the existing stack, retrying only the failed resources
+- No need to run cleanup between attempts, saving significant time
+
 ### Cleanup All Labs
 
 > **⏱ ~15–30 minutes.** CloudFront deletion is the bottleneck.
