@@ -274,13 +274,10 @@ if [[ $DEPLOY_SERVER -eq 1 ]]; then
       exit 1
   fi
 
-  # Get or create SAM S3 bucket from samconfig.toml
-  DEFAULT_SAM_S3_BUCKET=$(grep s3_bucket samconfig.toml | cut -d'=' -f2 | cut -d \" -f2 2>/dev/null || echo "")
-  
-  if [[ -z "$DEFAULT_SAM_S3_BUCKET" ]]; then
-    print_message "$RED" "Error: No SAM bucket specified in samconfig.toml"
-    exit 1
-  fi
+  # Generate a globally unique SAM S3 bucket name using a salted hash of the account ID.
+  # This avoids exposing the account ID in the bucket name while ensuring uniqueness.
+  ACCOUNT_HASH=$(printf '%s' "serverless-saas-${ACCOUNT_ID}" | shasum -a 256 | cut -c1-8)
+  DEFAULT_SAM_S3_BUCKET="sam-bootstrap-lab2-${ACCOUNT_HASH}"
   
   print_message "$YELLOW" "  Checking SAM deployment bucket: $DEFAULT_SAM_S3_BUCKET"
   if ! aws s3 ls "s3://${DEFAULT_SAM_S3_BUCKET}" $PROFILE_ARG --region "$AWS_REGION" &> /dev/null; then
@@ -344,24 +341,24 @@ if [[ $DEPLOY_SERVER -eq 1 ]]; then
   print_message "$YELLOW" "  Deploying SAM application to stack: $STACK_NAME"
   if [ "$IS_RUNNING_IN_EVENT_ENGINE" = true ]; then
     if [[ -n "$AWS_PROFILE" ]]; then
-      sam deploy --config-file samconfig.toml --profile "$AWS_PROFILE" --region="$AWS_REGION" --stack-name "$STACK_NAME" --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE CreateCloudWatchRole=$CREATE_CLOUDWATCH_ROLE AdminUserPoolCallbackURLParameter=$ADMIN_SITE_URL --no-fail-on-empty-changeset || {
+      sam deploy --config-file samconfig.toml --profile "$AWS_PROFILE" --region="$AWS_REGION" --stack-name "$STACK_NAME" --s3-bucket "$DEFAULT_SAM_S3_BUCKET" --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE CreateCloudWatchRole=$CREATE_CLOUDWATCH_ROLE AdminUserPoolCallbackURLParameter=$ADMIN_SITE_URL --no-fail-on-empty-changeset || {
         print_message "$RED" "Error: SAM deployment failed"
         exit 1
       }
     else
-      sam deploy --config-file samconfig.toml --region="$AWS_REGION" --stack-name "$STACK_NAME" --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE CreateCloudWatchRole=$CREATE_CLOUDWATCH_ROLE AdminUserPoolCallbackURLParameter=$ADMIN_SITE_URL --no-fail-on-empty-changeset || {
+      sam deploy --config-file samconfig.toml --region="$AWS_REGION" --stack-name "$STACK_NAME" --s3-bucket "$DEFAULT_SAM_S3_BUCKET" --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE CreateCloudWatchRole=$CREATE_CLOUDWATCH_ROLE AdminUserPoolCallbackURLParameter=$ADMIN_SITE_URL --no-fail-on-empty-changeset || {
         print_message "$RED" "Error: SAM deployment failed"
         exit 1
       }
     fi
   else
     if [[ -n "$AWS_PROFILE" ]]; then
-      sam deploy --config-file samconfig.toml --profile "$AWS_PROFILE" --region="$AWS_REGION" --stack-name "$STACK_NAME" --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE CreateCloudWatchRole=$CREATE_CLOUDWATCH_ROLE --no-fail-on-empty-changeset || {
+      sam deploy --config-file samconfig.toml --profile "$AWS_PROFILE" --region="$AWS_REGION" --stack-name "$STACK_NAME" --s3-bucket "$DEFAULT_SAM_S3_BUCKET" --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE CreateCloudWatchRole=$CREATE_CLOUDWATCH_ROLE --no-fail-on-empty-changeset || {
         print_message "$RED" "Error: SAM deployment failed"
         exit 1
       }
     else
-      sam deploy --config-file samconfig.toml --region="$AWS_REGION" --stack-name "$STACK_NAME" --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE CreateCloudWatchRole=$CREATE_CLOUDWATCH_ROLE --no-fail-on-empty-changeset || {
+      sam deploy --config-file samconfig.toml --region="$AWS_REGION" --stack-name "$STACK_NAME" --s3-bucket "$DEFAULT_SAM_S3_BUCKET" --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE CreateCloudWatchRole=$CREATE_CLOUDWATCH_ROLE --no-fail-on-empty-changeset || {
         print_message "$RED" "Error: SAM deployment failed"
         exit 1
       }

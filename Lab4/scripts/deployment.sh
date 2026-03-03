@@ -291,14 +291,9 @@ if [[ $DEPLOY_BOOTSTRAP -eq 1 ]]; then
   print_message "$BLUE" "=========================================="
   cd ../server || exit
 
-  # Get SAM S3 bucket for shared stack from samconfig.toml
-  SHARED_SAM_BUCKET=$(grep s3_bucket shared-samconfig.toml | cut -d'=' -f2 | cut -d \" -f2 2>/dev/null || echo "")
-  
-  if [[ -z "$SHARED_SAM_BUCKET" ]]; then
-    print_message "$RED" "Error: No SAM bucket specified in shared-samconfig.toml"
-    print_message "$YELLOW" "Please add s3_bucket value to shared-samconfig.toml"
-    exit 1
-  fi
+  # Generate unique SAM bucket names using salted hash of account ID
+  ACCOUNT_HASH=$(printf '%s' "serverless-saas-${ACCOUNT_ID}" | shasum -a 256 | cut -c1-8)
+  SHARED_SAM_BUCKET="sam-bootstrap-shared-lab4-${ACCOUNT_HASH}"
   
   print_message "$YELLOW" "  Checking SAM deployment bucket: $SHARED_SAM_BUCKET"
   PROFILE_ARG=""
@@ -356,12 +351,12 @@ if [[ $DEPLOY_BOOTSTRAP -eq 1 ]]; then
   # Deploy SAM application
   print_message "$YELLOW" "  Deploying SAM application to stack: $SHARED_STACK_NAME"
   if [ "$IS_RUNNING_IN_EVENT_ENGINE" = true ]; then
-    sam deploy $PROFILE_ARG --config-file shared-samconfig.toml --region="$AWS_REGION" --stack-name "$SHARED_STACK_NAME" --parameter-overrides $PARAM_OVERRIDES AdminUserPoolCallbackURLParameter=$ADMIN_SITE_URL TenantUserPoolCallbackURLParameter=$APP_SITE_URL --no-fail-on-empty-changeset || {
+    sam deploy $PROFILE_ARG --config-file shared-samconfig.toml --region="$AWS_REGION" --stack-name "$SHARED_STACK_NAME" --s3-bucket "$SHARED_SAM_BUCKET" --parameter-overrides $PARAM_OVERRIDES AdminUserPoolCallbackURLParameter=$ADMIN_SITE_URL TenantUserPoolCallbackURLParameter=$APP_SITE_URL --no-fail-on-empty-changeset || {
       print_message "$RED" "Error: SAM deployment failed"
       exit 1
     }
   else
-    sam deploy $PROFILE_ARG --config-file shared-samconfig.toml --region="$AWS_REGION" --stack-name "$SHARED_STACK_NAME" --parameter-overrides $PARAM_OVERRIDES --no-fail-on-empty-changeset || {
+    sam deploy $PROFILE_ARG --config-file shared-samconfig.toml --region="$AWS_REGION" --stack-name "$SHARED_STACK_NAME" --s3-bucket "$SHARED_SAM_BUCKET" --parameter-overrides $PARAM_OVERRIDES --no-fail-on-empty-changeset || {
       print_message "$RED" "Error: SAM deployment failed"
       exit 1
     }
@@ -378,14 +373,9 @@ if [[ $DEPLOY_TENANT -eq 1 ]]; then
   print_message "$BLUE" "=========================================="
   cd ../server || exit
 
-  # Get SAM S3 bucket for tenant stack from samconfig.toml
-  TENANT_SAM_BUCKET=$(grep s3_bucket tenant-samconfig.toml | cut -d'=' -f2 | cut -d \" -f2 2>/dev/null || echo "")
-  
-  if [[ -z "$TENANT_SAM_BUCKET" ]]; then
-    print_message "$RED" "Error: No SAM bucket specified in tenant-samconfig.toml"
-    print_message "$YELLOW" "Please add s3_bucket value to tenant-samconfig.toml"
-    exit 1
-  fi
+  # Generate unique SAM bucket name using salted hash of account ID
+  ACCOUNT_HASH=$(printf '%s' "serverless-saas-${ACCOUNT_ID}" | shasum -a 256 | cut -c1-8)
+  TENANT_SAM_BUCKET="sam-bootstrap-tenant-lab4-${ACCOUNT_HASH}"
   
   print_message "$YELLOW" "  Checking SAM deployment bucket: $TENANT_SAM_BUCKET"
   PROFILE_ARG=""
@@ -416,7 +406,7 @@ if [[ $DEPLOY_TENANT -eq 1 ]]; then
   
   # Deploy SAM application with TenantId parameter
   print_message "$YELLOW" "  Deploying SAM application to stack: $TENANT_STACK_NAME"
-  sam deploy $PROFILE_ARG --config-file tenant-samconfig.toml --region="$AWS_REGION" --stack-name "$TENANT_STACK_NAME" --parameter-overrides TenantIdParameter=$TENANT_ID --no-fail-on-empty-changeset || {
+  sam deploy $PROFILE_ARG --config-file tenant-samconfig.toml --region="$AWS_REGION" --stack-name "$TENANT_STACK_NAME" --s3-bucket "$TENANT_SAM_BUCKET" --parameter-overrides TenantIdParameter=$TENANT_ID --no-fail-on-empty-changeset || {
     print_message "$RED" "Error: SAM deployment failed"
     exit 1
   }

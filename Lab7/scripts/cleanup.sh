@@ -491,16 +491,23 @@ else
 fi
 echo ""
 
-# Step 9: Clean up SAM bootstrap bucket from samconfig.toml
+# Step 9: Clean up SAM bootstrap buckets
 print_message "$BLUE" "=========================================="
-print_message "$BLUE" "Step 9: Cleaning up SAM bootstrap buckets from samconfig.toml files"
+print_message "$BLUE" "Step 9: Cleaning up SAM bootstrap buckets"
 print_message "$BLUE" "=========================================="
 
-# Get the bucket name from samconfig.toml (in lab root directory)
-SAM_BUCKET=$(grep s3_bucket "$LAB_DIR/samconfig.toml" 2>/dev/null | cut -d'=' -f2 | cut -d '"' -f2 || echo "")
+# Generate the dynamic SAM bucket names using the same salted hash as deployment
+ACCOUNT_ID=$(aws sts get-caller-identity $PROFILE_ARG --region "$AWS_REGION" --query Account --output text 2>/dev/null || echo "")
+if [ -n "$ACCOUNT_ID" ]; then
+    ACCOUNT_HASH=$(printf '%s' "serverless-saas-${ACCOUNT_ID}" | shasum -a 256 | cut -c1-8)
+    SAM_BUCKET="sam-bootstrap-lab7-${ACCOUNT_HASH}"
+else
+    # Fallback: try reading from samconfig.toml if STS call fails
+    SAM_BUCKET=$(grep s3_bucket "$LAB_DIR/samconfig.toml" 2>/dev/null | cut -d'=' -f2 | cut -d '"' -f2 || echo "")
+fi
 
 if [ -n "$SAM_BUCKET" ]; then
-    print_message "$YELLOW" "  Found SAM bucket in samconfig.toml: $SAM_BUCKET"
+    print_message "$YELLOW" "  SAM bootstrap bucket: $SAM_BUCKET"
     if aws s3 ls "s3://$SAM_BUCKET" $PROFILE_ARG --region "$AWS_REGION" &> /dev/null; then
         print_message "$YELLOW" "  Emptying bucket: $SAM_BUCKET"
         aws s3 rm "s3://$SAM_BUCKET" --recursive $PROFILE_ARG --region "$AWS_REGION" 2>/dev/null || true
@@ -511,14 +518,19 @@ if [ -n "$SAM_BUCKET" ]; then
         print_message "$YELLOW" "  SAM bucket not found or already deleted"
     fi
 else
-    print_message "$YELLOW" "  No SAM bucket found in samconfig.toml"
+    print_message "$YELLOW" "  Could not determine SAM bucket name"
 fi
 
-# Get the bucket name from tenant-samconfig.toml (in lab root directory)
-TENANT_SAM_BUCKET=$(grep s3_bucket "$LAB_DIR/tenant-samconfig.toml" 2>/dev/null | cut -d'=' -f2 | cut -d '"' -f2 || echo "")
+# Generate the dynamic tenant SAM bucket name
+if [ -n "$ACCOUNT_ID" ]; then
+    TENANT_SAM_BUCKET="sam-bootstrap-tenant-lab7-${ACCOUNT_HASH}"
+else
+    # Fallback: try reading from tenant-samconfig.toml if STS call fails
+    TENANT_SAM_BUCKET=$(grep s3_bucket "$LAB_DIR/tenant-samconfig.toml" 2>/dev/null | cut -d'=' -f2 | cut -d '"' -f2 || echo "")
+fi
 
 if [ -n "$TENANT_SAM_BUCKET" ]; then
-    print_message "$YELLOW" "  Found SAM bucket in tenant-samconfig.toml: $TENANT_SAM_BUCKET"
+    print_message "$YELLOW" "  Tenant SAM bootstrap bucket: $TENANT_SAM_BUCKET"
     if aws s3 ls "s3://$TENANT_SAM_BUCKET" $PROFILE_ARG --region "$AWS_REGION" &> /dev/null; then
         print_message "$YELLOW" "  Emptying bucket: $TENANT_SAM_BUCKET"
         aws s3 rm "s3://$TENANT_SAM_BUCKET" --recursive $PROFILE_ARG --region "$AWS_REGION" 2>/dev/null || true
@@ -529,7 +541,7 @@ if [ -n "$TENANT_SAM_BUCKET" ]; then
         print_message "$YELLOW" "  Tenant SAM bucket not found or already deleted"
     fi
 else
-    print_message "$YELLOW" "  No SAM bucket found in tenant-samconfig.toml"
+    print_message "$YELLOW" "  Could not determine tenant SAM bucket name"
 fi
 echo ""
 

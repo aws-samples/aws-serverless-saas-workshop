@@ -691,15 +691,46 @@ print_message "$BLUE" "=========================================="
 print_message "$BLUE" "Step 10: Cleaning up SAM build artifacts"
 print_message "$BLUE" "=========================================="
 
-# Find Lab6 SAM buckets (including bootstrap and pipeline artifacts)
+# Generate the dynamic SAM bucket name using the same salted hash as deployment
+CLEANUP_ACCOUNT_ID=$(aws sts get-caller-identity $PROFILE_ARG --region "$AWS_REGION" --query Account --output text 2>/dev/null || echo "")
+if [ -n "$CLEANUP_ACCOUNT_ID" ]; then
+    CLEANUP_ACCOUNT_HASH=$(printf '%s' "serverless-saas-${CLEANUP_ACCOUNT_ID}" | shasum -a 256 | cut -c1-8)
+    SHARED_SAM_BUCKET="sam-bootstrap-shared-lab6-${CLEANUP_ACCOUNT_HASH}"
+else
+    SHARED_SAM_BUCKET=""
+fi
+
+if [ -n "$SHARED_SAM_BUCKET" ]; then
+    print_message "$YELLOW" "  Shared SAM bootstrap bucket: $SHARED_SAM_BUCKET"
+    if aws s3 ls "s3://$SHARED_SAM_BUCKET" $PROFILE_ARG --region "$AWS_REGION" &> /dev/null; then
+        print_message "$YELLOW" "  Emptying bucket: $SHARED_SAM_BUCKET"
+        empty_bucket $SHARED_SAM_BUCKET
+        echo "  Deleting bucket: $SHARED_SAM_BUCKET"
+        aws s3 $PROFILE_ARG rb s3://$SHARED_SAM_BUCKET 2>/dev/null
+        if [[ $? -eq 0 ]]; then
+            echo "  ✓ Bucket deleted: $SHARED_SAM_BUCKET"
+        else
+            echo "  ⚠ Could not delete bucket: $SHARED_SAM_BUCKET"
+        fi
+    else
+        print_message "$YELLOW" "  Shared SAM bucket not found or already deleted"
+    fi
+else
+    print_message "$YELLOW" "  Could not determine SAM bucket name, falling back to pattern search"
+fi
+
+# Fallback: also find any other Lab6 SAM buckets by pattern (pipeline artifacts, etc.)
 LAB6_SAM_BUCKETS=$(aws s3 $PROFILE_ARG ls | grep -E "aws-sam-cli-managed.*lab6|serverless-saas.*lab6|sam-bootstrap-bucket.*lab6|serverless-saas-pipeline-l-artifactsbucket" | awk '{print $3}')
 
 if [[ ! -z "$LAB6_SAM_BUCKETS" ]]; then
-  print_message "$YELLOW" "Found Lab6 SAM buckets:"
+  print_message "$YELLOW" "Found additional Lab6 SAM buckets:"
   for bucket in $LAB6_SAM_BUCKETS; do
+    # Skip if we already handled this bucket above
+    if [[ "$bucket" == "$SHARED_SAM_BUCKET" ]]; then
+      continue
+    fi
     echo "  - $bucket"
     empty_bucket $bucket
-    # Delete the bucket after emptying
     echo "  Deleting bucket: $bucket"
     aws s3 $PROFILE_ARG rb s3://$bucket 2>/dev/null
     if [[ $? -eq 0 ]]; then
@@ -708,8 +739,6 @@ if [[ ! -z "$LAB6_SAM_BUCKETS" ]]; then
       echo "  ⚠ Could not delete bucket: $bucket"
     fi
   done
-else
-  echo "No Lab6 SAM buckets found"
 fi
 
 print_message "$GREEN" "✓ SAM artifacts cleanup complete"

@@ -485,14 +485,9 @@ if [[ $DEPLOY_BOOTSTRAP -eq 1 ]]; then
   
   cd ../server || exit
   
-  # Get SAM S3 bucket from shared-samconfig.toml
-  SHARED_SAM_BUCKET=$(grep s3_bucket shared-samconfig.toml | cut -d'=' -f2 | cut -d \" -f2 2>/dev/null || echo "")
-  
-  if [[ -z "$SHARED_SAM_BUCKET" ]]; then
-    print_message "$RED" "Error: No SAM bucket specified in shared-samconfig.toml"
-    print_message "$YELLOW" "Please add s3_bucket value to shared-samconfig.toml"
-    exit 1
-  fi
+  # Generate unique SAM bucket name using salted hash of account ID
+  ACCOUNT_HASH=$(printf '%s' "serverless-saas-${ACCOUNT_ID}" | shasum -a 256 | cut -c1-8)
+  SHARED_SAM_BUCKET="sam-bootstrap-shared-lab5-${ACCOUNT_HASH}"
   
   # Check if bucket exists, create if needed
   print_message "$YELLOW" "  Checking SAM deployment bucket: $SHARED_SAM_BUCKET"
@@ -559,6 +554,7 @@ if [[ $DEPLOY_BOOTSTRAP -eq 1 ]]; then
         --config-file shared-samconfig.toml \
         --region "$AWS_REGION" \
         --stack-name "$SHARED_STACK_NAME" \
+        --s3-bucket "$SHARED_SAM_BUCKET" \
         --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE CreateCloudWatchRole=$CREATE_CLOUDWATCH_ROLE AdminUserPoolCallbackURLParameter=$ADMIN_SITE_URL TenantUserPoolCallbackURLParameter=$APP_SITE_URL \
         --no-fail-on-empty-changeset || {
         print_message "$RED" "Error: SAM deployment failed"
@@ -570,6 +566,7 @@ if [[ $DEPLOY_BOOTSTRAP -eq 1 ]]; then
         --config-file shared-samconfig.toml \
         --region "$AWS_REGION" \
         --stack-name "$SHARED_STACK_NAME" \
+        --s3-bucket "$SHARED_SAM_BUCKET" \
         --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE CreateCloudWatchRole=$CREATE_CLOUDWATCH_ROLE \
         --no-fail-on-empty-changeset || {
         print_message "$RED" "Error: SAM deployment failed"

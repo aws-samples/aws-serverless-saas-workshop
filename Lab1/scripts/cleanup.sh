@@ -270,16 +270,23 @@ else
     print_message "$YELLOW" "  No remaining S3 buckets found"
 fi
 
-# Step 6: Clean up SAM bootstrap bucket from samconfig.toml
+# Step 6: Clean up SAM bootstrap bucket
 print_message "$BLUE" "=========================================="
-print_message "$BLUE" "Step 6: Cleaning up SAM bootstrap bucket from samconfig.toml"
+print_message "$BLUE" "Step 6: Cleaning up SAM bootstrap bucket"
 print_message "$BLUE" "=========================================="
 
-# Get the bucket name from samconfig.toml
-SAM_BUCKET=$(grep s3_bucket ../server/samconfig.toml 2>/dev/null | cut -d'=' -f2 | cut -d \" -f2 || echo "")
+# Generate the dynamic SAM bucket name using the same salted hash as deployment
+ACCOUNT_ID=$(aws sts get-caller-identity ${AWS_PROFILE:+--profile "$AWS_PROFILE"} --region "$AWS_REGION" --query Account --output text 2>/dev/null || echo "")
+if [ -n "$ACCOUNT_ID" ]; then
+    ACCOUNT_HASH=$(printf '%s' "serverless-saas-${ACCOUNT_ID}" | shasum -a 256 | cut -c1-8)
+    SAM_BUCKET="sam-bootstrap-lab1-${ACCOUNT_HASH}"
+else
+    # Fallback: try reading from samconfig.toml if STS call fails
+    SAM_BUCKET=$(grep s3_bucket ../server/samconfig.toml 2>/dev/null | cut -d'=' -f2 | cut -d \" -f2 || echo "")
+fi
 
 if [ -n "$SAM_BUCKET" ]; then
-    print_message "$YELLOW" "  Found SAM bucket in samconfig.toml: $SAM_BUCKET"
+    print_message "$YELLOW" "  SAM bootstrap bucket: $SAM_BUCKET"
     if aws s3 ls "s3://$SAM_BUCKET" $PROFILE_ARG --region "$AWS_REGION" &> /dev/null; then
         print_message "$YELLOW" "  Emptying bucket: $SAM_BUCKET"
         aws s3 rm "s3://$SAM_BUCKET" --recursive $PROFILE_ARG --region "$AWS_REGION" 2>/dev/null || true
@@ -290,7 +297,7 @@ if [ -n "$SAM_BUCKET" ]; then
         print_message "$YELLOW" "  SAM bucket not found or already deleted"
     fi
 else
-    print_message "$YELLOW" "  No SAM bucket found in samconfig.toml"
+    print_message "$YELLOW" "  Could not determine SAM bucket name"
 fi
 echo ""
 

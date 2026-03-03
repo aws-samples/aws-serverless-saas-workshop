@@ -152,19 +152,18 @@ echo "Main Stack: $MAIN_STACK_NAME"
 echo "Tenant Stack: $TENANT_STACK_NAME"
 echo ""
 
+# Get AWS Account ID for generating unique bucket names
+ACCOUNT_ID=$(aws sts get-caller-identity $PROFILE_ARG --query Account --output text)
+ACCOUNT_HASH=$(printf '%s' "serverless-saas-${ACCOUNT_ID}" | shasum -a 256 | cut -c1-8)
+
 # Step 1: Deploy main Lab7 stack
 print_message "$BLUE" "=========================================="
 print_message "$BLUE" "Step 1: Deploying main Lab7 stack"
 print_message "$BLUE" "=========================================="
 
-# Get SAM S3 bucket from samconfig.toml
-SAM_BUCKET=$(grep s3_bucket "$LAB_DIR/samconfig.toml" | cut -d'=' -f2 | cut -d \" -f2 2>/dev/null || echo "")
-
-if [[ -z "$SAM_BUCKET" ]]; then
-  print_message "$RED" "Error: No SAM bucket specified in samconfig.toml"
-  print_message "$YELLOW" "Please add s3_bucket value to samconfig.toml"
-  exit 1
-fi
+# Generate a globally unique SAM S3 bucket name using a salted hash of the account ID.
+# This avoids exposing the account ID in the bucket name while ensuring uniqueness.
+SAM_BUCKET="sam-bootstrap-lab7-${ACCOUNT_HASH}"
 
 print_message "$YELLOW" "  Checking SAM deployment bucket: $SAM_BUCKET"
 if ! aws s3 ls "s3://${SAM_BUCKET}" $PROFILE_ARG --region "$AWS_REGION" &> /dev/null; then
@@ -183,7 +182,7 @@ else
 fi
 
 sam build -t "$LAB_DIR/template.yaml"
-if sam deploy --config-file "$LAB_DIR/samconfig.toml" --region="$AWS_REGION" --stack-name="$MAIN_STACK_NAME" $PROFILE_ARG 2>&1 | tee /dev/tty | grep -q "No changes to deploy"; then
+if sam deploy --config-file "$LAB_DIR/samconfig.toml" --region="$AWS_REGION" --stack-name="$MAIN_STACK_NAME" --s3-bucket "$SAM_BUCKET" $PROFILE_ARG 2>&1 | tee /dev/tty | grep -q "No changes to deploy"; then
   print_message "$GREEN" "✓ Main stack is up to date (no changes to deploy)"
 else
   print_message "$GREEN" "✓ Main stack deployed"
@@ -263,14 +262,8 @@ echo ""
 # Step 4: Deploy tenant stack for cost attribution demo
 print_message "$YELLOW" "Step 4: Deploying tenant stack ($TENANT_STACK_NAME)..."
 
-# Get SAM S3 bucket for tenant stack from tenant-samconfig.toml
-TENANT_SAM_BUCKET=$(grep s3_bucket "$LAB_DIR/tenant-samconfig.toml" | cut -d'=' -f2 | cut -d \" -f2 2>/dev/null || echo "")
-
-if [[ -z "$TENANT_SAM_BUCKET" ]]; then
-  print_message "$RED" "Error: No SAM bucket specified in tenant-samconfig.toml"
-  print_message "$YELLOW" "Please add s3_bucket value to tenant-samconfig.toml"
-  exit 1
-fi
+# Generate a globally unique SAM S3 bucket name for tenant stack
+TENANT_SAM_BUCKET="sam-bootstrap-tenant-lab7-${ACCOUNT_HASH}"
 
 print_message "$YELLOW" "  Checking SAM deployment bucket: $TENANT_SAM_BUCKET"
 if ! aws s3 ls "s3://${TENANT_SAM_BUCKET}" $PROFILE_ARG --region "$AWS_REGION" &> /dev/null; then
@@ -289,7 +282,7 @@ else
 fi
 
 sam build --template-file "$LAB_DIR/tenant-template.yaml"
-if sam deploy --config-file "$LAB_DIR/tenant-samconfig.toml" --region="$AWS_REGION" --stack-name="$TENANT_STACK_NAME" $PROFILE_ARG 2>&1 | tee /dev/tty | grep -q "No changes to deploy"; then
+if sam deploy --config-file "$LAB_DIR/tenant-samconfig.toml" --region="$AWS_REGION" --stack-name="$TENANT_STACK_NAME" --s3-bucket "$TENANT_SAM_BUCKET" $PROFILE_ARG 2>&1 | tee /dev/tty | grep -q "No changes to deploy"; then
   print_message "$GREEN" "✓ Tenant stack is up to date (no changes to deploy)"
 else
   print_message "$GREEN" "✓ Tenant stack deployed"

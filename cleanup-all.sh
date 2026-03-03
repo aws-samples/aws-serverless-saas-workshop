@@ -1171,12 +1171,12 @@ delete_orphaned_s3_buckets() {
     echo ""
     
     # Find lab-related S3 buckets using comprehensive patterns
-    # Pattern 1: Specific prefixes (serverless-saas-lab, serverless-saas-orchestration, sam-bootstrap-bucket-lab, cdk-hnb659fds)
+    # Pattern 1: Specific prefixes (serverless-saas-lab, serverless-saas-orchestration, sam-bootstrap-bucket-lab, sam-bootstrap-lab, sam-bootstrap-tenant-lab, cdk-hnb659fds)
     # Pattern 2: Lab number patterns (lab1, lab2, lab3, lab4, lab5, lab6, lab7) for any bucket with lab number
     local buckets
     buckets=$(aws s3api list-buckets \
         --profile "$PROFILE" \
-        --query "Buckets[?contains(Name, 'serverless-saas-lab') || contains(Name, 'serverless-saas-orchestration') || contains(Name, 'sam-bootstrap-bucket-lab') || contains(Name, 'cdk-hnb659fds') || contains(Name, 'lab1') || contains(Name, 'lab2') || contains(Name, 'lab3') || contains(Name, 'lab4') || contains(Name, 'lab5') || contains(Name, 'lab6') || contains(Name, 'lab7')].Name" \
+        --query "Buckets[?contains(Name, 'serverless-saas-lab') || contains(Name, 'serverless-saas-orchestration') || contains(Name, 'sam-bootstrap-bucket-lab') || contains(Name, 'sam-bootstrap-lab') || contains(Name, 'sam-bootstrap-tenant-lab') || contains(Name, 'sam-bootstrap-shared-lab') || contains(Name, 'cdk-hnb659fds') || contains(Name, 'lab1') || contains(Name, 'lab2') || contains(Name, 'lab3') || contains(Name, 'lab4') || contains(Name, 'lab5') || contains(Name, 'lab6') || contains(Name, 'lab7')].Name" \
         --output text 2>&1)
     local list_result=$?
     
@@ -1816,7 +1816,7 @@ verify_cleanup() {
     log_message "DEBUG" "Checking for remaining S3 buckets..."
     local remaining_buckets=$(aws s3api list-buckets \
         --profile "$PROFILE" \
-        --query "Buckets[?contains(Name, 'serverless-saas-lab') || contains(Name, 'serverless-saas-orchestration') || contains(Name, 'sam-bootstrap-bucket-lab') || contains(Name, 'cdk-hnb659fds') || contains(Name, 'lab1') || contains(Name, 'lab2') || contains(Name, 'lab3') || contains(Name, 'lab4') || contains(Name, 'lab5') || contains(Name, 'lab6') || contains(Name, 'lab7')].Name" \
+        --query "Buckets[?contains(Name, 'serverless-saas-lab') || contains(Name, 'serverless-saas-orchestration') || contains(Name, 'sam-bootstrap-bucket-lab') || contains(Name, 'sam-bootstrap-lab') || contains(Name, 'sam-bootstrap-tenant-lab') || contains(Name, 'sam-bootstrap-shared-lab') || contains(Name, 'cdk-hnb659fds') || contains(Name, 'lab1') || contains(Name, 'lab2') || contains(Name, 'lab3') || contains(Name, 'lab4') || contains(Name, 'lab5') || contains(Name, 'lab6') || contains(Name, 'lab7')].Name" \
         --output text 2>/dev/null || echo "")
     
     if [[ -n "$remaining_buckets" ]]; then

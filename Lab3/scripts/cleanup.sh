@@ -525,16 +525,23 @@ fi
 print_message "$GREEN" "✓ Cognito User Pools cleanup complete"
 echo ""
 
-# Step 9: Clean up SAM bootstrap buckets from samconfig.toml files
+# Step 9: Clean up SAM bootstrap buckets
 print_message "$BLUE" "=========================================="
-print_message "$BLUE" "Step 9: Cleaning up SAM bootstrap buckets from samconfig.toml files"
+print_message "$BLUE" "Step 9: Cleaning up SAM bootstrap buckets"
 print_message "$BLUE" "=========================================="
 
-# Clean up shared stack SAM bucket
-SHARED_SAM_BUCKET=$(grep s3_bucket ../server/shared-samconfig.toml 2>/dev/null | cut -d'=' -f2 | cut -d \" -f2 || echo "")
+# Generate the dynamic SAM bucket names using the same salted hash as deployment
+ACCOUNT_ID=$(aws sts get-caller-identity $PROFILE_ARG --region "$AWS_REGION" --query Account --output text 2>/dev/null || echo "")
+if [ -n "$ACCOUNT_ID" ]; then
+    ACCOUNT_HASH=$(printf '%s' "serverless-saas-${ACCOUNT_ID}" | shasum -a 256 | cut -c1-8)
+    SHARED_SAM_BUCKET="sam-bootstrap-shared-lab3-${ACCOUNT_HASH}"
+else
+    # Fallback: try reading from shared-samconfig.toml if STS call fails
+    SHARED_SAM_BUCKET=$(grep s3_bucket ../server/shared-samconfig.toml 2>/dev/null | cut -d'=' -f2 | cut -d \" -f2 || echo "")
+fi
 
 if [ -n "$SHARED_SAM_BUCKET" ]; then
-    print_message "$YELLOW" "  Found shared SAM bucket in shared-samconfig.toml: $SHARED_SAM_BUCKET"
+    print_message "$YELLOW" "  Shared SAM bootstrap bucket: $SHARED_SAM_BUCKET"
     if aws s3 ls "s3://$SHARED_SAM_BUCKET" $PROFILE_ARG --region "$AWS_REGION" &> /dev/null; then
         print_message "$YELLOW" "  Emptying bucket: $SHARED_SAM_BUCKET"
         aws s3 rm "s3://$SHARED_SAM_BUCKET" --recursive $PROFILE_ARG --region "$AWS_REGION" 2>/dev/null || true
@@ -545,14 +552,19 @@ if [ -n "$SHARED_SAM_BUCKET" ]; then
         print_message "$YELLOW" "  Shared SAM bucket not found or already deleted"
     fi
 else
-    print_message "$YELLOW" "  No shared SAM bucket found in shared-samconfig.toml"
+    print_message "$YELLOW" "  Could not determine shared SAM bucket name"
 fi
 
-# Clean up tenant stack SAM bucket
-TENANT_SAM_BUCKET=$(grep s3_bucket ../server/tenant-samconfig.toml 2>/dev/null | cut -d'=' -f2 | cut -d \" -f2 || echo "")
+# Generate the dynamic tenant SAM bucket name
+if [ -n "$ACCOUNT_ID" ]; then
+    TENANT_SAM_BUCKET="sam-bootstrap-tenant-lab3-${ACCOUNT_HASH}"
+else
+    # Fallback: try reading from tenant-samconfig.toml if STS call fails
+    TENANT_SAM_BUCKET=$(grep s3_bucket ../server/tenant-samconfig.toml 2>/dev/null | cut -d'=' -f2 | cut -d \" -f2 || echo "")
+fi
 
 if [ -n "$TENANT_SAM_BUCKET" ]; then
-    print_message "$YELLOW" "  Found tenant SAM bucket in tenant-samconfig.toml: $TENANT_SAM_BUCKET"
+    print_message "$YELLOW" "  Tenant SAM bootstrap bucket: $TENANT_SAM_BUCKET"
     if aws s3 ls "s3://$TENANT_SAM_BUCKET" $PROFILE_ARG --region "$AWS_REGION" &> /dev/null; then
         print_message "$YELLOW" "  Emptying bucket: $TENANT_SAM_BUCKET"
         aws s3 rm "s3://$TENANT_SAM_BUCKET" --recursive $PROFILE_ARG --region "$AWS_REGION" 2>/dev/null || true
@@ -563,7 +575,7 @@ if [ -n "$TENANT_SAM_BUCKET" ]; then
         print_message "$YELLOW" "  Tenant SAM bucket not found or already deleted"
     fi
 else
-    print_message "$YELLOW" "  No tenant SAM bucket found in tenant-samconfig.toml"
+    print_message "$YELLOW" "  Could not determine tenant SAM bucket name"
 fi
 
 print_message "$GREEN" "SAM bootstrap bucket cleanup complete"

@@ -137,14 +137,14 @@ if [[ $server -eq 1 ]] || [[ $bootstrap -eq 1 ]]; then
   cd ../server
   REGION="$AWS_REGION"
   
-  # Get SAM S3 bucket from shared-samconfig.toml
-  SHARED_SAM_BUCKET=$(grep s3_bucket shared-samconfig.toml | cut -d'=' -f2 | cut -d \" -f2 2>/dev/null || echo "")
-  
-  if [[ -z "$SHARED_SAM_BUCKET" ]]; then
-    echo "✗ Error: No SAM bucket specified in shared-samconfig.toml"
-    echo "  Please add s3_bucket value to shared-samconfig.toml"
+  # Generate globally unique SAM bucket name using salted account hash
+  ACCOUNT_ID=$(aws sts get-caller-identity $PROFILE_ARG --region "$REGION" --query Account --output text)
+  if [[ -z "$ACCOUNT_ID" ]]; then
+    echo "✗ Error: Could not determine AWS Account ID"
     exit 1
   fi
+  ACCOUNT_HASH=$(printf '%s' "serverless-saas-${ACCOUNT_ID}" | shasum -a 256 | cut -c1-8)
+  SHARED_SAM_BUCKET="sam-bootstrap-shared-lab6-${ACCOUNT_HASH}"
   
   # Check if bucket exists, create if needed
   echo "Checking SAM deployment bucket: $SHARED_SAM_BUCKET"
@@ -206,9 +206,9 @@ if [[ $server -eq 1 ]] || [[ $bootstrap -eq 1 ]]; then
   
   echo "Deploying shared infrastructure stack..."
   if [ "$IS_RUNNING_IN_EVENT_ENGINE" = true ]; then
-    sam deploy $PROFILE_ARG --config-file shared-samconfig.toml --region=$REGION --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE CreateCloudWatchRole=$CREATE_CLOUDWATCH_ROLE AdminUserPoolCallbackURLParameter=$ADMIN_SITE_URL TenantUserPoolCallbackURLParameter=$APP_SITE_URL
+    sam deploy $PROFILE_ARG --config-file shared-samconfig.toml --s3-bucket "$SHARED_SAM_BUCKET" --region=$REGION --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE CreateCloudWatchRole=$CREATE_CLOUDWATCH_ROLE AdminUserPoolCallbackURLParameter=$ADMIN_SITE_URL TenantUserPoolCallbackURLParameter=$APP_SITE_URL
   else
-    sam deploy $PROFILE_ARG --config-file shared-samconfig.toml --region=$REGION --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE CreateCloudWatchRole=$CREATE_CLOUDWATCH_ROLE
+    sam deploy $PROFILE_ARG --config-file shared-samconfig.toml --s3-bucket "$SHARED_SAM_BUCKET" --region=$REGION --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE CreateCloudWatchRole=$CREATE_CLOUDWATCH_ROLE
   fi
   
   if [[ $? -ne 0 ]]; then
