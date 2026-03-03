@@ -32,6 +32,30 @@ A hands-on workshop for building multi-tenant SaaS applications on AWS Serverles
 
 See [extra-info/PREREQUISITES.md](extra-info/PREREQUISITES.md) for detailed installation instructions.
 
+## Optional: Python Virtual Environment
+
+The deployment scripts run `pylint` to validate Python code before deploying. If `pylint` is not installed, validation is skipped with a warning — but setting up a virtual environment ensures consistent, clean results.
+
+```bash
+cd workshop
+
+# Create the virtual environment
+python3 -m venv .venv_py313
+
+# Activate it
+source .venv_py313/bin/activate
+
+# Install pylint
+pip install pylint
+
+# Deactivate when done (or just close the terminal)
+deactivate
+```
+
+The deployment scripts automatically detect `.venv_py313` and use it for code validation. You do not need to activate the venv before running scripts — they find it by path.
+
+> **Note:** This is entirely optional. All labs deploy successfully without it; pylint validation will simply be skipped.
+
 ## Quick Start — Deploy All Labs
 
 > **⏱ ~15–20 minutes.** Run in your terminal — do NOT run from an automated agent.
