@@ -63,7 +63,6 @@ import { MatTableModule } from '@angular/material/table';
     MatTableModule,
   ],
   providers: [
-    HttpClientModule,
     {
       provide: LocationStrategy,
       useClass: HashLocationStrategy,

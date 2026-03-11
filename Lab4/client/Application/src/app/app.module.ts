@@ -75,7 +75,6 @@ import { environment } from 'src/environments/environment';
     MatTableModule,
   ],
   providers: [
-    HttpClientModule,
     {
       provide: LocationStrategy,
       useClass: HashLocationStrategy,
