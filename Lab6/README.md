@@ -61,7 +61,7 @@ Lab6/
 ## Prerequisites
 
 - Labs 1-5 concepts understood (multi-tenant SaaS, pooled/siloed models)
-- AWS CLI, SAM CLI, Python 3.14, Node.js, Git, jq installed
+- AWS CLI, SAM CLI, Python 3.14, Node.js LTS v20 or v22, Git, jq installed
 - AWS profile configured (default region: `us-east-1`)
 
 ## Key Concepts

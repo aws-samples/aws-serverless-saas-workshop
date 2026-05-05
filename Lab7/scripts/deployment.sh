@@ -136,8 +136,8 @@ if [[ -z "$E2E_TEST_MODE" ]]; then
 fi
 
 # Use virtual environment Python if available
-if [ -f "$LAB_DIR/../.venv_py313/bin/python" ]; then
-  export PATH="$LAB_DIR/../.venv_py313/bin:$PATH"
+if [ -f "$LAB_DIR/../.venv_py314/bin/python" ]; then
+  export PATH="$LAB_DIR/../.venv_py314/bin:$PATH"
 fi
 
 print_message "$BLUE" "=========================================="

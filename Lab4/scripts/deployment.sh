@@ -264,8 +264,8 @@ if [[ $DEPLOY_BOOTSTRAP -eq 1 ]] || [[ $DEPLOY_TENANT -eq 1 ]]; then
   cd ../server || exit
   
   # Use virtual environment Python if available
-  if [ -f "../../.venv_py313/bin/python" ]; then
-    PYTHON_CMD="../../.venv_py313/bin/python"
+  if [ -f "../../.venv_py314/bin/python" ]; then
+    PYTHON_CMD="../../.venv_py314/bin/python"
   else
     PYTHON_CMD="python3"
   fi

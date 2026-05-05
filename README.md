@@ -39,11 +39,11 @@ The deployment scripts run `pylint` to validate Python code before deploying. If
 ```bash
 cd workshop
 
-# Create the virtual environment
-python3 -m venv .venv_py313
+# Create the virtual environment (Python 3.14 matches the Lambda runtime)
+python3.14 -m venv .venv_py314
 
 # Activate it
-source .venv_py313/bin/activate
+source .venv_py314/bin/activate
 
 # Install pylint
 pip install pylint
@@ -52,7 +52,7 @@ pip install pylint
 deactivate
 ```
 
-The deployment scripts automatically detect `.venv_py313` and use it for code validation. You do not need to activate the venv before running scripts — they find it by path.
+The deployment scripts automatically detect `.venv_py314` and use it for code validation. You do not need to activate the venv before running scripts — they find it by path.
 
 > **Note:** This is entirely optional. All labs deploy successfully without it; pylint validation will simply be skipped.
 

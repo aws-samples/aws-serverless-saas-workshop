@@ -136,8 +136,8 @@ echo ""
 print_message "$YELLOW" "Step 3: Validating Python code with pylint..."
 
 # Use virtual environment Python if available
-if [ -f "../../.venv_py313/bin/python" ]; then
-  PYTHON_CMD="../../.venv_py313/bin/python"
+if [ -f "../../.venv_py314/bin/python" ]; then
+  PYTHON_CMD="../../.venv_py314/bin/python"
 else
   PYTHON_CMD="python3"
 fi
