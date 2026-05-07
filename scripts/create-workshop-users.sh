@@ -18,7 +18,12 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Default values
-STACK_NAME="serverless-saas-lab"
+# Case_A (Workshop Studio) uses "serverless-saas-workshop-main".
+# Case_B (self-guided deploy-all.sh) uses "serverless-saas-lab" by default.
+# The script tries Case_A first, then Case_B, unless --stack-name is provided.
+STACK_NAME=""
+CASE_A_STACK_NAME="serverless-saas-workshop-main"
+CASE_B_STACK_NAME="serverless-saas-lab"
 AWS_REGION="us-east-1"
 AWS_PROFILE=""
 ADMIN_EMAIL=""
@@ -32,24 +37,30 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Usage function
 usage() {
     cat << EOF
-Usage: $0 --email <admin-email> --profile <aws-profile> [OPTIONS]
+Usage: $0 --email <admin-email> [OPTIONS]
 
 Creates Cognito admin users for all deployed labs in the workshop.
 
 REQUIRED:
   --email <email>           Admin email address for all users
-  --profile <profile>       AWS CLI profile name
 
 OPTIONAL:
+  --profile <profile>       AWS CLI profile name. If omitted, uses the instance
+                            profile or environment credentials (Workshop Studio IDE).
   --tenant-email <email>    Tenant admin email (defaults to admin email)
   --password <password>     Admin password (auto-generated if not provided)
-  --stack-name <name>       CloudFormation stack name (default: serverless-saas-workshop)
+  --stack-name <name>       CloudFormation stack name. If omitted, the script auto-detects:
+                            tries 'serverless-saas-workshop-main' (Case_A / Workshop Studio) first,
+                            then 'serverless-saas-lab' (Case_B / self-guided deploy-all.sh).
   --region <region>         AWS region (default: us-east-1)
   --verbose                 Enable verbose output
   --help                    Show this help message
 
 EXAMPLES:
-  # Create users with auto-generated password
+  # Workshop Studio IDE (no profile needed)
+  $0 --email admin@example.com
+
+  # Self-guided with a named profile
   $0 --email admin@example.com --profile my-profile
 
   # Create users with custom password
@@ -110,11 +121,16 @@ if [[ -z "$ADMIN_EMAIL" ]]; then
     usage
 fi
 
-if [[ -z "$AWS_PROFILE" ]]; then
-    echo -e "${RED}Error: --profile is required${NC}"
-    echo ""
-    usage
-fi
+# Build AWS CLI base command
+# If --profile is provided, use it. Otherwise, rely on environment credentials
+# (instance profile in Case_A Workshop Studio IDE, or env vars).
+aws_cmd() {
+    if [[ -n "$AWS_PROFILE" ]]; then
+        aws --profile "$AWS_PROFILE" --region "$AWS_REGION" "$@"
+    else
+        aws --region "$AWS_REGION" "$@"
+    fi
+}
 
 # Validate email format
 if ! [[ "$ADMIN_EMAIL" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
@@ -125,11 +141,6 @@ fi
 # Set defaults
 TENANT_EMAIL="${TENANT_EMAIL:-$ADMIN_EMAIL}"
 ADMIN_PASSWORD="${ADMIN_PASSWORD:-SaaS#Workshop2026}"
-
-# Build AWS CLI base command
-aws_cmd() {
-    aws --profile "$AWS_PROFILE" --region "$AWS_REGION" "$@"
-}
 
 print_message() {
     local color=$1
@@ -262,20 +273,38 @@ create_admin_user() {
 print_header "Workshop User Creation Script"
 echo ""
 print_message "$CYAN" "Configuration:"
-print_message "$BLUE" "  Stack Name:    $STACK_NAME"
+print_message "$BLUE" "  Stack Name:    ${STACK_NAME:-auto-detect (Case_A → Case_B)}"
 print_message "$BLUE" "  Region:        $AWS_REGION"
-print_message "$BLUE" "  Profile:       $AWS_PROFILE"
+print_message "$BLUE" "  Profile:       ${AWS_PROFILE:-instance profile / env credentials}"
 print_message "$BLUE" "  Admin Email:   $ADMIN_EMAIL"
 print_message "$BLUE" "  Tenant Email:  $TENANT_EMAIL"
 
-# Verify stack exists
+# Verify stack exists (with auto-detection for Case_A / Case_B)
 print_header "Verifying CloudFormation Stack"
-if ! aws_cmd cloudformation describe-stacks --stack-name "$STACK_NAME" > /dev/null 2>&1; then
+
+if [[ -z "$STACK_NAME" ]]; then
+    # Auto-detect: try Case_A (Workshop Studio) first, then Case_B (self-guided).
+    if aws_cmd cloudformation describe-stacks --stack-name "$CASE_A_STACK_NAME" > /dev/null 2>&1; then
+        STACK_NAME="$CASE_A_STACK_NAME"
+        print_message "$GREEN" "✓ Auto-detected Case_A stack: $STACK_NAME"
+    elif aws_cmd cloudformation describe-stacks --stack-name "$CASE_B_STACK_NAME" > /dev/null 2>&1; then
+        STACK_NAME="$CASE_B_STACK_NAME"
+        print_message "$GREEN" "✓ Auto-detected Case_B stack: $STACK_NAME"
+    else
+        print_message "$RED" "Error: No workshop orchestration stack found in region '$AWS_REGION'."
+        print_message "$YELLOW" "  Tried: $CASE_A_STACK_NAME (Workshop Studio)"
+        print_message "$YELLOW" "  Tried: $CASE_B_STACK_NAME (self-guided deploy-all.sh)"
+        print_message "$YELLOW" "Make sure the orchestration deployment has completed successfully,"
+        print_message "$YELLOW" "or pass --stack-name <name> explicitly."
+        exit 1
+    fi
+elif ! aws_cmd cloudformation describe-stacks --stack-name "$STACK_NAME" > /dev/null 2>&1; then
     print_message "$RED" "Error: Stack '$STACK_NAME' not found in region '$AWS_REGION'"
     print_message "$YELLOW" "Make sure the orchestration deployment has completed successfully."
     exit 1
+else
+    print_message "$GREEN" "✓ Stack '$STACK_NAME' found"
 fi
-print_message "$GREEN" "✓ Stack '$STACK_NAME' found"
 
 # Track success/failure
 USERS_CREATED=0
