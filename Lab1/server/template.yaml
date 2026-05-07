@@ -505,6 +505,7 @@ Resources:
   ApiGatewayApi:
     Type: AWS::Serverless::Api
     Properties:
+      Name: serverless-saas-lab1-api
       MethodSettings:
         - DataTraceEnabled: False
           LoggingLevel: INFO
