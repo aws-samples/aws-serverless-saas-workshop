@@ -1,79 +1,159 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# =============================================================================
+# deploy-updates.sh — Lab 3
+# Syncs Lambda function code after the participant completes the TODOs.
+#
+# Works in both Case_A (Workshop Studio) and Case_B (self-guided).
+# Uses `aws lambda update-function-code` directly.
+# =============================================================================
 
-# AWS Profile should be passed via --profile parameter
-AWS_PROFILE=""
+set -euo pipefail
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+# Defaults
 AWS_REGION="us-east-1"
-SHARED_STACK_NAME="serverless-saas-shared-lab3"
-TENANT_STACK_NAME="serverless-saas-tenant-lab3"
+AWS_PROFILE=""
 
-# Function to build AWS CLI profile argument
-get_profile_arg() {
-    if [[ -n "$AWS_PROFILE" ]]; then
-        echo "--profile $AWS_PROFILE --region $AWS_REGION"
-    else
-        echo "--region $AWS_REGION"
-    fi
+# Lambda functions to update (function-name → source directory relative to Lab3/server/)
+# These are the functions whose code the participant modifies in Lab 3 TODOs.
+declare -a FUNCTIONS_TO_UPDATE=(
+    "serverless-saas-lab3-shared-services-authorizer|Resources"
+    "serverless-saas-lab3-business-services-authorizer|Resources"
+    "serverless-saas-lab3-create-product|ProductService"
+)
+
+print_message() {
+    echo -e "${1}${2}${NC}"
 }
 
-# Function to show help
 show_help() {
-    echo "Usage: $0 [OPTIONS]"
-    echo ""
-    echo "Deploy updates to Lab3 shared and tenant services"
-    echo ""
-    echo "Options:"
-    echo "  --profile PROFILE    AWS profile to use (optional, uses default if not specified)"
-    echo "  --region REGION      AWS region (default: us-east-1)"
-    echo "  --help              Show this help message"
+    cat << EOF
+Usage: $0 [OPTIONS]
+
+Deploys code changes to Lab 3 Lambda functions after completing the TODOs.
+
+Options:
+  --profile <profile>   AWS CLI profile (optional; uses instance role if omitted)
+  --region <region>     AWS region (default: us-east-1)
+  --help                Show this help message
+
+Examples:
+  # Workshop Studio IDE (no profile needed)
+  $0
+
+  # Self-guided with a named profile
+  $0 --profile my-profile
+EOF
     exit 0
 }
 
-# Parse command line arguments
-while [[ "$#" -gt 0 ]]; do
+# Parse arguments
+while [[ $# -gt 0 ]]; do
     case $1 in
-        --profile)
-            AWS_PROFILE=$2
-            shift 2
-            ;;
-        --region)
-            AWS_REGION=$2
-            shift 2
-            ;;
-        --help)
-            show_help
-            ;;
-        *)
-            echo "Unknown parameter: $1"
-            echo "Usage: $0 [--profile <profile>] [--region <region>]"
-            exit 1
-            ;;
+        --profile) AWS_PROFILE="$2"; shift 2 ;;
+        --region)  AWS_REGION="$2"; shift 2 ;;
+        --help|-h) show_help ;;
+        *) print_message "$RED" "Unknown option: $1"; show_help ;;
     esac
 done
 
-cd ../server || exit # stop execution if cd fails
-rm -rf .aws-sam/
+# AWS CLI wrapper
+aws_cmd() {
+    if [[ -n "$AWS_PROFILE" ]]; then
+        aws --profile "$AWS_PROFILE" --region "$AWS_REGION" "$@"
+    else
+        aws --region "$AWS_REGION" "$@"
+    fi
+}
 
-# Use virtual environment Python if available
-if [ -f "../../.venv_py314/bin/python" ]; then
-  PYTHON_CMD="../../.venv_py314/bin/python"
-else
-  PYTHON_CMD="python3"
+# Resolve paths
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SERVER_DIR="$SCRIPT_DIR/../server"
+
+print_message "$BLUE" "=========================================="
+print_message "$BLUE" "Lab 3 — Deploy Code Updates"
+print_message "$BLUE" "=========================================="
+echo ""
+print_message "$BLUE" "Region:  $AWS_REGION"
+print_message "$BLUE" "Profile: ${AWS_PROFILE:-instance profile / env credentials}"
+echo ""
+
+# Step 1: Validate Python code
+print_message "$YELLOW" "Step 1: Validating Python code..."
+PYTHON_CMD="python3"
+if [ -f "$SERVER_DIR/../../.venv_py314/bin/python" ]; then
+    PYTHON_CMD="$SERVER_DIR/../../.venv_py314/bin/python"
 fi
 
-$PYTHON_CMD -m pylint -E -d E0401 $(find . -iname "*.py" -not -path "./.aws-sam/*")
-  if [[ $? -ne 0 ]]; then
-    echo "****ERROR: Please fix above code errors and then rerun script!!****"
+if command -v pylint &> /dev/null; then
+    $PYTHON_CMD -m pylint -E -d E0401 $(find "$SERVER_DIR" -iname "*.py" -not -path "*/.aws-sam/*") || {
+        print_message "$RED" "ERROR: Fix the code errors above and rerun."
+        exit 1
+    }
+    print_message "$GREEN" "✓ Code validation passed"
+else
+    print_message "$YELLOW" "⚠ pylint not installed, skipping validation"
+fi
+echo ""
+
+# Step 2: Package and update each function
+print_message "$YELLOW" "Step 2: Updating Lambda functions..."
+
+TEMP_DIR=$(mktemp -d)
+trap 'rm -rf "$TEMP_DIR"' EXIT
+
+update_function() {
+    local func_name="$1"
+    local source_dir="$2"
+    local zip_file="$TEMP_DIR/${func_name}.zip"
+
+    print_message "$BLUE" "  Packaging $func_name..."
+
+    # Create zip from the source directory
+    (cd "$SERVER_DIR/$source_dir" && zip -qr "$zip_file" . -x "*.pyc" "__pycache__/*" ".aws-sam/*")
+
+    # Include the layers/ directory content (shared utilities)
+    if [[ -d "$SERVER_DIR/layers" ]]; then
+        (cd "$SERVER_DIR/layers" && zip -qr "$zip_file" . -x "*.pyc" "__pycache__/*")
+    fi
+
+    print_message "$BLUE" "  Deploying $func_name..."
+    if aws_cmd lambda update-function-code \
+        --function-name "$func_name" \
+        --zip-file "fileb://$zip_file" \
+        --query 'FunctionName' --output text > /dev/null 2>&1; then
+        print_message "$GREEN" "  ✓ $func_name updated"
+    else
+        print_message "$RED" "  ✗ Failed to update $func_name"
+        print_message "$YELLOW" "    Check that the function exists and the IDE role has lambda:UpdateFunctionCode permission."
+        return 1
+    fi
+}
+
+FAILED=0
+for entry in "${FUNCTIONS_TO_UPDATE[@]}"; do
+    IFS='|' read -r func_name source_dir <<< "$entry"
+    update_function "$func_name" "$source_dir" || ((FAILED++))
+done
+
+echo ""
+if [[ $FAILED -gt 0 ]]; then
+    print_message "$RED" "$FAILED function(s) failed to update."
     exit 1
-  fi
-#Deploying shared services changes
-echo "Deploying shared services changes"  
-PROFILE_ARG=$(get_profile_arg)
-echo Y | sam sync $PROFILE_ARG --stack-name "$SHARED_STACK_NAME" -t shared-template.yaml --code --resource-id LambdaFunctions/ServerlessSaaSLayers --resource-id LambdaFunctions/SharedServicesAuthorizerFunction
+fi
 
-#Deploying tenant services changes
-echo "Deploying tenant services changes"
-rm -rf .aws-sam/
-echo Y | sam sync $PROFILE_ARG --stack-name "$TENANT_STACK_NAME" -t tenant-template.yaml --code --resource-id ServerlessSaaSLayers --resource-id BusinessServicesAuthorizerFunction --resource-id CreateProductFunction
-
-cd ../scripts || exit
-./geturl.sh $PROFILE_ARG
+print_message "$GREEN" "=========================================="
+print_message "$GREEN" "✓ All Lambda functions updated successfully!"
+print_message "$GREEN" "=========================================="
+echo ""
+print_message "$BLUE" "The code changes are now live. Test them by:"
+print_message "$BLUE" "  1. Opening the Lab 3 Application URL"
+print_message "$BLUE" "  2. Logging in as tenant1-admin"
+print_message "$BLUE" "  3. Adding a product and verifying multi-tenant data partitioning"
+echo ""
