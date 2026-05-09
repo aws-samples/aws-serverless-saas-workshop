@@ -16,7 +16,7 @@ tracer = Tracer()
 client = boto3.client('cognito-idp')
 dynamodb = boto3.resource('dynamodb')
 table_tenant_user_map = dynamodb.Table('ServerlessSaaS-TenantUserMapping')
-table_tenant_details = dynamodb.Table('ServerlessSaaS-TenantDetails')
+table_tenant_details = dynamodb.Table('ServerlessSaaS-TenantDetails-lab5')
 
 def create_tenant_admin_user(event, context):
     tenant_user_pool_id = os.environ['TENANT_USER_POOL_ID']

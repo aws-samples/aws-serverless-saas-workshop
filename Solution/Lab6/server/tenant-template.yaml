@@ -1023,7 +1023,7 @@ Resources:
               - Effect: Allow
                 Action:
                   - dynamodb:GetItem
-                Resource: !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/ServerlessSaaS-Settings
+                Resource: !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/ServerlessSaaS-Settings-lab6
   UpdateUsagePlanFunction:
     Type: AWS::Serverless::Function
     DependsOn: UpdateUsagePlanLambdaExecutionRole
@@ -1040,7 +1040,7 @@ Resources:
     Properties:
       ServiceToken: !GetAtt UpdateUsagePlanFunction.Arn
       ApiGatewayId: !Ref ApiGatewayTenantApi
-      SettingsTableName: ServerlessSaaS-Settings
+      SettingsTableName: ServerlessSaaS-Settings-lab6
       IsPooledDeploy: !If [IsPooledDeploy, true, false]     
       Stage: !Ref StageName
       UsagePlanBasicTier: !ImportValue Serverless-SaaS-UsagePlanBasicTier
@@ -1074,11 +1074,11 @@ Resources:
               - Effect: Allow
                 Action:
                   - dynamodb:PutItem
-                Resource: !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/ServerlessSaaS-Settings 
+                Resource: !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/ServerlessSaaS-Settings-lab6
               - Effect: Allow
                 Action:
                   - dynamodb:UpdateItem
-                Resource: !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/ServerlessSaaS-TenantDetails    
+                Resource: !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/ServerlessSaaS-TenantDetails-lab6
   UpdateTenantApiGatewayUrlFunction:
     Type: AWS::Serverless::Function
     DependsOn: UpdateTenantApiGatewayUrlLambdaExecutionRole
@@ -1094,8 +1094,8 @@ Resources:
     DependsOn: UpdateTenantApiGatewayUrlFunction
     Properties:
       ServiceToken: !GetAtt UpdateTenantApiGatewayUrlFunction.Arn
-      TenantDetailsTableName: ServerlessSaaS-TenantDetails
-      SettingsTableName: ServerlessSaaS-Settings  
+      TenantDetailsTableName: ServerlessSaaS-TenantDetails-lab6
+      SettingsTableName: ServerlessSaaS-Settings-lab6
       TenantId: !Ref TenantIdParameter  
       TenantApiGatewayUrl: !Sub "https://${ApiGatewayTenantApi}.execute-api.${AWS::Region}.amazonaws.com/prod/"    
   
