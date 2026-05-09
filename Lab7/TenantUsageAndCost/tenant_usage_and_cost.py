@@ -36,6 +36,7 @@ def calculate_daily_dynamodb_attribution_by_tenant(event, context):
     
     # Use filter_log_events API instead of Logs Insights for accurate counting
     # Logs Insights has an indexing limitation where cold start logs may not be indexed
+    #TODO: Get DynamoDB usage by tenant using filter_log_events API
     tenant_usage, total_RCU, total_WCU = __get_dynamodb_usage_by_tenant(
         logs, log_group_names, start_date_time, end_date_time
     )
@@ -104,6 +105,7 @@ def calculate_daily_lambda_attribution_by_tenant(event, context):
     
     # Use filter_log_events API instead of Logs Insights for accurate counting
     # Logs Insights has an indexing limitation where cold start logs may not be indexed
+    #TODO: Get Lambda invocations by tenant using filter_log_events API
     tenant_invocations, total_invocations = __get_lambda_invocations_by_tenant(
         logs, log_group_names, start_date_time, end_date_time
     )
@@ -221,6 +223,7 @@ def __filter_log_events_with_pattern(logs_client, log_group_name, filter_pattern
     in a new log stream (cold start logs) may not be indexed.
     filter_log_events returns ALL matching log events reliably.
     """
+    #TODO: Implement filter_log_events with pagination to retrieve all matching log events
     events = []
     paginator = logs_client.get_paginator('filter_log_events')
     

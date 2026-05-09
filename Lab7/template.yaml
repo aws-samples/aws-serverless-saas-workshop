@@ -26,6 +26,24 @@ Parameters:
     Default: serverless-saas-workshop
     Description: Cost center for billing allocation
 
+  AssetsBucketName:
+    Type: String
+    Default: ""
+    Description: S3 bucket with packaged assets (Case_A only). Leave empty for Case_B.
+
+  AssetsBucketPrefix:
+    Type: String
+    Default: ""
+    Description: S3 prefix for assets (Case_A only). Leave empty for Case_B.
+
+  AssetsBuildId:
+    Type: String
+    Default: ""
+    Description: Build ID for assets (Case_A only). Leave empty for Case_B.
+
+Conditions:
+  HasAssetsBucket: !Not [!Equals [!Ref AssetsBucketName, ""]]
+
 Globals:
   Function:
     Timeout: 29
@@ -280,7 +298,119 @@ Resources:
       Role: !GetAtt AWSCURCrawlerLambdaExecutor.Arn
 
 
-  
+  # Custom Resource: Copy SampleCUR files to CUR bucket and start Crawler (Case_A only)
+  # In Case_B, deployment.sh handles this. In Case_A, we need CloudFormation to do it.
+  CURSeedLambdaRole:
+    Type: AWS::IAM::Role
+    Condition: HasAssetsBucket
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: CURSeedPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:ListBucket
+                Resource:
+                  - !Sub 'arn:aws:s3:::${AssetsBucketName}'
+                  - !Sub 'arn:aws:s3:::${AssetsBucketName}/*'
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                Resource:
+                  - !Sub '${CURBucket.Arn}/*'
+              - Effect: Allow
+                Action:
+                  - glue:StartCrawler
+                Resource: '*'
+
+  CURSeedFunction:
+    Type: AWS::Lambda::Function
+    Condition: HasAssetsBucket
+    DependsOn: AWSCURCrawler
+    Properties:
+      FunctionName: serverless-saas-lab7-cur-seed
+      Runtime: python3.14
+      Handler: index.handler
+      Timeout: 120
+      Role: !GetAtt CURSeedLambdaRole.Arn
+      Code:
+        ZipFile: |
+          import json
+          import boto3
+          import cfnresponse
+
+          def handler(event, context):
+              print(f"Event: {json.dumps(event)}")
+              if event['RequestType'] == 'Delete':
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
+                  return
+
+              try:
+                  s3 = boto3.client('s3')
+                  glue = boto3.client('glue')
+
+                  source_bucket = event['ResourceProperties']['SourceBucket']
+                  source_prefix = event['ResourceProperties']['SourcePrefix']
+                  dest_bucket = event['ResourceProperties']['DestBucket']
+                  dest_prefix = event['ResourceProperties']['DestPrefix']
+                  crawler_name = event['ResourceProperties']['CrawlerName']
+
+                  # List and copy all objects from source to dest
+                  paginator = s3.get_paginator('list_objects_v2')
+                  copied = 0
+                  for page in paginator.paginate(Bucket=source_bucket, Prefix=source_prefix):
+                      for obj in page.get('Contents', []):
+                          source_key = obj['Key']
+                          # Strip the source prefix and append to dest prefix
+                          relative_key = source_key[len(source_prefix):]
+                          dest_key = f"{dest_prefix}{relative_key}"
+                          s3.copy_object(
+                              Bucket=dest_bucket,
+                              Key=dest_key,
+                              CopySource={'Bucket': source_bucket, 'Key': source_key}
+                          )
+                          copied += 1
+
+                  print(f"Copied {copied} files to s3://{dest_bucket}/{dest_prefix}")
+
+                  # Start the Glue Crawler
+                  try:
+                      glue.start_crawler(Name=crawler_name)
+                      print(f"Started crawler: {crawler_name}")
+                  except glue.exceptions.CrawlerRunningException:
+                      print("Crawler already running")
+
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, {'FilesCopied': str(copied)})
+              except Exception as e:
+                  print(f"Error: {e}")
+                  cfnresponse.send(event, context, cfnresponse.FAILED, {'Error': str(e)})
+
+  CURSeedInvocation:
+    Type: Custom::CURSeed
+    Condition: HasAssetsBucket
+    DependsOn:
+      - CURBucket
+      - AWSCURCrawler
+    Properties:
+      ServiceToken: !GetAtt CURSeedFunction.Arn
+      SourceBucket: !Ref AssetsBucketName
+      SourcePrefix: !Sub '${AssetsBucketPrefix}serverless-saas-workshop/${AssetsBuildId}/sample-cur/'
+      DestBucket: !Ref CURBucket
+      DestPrefix: 'curoutput/year=2022/month=10/'
+      CrawlerName: AWSCURCrawler-Multi-tenant-lab7
+
   TenantCostandUsageAttributionTable:
     Type: AWS::DynamoDB::Table
     Properties:
