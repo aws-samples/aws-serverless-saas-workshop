@@ -150,20 +150,10 @@ def __get_tenant_data(partition_id, get_all_products_response, table, event):
     metrics_manager.record_metric(event, "ReadCapacityUnits", "Count", response['ConsumedCapacity']['CapacityUnits'])        
 
 #TODO: Implement this method
-def __get_dynamodb_table(event, dynamodb):    
-    accesskey = event['requestContext']['authorizer']['accesskey']
-    secretkey = event['requestContext']['authorizer']['secretkey']
-    sessiontoken = event['requestContext']['authorizer']['sessiontoken']    
-    dynamodb = boto3.resource('dynamodb',
-                aws_access_key_id=accesskey,
-                aws_secret_access_key=secretkey,
-                aws_session_token=sessiontoken
-                )        
-        
-    return dynamodb.Table(table_name)
-
-
-def get_order_products_dict(orderProducts):
+def __get_dynamodb_table(event, dynamodb):
+    raise NotImplementedError(
+        "Learner exercise \u2014 see Solution/Lab4/server/OrderService/order_service_dal.py"
+    )
     orderProductList = []
     for i in range(len(orderProducts)):
         product = orderProducts[i]

@@ -18,39 +18,9 @@ lambda_client = boto3.client('lambda')
 
 #TODO: Implement this method
 def register_tenant(event, context):
-    try:
-        tenant_id = uuid.uuid1().hex
-        tenant_details = json.loads(event['body'])
-
-        tenant_details['tenantId'] = tenant_id
-
-        logger.info(tenant_details)
-
-        stage_name = event['requestContext']['stage']
-        host = event['headers']['Host']
-        auth = utils.get_auth(host, region)
-        headers = utils.get_headers(event)
-        create_user_response = __create_tenant_admin_user(tenant_details, headers, auth, host, stage_name)
-        
-        logger.info(f"create_user_response type: {type(create_user_response)}, value: {create_user_response}")
-        
-        # Parse the response - it comes back as {"message": {...}}
-        if create_user_response is None:
-            raise Exception('Failed to create tenant admin user - received None response')
-        
-        if 'message' in create_user_response:
-            tenant_details['tenantAdminUserName'] = create_user_response['message']['tenantAdminUserName']
-        else:
-            tenant_details['tenantAdminUserName'] = create_user_response['tenantAdminUserName']
-
-        create_tenant_response = __create_tenant(tenant_details, headers, auth, host, stage_name)
-        logger.info (create_tenant_response)
-
-    except Exception as e:
-        logger.error('Error registering a new tenant')
-        raise Exception('Error registering a new tenant', e)
-    else:
-        return utils.create_success_response("You have been registered in our system")
+    raise NotImplementedError(
+        "Learner exercise \u2014 see Solution/Lab2/server/TenantManagementService/tenant-registration.py"
+    )
 
 def __create_tenant_admin_user(tenant_details, headers, auth, host, stage_name):
     try:

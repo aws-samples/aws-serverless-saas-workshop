@@ -41,7 +41,7 @@ def create_product(event, context):
     logger.log_with_tenant_context(event, "Request completed to create a product")
     
     #TODO: Capture metrics to denote that one product was created by tenant
-    metrics_manager.record_metric(event, "ProductCreated", "Count", 1)
+    pass  # learner: record metric here
 
     return utils.generate_response(product)
     

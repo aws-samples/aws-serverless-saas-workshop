@@ -16,9 +16,7 @@ def record_metric(event, metric_name, metric_unit, metric_value):
         metric_unit ([type]): [description]
         metric_value ([type]): [description]
     """
-    metrics.add_dimension(name="tenant_id", value=event['requestContext']['authorizer']['tenantId'])
-    metrics.add_metric(name=metric_name, unit=metric_unit, value=metric_value)
-    metrics_object = metrics.serialize_metric_set()
-    metrics.clear_metrics()
-    print(json.dumps(metrics_object))  
+    raise NotImplementedError(
+        "Learner exercise \u2014 see Solution/Lab3/server/layers/metrics_manager.py"
+    )
 

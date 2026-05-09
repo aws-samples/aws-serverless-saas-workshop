@@ -49,12 +49,12 @@ def create_tenant(event, context):
                     'tenantEmail': tenant_details['tenantEmail'],
                     'tenantPhone': tenant_details['tenantPhone'],
                     'tenantTier': tenant_details['tenantTier'],
-                    'apiKey': tenant_details['apiKey'],
                     'userPoolId': tenant_details['userPoolId'],                 
                     'appClientId': tenant_details['appClientId'],
                     'dedicatedTenancy': tenant_details['dedicatedTenancy'],
                     'isActive': True,
                     'apiGatewayUrl': api_gateway_url
+                    # learner: also save 'apiKey': tenant_details['apiKey'] here
                 }
             )                    
 

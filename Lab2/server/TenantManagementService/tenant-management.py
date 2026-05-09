@@ -78,26 +78,9 @@ def update_tenant(event, context):
 
 #TODO: Implement the below method
 def get_tenant(event, context):
-    tenant_id = event['pathParameters']['tenantid']    
-    logger.info("Request received to get tenant details")
-    
-    tenant_details = table_tenant_details.get_item(
-        Key={
-            'tenantId': tenant_id,
-        },
-        AttributesToGet=[
-            'tenantName',
-            'tenantAddress',
-            'tenantEmail',
-            'tenantPhone'
-        ]    
-    )             
-    item = tenant_details['Item']
-    tenant_info = TenantInfo(item['tenantName'], item['tenantAddress'],item['tenantEmail'], item['tenantPhone'])
-    logger.info(tenant_info)
-    
-    logger.info("Request completed to get tenant details")
-    return utils.create_success_response(tenant_info.__dict__)
+    raise NotImplementedError(
+        "Learner exercise \u2014 see Solution/Lab2/server/TenantManagementService/tenant-management.py"
+    )
 
 def deactivate_tenant(event, context):
     

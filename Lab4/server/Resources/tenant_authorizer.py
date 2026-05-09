@@ -68,11 +68,9 @@ def lambda_handler(event, context):
     authResponse = policy.build()
  
     #TODO : Add code for Fine-Grained-Access-Control
-    iam_policy = auth_manager.getPolicyForUser(user_role, utils.Service_Identifier.BUSINESS_SERVICES.value, tenant_id, region, aws_account_id)
-    logger.info(iam_policy)
-    
+    iam_policy = None  # learner: build FGAC iam_policy via auth_manager.getPolicyForUser and STS AssumeRole with Policy=iam_policy
     role_arn = "arn:aws:iam::{}:role/authorizer-access-role-lab4-{}".format(aws_account_id, region)
-    
+
     assumed_role = sts_client.assume_role(
         RoleArn=role_arn,
         RoleSessionName="tenant-aware-session",

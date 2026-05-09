@@ -58,34 +58,9 @@ def delete_product(event, key):
 
 #TODO: Implement this method
 def create_product(event, payload):
-    tenantId = event['requestContext']['authorizer']['tenantId']    
-    
-    suffix = random.randrange(suffix_start, suffix_end)
-    shardId = tenantId+"-"+str(suffix)
-
-    product = Product(shardId, str(uuid.uuid4()), payload.sku,payload.name, payload.price, payload.category)
-    
-    try:
-        response = table.put_item(
-            Item=
-                {
-                    'shardId': shardId,  
-                    'productId': product.productId,
-                    'sku': product.sku,
-                    'name': product.name,
-                    'price': product.price,
-                    'category': product.category
-                }, 
-                ReturnConsumedCapacity='TOTAL'
-        )
-
-        metrics_manager.record_metric(event, "WriteCapacityUnits", "Count", response['ConsumedCapacity']['CapacityUnits'])
-    except ClientError as e:
-        logger.error(e.response['Error']['Message'])
-        raise Exception('Error adding a product', e)
-    else:
-        logger.info("PutItem succeeded:")
-        return product
+    raise NotImplementedError(
+        "Learner exercise \u2014 see Solution/Lab3/server/ProductService/product_service_dal.py"
+    )
 
 def update_product(event, payload, key):    
     try:
