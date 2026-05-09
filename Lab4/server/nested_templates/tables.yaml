@@ -50,7 +50,7 @@ Resources:
       Tags:
         - Key: Application
           Value: serverless-saas-workshop
-        - Key: Lab
+        - Key: Service
           Value: lab4
         - Key: Environment
           Value: !Ref Environment
@@ -85,7 +85,7 @@ Resources:
       Tags:
         - Key: Application
           Value: serverless-saas-workshop
-        - Key: Lab
+        - Key: Service
           Value: lab4
         - Key: Environment
           Value: !Ref Environment

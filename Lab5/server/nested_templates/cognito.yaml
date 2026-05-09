@@ -64,7 +64,7 @@ Resources:
           Mutable: True
       UserPoolTags:
         Application: serverless-saas-workshop
-        Lab: lab5
+        Service: lab5
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter
@@ -135,7 +135,7 @@ Resources:
           Mutable: True
       UserPoolTags:
         Application: serverless-saas-workshop
-        Lab: lab5
+        Service: lab5
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter

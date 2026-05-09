@@ -69,7 +69,7 @@ Resources:
           Value: serverless-saas-workshop
         - Key: TenantId
           Value: !Ref TenantId
-        - Key: Lab
+        - Key: Service
           Value: lab7
         - Key: Environment
           Value: !Ref Environment
@@ -95,7 +95,7 @@ Resources:
       Tags:
         Application: serverless-saas-workshop
         TenantId: !Ref TenantId
-        Lab: lab7
+        Service: lab7
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter
@@ -117,7 +117,7 @@ Resources:
       Tags:
         Application: serverless-saas-workshop
         TenantId: !Ref TenantId
-        Lab: lab7
+        Service: lab7
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter
@@ -139,7 +139,7 @@ Resources:
       Tags:
         Application: serverless-saas-workshop
         TenantId: !Ref TenantId
-        Lab: lab7
+        Service: lab7
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter
@@ -163,7 +163,7 @@ Resources:
           Value: serverless-saas-workshop
         - Key: TenantId
           Value: !Ref TenantId
-        - Key: Lab
+        - Key: Service
           Value: lab7
         - Key: Environment
           Value: !Ref Environment

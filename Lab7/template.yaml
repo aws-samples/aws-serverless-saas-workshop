@@ -85,7 +85,7 @@ Resources:
       Tags:
         - Key: Application
           Value: serverless-saas-workshop
-        - Key: Lab
+        - Key: Service
           Value: lab7
         - Key: Environment
           Value: !Ref Environment
@@ -122,7 +122,7 @@ Resources:
       Tags:
         - Key: Application
           Value: serverless-saas-workshop
-        - Key: Lab
+        - Key: Service
           Value: lab7
         - Key: Environment
           Value: !Ref Environment
@@ -181,7 +181,7 @@ Resources:
       Tags:
         - Key: Application
           Value: serverless-saas-workshop
-        - Key: Lab
+        - Key: Service
           Value: lab7
         - Key: Environment
           Value: !Ref Environment
@@ -241,7 +241,7 @@ Resources:
       Tags:
         - Key: Application
           Value: serverless-saas-workshop
-        - Key: Lab
+        - Key: Service
           Value: lab7
         - Key: Environment
           Value: !Ref Environment
@@ -429,7 +429,7 @@ Resources:
       Tags:
         - Key: Application
           Value: serverless-saas-workshop
-        - Key: Lab
+        - Key: Service
           Value: lab7
         - Key: Environment
           Value: !Ref Environment
@@ -458,7 +458,7 @@ Resources:
       Tags:
         - Key: Application
           Value: serverless-saas-workshop
-        - Key: Lab
+        - Key: Service
           Value: lab7
         - Key: Environment
           Value: !Ref Environment
@@ -516,7 +516,7 @@ Resources:
       Role: !GetAtt QueryLogInsightsExecutionRole.Arn
       Tags:
         Application: serverless-saas-workshop
-        Lab: lab7
+        Service: lab7
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter
@@ -543,7 +543,7 @@ Resources:
       Role: !GetAtt QueryLogInsightsExecutionRole.Arn
       Tags:
         Application: serverless-saas-workshop
-        Lab: lab7
+        Service: lab7
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter

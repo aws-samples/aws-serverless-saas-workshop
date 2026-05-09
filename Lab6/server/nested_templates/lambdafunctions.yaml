@@ -214,7 +214,7 @@ Resources:
       Tags:
         - Key: Application
           Value: serverless-saas-workshop
-        - Key: Lab
+        - Key: Service
           Value: lab6
         - Key: Environment
           Value: !Ref Environment
@@ -256,7 +256,7 @@ Resources:
       Tags:
         - Key: Application
           Value: serverless-saas-workshop
-        - Key: Lab
+        - Key: Service
           Value: lab6
         - Key: Environment
           Value: !Ref Environment
@@ -286,7 +286,7 @@ Resources:
           OPERATION_USERS_API_KEY : !Ref ApiKeyOperationUsersParameter
       Tags:
         Application: serverless-saas-workshop
-        Lab: lab6
+        Service: lab6
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter
@@ -335,7 +335,7 @@ Resources:
       Tags:
         - Key: Application
           Value: serverless-saas-workshop
-        - Key: Lab
+        - Key: Service
           Value: lab6
         - Key: Environment
           Value: !Ref Environment
@@ -383,7 +383,7 @@ Resources:
       Tags:
         - Key: Application
           Value: serverless-saas-workshop
-        - Key: Lab
+        - Key: Service
           Value: lab6
         - Key: Environment
           Value: !Ref Environment
@@ -413,7 +413,7 @@ Resources:
           POWERTOOLS_SERVICE_NAME: "UserManagement.CreateTenantAdmin"
       Tags:
         Application: serverless-saas-workshop
-        Lab: lab6
+        Service: lab6
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter   
@@ -438,7 +438,7 @@ Resources:
           POWERTOOLS_SERVICE_NAME: "UserManagement.CreateUser"
       Tags:
         Application: serverless-saas-workshop
-        Lab: lab6
+        Service: lab6
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter
@@ -462,7 +462,7 @@ Resources:
           POWERTOOLS_SERVICE_NAME: "UserManagement.UpdateUser"
       Tags:
         Application: serverless-saas-workshop
-        Lab: lab6
+        Service: lab6
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter
@@ -486,7 +486,7 @@ Resources:
           POWERTOOLS_SERVICE_NAME: "UserManagement.DisableUser"
       Tags:
         Application: serverless-saas-workshop
-        Lab: lab6
+        Service: lab6
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter
@@ -510,7 +510,7 @@ Resources:
           POWERTOOLS_SERVICE_NAME: "UserManagement.DisableUsersByTenant"
       Tags:
         Application: serverless-saas-workshop
-        Lab: lab6
+        Service: lab6
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter
@@ -534,7 +534,7 @@ Resources:
           POWERTOOLS_SERVICE_NAME: "UserManagement.EnableUsersByTenant"
       Tags:
         Application: serverless-saas-workshop
-        Lab: lab6
+        Service: lab6
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter
@@ -558,7 +558,7 @@ Resources:
           POWERTOOLS_SERVICE_NAME: "UserManagement.GetUser"
       Tags:
         Application: serverless-saas-workshop
-        Lab: lab6
+        Service: lab6
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter
@@ -582,7 +582,7 @@ Resources:
           POWERTOOLS_SERVICE_NAME: "UserManagement.GetUsers"
       Tags:
         Application: serverless-saas-workshop
-        Lab: lab6
+        Service: lab6
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter  
@@ -630,7 +630,7 @@ Resources:
       Tags:
         - Key: Application
           Value: serverless-saas-workshop
-        - Key: Lab
+        - Key: Service
           Value: lab6
         - Key: Environment
           Value: !Ref Environment
@@ -657,7 +657,7 @@ Resources:
           POWERTOOLS_SERVICE_NAME: "TenantManagement.CreateTenant"
       Tags:
         Application: serverless-saas-workshop
-        Lab: lab6
+        Service: lab6
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter
@@ -683,7 +683,7 @@ Resources:
           PROVISION_TENANT: "/provisioning/"
       Tags:
         Application: serverless-saas-workshop
-        Lab: lab6
+        Service: lab6
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter
@@ -707,7 +707,7 @@ Resources:
           POWERTOOLS_SERVICE_NAME: "TenantManagement.GetTenant"
       Tags:
         Application: serverless-saas-workshop
-        Lab: lab6
+        Service: lab6
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter    
@@ -733,7 +733,7 @@ Resources:
           DISABLE_USERS_BY_TENANT: "/users/disable"
       Tags:
         Application: serverless-saas-workshop
-        Lab: lab6
+        Service: lab6
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter
@@ -761,7 +761,7 @@ Resources:
           BASIC_TIER_API_KEY: !Ref ApiKeyBasicTierParameter
       Tags:
         Application: serverless-saas-workshop
-        Lab: lab6
+        Service: lab6
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter
@@ -782,7 +782,7 @@ Resources:
         - !Ref ServerlessSaaSLayers
       Tags:
         Application: serverless-saas-workshop
-        Lab: lab6
+        Service: lab6
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter 
@@ -803,7 +803,7 @@ Resources:
         - !Ref ServerlessSaaSLayers
       Tags:
         Application: serverless-saas-workshop
-        Lab: lab6
+        Service: lab6
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter
@@ -831,7 +831,7 @@ Resources:
       Tags:
         - Key: Application
           Value: serverless-saas-workshop
-        - Key: Lab
+        - Key: Service
           Value: lab6
         - Key: Environment
           Value: !Ref Environment
@@ -865,7 +865,7 @@ Resources:
           POWERTOOLS_SERVICE_NAME: "TenantRegistration.RegisterTenant"
       Tags:
         Application: serverless-saas-workshop
-        Lab: lab6
+        Service: lab6
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter  
@@ -912,7 +912,7 @@ Resources:
       Tags:
         - Key: Application
           Value: serverless-saas-workshop
-        - Key: Lab
+        - Key: Service
           Value: lab6
         - Key: Environment
           Value: !Ref Environment
@@ -939,7 +939,7 @@ Resources:
           TENANT_STACK_MAPPING_TABLE_NAME: !Ref TenantStackMappingTableName
       Tags:
         Application: serverless-saas-workshop
-        Lab: lab6
+        Service: lab6
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter
@@ -975,7 +975,7 @@ Resources:
       Tags:
         - Key: Application
           Value: serverless-saas-workshop
-        - Key: Lab
+        - Key: Service
           Value: lab6
         - Key: Environment
           Value: !Ref Environment
@@ -1002,7 +1002,7 @@ Resources:
           TENANT_STACK_MAPPING_TABLE_NAME: !Ref TenantStackMappingTableName
       Tags:
         Application: serverless-saas-workshop
-        Lab: lab6
+        Service: lab6
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter
@@ -1037,7 +1037,7 @@ Resources:
       Tags:
         - Key: Application
           Value: serverless-saas-workshop
-        - Key: Lab
+        - Key: Service
           Value: lab6
         - Key: Environment
           Value: !Ref Environment
@@ -1062,7 +1062,7 @@ Resources:
           - !Ref ServerlessSaaSLayers
       Tags:
         Application: serverless-saas-workshop
-        Lab: lab6
+        Service: lab6
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter
@@ -1096,7 +1096,7 @@ Resources:
       Tags:
         - Key: Application
           Value: serverless-saas-workshop
-        - Key: Lab
+        - Key: Service
           Value: lab6
         - Key: Environment
           Value: !Ref Environment
@@ -1121,7 +1121,7 @@ Resources:
           - !Ref ServerlessSaaSLayers
       Tags:
         Application: serverless-saas-workshop
-        Lab: lab6
+        Service: lab6
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter        

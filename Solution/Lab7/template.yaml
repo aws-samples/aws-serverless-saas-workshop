@@ -6,37 +6,105 @@ Transform: AWS::Serverless-2016-10-31
 Description: >
   Serverless SaaS - Cost by tenant
 
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+    Description: Deployment environment for the workshop
+
+  Owner:
+    Type: String
+    Default: workshop-participant
+    Description: Owner identifier for resource tracking
+
+  CostCenter:
+    Type: String
+    Default: serverless-saas-workshop
+    Description: Cost center for billing allocation
+
+  AssetsBucketName:
+    Type: String
+    Default: ""
+    Description: S3 bucket with packaged assets (Case_A only). Leave empty for Case_B.
+
+  AssetsBucketPrefix:
+    Type: String
+    Default: ""
+    Description: S3 prefix for assets (Case_A only). Leave empty for Case_B.
+
+  AssetsBuildId:
+    Type: String
+    Default: ""
+    Description: Build ID for assets (Case_A only). Leave empty for Case_B.
+
+Conditions:
+  HasAssetsBucket: !Not [!Equals [!Ref AssetsBucketName, ""]]
+
 Globals:
   Function:
     Timeout: 29
 
-Resources: 
+Resources:
+  # CloudWatch Log Groups for Lambda functions
+  # Note: Retention and tags are set by post-deployment script to avoid race conditions
+  AWSCURInitializerFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/serverless-saas-lab7-aws-cur-initializer
+
+  GetDynamoDBUsageAndCostByTenantFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/serverless-saas-lab7-dynamodb-cost
+
+  GetLambdaUsageAndCostByTenantFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/serverless-saas-lab7-lambda-cost
+
   CURBucket:
     Type: AWS::S3::Bucket
-    DeletionPolicy : Retain
+    DeletionPolicy: Retain
     Properties:
+      BucketName: !Sub
+        - 'serverless-saas-lab7-cur-${ShortId}'
+        - ShortId: !Select [0, !Split ['-', !Select [2, !Split ['/', !Ref 'AWS::StackId']]]]
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
               SSEAlgorithm: 'AES256'
-      PublicAccessBlockConfiguration: 
+      PublicAccessBlockConfiguration:
         BlockPublicAcls: True
         BlockPublicPolicy: True
         IgnorePublicAcls: True
         RestrictPublicBuckets: True
-        
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Service
+          Value: lab7
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
+
   AWSCURDatabase:
     Type: 'AWS::Glue::Database'
     Properties:
       DatabaseInput:
-        Name: !Sub 'costexplorerdb'
+        Name: !Sub 'costexplorerdb-lab7'
       CatalogId: !Ref AWS::AccountId
-
-         
 
   AWSCURCrawlerComponentFunction:
     Type: 'AWS::IAM::Role'
     Properties:
+      RoleName: aws-cur-crawler-component-role-lab7
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -49,6 +117,17 @@ Resources:
       Path: /
       ManagedPolicyArns:
         - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AWSGlueServiceRole'
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Service
+          Value: lab7
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
       Policies:
         - PolicyName: AWSCURCrawlerComponentFunction
           PolicyDocument:
@@ -81,11 +160,11 @@ Resources:
                 Action:
                   - 'kms:Decrypt'
                 Resource: '*'
-       
 
   AWSCURCrawlerLambdaExecutor:
     Type: 'AWS::IAM::Role'
     Properties:
+      RoleName: aws-cur-crawler-lambda-executor-role-lab7
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -96,6 +175,17 @@ Resources:
             Action:
               - 'sts:AssumeRole'
       Path: /
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Service
+          Value: lab7
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
       Policies:
         - PolicyName: AWSCURCrawlerLambdaExecutor
           PolicyDocument:
@@ -111,7 +201,6 @@ Resources:
                 Action:
                   - 'glue:StartCrawler'
                 Resource: '*'
-       
 
   AWSCURCrawler:
     Type: 'AWS::Glue::Crawler'
@@ -119,7 +208,7 @@ Resources:
       - AWSCURDatabase
       - AWSCURCrawlerComponentFunction
     Properties:
-      Name: AWSCURCrawler-Multi-tenant
+      Name: AWSCURCrawler-Multi-tenant-lab7
       Description: A recurring crawler that keeps your CUR table in Athena up-to-date.
       Role: !GetAtt AWSCURCrawlerComponentFunction.Arn
       DatabaseName: !Ref AWSCURDatabase
@@ -136,53 +225,186 @@ Resources:
       SchemaChangePolicy:
         UpdateBehavior: UPDATE_IN_DATABASE
         DeleteBehavior: DELETE_FROM_DATABASE
-       
 
-  AWSCURInitializer:
+  AWSCURInitializerFunction:
     Type: 'AWS::Lambda::Function'
-    DependsOn: AWSCURCrawler
+    DependsOn:
+      - AWSCURCrawler
+      - AWSCURInitializerFunctionLogGroup
     Properties:
+      FunctionName: serverless-saas-lab7-aws-cur-initializer
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Service
+          Value: lab7
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
       Code:
-        ZipFile: >
-          const AWS = require('aws-sdk');
-          const response = require('./cfn-response');
-          exports.handler = function(event, context, callback) {
-            if (event.RequestType === 'Delete') {
-              response.send(event, context, response.SUCCESS);
-            } else {
-              const glue = new AWS.Glue();
-              glue.startCrawler({ Name: 'AWSCURCrawler-Multi-tenant' }, function(err, data) {
-                if (err) {
-                  const responseData = JSON.parse(this.httpResponse.body);
-                  if (responseData['__type'] == 'CrawlerRunningException') {
-                    callback(null, responseData.Message);
-                  } else {
-                    const responseString = JSON.stringify(responseData);
-                    if (event.ResponseURL) {
-                      response.send(event, context, response.FAILED,{ msg: responseString });
-                    } else {
-                      callback(responseString);
-                    }
+        ZipFile: |
+          import json
+          import boto3
+
+          def handler(event, context):
+              """Lambda handler for CUR initializer - starts Glue Crawler"""
+              print(f"Received event: {json.dumps(event)}")
+
+              glue = boto3.client('glue')
+              crawler_name = 'AWSCURCrawler-Multi-tenant-lab7'
+
+              try:
+                  response = glue.start_crawler(Name=crawler_name)
+                  print(f"Successfully started crawler: {crawler_name}")
+                  return {
+                      'statusCode': 200,
+                      'body': json.dumps({
+                          'message': 'Crawler started successfully',
+                          'crawler': crawler_name
+                      })
                   }
-                }
-                else {
-                  if (event.ResponseURL) {
-                    response.send(event, context, response.SUCCESS);
-                  } else {
-                    callback(null, response.SUCCESS);
+              except glue.exceptions.CrawlerRunningException as e:
+                  # Crawler is already running - this is not an error
+                  print(f"Crawler already running: {e}")
+                  return {
+                      'statusCode': 200,
+                      'body': json.dumps({
+                          'message': 'Crawler is already running',
+                          'crawler': crawler_name
+                      })
                   }
-                }
-              });
-            }
-          };
+              except Exception as e:
+                  error_msg = f"Error starting crawler: {str(e)}"
+                  print(error_msg)
+                  return {
+                      'statusCode': 500,
+                      'body': json.dumps({
+                          'error': error_msg,
+                          'crawler': crawler_name
+                      })
+                  }
       Handler: 'index.handler'
       Timeout: 30
-      Runtime: nodejs16.x
+      Runtime: python3.14
       ReservedConcurrentExecutions: 1
       Role: !GetAtt AWSCURCrawlerLambdaExecutor.Arn
 
+  # Custom Resource: Copy SampleCUR files to CUR bucket and start Crawler (Case_A only)
+  # In Case_B, deployment.sh handles this. In Case_A, we need CloudFormation to do it.
+  CURSeedLambdaRole:
+    Type: AWS::IAM::Role
+    Condition: HasAssetsBucket
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: CURSeedPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:ListBucket
+                Resource:
+                  - !Sub 'arn:aws:s3:::${AssetsBucketName}'
+                  - !Sub 'arn:aws:s3:::${AssetsBucketName}/*'
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                Resource:
+                  - !Sub '${CURBucket.Arn}/*'
+              - Effect: Allow
+                Action:
+                  - glue:StartCrawler
+                Resource: '*'
 
-  
+  CURSeedFunction:
+    Type: AWS::Lambda::Function
+    Condition: HasAssetsBucket
+    DependsOn: AWSCURCrawler
+    Properties:
+      FunctionName: serverless-saas-lab7-cur-seed
+      Runtime: python3.14
+      Handler: index.handler
+      Timeout: 120
+      Role: !GetAtt CURSeedLambdaRole.Arn
+      Code:
+        ZipFile: |
+          import json
+          import boto3
+          import cfnresponse
+
+          def handler(event, context):
+              print(f"Event: {json.dumps(event)}")
+              if event['RequestType'] == 'Delete':
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
+                  return
+
+              try:
+                  s3 = boto3.client('s3')
+                  glue = boto3.client('glue')
+
+                  source_bucket = event['ResourceProperties']['SourceBucket']
+                  source_prefix = event['ResourceProperties']['SourcePrefix']
+                  dest_bucket = event['ResourceProperties']['DestBucket']
+                  dest_prefix = event['ResourceProperties']['DestPrefix']
+                  crawler_name = event['ResourceProperties']['CrawlerName']
+
+                  # List and copy all objects from source to dest
+                  paginator = s3.get_paginator('list_objects_v2')
+                  copied = 0
+                  for page in paginator.paginate(Bucket=source_bucket, Prefix=source_prefix):
+                      for obj in page.get('Contents', []):
+                          source_key = obj['Key']
+                          # Strip the source prefix and append to dest prefix
+                          relative_key = source_key[len(source_prefix):]
+                          dest_key = f"{dest_prefix}{relative_key}"
+                          s3.copy_object(
+                              Bucket=dest_bucket,
+                              Key=dest_key,
+                              CopySource={'Bucket': source_bucket, 'Key': source_key}
+                          )
+                          copied += 1
+
+                  print(f"Copied {copied} files to s3://{dest_bucket}/{dest_prefix}")
+
+                  # Start the Glue Crawler
+                  try:
+                      glue.start_crawler(Name=crawler_name)
+                      print(f"Started crawler: {crawler_name}")
+                  except glue.exceptions.CrawlerRunningException:
+                      print("Crawler already running")
+
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, {'FilesCopied': str(copied)})
+              except Exception as e:
+                  print(f"Error: {e}")
+                  cfnresponse.send(event, context, cfnresponse.FAILED, {'Error': str(e)})
+
+  CURSeedInvocation:
+    Type: Custom::CURSeed
+    Condition: HasAssetsBucket
+    DependsOn:
+      - CURBucket
+      - AWSCURCrawler
+    Properties:
+      ServiceToken: !GetAtt CURSeedFunction.Arn
+      SourceBucket: !Ref AssetsBucketName
+      SourcePrefix: !Sub '${AssetsBucketPrefix}serverless-saas-workshop/${AssetsBuildId}/sample-cur/'
+      DestBucket: !Ref CURBucket
+      DestPrefix: 'curoutput/year=2022/month=10/'
+      CrawlerName: AWSCURCrawler-Multi-tenant-lab7
+
   TenantCostandUsageAttributionTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -196,13 +418,24 @@ Resources:
           KeyType: HASH
         - AttributeName: TenantId#ServiceName
           KeyType: RANGE
-      BillingMode: PAY_PER_REQUEST 
-      TableName: TenantCostAndUsageAttribution
-  
+      BillingMode: PAY_PER_REQUEST
+      TableName: TenantCostAndUsageAttribution-lab7
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Service
+          Value: lab7
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
+
   QueryLogInsightsExecutionRole:
-    Type: AWS::IAM::Role     
+    Type: AWS::IAM::Role
     Properties:
-      RoleName: product-function-execution-role-lab1
+      RoleName: query-log-insights-execution-role-lab7
       Path: '/'
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -215,11 +448,22 @@ Resources:
               - sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Tags:
+        - Key: Application
+          Value: serverless-saas-workshop
+        - Key: Service
+          Value: lab7
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: CostCenter
+          Value: !Ref CostCenter
       Policies:
         - PolicyName: query-log-insight-lab7
           PolicyDocument:
             Version: 2012-10-17
-            Statement:              
+            Statement:
               - Effect: Allow
                 Action:
                   - logs:GetQueryResults
@@ -228,6 +472,7 @@ Resources:
                   - logs:FilterLogEvents
                   - logs:DescribeLogGroups
                   - cloudformation:ListStackResources
+                  - cloudformation:DescribeStacks
                 Resource:
                   - "*"
               - Effect: Allow
@@ -250,15 +495,24 @@ Resources:
                   - glue:*
                 Resource:
                   - "*"
-                  
-  GetDynamoDBUsageAndCostByTenant:
-    Type: AWS::Serverless::Function 
-    DependsOn: QueryLogInsightsExecutionRole 
+
+  GetDynamoDBUsageAndCostByTenantFunction:
+    Type: AWS::Serverless::Function
+    DependsOn:
+      - QueryLogInsightsExecutionRole
+      - GetDynamoDBUsageAndCostByTenantFunctionLogGroup
     Properties:
+      FunctionName: serverless-saas-lab7-dynamodb-cost
       CodeUri: TenantUsageAndCost/
       Handler: tenant_usage_and_cost.calculate_daily_dynamodb_attribution_by_tenant
-      Runtime: python3.9  
+      Runtime: python3.14
       Role: !GetAtt QueryLogInsightsExecutionRole.Arn
+      Tags:
+        Application: serverless-saas-workshop
+        Service: lab7
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
       Environment:
         Variables:
           ATHENA_S3_OUTPUT: !Ref CURBucket
@@ -266,17 +520,26 @@ Resources:
         ScheduledEvent:
           Type: Schedule
           Properties:
-            Name: CalculateDynamoUsageAndCostByTenant
+            Name: CalculateDynamoUsageAndCostByTenant-lab7
             Schedule: rate(5 minutes)
-  
-  GetLambdaUsageAndCostByTenant:
-    Type: AWS::Serverless::Function 
-    DependsOn: QueryLogInsightsExecutionRole 
+
+  GetLambdaUsageAndCostByTenantFunction:
+    Type: AWS::Serverless::Function
+    DependsOn:
+      - QueryLogInsightsExecutionRole
+      - GetLambdaUsageAndCostByTenantFunctionLogGroup
     Properties:
+      FunctionName: serverless-saas-lab7-lambda-cost
       CodeUri: TenantUsageAndCost/
       Handler: tenant_usage_and_cost.calculate_daily_lambda_attribution_by_tenant
-      Runtime: python3.9  
+      Runtime: python3.14
       Role: !GetAtt QueryLogInsightsExecutionRole.Arn
+      Tags:
+        Application: serverless-saas-workshop
+        Service: lab7
+        Environment: !Ref Environment
+        Owner: !Ref Owner
+        CostCenter: !Ref CostCenter
       Environment:
         Variables:
           ATHENA_S3_OUTPUT: !Ref CURBucket
@@ -284,18 +547,18 @@ Resources:
         ScheduledEvent:
           Type: Schedule
           Properties:
-            Name: CalculateLambdaUsageAndCostByTenant
+            Name: CalculateLambdaUsageAndCostByTenant-lab7
             Schedule: rate(5 minutes)
-            
-Outputs:
-    CURBucketname:
-        Description: The name of S3 bucket name
-        Value: !Ref CURBucket
-        Export:
-          Name: "CURBucketname"       
 
-    AWSCURInitializerFunctionName:
-        Description: Function name of CUR initializer
-        Value: !Ref AWSCURInitializer
-        Export:
-          Name: "AWSCURInitializerFunctionName"     
+Outputs:
+  CURBucketname:
+    Description: The name of S3 bucket name
+    Value: !Ref CURBucket
+    Export:
+      Name: "CURBucketname"
+
+  AWSCURInitializerFunctionName:
+    Description: Function name of CUR initializer
+    Value: !Ref AWSCURInitializerFunction
+    Export:
+      Name: "AWSCURInitializerFunctionName"

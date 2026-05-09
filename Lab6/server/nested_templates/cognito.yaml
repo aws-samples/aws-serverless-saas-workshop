@@ -35,7 +35,7 @@ Resources:
       UserPoolName: PooledTenant-ServerlessSaaS-lab6-UserPool
       UserPoolTags:
         Application: serverless-saas-workshop
-        Lab: lab6
+        Service: lab6
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter
@@ -106,7 +106,7 @@ Resources:
       UserPoolName: OperationUsers-ServerlessSaaS-lab6-UserPool
       UserPoolTags:
         Application: serverless-saas-workshop
-        Lab: lab6
+        Service: lab6
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter

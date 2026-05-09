@@ -57,7 +57,7 @@ Resources:
             - - "Your temporary password for tenant UI application"
       UserPoolTags:
         Application: serverless-saas-workshop
-        Lab: lab2
+        Service: lab2
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter
@@ -127,7 +127,7 @@ Resources:
             - - "Your temporary password for admin UI application"
       UserPoolTags:
         Application: serverless-saas-workshop
-        Lab: lab2
+        Service: lab2
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter

@@ -87,7 +87,7 @@ Resources:
       Tags:
         - Key: Application
           Value: serverless-saas-workshop
-        - Key: Lab
+        - Key: Service
           Value: lab2
         - Key: Environment
           Value: !Ref Environment
@@ -173,7 +173,7 @@ Resources:
       TracingEnabled: True
       Tags:
         Application: serverless-saas-workshop
-        Lab: lab2
+        Service: lab2
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter

@@ -139,7 +139,7 @@ Resources:
           Value: serverless-saas-workshop
         - Key: TenantId
           Value: !Ref TenantIdParameter
-        - Key: Lab
+        - Key: Service
           Value: lab3
         - Key: Environment
           Value: !Ref Environment
@@ -170,7 +170,7 @@ Resources:
           Value: serverless-saas-workshop
         - Key: TenantId
           Value: !Ref TenantIdParameter
-        - Key: Lab
+        - Key: Service
           Value: lab3
         - Key: Environment
           Value: !Ref Environment
@@ -216,7 +216,7 @@ Resources:
           Value: serverless-saas-workshop
         - Key: TenantId
           Value: !Ref TenantIdParameter
-        - Key: Lab
+        - Key: Service
           Value: lab3
         - Key: Environment
           Value: !Ref Environment
@@ -246,7 +246,7 @@ Resources:
       Tags:
         Application: serverless-saas-workshop
         TenantId: !Ref TenantIdParameter
-        Lab: lab3
+        Service: lab3
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter      
@@ -272,7 +272,7 @@ Resources:
       Tags:
         Application: serverless-saas-workshop
         TenantId: !Ref TenantIdParameter
-        Lab: lab3
+        Service: lab3
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter
@@ -298,7 +298,7 @@ Resources:
       Tags:
         Application: serverless-saas-workshop
         TenantId: !Ref TenantIdParameter
-        Lab: lab3
+        Service: lab3
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter
@@ -324,7 +324,7 @@ Resources:
       Tags:
         Application: serverless-saas-workshop
         TenantId: !Ref TenantIdParameter
-        Lab: lab3
+        Service: lab3
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter
@@ -350,7 +350,7 @@ Resources:
       Tags:
         Application: serverless-saas-workshop
         TenantId: !Ref TenantIdParameter
-        Lab: lab3
+        Service: lab3
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter
@@ -392,7 +392,7 @@ Resources:
           Value: serverless-saas-workshop
         - Key: TenantId
           Value: !Ref TenantIdParameter
-        - Key: Lab
+        - Key: Service
           Value: lab3
         - Key: Environment
           Value: !Ref Environment
@@ -422,7 +422,7 @@ Resources:
       Tags:
         Application: serverless-saas-workshop
         TenantId: !Ref TenantIdParameter
-        Lab: lab3
+        Service: lab3
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter
@@ -448,7 +448,7 @@ Resources:
       Tags:
         Application: serverless-saas-workshop
         TenantId: !Ref TenantIdParameter
-        Lab: lab3
+        Service: lab3
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter
@@ -474,7 +474,7 @@ Resources:
       Tags:
         Application: serverless-saas-workshop
         TenantId: !Ref TenantIdParameter
-        Lab: lab3
+        Service: lab3
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter
@@ -500,7 +500,7 @@ Resources:
       Tags:
         Application: serverless-saas-workshop
         TenantId: !Ref TenantIdParameter
-        Lab: lab3
+        Service: lab3
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter
@@ -526,7 +526,7 @@ Resources:
       Tags:
         Application: serverless-saas-workshop
         TenantId: !Ref TenantIdParameter
-        Lab: lab3
+        Service: lab3
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter
@@ -565,7 +565,7 @@ Resources:
           Value: serverless-saas-workshop
         - Key: TenantId
           Value: !Ref TenantIdParameter
-        - Key: Lab
+        - Key: Service
           Value: lab3
         - Key: Environment
           Value: !Ref Environment
@@ -596,7 +596,7 @@ Resources:
       Tags:
         Application: serverless-saas-workshop
         TenantId: !Ref TenantIdParameter
-        Lab: lab3
+        Service: lab3
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter
@@ -614,7 +614,7 @@ Resources:
       Tags:
         Application: serverless-saas-workshop
         TenantId: !Ref TenantIdParameter
-        Lab: lab3
+        Service: lab3
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter

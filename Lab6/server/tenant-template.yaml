@@ -132,7 +132,7 @@ Resources:
       Tags:
         - Key: Application
           Value: serverless-saas-workshop
-        - Key: Lab
+        - Key: Service
           Value: lab6
         - Key: Environment
           Value: !Ref Environment
@@ -163,7 +163,7 @@ Resources:
       Tags:
         - Key: Application
           Value: serverless-saas-workshop
-        - Key: Lab
+        - Key: Service
           Value: lab6
         - Key: Environment
           Value: !Ref Environment
@@ -215,7 +215,7 @@ Resources:
       Tags:
         - Key: Application
           Value: serverless-saas-workshop
-        - Key: Lab
+        - Key: Service
           Value: lab6
         - Key: Environment
           Value: !Ref Environment
@@ -248,7 +248,7 @@ Resources:
           PRODUCT_TABLE_NAME: !Ref ProductTable      
       Tags:
         Application: serverless-saas-workshop
-        Lab: lab6
+        Service: lab6
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter
@@ -276,7 +276,7 @@ Resources:
           PRODUCT_TABLE_NAME: !Ref ProductTable
       Tags:
         Application: serverless-saas-workshop
-        Lab: lab6
+        Service: lab6
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter
@@ -303,7 +303,7 @@ Resources:
           PRODUCT_TABLE_NAME: !Ref ProductTable
       Tags:
         Application: serverless-saas-workshop
-        Lab: lab6
+        Service: lab6
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter
@@ -330,7 +330,7 @@ Resources:
           PRODUCT_TABLE_NAME: !Ref ProductTable
       Tags:
         Application: serverless-saas-workshop
-        Lab: lab6
+        Service: lab6
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter
@@ -357,7 +357,7 @@ Resources:
           PRODUCT_TABLE_NAME: !Ref ProductTable
       Tags:
         Application: serverless-saas-workshop
-        Lab: lab6
+        Service: lab6
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter
@@ -404,7 +404,7 @@ Resources:
       Tags:
         - Key: Application
           Value: serverless-saas-workshop
-        - Key: Lab
+        - Key: Service
           Value: lab6
         - Key: Environment
           Value: !Ref Environment
@@ -437,7 +437,7 @@ Resources:
           ORDER_TABLE_NAME: !Ref OrderTable
       Tags:
         Application: serverless-saas-workshop
-        Lab: lab6
+        Service: lab6
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter
@@ -465,7 +465,7 @@ Resources:
           ORDER_TABLE_NAME: !Ref OrderTable
       Tags:
         Application: serverless-saas-workshop
-        Lab: lab6
+        Service: lab6
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter
@@ -492,7 +492,7 @@ Resources:
           ORDER_TABLE_NAME: !Ref OrderTable
       Tags:
         Application: serverless-saas-workshop
-        Lab: lab6
+        Service: lab6
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter
@@ -519,7 +519,7 @@ Resources:
           ORDER_TABLE_NAME: !Ref OrderTable
       Tags:
         Application: serverless-saas-workshop
-        Lab: lab6
+        Service: lab6
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter
@@ -546,7 +546,7 @@ Resources:
           ORDER_TABLE_NAME: !Ref OrderTable
       Tags:
         Application: serverless-saas-workshop
-        Lab: lab6
+        Service: lab6
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter
@@ -572,7 +572,7 @@ Resources:
           OPERATION_USERS_API_KEY : !ImportValue Serverless-SaaS-ApiKeyOperationUsers-lab6
       Tags:
         Application: serverless-saas-workshop
-        Lab: lab6
+        Service: lab6
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter
@@ -620,7 +620,7 @@ Resources:
       TracingEnabled: True
       Tags:
         Application: serverless-saas-workshop
-        Lab: lab6
+        Service: lab6
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter
@@ -1235,7 +1235,7 @@ Resources:
       Tags:
         - Key: Application
           Value: serverless-saas-workshop
-        - Key: Lab
+        - Key: Service
           Value: lab6
         - Key: Environment
           Value: !Ref Environment
@@ -1260,7 +1260,7 @@ Resources:
           - !Ref ServerlessSaaSLayers
       Tags:
         Application: serverless-saas-workshop
-        Lab: lab6
+        Service: lab6
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter
@@ -1313,7 +1313,7 @@ Resources:
       Tags:
         - Key: Application
           Value: serverless-saas-workshop
-        - Key: Lab
+        - Key: Service
           Value: lab6
         - Key: Environment
           Value: !Ref Environment
@@ -1338,7 +1338,7 @@ Resources:
           - !Ref ServerlessSaaSLayers
       Tags:
         Application: serverless-saas-workshop
-        Lab: lab6
+        Service: lab6
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter

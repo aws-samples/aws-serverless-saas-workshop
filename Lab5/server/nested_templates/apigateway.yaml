@@ -89,7 +89,7 @@ Resources:
       Tags:
         - Key: Application
           Value: serverless-saas-workshop
-        - Key: Lab
+        - Key: Service
           Value: lab5
         - Key: Environment
           Value: !Ref Environment
@@ -969,7 +969,7 @@ Resources:
       StageName: prod
       Tags:
         Application: serverless-saas-workshop
-        Lab: lab5
+        Service: lab5
         Environment: !Ref Environment
         Owner: !Ref Owner
         CostCenter: !Ref CostCenter
