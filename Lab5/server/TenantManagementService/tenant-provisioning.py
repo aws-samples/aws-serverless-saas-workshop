@@ -35,7 +35,12 @@ def provision_tenant(event, context):
 
         logger.info(response_ddb)
 
-        pass  # learner: trigger the CodePipeline here (codepipeline.start_pipeline_execution)
+        # learner: trigger the CodePipeline here
+        # response_codepipeline = codepipeline.start_pipeline_execution(
+        #     name='serverless-saas-pipeline-lab5'
+        # )
+        # logger.info(response_codepipeline)
+        pass
 
     except Exception as e:
         raise

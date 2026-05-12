@@ -68,7 +68,29 @@ def lambda_handler(event, context):
     authResponse = policy.build()
  
     #TODO : Add code for Fine-Grained-Access-Control
-    iam_policy = None  # learner: build FGAC iam_policy via auth_manager.getPolicyForUser and STS AssumeRole with Policy=iam_policy
+    # Stub: this policy grants full, un-scoped access to the tenant's data
+    # store. This intentionally lets tenant1 read tenant2's data so you can
+    # observe the cross-tenant access problem before fixing it. Replace this
+    # block with the snippet in the "Adding the missing code" page, which
+    # narrows the policy down to the caller's tenantId using
+    # `auth_manager.getPolicyForUser`.
+    iam_policy = json.dumps({
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "dynamodb:GetItem",
+                    "dynamodb:PutItem",
+                    "dynamodb:UpdateItem",
+                    "dynamodb:DeleteItem",
+                    "dynamodb:Query",
+                    "dynamodb:Scan",
+                ],
+                "Resource": "arn:aws:dynamodb:{}:{}:table/*".format(region, aws_account_id),
+            }
+        ],
+    })
     role_arn = "arn:aws:iam::{}:role/authorizer-access-role-lab4-{}".format(aws_account_id, region)
 
     assumed_role = sts_client.assume_role(

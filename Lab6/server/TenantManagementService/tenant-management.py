@@ -26,7 +26,7 @@ def create_tenant(event, context):
     tenant_details = json.loads(event['body'])
 
     dynamodb = boto3.resource('dynamodb')
-    table_tenant_details = dynamodb.Table('ServerlessSaaS-TenantDetails-lab6')#TODO: read table names from env vars
+    table_tenant_details = dynamodb.Table('ServerlessSaaS-TenantDetails-lab6')
     table_system_settings = dynamodb.Table('ServerlessSaaS-Settings-lab6')
 
     try:          
@@ -40,7 +40,6 @@ def create_tenant(event, context):
             )
             api_gateway_url = settings_response['Item']['settingValue']
 
-        #TODO: Save API Key inside the table**
         response = table_tenant_details.put_item(
             Item={
                     'tenantId': tenant_details['tenantId'],
@@ -53,8 +52,9 @@ def create_tenant(event, context):
                     'appClientId': tenant_details['appClientId'],
                     'dedicatedTenancy': tenant_details['dedicatedTenancy'],
                     'isActive': True,
-                    'apiGatewayUrl': api_gateway_url
-                    # learner: also save 'apiKey': tenant_details['apiKey'] here
+                    'apiGatewayUrl': api_gateway_url,
+                    #TODO: Save API Key inside the table
+                    #'apiKey': tenant_details['apiKey']
                 }
             )                    
 
@@ -274,7 +274,7 @@ def load_tenant_config(event, context):
     tenantName = urllib.parse.unquote(params['tenantname'])
 
     dynamodb = boto3.resource('dynamodb')
-    table_tenant_details = dynamodb.Table('ServerlessSaaS-TenantDetails-lab6')#TODO: read table names from env vars
+    table_tenant_details = dynamodb.Table('ServerlessSaaS-TenantDetails-lab6')
     
     try:
         response = table_tenant_details.query(
@@ -366,7 +366,7 @@ def __getTenantManagementTable(event):
     secretkey = event['requestContext']['authorizer']['secretkey']
     sessiontoken = event['requestContext']['authorizer']['sessiontoken']    
     dynamodb = boto3.resource('dynamodb', aws_access_key_id=accesskey, aws_secret_access_key=secretkey, aws_session_token=sessiontoken)
-    table_tenant_details = dynamodb.Table('ServerlessSaaS-TenantDetails-lab6')#TODO: read table names from env vars
+    table_tenant_details = dynamodb.Table('ServerlessSaaS-TenantDetails-lab6')
     
     return table_tenant_details
 

@@ -1,5 +1,5 @@
 requests
 pytest-mock
-aws-lambda-powertools[Tracer,Logger,Metrics]
+aws-lambda-powertools[Tracer]
 jsonpickle
 aws_requests_auth

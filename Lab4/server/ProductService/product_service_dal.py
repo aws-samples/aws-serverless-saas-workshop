@@ -157,7 +157,14 @@ def __get_tenant_data(partition_id, get_all_products_response, table, event):
     metrics_manager.record_metric(event, "ReadCapacityUnits", "Count", response['ConsumedCapacity']['CapacityUnits'])        
 
 #TODO: Implement this method
+# Stub: this implementation ignores the STS scoped-credentials passed by the
+# authorizer and returns a DynamoDB table client that uses the Lambda's own
+# execution role (full access to the table). That's what lets tenant1 read
+# tenant2's data so you can observe the cross-tenant access problem before
+# fixing it. Replace the body below with the snippet in the "Adding the
+# missing code" page, which reads accesskey/secretkey/sessiontoken from the
+# authorizer context and uses them to scope the client to the caller's
+# tenantId.
 def __get_dynamodb_table(event, dynamodb):
-    raise NotImplementedError(
-        "Learner exercise \u2014 see Solution/Lab4/server/ProductService/product_service_dal.py"
-    )
+    dynamodb = boto3.resource('dynamodb')
+    return dynamodb.Table(table_name)

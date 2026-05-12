@@ -40,8 +40,27 @@ def calculate_daily_dynamodb_attribution_by_tenant(event, context):
     # TODO: Get DynamoDB usage by tenant using filter_log_events API
     tenant_usage, total_RCU, total_WCU = None, Decimal('0.0'), Decimal('0.0')
 
-    # TODO: Save the tenant attribution data inside a dynamodb table
-    pass
+    print(f"Total RCU: {total_RCU}, Total WCU: {total_WCU}")
+    print(f"Usage by tenant: {tenant_usage}")
+
+    # Check if we have any usage data
+    if total_RCU + total_WCU == 0:
+        print("No DynamoDB usage data found in CloudWatch Logs. Skipping DynamoDB cost attribution.")
+        return
+
+    # Process each tenant's usage
+    for tenant_id, usage in tenant_usage.items():
+        total_RCU_By_Tenant = usage['rcu']
+        total_WCU_By_Tenant = usage['wcu']
+
+        # RCU is about 5 times cheaper than WCU, so weight it accordingly
+        tenant_attribution_percentage_numerator = Decimal(str(total_RCU_By_Tenant * Decimal('5.0'))) + Decimal(str(total_WCU_By_Tenant))
+        tenant_attribution_percentage_denominator = Decimal(str(total_RCU * Decimal('5.0'))) + Decimal(str(total_WCU))
+        tenant_attribution_percentage = tenant_attribution_percentage_numerator / tenant_attribution_percentage_denominator
+        tenant_dynamodb_cost = tenant_attribution_percentage * total_dynamodb_cost
+
+        # TODO: Save the tenant attribution data inside a dynamodb table
+        pass
 
 
 # Below function considers number of invocation as the metrics to calculate usage and cost.
@@ -67,6 +86,40 @@ def calculate_daily_lambda_attribution_by_tenant(event, context):
     # TODO: Get Lambda invocations by tenant using filter_log_events API
     tenant_invocations, total_invocations = None, 0
     pass
+
+    print(f"Total Lambda invocations: {total_invocations}")
+    print(f"Invocations by tenant: {tenant_invocations}")
+
+    # Check if we have any invocations
+    if total_invocations == 0:
+        print("No Lambda invocation data found in CloudWatch Logs. Skipping Lambda cost attribution.")
+        return
+
+    # Process each tenant's invocations
+    for tenant_id, invocation_count in tenant_invocations.items():
+        total_invocations_by_tenant = Decimal(str(invocation_count))
+
+        tenant_attribution_percentage = total_invocations_by_tenant / Decimal(str(total_invocations))
+        tenant_lambda_cost = tenant_attribution_percentage * total_lambda_cost
+
+        try:
+            response = attribution_table.put_item(
+                Item={
+                    "Date": start_date_time,
+                    "TenantId#ServiceName": tenant_id + "#" + "AWSLambda",
+                    "TenantId": tenant_id,
+                    "TotalInvocations": Decimal(str(total_invocations)),
+                    "TenantTotalInvocations": total_invocations_by_tenant,
+                    "TenantAttributionPercentage": tenant_attribution_percentage,
+                    "TenantServiceCost": tenant_lambda_cost,
+                    "TotalServiceCost": total_lambda_cost
+                }
+            )
+        except ClientError as e:
+            print(e.response['Error']['Message'])
+            raise Exception('Error saving Lambda attribution', e)
+        else:
+            print("PutItem succeeded:")
 
 
 def __get_total_service_cost(servicename, start_date_time, end_date_time):
@@ -157,34 +210,45 @@ def __get_list_of_log_group_names():
     log_group_names = []
     log_group_prefix = '/aws/lambda/'
 
-    # Known function names for Lab7 pooled tenant stack
+    # Known function names — Lab 7 cost attribution reads usage data from
+    # Lab 3's pooled tenant functions (they emit ReadCapacityUnits/WriteCapacityUnits
+    # and "Request completed" logs with tenant context).
     known_function_names = [
-        'create-product-pooled-lab7',
-        'update-product-pooled-lab7',
-        'get-products-pooled-lab7'
+        'serverless-saas-lab3-create-product',
+        'serverless-saas-lab3-update-product',
+        'serverless-saas-lab3-get-products',
+        'serverless-saas-lab3-get-product',
+        'serverless-saas-lab3-delete-product',
+        'serverless-saas-lab3-create-order',
+        'serverless-saas-lab3-get-orders',
+        'serverless-saas-lab3-get-order',
+        'serverless-saas-lab3-update-order',
+        'serverless-saas-lab3-delete-order',
     ]
 
+    # Lab 7 reads usage data from Lab 3's pooled tenant functions.
     # Two deployment modes:
-    #   1. Individual lab deployment: stack is named 'stack-pooled-lab7'
-    #   2. Orchestration deployment: stack is a nested stack named 'serverless-saas-lab-Lab7PooledStack-XXXXX'
-    # We try to discover the orchestration nested stack first, then fall back to the individual name,
-    # and finally use known function names as a last resort.
+    #   1. Individual lab deployment: stack is named 'stack-pooled-lab3'
+    #   2. Orchestration deployment: stack is a nested stack named
+    #      'serverless-saas-workshop-main-Lab3PooledStack-XXXXX'
+    # We try to discover the orchestration nested stack first, then fall back
+    # to the individual name, and finally use known function names as a last resort.
     stack_names_to_try = []
 
-    # Discover orchestration nested stack
-    print("Discovering Lab7 pooled tenant stack...")
+    # Discover Lab3 pooled tenant stack (source of usage data)
+    print("Discovering Lab3 pooled tenant stack (source of usage data)...")
     try:
         cfn_paginator = cloudformation.get_paginator('list_stacks')
         for page in cfn_paginator.paginate(StackStatusFilter=['CREATE_COMPLETE', 'UPDATE_COMPLETE']):
             for stack in page['StackSummaries']:
-                if 'Lab7PooledStack' in stack['StackName'] or 'lab7-pooled' in stack['StackName'].lower():
+                if 'Lab3PooledStack' in stack['StackName'] or 'lab3-pooled' in stack['StackName'].lower():
                     print(f"  Found orchestration nested stack: {stack['StackName']}")
                     stack_names_to_try.append(stack['StackName'])
     except ClientError:
         pass  # Non-critical - we'll try other options
 
-    # Also try the individual lab deployment stack name
-    stack_names_to_try.append('stack-pooled-lab7')
+    # Also try the individual lab deployment stack name (Case_B)
+    stack_names_to_try.append('stack-pooled-lab3')
 
     cloudformation_paginator = cloudformation.get_paginator('list_stack_resources')
 
