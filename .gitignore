@@ -53,3 +53,13 @@ extra-info/
 # OS
 .DS_Store
 Thumbs.db
+
+# Workshop Studio (Case_A) packaging — local only, not for public GitHub.
+# These scripts and artefacts contain Workshop-Studio-specific references
+# (Assets_Bucket prefix, workshop catalog ID) and are tracked in the internal
+# workshop-docs repo. The public Case_B GitHub repo ships only the scripts
+# relevant to developers running ./deploy-all.sh on their own AWS account.
+scripts/package-for-workshop-studio.sh
+scripts/packaging_rewrite.py
+scripts/transform_cdk_template.py
+scripts/packaging-manifest.json
