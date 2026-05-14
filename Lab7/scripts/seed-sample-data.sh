@@ -3,7 +3,7 @@ set -euo pipefail
 
 # =============================================================================
 # seed-sample-data.sh
-# Generates real traffic against Lab3 pooled APIs to populate CloudWatch Logs
+# Generates real traffic against Lab4 pooled APIs to populate CloudWatch Logs
 # for Lab7 cost attribution. Wait ~5 min after running for the EventBridge
 # Scheduler to aggregate usage into TenantCostAndUsageAttribution-lab7.
 #
@@ -17,7 +17,7 @@ print_usage() {
     cat <<EOF
 Usage: $0 <bearer-token> [OPTIONS]
 
-Generates traffic against Lab3 pooled API using a tenant's bearer token.
+Generates traffic against Lab4 pooled API using a tenant's bearer token.
 After running, wait ~5 min for the scheduled lambda to populate
 TenantCostAndUsageAttribution-lab7.
 
@@ -52,19 +52,19 @@ done
 PROFILE_ARG=""
 [[ -n "$AWS_PROFILE" ]] && PROFILE_ARG="--profile $AWS_PROFILE"
 
-# Resolve Lab3 tenant API Gateway URL from CloudFormation stacks
+# Resolve Lab4 tenant API Gateway URL from CloudFormation stacks
 # In Case_A (Workshop Studio), the stack is a nested stack under serverless-saas-workshop-main
-# In Case_B (self-guided), it might be serverless-saas-lab3-pooled or similar
-echo "Resolving Lab3 Tenant API URL..."
+# In Case_B (self-guided), it might be serverless-saas-lab4-pooled or similar
+echo "Resolving Lab4 Tenant API URL..."
 
 # Allow override via environment variable
 if [[ -n "${API_URL:-}" ]]; then
     echo "  Using API_URL from environment: ${API_URL}"
 else
-    # Find the Lab3TenantStack name (nested stack in Case_A)
+    # Find the Lab4TenantStack name (nested stack in Case_A)
     TENANT_STACK=$(aws cloudformation list-stacks ${PROFILE_ARG} \
         --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE \
-        --query "StackSummaries[?contains(StackName, 'Lab3TenantStack')].StackName | [0]" \
+        --query "StackSummaries[?contains(StackName, 'Lab4TenantStack')].StackName | [0]" \
         --output text 2>/dev/null || true)
 
     if [[ -n "$TENANT_STACK" ]] && [[ "$TENANT_STACK" != "None" ]]; then
@@ -77,13 +77,13 @@ else
     # Fallback: try Case_B stack name
     if [[ -z "${API_URL:-}" ]] || [[ "$API_URL" == "None" ]]; then
         API_URL=$(aws cloudformation describe-stacks \
-            --stack-name serverless-saas-lab3-pooled \
+            --stack-name serverless-saas-lab4-pooled \
             --query "Stacks[0].Outputs[?OutputKey=='TenantAPI'].OutputValue | [0]" \
             --output text ${PROFILE_ARG} 2>/dev/null || true)
     fi
 
     if [[ -z "${API_URL:-}" ]] || [[ "$API_URL" == "None" ]]; then
-        echo "Error: Could not resolve Lab3 Tenant API Gateway URL."
+        echo "Error: Could not resolve Lab4 Tenant API Gateway URL."
         echo ""
         echo "You can pass the URL manually:"
         echo "  API_URL=https://xxxxx.execute-api.us-east-1.amazonaws.com/prod $0 <token>"
@@ -94,7 +94,7 @@ fi
 # Strip trailing slash
 API_URL="${API_URL%/}"
 
-echo "Lab3 API: ${API_URL}"
+echo "Lab4 API: ${API_URL}"
 echo "Iterations: ${ITERATIONS}"
 echo ""
 
@@ -155,5 +155,5 @@ echo "  1. Wait ~5 minutes for the EventBridge Scheduler to trigger the"
 echo "     Lab7 cost attribution lambdas."
 echo "  2. Check the DynamoDB table: TenantCostAndUsageAttribution-lab7"
 echo "  3. Inspect CloudWatch Logs for 'Request completed' entries in the"
-echo "     /aws/lambda/serverless-saas-lab3-* log groups to see the tenant"
+echo "     /aws/lambda/serverless-saas-lab4-* log groups to see the tenant"
 echo "     activity that the aggregation lambda consumes."

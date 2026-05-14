@@ -211,44 +211,44 @@ def __get_list_of_log_group_names():
     log_group_prefix = '/aws/lambda/'
 
     # Known function names — Lab 7 cost attribution reads usage data from
-    # Lab 3's pooled tenant functions (they emit ReadCapacityUnits/WriteCapacityUnits
+    # Lab 4's pooled tenant functions (they emit ReadCapacityUnits/WriteCapacityUnits
     # and "Request completed" logs with tenant context).
     known_function_names = [
-        'serverless-saas-lab3-create-product',
-        'serverless-saas-lab3-update-product',
-        'serverless-saas-lab3-get-products',
-        'serverless-saas-lab3-get-product',
-        'serverless-saas-lab3-delete-product',
-        'serverless-saas-lab3-create-order',
-        'serverless-saas-lab3-get-orders',
-        'serverless-saas-lab3-get-order',
-        'serverless-saas-lab3-update-order',
-        'serverless-saas-lab3-delete-order',
+        'serverless-saas-lab4-create-product',
+        'serverless-saas-lab4-update-product',
+        'serverless-saas-lab4-get-products',
+        'serverless-saas-lab4-get-product',
+        'serverless-saas-lab4-delete-product',
+        'serverless-saas-lab4-create-order',
+        'serverless-saas-lab4-get-orders',
+        'serverless-saas-lab4-get-order',
+        'serverless-saas-lab4-update-order',
+        'serverless-saas-lab4-delete-order',
     ]
 
-    # Lab 7 reads usage data from Lab 3's pooled tenant functions.
+    # Lab 7 reads usage data from Lab 4's pooled tenant functions.
     # Two deployment modes:
-    #   1. Individual lab deployment: stack is named 'stack-pooled-lab3'
+    #   1. Individual lab deployment: stack is named 'stack-pooled-lab4'
     #   2. Orchestration deployment: stack is a nested stack named
-    #      'serverless-saas-workshop-main-Lab3PooledStack-XXXXX'
+    #      'serverless-saas-workshop-main-Lab4TenantStack-XXXXX'
     # We try to discover the orchestration nested stack first, then fall back
     # to the individual name, and finally use known function names as a last resort.
     stack_names_to_try = []
 
-    # Discover Lab3 pooled tenant stack (source of usage data)
-    print("Discovering Lab3 pooled tenant stack (source of usage data)...")
+    # Discover Lab4 tenant stack (source of usage data)
+    print("Discovering Lab4 tenant stack (source of usage data)...")
     try:
         cfn_paginator = cloudformation.get_paginator('list_stacks')
         for page in cfn_paginator.paginate(StackStatusFilter=['CREATE_COMPLETE', 'UPDATE_COMPLETE']):
             for stack in page['StackSummaries']:
-                if 'Lab3PooledStack' in stack['StackName'] or 'lab3-pooled' in stack['StackName'].lower():
+                if 'Lab4TenantStack' in stack['StackName'] or 'lab4-tenant' in stack['StackName'].lower():
                     print(f"  Found orchestration nested stack: {stack['StackName']}")
                     stack_names_to_try.append(stack['StackName'])
     except ClientError:
         pass  # Non-critical - we'll try other options
 
     # Also try the individual lab deployment stack name (Case_B)
-    stack_names_to_try.append('stack-pooled-lab3')
+    stack_names_to_try.append('stack-pooled-lab4')
 
     cloudformation_paginator = cloudformation.get_paginator('list_stack_resources')
 
