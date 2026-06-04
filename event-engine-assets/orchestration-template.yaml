@@ -1,0 +1,68 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  Orchestration template for Serverless SaaS Workshop.
+  Launches all infrastructure stacks in parallel via nested stacks.
+
+Parameters:
+  AssetsBucket:
+    Type: String
+    Description: S3 bucket containing workshop assets
+  AssetsKeyPrefix:
+    Type: String
+    Description: S3 key prefix for workshop assets
+
+Resources:
+  IDEStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "https://${AssetsBucket}.s3.amazonaws.com/${AssetsKeyPrefix}initialize-module-sam-template.yaml"
+      Parameters:
+        AssetsBucket: !Ref AssetsBucket
+        AssetsKeyPrefix: !Ref AssetsKeyPrefix
+
+  UIStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "https://${AssetsBucket}.s3.amazonaws.com/${AssetsKeyPrefix}userinterface-module-sam-template.yaml"
+
+  Lab1Stack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "https://${AssetsBucket}.s3.amazonaws.com/${AssetsKeyPrefix}lab1-module-sam-template.yaml"
+      Parameters:
+        EEAssetsBucket: !Ref AssetsBucket
+        EEAssetsKeyPrefix: !Ref AssetsKeyPrefix
+
+  SharedStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: UIStack
+    Properties:
+      TemplateURL: !Sub "https://${AssetsBucket}.s3.amazonaws.com/${AssetsKeyPrefix}shared-template.yaml"
+      Parameters:
+        AssetsBucket: !Ref AssetsBucket
+        AssetsKeyPrefix: !Ref AssetsKeyPrefix
+        AdminAppSiteUrl: !GetAtt UIStack.Outputs.AdminAppSite
+
+Outputs:
+  IdeUrl:
+    Value: !GetAtt IDEStack.Outputs.IdeUrl
+  IdePassword:
+    Value: !GetAtt IDEStack.Outputs.IdePassword
+  AdminAppSite:
+    Value: !GetAtt UIStack.Outputs.AdminAppSite
+  LandingApplicationSite:
+    Value: !GetAtt UIStack.Outputs.LandingApplicationSite
+  ApplicationSite:
+    Value: !GetAtt UIStack.Outputs.ApplicationSite
+  AdminBucket:
+    Value: !GetAtt UIStack.Outputs.AdminBucket
+  LandingAppBucket:
+    Value: !GetAtt UIStack.Outputs.LandingAppBucket
+  AppBucket:
+    Value: !GetAtt UIStack.Outputs.AppBucket
+  APIGatewayURL:
+    Value: !GetAtt Lab1Stack.Outputs.APIGatewayURL
+  Lab1ApplicationSite:
+    Value: !GetAtt Lab1Stack.Outputs.ApplicationSite
+  Lab1AppBucket:
+    Value: !GetAtt Lab1Stack.Outputs.AppBucket
