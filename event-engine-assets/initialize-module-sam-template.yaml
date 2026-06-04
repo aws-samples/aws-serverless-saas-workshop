@@ -1,504 +1,410 @@
-AWSTemplateFormatVersion: "2010-09-09"
-Transform: AWS::Serverless-2016-10-31
-Description: >
-  Create Cloud9 IDE, create state machine to intall pre-req on cloud9, API Gateway cloudwatch Role
+AWSTemplateFormatVersion: 2010-09-09
+Description: This stack creates an EC2 instance with VS Code server environment, pre-req, API Gateway, and CloudWatch Role.
 
 Parameters:
-  # Optional parameters passed by the Event Engine to the stack.
-  # EEEventId:
-  #   Description: "Unique ID of this Event"
-  #   Type: String
-  # EETeamId:
-  #   Description: "Unique ID of this Team"
-  #   Type: String
-  # EEModuleId:
-  #   Description: "Unique ID of this module"
-  #   Type: String
-  # EEModuleVersion:
-  #   Description: "Version of this module"
-  #   Type: String
-  EEAssetsBucket:
+  EnvironmentName:
+    Description: An environment name that is prefixed to resource names
+    Type: String
+    Default: "serverless-saas"
+  InstanceType:
+    Description: EC2 instance type
+    Type: String
+    Default: t3.large
+    AllowedValues:
+      - t3.medium
+      - t3.large
+      - t3.xlarge
+    ConstraintDescription: Must be a valid EC2 instance type
+  LatestAmiId:
+    Type: "AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>"
+    Default: "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
+  AssetsBucket:
     Description: "Region-specific assets S3 bucket name (e.g. ee-assets-prod-us-east-1)"
     Type: String
     Default: "aws-sam-cli-managed-default-samclisourcebucket-8tf6bmi4rdcx"
-  EEAssetsKeyPrefix:
+  AssetsKeyPrefix:
     Description: "S3 key prefix where this modules assets are stored. (e.g. modules/my_module/v1/)"
     Type: String
     Default: "serverless-saas/"
-  # EEMasterAccountId:
-  #   Description: "AWS Account Id of the Master account"
-  #   Type: String
-  # EETeamRoleArn:
-  #   Description: "ARN of the Team Role"
-  #   Type: String
-  # EEKeyPair:
-  #   Description: "Name of the EC2 KeyPair generated for the Team"
-  #   Type: AWS::EC2::KeyPair::KeyName
-  # Your own parameters for the stack. NOTE: All these parameters need to have a default value.
-  EBSVolumeSize:
-    Description: "Size of EBS Volume (in GB)"
-    Type: Number
-    Default: 50
-  UserDataScript:
-    Description: "File name for user-data script"
-    Type: String
-    Default: "pre-requisites-event-engine.sh"
-  EC2InstanceType:
-    Default: t3.large
-    Description: EC2 instance type on which IDE runs
-    Type: String
-  AutoHibernateTimeout:
-    Default: 120
-    Description: How many minutes idle before shutting down the IDE
-    Type: Number
-  OwnerRoleName:
-    Default: "ServerlessSaaS/shaanubh-Isengard"
-    Description: Use this if you are accessing your AWS Account using a cross account role (as is the case with event engine)
-    Type: String    
 
-Conditions:
-  AddUserData: !Not [!Equals [ !Ref UserDataScript, "NONE" ]]
-  UseRole: !Not [!Equals [ !Ref OwnerRoleName, ""]]
+Mappings:
+  CloudFrontPrefixListIdMappings:
+    us-west-2:
+      PrefixListId: "pl-82a045eb"
+    us-east-1:
+      PrefixListId: "pl-3b927c52"
 
-Resources:  
-  EC2SSMExecutionRole:
-    Type: AWS::IAM::Role     
+Resources:
+################## PERMISSIONS AND ROLES #################
+  EC2Role:
+    Type: AWS::IAM::Role
     Properties:
-      RoleName: ec2-ssm-role
-      Path: '/'
+      RoleName: serverless-saas-admin
+      Tags:
+        - Key: Environment
+          Value: !Sub ${EnvironmentName}
       AssumeRolePolicyDocument:
-        Version: 2012-10-17
+        Version: "2012-10-17"
         Statement:
           - Effect: Allow
             Principal:
               Service:
                 - ec2.amazonaws.com
+                - ssm.amazonaws.com
+                - eks.amazonaws.com
+                - codebuild.amazonaws.com
             Action:
               - sts:AssumeRole
-      ManagedPolicyArns: 
-        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore 
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AdministratorAccess
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Path: "/"
       Policies:
       - PolicyName: ec2-ssm-policy
         PolicyDocument:
           Version: 2012-10-17
-          Statement:        
+          Statement:
           - Effect: Allow
             Action:
               - "ec2:ModifyVolume"
               - "ec2:DescribeInstances"
               - "ec2:DescribeVolumesModifications"
-              - "logs:*"              
-            Resource: "*"        
+              - "logs:*"
+            Resource: "*"
 
-  WaitForEC2ToInitialize:
-    Type: AWS::Serverless::Function
+  ################## ARTIFACTS BUCKET ###############
+  OutputBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
     Properties:
-      InlineCode: |
-        import boto3
-        import time
-        ec2_client = boto3.client('ec2')
-        
-        def lambda_handler(event, context):
-          instance_id = event['resources'][0].split("/")[1]
-          instance_statuses = ec2_client.describe_instance_status(InstanceIds=[instance_id])
-          try:
-            state = instance_statuses['InstanceStatuses'][0]['InstanceState']['Name']
-            instance_status = instance_statuses['InstanceStatuses'][0]['InstanceStatus']['Details'][0]['Status']
-            system_status = instance_statuses['InstanceStatuses'][0]['SystemStatus']['Details'][0]['Status']
-          except Exception as _:
-            state = 'UNKNOWN'
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
 
-          while (instance_status != 'passed' or system_status != 'passed' or state != 'running'):
-            print("waiting for system to be ready")
-            time.sleep(30)
-            instance_statuses = ec2_client.describe_instance_status(InstanceIds=[instance_id])
-            print (instance_statuses)
-            try:
-              state = instance_statuses['InstanceStatuses'][0]['InstanceState']['Name']
-              instance_status = instance_statuses['InstanceStatuses'][0]['InstanceStatus']['Details'][0]['Status']
-              system_status = instance_statuses['InstanceStatuses'][0]['SystemStatus']['Details'][0]['Status']
-            except Exception as e:
-                print(e)
-                state = 'UNKNOWN'
+  ################## VPC etc ######################
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: "10.0.0.0/16"
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: serverless-saas-vscode-vpc
+        - Key: Environment
+          Value: !Sub ${EnvironmentName}
 
-          environment_info = {
-            "instance_id": instance_id            
-          }
-          return environment_info
-        
-      Handler: index.lambda_handler
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: "10.0.1.0/24"
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-vscode-subnet
+        - Key: Environment
+          Value: !Sub ${EnvironmentName}
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-vscode-igw
+
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-vscode-rt
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: AttachGateway
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet
+      RouteTableId: !Ref PublicRouteTable
+
+  ################## SSM Bootstrap for VS Code ##################
+  SSMDocument:
+    Type: AWS::SSM::Document
+    Properties:
+      Tags:
+        - Key: Environment
+          Value: !Sub ${EnvironmentName}
+      DocumentType: Command
+      Content:
+        schemaVersion: "2.2"
+        description: Bootstrap VS Code Instance
+        mainSteps:
+          - action: aws:runShellScript
+            name: VSCodebootstrap
+            inputs:
+              runCommand:
+                - "#!/bin/bash"
+                - "mkdir -p /home/ec2-user/environment"
+                - "chown -R ec2-user:ec2-user /home/ec2-user/environment"
+                - "curl -fsSL https://code-server.dev/install.sh | sudo -u ec2-user sh"
+                - "export CODER_PASSWORD=$(openssl rand -base64 12)"
+                - IDE_PASSWORD=$(aws secretsmanager get-secret-value --secret-id IdePassword --query 'SecretString' --output text | cut -d '"' -f4)
+                - "mkdir -p /home/ec2-user/.config/code-server/"
+                - "echo 'bind-addr: 0.0.0.0:8080' > /home/ec2-user/.config/code-server/config.yaml"
+                - "echo 'auth: password' >> /home/ec2-user/.config/code-server/config.yaml"
+                - "echo password: $IDE_PASSWORD >> /home/ec2-user/.config/code-server/config.yaml"
+                - "chown -R ec2-user:ec2-user /home/ec2-user/.config/"
+                - 'aws ssm put-parameter --name ''coder-password'' --type ''String'' --value "$CODER_PASSWORD" --overwrite'
+                - "yum update -y; sleep 10"
+                - "yum install -y git git-lfs perl-Digest-SHA tree docker libatomic; sleep 10"
+                - "systemctl start docker && systemctl enable docker"
+                - "wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq && sudo chmod +x /usr/bin/yq"
+                - "yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo"
+                - "yum -y install terraform"
+                - "wget https://github.com/aws/aws-sam-cli/releases/download/v1.154.0/aws-sam-cli-linux-x86_64.zip && unzip aws-sam-cli-linux-x86_64.zip -d sam-installation && sudo ./sam-installation/install && rm -rf aws-sam-cli-linux-x86_64.zip sam-installation"
+                - "curl -O --output-dir /tmp https://bootstrap.pypa.io/get-pip.py && python3 /tmp/get-pip.py --user && python3 -m pip install git-remote-codecommit==1.15.1"
+                - "sudo -u ec2-user bash -c 'python3 /tmp/get-pip.py --user && python3 -m pip install git-remote-codecommit==1.15.1'"
+                - "curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | sudo -u ec2-user bash"
+                - sudo -u ec2-user bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && nvm install node && npm install -g aws-cdk'
+                - "python3 -m pip install pylint boto3"
+                - "sudo -u ec2-user bash -c 'python3 -m pip install pylint boto3'"
+                - export TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds:60")
+                - export AWS_REGION=$(curl -H "X-aws-ec2-metadata-token:${TOKEN}" -s http://169.254.169.254/latest/meta-data/placement/availability-zone | sed 's/\(.*\)[a-z]/\1/') && echo "export AWS_REGION=${AWS_REGION}" >> /home/ec2-user/.bashrc
+                - "git clone https://github.com/aws-samples/aws-serverless-saas-workshop.git /home/ec2-user/environment/serverless-saas"
+                - "chown -R ec2-user:ec2-user /home/ec2-user/environment"
+                - "sudo -u ec2-user nohup /usr/bin/code-server /home/ec2-user/environment/ --port 8080 --host 0.0.0.0 > /dev/null 2>&1 &"
+                - "export WAIT_HANDLE_URL=$(aws ssm get-parameter --name '/serverless-saas/waitcondition-url' --query 'Parameter.Value' --output text --region $AWS_REGION)"
+                - 'if [ $? -eq 0 ]; then'
+                - '  curl -X PUT -H ''Content-Type: application/json'' --data-binary ''{"Status" : "SUCCESS", "Reason" : "Environment Completed", "UniqueId" : "123456", "Data" : "Complete"}'' "$WAIT_HANDLE_URL"'
+                - 'else'
+                - '  curl -X PUT -H ''Content-Type: application/json'' --data-binary ''{"Status" : "FAILURE", "Reason" : "Bootstrap failed", "UniqueId" : "123456", "Data" : "Failed"}'' "$WAIT_HANDLE_URL"'
+                - 'fi'
+
+  SSMBootstrapAssociation:
+    Type: AWS::SSM::Association
+    Properties:
+      Name: !Ref SSMDocument
+      OutputLocation:
+        S3Location:
+          OutputS3BucketName: !Ref OutputBucket
+          OutputS3KeyPrefix: bootstrapoutput
+      Targets:
+        - Key: tag:SSMBootstrapAWSSaaSServerless
+          Values:
+            - Active
+
+  ################## WAIT CONDITION ##################
+  WaitHandle:
+    Type: AWS::CloudFormation::WaitConditionHandle
+
+  WaitCondition:
+    Type: AWS::CloudFormation::WaitCondition
+    DependsOn: SSMBootstrapAssociation
+    Properties:
+      Handle: !Ref WaitHandle
+      Timeout: "2000"
+
+  WaitConditionUrlParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: !Sub /${EnvironmentName}/waitcondition-url
+      Type: "String"
+      Value: !Ref WaitHandle
+
+  ################## Instance Profile ##################
+  EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: "/"
+      Roles:
+        - Ref: EC2Role
+
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref LatestAmiId
+      InstanceType: !Ref InstanceType
+      SubnetId: !Ref PublicSubnet
+      IamInstanceProfile: !Ref EC2InstanceProfile
+      SecurityGroupIds:
+        - !Ref EC2SecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-Instance
+        - Key: SSMBootstrapAWSSaaSServerless
+          Value: Active
+        - Key: Environment
+          Value: !Sub ${EnvironmentName}
+
+  EC2SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !Ref VPC
+      GroupName: EC2SecurityGroup
+      GroupDescription: VSCode Security Group
+      SecurityGroupEgress:
+        - IpProtocol: '-1'
+          CidrIp: 0.0.0.0/0
+          Description: Allow all outbound traffic by default
+      Tags:
+        - Key: Name
+          Value: serverless-saas-vscode-sg
+        - Key: Environment
+          Value: !Sub ${EnvironmentName}
+
+  IngressSecurityGroup:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: HTTP from CloudFront only
+      IpProtocol: tcp
+      FromPort: 8080
+      ToPort: 8080
+      GroupId:
+        Fn::GetAtt:
+        - EC2SecurityGroup
+        - GroupId
+      SourcePrefixListId:
+        Fn::FindInMap:
+          - CloudFrontPrefixListIdMappings
+          - Ref: AWS::Region
+          - PrefixListId
+
+  IdeDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        DefaultCacheBehavior:
+          AllowedMethods:
+          - GET
+          - HEAD
+          - OPTIONS
+          - PUT
+          - PATCH
+          - POST
+          - DELETE
+          CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+          Compress: true
+          OriginRequestPolicyId: 216adef6-5c7f-47e4-b989-5492eafa07d3
+          TargetOriginId: IdeDistributionOrigin
+          ViewerProtocolPolicy: allow-all
+        Enabled: true
+        HttpVersion: http2
+        IPV6Enabled: true
+        Origins:
+        - CustomOriginConfig:
+            HTTPPort: 8080
+            OriginProtocolPolicy: http-only
+            OriginSSLProtocols:
+            - TLSv1.2
+          DomainName:
+            Fn::GetAtt:
+            - EC2Instance
+            - PublicDnsName
+          Id: IdeDistributionOrigin
+
+  IdePasswordSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: IdePassword
+      GenerateSecretString:
+        ExcludeCharacters: '"@/\'
+        ExcludePunctuation: true
+        GenerateStringKey: password
+        IncludeSpace: false
+        PasswordLength: 32
+        SecretStringTemplate: '{"password":""}'
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+
+  IdePasswordRetrievalFunction:
+    Type: AWS::Lambda::Function
+    Properties:
       Runtime: python3.14
-      Timeout: 900
-      Policies:
-      - Statement:        
-        - Sid: EC2
-          Effect: Allow
-          Action:
-            - "ec2:DescribeInstanceStatus"            
-          Resource: "*"
-          
-  AttachSSMRoleToEC2:
-    Type: AWS::Serverless::Function
-    Properties:
-      InlineCode: |
-        import boto3
-        import json
-        import os
-        from time import sleep
-        iam_client= boto3.client('iam')
-        ec2_client = boto3.client('ec2')
-        
-        def lambda_handler(event, context):
-            print(event)
-            instance_id = event["instance_id"]
-            instance_profile_name = 'cloud9-' + instance_id
+      Handler: index.handler
+      Role: !GetAtt IdePasswordRetrievalRole.Arn
+      Code:
+        ZipFile: |
+          import json
+          import boto3
+          import cfnresponse
 
-            response = ec2_client.describe_iam_instance_profile_associations(Filters=[{'Name': 'instance-id','Values': [instance_id]},{'Name': 'state','Values': ['associated']}])
-            if (len(response['IamInstanceProfileAssociations']) < 1):
+          def handler(event, context):
+              if event['RequestType'] == 'Delete':
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
+                  return
+
               try:
-                  create_instance_profile_response = iam_client.create_instance_profile(InstanceProfileName=instance_profile_name)
-                  print(create_instance_profile_response)
-                  sleep(30)
-              except iam_client.exceptions.EntityAlreadyExistsException as _:
-                  pass
-              
-              try:
-                  response = iam_client.add_role_to_instance_profile(
-                      InstanceProfileName=instance_profile_name,
-                      RoleName='ec2-ssm-role'
-                  )
-                  print(response)
+                  client = boto3.client('secretsmanager')
+                  secret_arn = event['ResourceProperties']['SecretArn']
+                  response = client.get_secret_value(SecretId=secret_arn)
+                  secret_dict = json.loads(response['SecretString'])
+                  password = secret_dict['password']
 
-                  response = ec2_client.associate_iam_instance_profile(
-                      IamInstanceProfile={'Name': instance_profile_name},
-                      InstanceId=instance_id
-                  )
-                  print(response)
-              except iam_client.exceptions.LimitExceededException as e:
-                  print(e)
-              
-              response = ec2_client.describe_iam_instance_profile_associations(Filters=[{'Name': 'instance-id','Values': [instance_id]},{'Name': 'state','Values': ['associated']}])
-              print(response)
-              
-              while len(response['IamInstanceProfileAssociations']) < 1:
-                  print("waiting for association to finish")
-                  sleep(30)
-                  response = ec2_client.describe_iam_instance_profile_associations(Filters=[{'Name': 'instance-id','Values': [instance_id]},{'Name': 'state','Values': ['associated']}])
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, {
+                      'Password': password
+                  })
+              except Exception as e:
+                  cfnresponse.send(event, context, cfnresponse.FAILED, {
+                      'Error': str(e)
+                  })
 
-            environment_info = {
-                "instance_id": instance_id,                                
-                "instance_profile_name": instance_profile_name
-            }
-            return environment_info
-        
-      Handler: index.lambda_handler
-      Runtime: python3.14
-      Timeout: 900
-      Policies:
-      - Statement:
-        - Sid: ResizePolicy
-          Effect: Allow
-          Action:
-            - "ec2:DescribeIamInstanceProfileAssociations"
-            - "ec2:AssociateIamInstanceProfile"
-            - "iam:CreateInstanceProfile"
-            - "iam:AddRoleToInstanceProfile"       
-            - "iam:PassRole"     
-          Resource: "*"
-
-  SendSSMCommandtoEC2:
-    Type: AWS::Serverless::Function
+  IdePasswordRetrievalRole:
+    Type: AWS::IAM::Role
     Properties:
-      InlineCode: |
-        import boto3
-        import json
-        import os
-        from io import BytesIO
-        s3_resource = boto3.resource('s3')
-        ssm_client = boto3.client('ssm')
-        import time
-
-        def get_preamble():
-            return f"""
-        REGION=$(curl http://169.254.169.254/latest/meta-data/placement/region)
-        aws configure set profile.default.region $REGION
-
-        SIZE={int(os.environ.get('VolumeSize', '25'))}
-
-        # Get the ID of the environment host Amazon EC2 instance.
-        INSTANCEID=$(curl http://169.254.169.254/latest/meta-data//instance-id)
-
-        # Get the ID of the Amazon EBS volume associated with the instance.
-        VOLUMEID=$(aws ec2 describe-instances \
-          --instance-id $INSTANCEID \
-          --query "Reservations[0].Instances[0].BlockDeviceMappings[0].Ebs.VolumeId" \
-          --output text)
-
-        # Resize the EBS volume.
-        aws ec2 modify-volume --volume-id $VOLUMEID --size $SIZE
-
-        # Wait for the resize to finish.
-        while [ \
-          "$(aws ec2 describe-volumes-modifications \
-            --volume-id $VOLUMEID \
-            --filters Name=modification-state,Values="optimizing","completed" \
-            --query "length(VolumesModifications)"\
-            --output text)" != "1" ]; do
-          sleep 1
-        done
-        
-        #Check if we're on an NVMe filesystem
-        if [[ -e "/dev/xvda" && $(readlink -f /dev/xvda) = "/dev/xvda" ]]
-        then
-          # Rewrite the partition table so that the partition takes up all the space that it can.
-          sudo growpart /dev/xvda 1
-
-          # Expand the size of the file system.
-          # Check if we're on AL2
-          STR=$(cat /etc/os-release)
-          SUB='VERSION_ID="2"'
-          if [[ "$STR" == *"$SUB"* ]]
-          then
-            sudo xfs_growfs -d /
-          else
-            sudo resize2fs /dev/xvda1
-          fi
-
-        else
-          # Rewrite the partition table so that the partition takes up all the space that it can.
-          sudo growpart /dev/nvme0n1 1
-
-          # Expand the size of the file system.
-          # Check if we're on AL2
-          STR=$(cat /etc/os-release)
-          SUB='VERSION_ID="2"'
-          if [[ "$STR" == *"$SUB"* ]]
-          then
-            sudo xfs_growfs -d /
-          else
-            sudo resize2fs /dev/nvme0n1p1
-          fi
-        fi
-        """
-
-        def ssm_ready(ssm_client, instance_id):
-          try:
-            response = ssm_client.describe_instance_information(Filters=[{'Key': 'InstanceIds', 'Values': [instance_id]}])
-            return len(response['InstanceInformationList'])>=1
-          except ssm_client.exceptions.InvalidInstanceId:
-            return False
-
-        def lambda_handler(event, context):
-          print(event)
-          instance_id = event["instance_id"]
-          
-          while not ssm_ready(ssm_client, instance_id):
-            print("SSM not ready yet")
-            time.sleep(30)
-            
-          try:
-            print(os.environ["S3Bucket"])
-            print(os.environ["S3Object"])
-            bucket = s3_resource.Bucket(os.environ["S3Bucket"])
-            obj = bucket.Object(os.environ["S3Object"])
-            output = BytesIO()
-            obj.download_fileobj(output)
-            commands = get_preamble() + '\n' + output.getvalue().decode('utf-8') + '\n'
-          except Exception as e:
-            print(e)
-            commands = get_preamble()
-
-          print (instance_id)
-          
-          send_command_response = ssm_client.send_command(
-            InstanceIds=[instance_id],
-            DocumentName='AWS-RunShellScript',
-            Parameters={'commands': commands.split('\n')},
-            CloudWatchOutputConfig={
-                'CloudWatchLogGroupName': f'ssm-output-{instance_id}',
-                'CloudWatchOutputEnabled': True
-            }
-          )
-
-          environment_info = {
-            "instance_id": instance_id,
-            "command_id": send_command_response['Command']['CommandId']
-          }
-          return environment_info
-
-      Handler: index.lambda_handler
-      Runtime: python3.14
-      Timeout: 900
-      Environment:
-        Variables:
-          VolumeSize: !Ref EBSVolumeSize
-          S3Bucket: !If
-            - AddUserData
-            - !Ref EEAssetsBucket
-            - !Ref "AWS::NoValue"
-          S3Object: !If
-            - AddUserData
-            - !Sub "${EEAssetsKeyPrefix}${UserDataScript}"
-            - !Ref "AWS::NoValue"
-      Policies:
-      - Statement:
-        - Sid: ResizePolicy
-          Effect: Allow
-          Action:
-            - "s3:*"
-            - "ssm:*"
-            - "cloudwatch:*"
-          Resource: "*"
-
-  WaitForSSMCommandToComplete:
-    Type: AWS::Serverless::Function
-    Properties:
-      InlineCode: |
-        import boto3
-        import time
-
-        def lambda_handler(event, context):
-          command_id = event["command_id"]
-          instance_id = event["instance_id"]
-          ssm_client = boto3.client('ssm')
-          response = ssm_client.get_command_invocation(CommandId=command_id, InstanceId=instance_id)
-          while (response['Status'] in ['Pending', 'InProgress', 'Delayed']):
-            time.sleep(30)
-            print("Command in Progress")
-            response = ssm_client.get_command_invocation(CommandId=command_id, InstanceId=instance_id)
-          
-      Handler: index.lambda_handler
-      Runtime: python3.14
-      Timeout: 900
-      Policies:
-      - Statement:
-        - Sid: ResizePolicy
-          Effect: Allow
-          Action:
-            - "ssm:GetCommandInvocation"
-          Resource: "*"
-            
-  BootStrapC9StateMachine:
-    Type: AWS::Serverless::StateMachine
-    Properties:
-      Definition:
-        StartAt: Environment Health Check
-        States:
-          Environment Health Check:
-            Type: Task
-            Resource: ${WaitForEC2ToInitializeArn}
-            Retry:
-            - ErrorEquals:
-              - States.TaskFailed
-              IntervalSeconds: 30
-              MaxAttempts: 2
-              BackoffRate: 1.5
-            Next: Attach SSM Role To EC2
-          Attach SSM Role To EC2:
-            Type: Task
-            Resource: ${AttachSSMRoleToEC2Arn}
-            Retry:
-            - ErrorEquals:
-              - States.TaskFailed
-              IntervalSeconds: 30
-              MaxAttempts: 2
-              BackoffRate: 1.5
-            Next: Send Command
-          Send Command:
-            Type: Task
-            Resource: ${SendSSMCommandtoEC2Arn}
-            Retry:
-            - ErrorEquals:
-              - States.TaskFailed
-              IntervalSeconds: 30
-              MaxAttempts: 2
-              BackoffRate: 1.5
-            Next: Wait To Stabilize
-          Wait To Stabilize:
-            Type: Task
-            Resource: ${WaitForSSMCommandToCompleteArn}
-            Retry:
-            - ErrorEquals:
-              - States.TaskFailed
-              IntervalSeconds: 30
-              MaxAttempts: 2
-              BackoffRate: 1.5
-            End: true
-      DefinitionSubstitutions:
-        WaitForEC2ToInitializeArn: !GetAtt WaitForEC2ToInitialize.Arn
-        AttachSSMRoleToEC2Arn: !GetAtt AttachSSMRoleToEC2.Arn
-        SendSSMCommandtoEC2Arn: !GetAtt SendSSMCommandtoEC2.Arn
-        WaitForSSMCommandToCompleteArn: !GetAtt WaitForSSMCommandToComplete.Arn                
-      Policies:
-      - LambdaInvokePolicy:
-          FunctionName: !Ref WaitForEC2ToInitialize
-      - LambdaInvokePolicy:
-          FunctionName: !Ref AttachSSMRoleToEC2
-      - LambdaInvokePolicy:
-          FunctionName: !Ref SendSSMCommandtoEC2
-      - LambdaInvokePolicy:
-          FunctionName: !Ref WaitForSSMCommandToComplete
-  
-  EventBridgeRole:
-    Type: AWS::IAM::Role     
-    Properties:
-      Path: '/'
       AssumeRolePolicyDocument:
-        Version: 2012-10-17
+        Version: '2012-10-17'
         Statement:
           - Effect: Allow
             Principal:
-              Service:
-                - events.amazonaws.com
-            Action:
-              - sts:AssumeRole
-      Policies:      
-        - PolicyName: serverless-saas-eventbridge-stepfunction-policy
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: SecretsManagerRead
           PolicyDocument:
-            Version: 2012-10-17
+            Version: '2012-10-17'
             Statement:
               - Effect: Allow
-                Action:
-                  - states:StartExecution                      
-                Resource:
-                  - !GetAtt BootStrapC9StateMachine.Arn              
+                Action: secretsmanager:GetSecretValue
+                Resource: !Ref IdePasswordSecret
 
-  NewCloud9Event:
-    Type: AWS::Events::Rule
+  RetrieveIdePassword:
+    Type: Custom::RetrievePassword
     Properties:
-      EventPattern:
-        source:
-        - aws.ec2
-        detail-type:
-        - EC2 Instance State-change Notification
-        detail:
-          state:
-          - running      
-      Targets:
-        - Arn : !GetAtt BootStrapC9StateMachine.Arn
-          Id: "BootStrapC9StateMachineTarget"
-          RoleArn: !GetAtt EventBridgeRole.Arn
+      ServiceToken: !GetAtt IdePasswordRetrievalFunction.Arn
+      SecretArn: !Ref IdePasswordSecret
 
-  Cloud9IDE:
-    Type: AWS::Cloud9::EnvironmentEC2
-    DependsOn: NewCloud9Event
-    Properties:
-      Repositories:
-      - RepositoryUrl: https://github.com/aws-samples/aws-serverless-saas-workshop.git
-        PathComponent: /aws-serverless-saas-workshop
-      Description: Cloud9 IDE
-      Tags:
-        - Key: stack-name
-          Value: ServerlessSaaS
-      AutomaticStopTimeMinutes:
-        Ref: AutoHibernateTimeout      
-      ImageId: amazonlinux-2-x86_64
-      InstanceType:
-        Ref: EC2InstanceType
-      Name: Serverless-SaaS
-      OwnerArn: !If [UseRole, !Join [ "", [!Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/", !Ref OwnerRoleName]] , !Ref "AWS::NoValue"]
-  
 Outputs:
-  BootStrapC9StateMachineArn:
-    Description: "State machine ARN"
-    Value: !Ref BootStrapC9StateMachine
+  IdeUrl:
+    Value:
+      Fn::Join:
+      - ''
+      - - https://
+        - Fn::GetAtt:
+          - IdeDistribution
+          - DomainName
+
+  IdePassword:
+    Value: !GetAtt RetrieveIdePassword.Password
