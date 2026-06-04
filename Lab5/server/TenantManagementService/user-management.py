@@ -53,14 +53,14 @@ def create_tenant_admin_user(event, context):
 #only tenant admin can create users
 def create_user(event, context):
     
-    tenant_id = event['requestContext']['authorizer']['tenantId']    
+    tenant_id = context.tenant_id    
     user_pool_id = event['requestContext']['authorizer']['userPoolId']    
     user_role = event['requestContext']['authorizer']['userRole']
     
     user_details = json.loads(event['body'])
 
     tracer.put_annotation(key="TenantId", value=tenant_id)
-    logger.log_with_tenant_context(event, "Request received to create new user")
+    logger.log_with_tenant_context(tenant_id, "Request received to create new user")
     
     if (auth_manager.isSystemAdmin(user_role)):
         user_tenant_id = user_details['tenantId']
@@ -75,7 +75,7 @@ def create_user(event, context):
         user_tenant_id = tenant_id
 
     if (auth_manager.isTenantAdmin(user_role) or auth_manager.isSystemAdmin(user_role)):
-        metrics_manager.record_metric(event, "UserCreated", "Count", 1)
+        metrics_manager.record_metric(tenant_id, "UserCreated", "Count", 1)
         response = client.admin_create_user(
             Username=user_details['userName'],
             UserPoolId=user_pool_id,
@@ -100,20 +100,20 @@ def create_user(event, context):
             ]
         )
         
-        logger.log_with_tenant_context(event, response)
+        logger.log_with_tenant_context(tenant_id, response)
         user_mgmt = UserManagement()
         user_mgmt.add_user_to_group(user_pool_id, user_details['userName'], user_tenant_id)
         response_mapping = user_mgmt.create_user_tenant_mapping(user_details['userName'], user_tenant_id)
 
-        logger.log_with_tenant_context(event, "Request completed to create new user")
+        logger.log_with_tenant_context(tenant_id, "Request completed to create new user")
         return utils.create_success_response("New user created")
     else:
-        logger.log_with_tenant_context(event, "Request completed as unauthorized. Only tenant admin or system admin can create user!")        
+        logger.log_with_tenant_context(tenant_id, "Request completed as unauthorized. Only tenant admin or system admin can create user!")        
         return utils.create_unauthorized_response()
 
 @tracer.capture_lambda_handler
 def get_users(event, context):
-    tenant_id = event['requestContext']['authorizer']['tenantId']    
+    tenant_id = context.tenant_id    
     user_pool_id = event['requestContext']['authorizer']['userPoolId']    
     user_role = event['requestContext']['authorizer']['userRole']  
     users = []  
@@ -121,15 +121,15 @@ def get_users(event, context):
     
     tracer.put_annotation(key="TenantId", value=tenant_id)
     
-    logger.log_with_tenant_context(event, "Request received to get users")
+    logger.log_with_tenant_context(tenant_id, "Request received to get users")
 
     if (auth_manager.isTenantAdmin(user_role) or auth_manager.isSystemAdmin(user_role)):
         response = client.list_users(
             UserPoolId=user_pool_id
         )
-        logger.log_with_tenant_context(event, response) 
+        logger.log_with_tenant_context(tenant_id, response) 
         num_of_users = len(response['Users'])
-        metrics_manager.record_metric(event, "Number of users", "Count", num_of_users)
+        metrics_manager.record_metric(tenant_id, "Number of users", "Count", num_of_users)
         if (num_of_users > 0):
             for user in response['Users']:
                 is_same_tenant_user = False
@@ -154,7 +154,7 @@ def get_users(event, context):
         
         return utils.generate_response(users)
     else:
-        logger.log_with_tenant_context(event, "Request completed as unauthorized.")        
+        logger.log_with_tenant_context(tenant_id, "Request completed as unauthorized.")        
         return utils.create_unauthorized_response()
    
 
@@ -163,14 +163,14 @@ def get_users(event, context):
 @tracer.capture_lambda_handler
 def get_user(event, context):
     requesting_user_name = event['requestContext']['authorizer']['userName']    
-    tenant_id = event['requestContext']['authorizer']['tenantId']    
+    tenant_id = context.tenant_id    
     user_pool_id = event['requestContext']['authorizer']['userPoolId']    
     user_role = event['requestContext']['authorizer']['userRole']    
     user_name = event['pathParameters']['username']  
 
     tracer.put_annotation(key="TenantId", value=tenant_id)
     
-    logger.log_with_tenant_context(event, "Request received to get user")
+    logger.log_with_tenant_context(tenant_id, "Request received to get user")
 
     if (auth_manager.isSystemAdmin(user_role)):
         user_tenant_id = event['queryStringParameters']['tenantid']
@@ -183,21 +183,21 @@ def get_user(event, context):
         user_pool_id = tenant_details['Item']['userPoolId']      
 
     if (auth_manager.isTenantUser(user_role) and user_name != requesting_user_name):        
-        logger.log_with_tenant_context(event, "Request completed as unauthorized. User can only get its information.")        
+        logger.log_with_tenant_context(tenant_id, "Request completed as unauthorized. User can only get its information.")        
         return utils.create_unauthorized_response()
     else:
         user_info = get_user_info(event, user_pool_id, user_name)
         if(not auth_manager.isSystemAdmin(user_role) and user_info.tenant_id!=tenant_id):
-            logger.log_with_tenant_context(event, "Request completed as unauthorized. Users in other tenants cannot be accessed")
+            logger.log_with_tenant_context(tenant_id, "Request completed as unauthorized. Users in other tenants cannot be accessed")
             return utils.create_unauthorized_response()
         else:
-            logger.log_with_tenant_context(event, "Request completed to get new user")
+            logger.log_with_tenant_context(tenant_id, "Request completed to get new user")
             return utils.create_success_response(user_info.__dict__)
 
 @tracer.capture_lambda_handler
 def update_user(event, context):
     requesting_user_name = event['requestContext']['authorizer']['userName']    
-    tenant_id = event['requestContext']['authorizer']['tenantId']    
+    tenant_id = context.tenant_id    
     user_pool_id = event['requestContext']['authorizer']['userPoolId']    
     user_role = event['requestContext']['authorizer']['userRole']    
     
@@ -207,7 +207,7 @@ def update_user(event, context):
 
     tracer.put_annotation(key="TenantId", value=tenant_id)
     
-    logger.log_with_tenant_context(event, "Request received to update user")
+    logger.log_with_tenant_context(tenant_id, "Request received to update user")
 
     if (auth_manager.isSystemAdmin(user_role)):
         user_tenant_id = user_details['tenantId']
@@ -220,15 +220,15 @@ def update_user(event, context):
         user_pool_id = tenant_details['Item']['userPoolId']        
     
     if (auth_manager.isTenantUser(user_role)):                
-        logger.log_with_tenant_context(event, "Request completed as unauthorized. Only tenant admin or system admin can update user!")         
+        logger.log_with_tenant_context(tenant_id, "Request completed as unauthorized. Only tenant admin or system admin can update user!")         
         return utils.create_unauthorized_response()
     else:
         user_info = get_user_info(event, user_pool_id, user_name)
         if(not auth_manager.isSystemAdmin(user_role) and user_info.tenant_id!=tenant_id):
-            logger.log_with_tenant_context(event, "Request completed as unauthorized. Users in other tenants cannot be accessed")
+            logger.log_with_tenant_context(tenant_id, "Request completed as unauthorized. Users in other tenants cannot be accessed")
             return utils.create_unauthorized_response()
         else:
-            metrics_manager.record_metric(event, "UserUpdated", "Count", 1)            
+            metrics_manager.record_metric(tenant_id, "UserUpdated", "Count", 1)            
             response = client.admin_update_user_attributes(
                 Username=user_name,
                 UserPoolId=user_pool_id,
@@ -243,20 +243,20 @@ def update_user(event, context):
                     }
                 ]
             )
-            logger.log_with_tenant_context(event, response)
-            logger.log_with_tenant_context(event, "Request completed to update user")
+            logger.log_with_tenant_context(tenant_id, response)
+            logger.log_with_tenant_context(tenant_id, "Request completed to update user")
             return utils.create_success_response("user updated")    
 
 @tracer.capture_lambda_handler
 def disable_user(event, context):
-    tenant_id = event['requestContext']['authorizer']['tenantId']    
+    tenant_id = context.tenant_id    
     user_pool_id = event['requestContext']['authorizer']['userPoolId']    
     user_role = event['requestContext']['authorizer']['userRole']
     user_name = event['pathParameters']['username']
 
     tracer.put_annotation(key="TenantId", value=tenant_id)
     
-    logger.log_with_tenant_context(event, "Request received to disable new user")
+    logger.log_with_tenant_context(tenant_id, "Request received to disable new user")
     
     if (auth_manager.isSystemAdmin(user_role)):
         user_tenant_id = event['queryStringParameters']['tenantid']
@@ -271,19 +271,19 @@ def disable_user(event, context):
     if (auth_manager.isTenantAdmin(user_role) or auth_manager.isSystemAdmin(user_role)):
         user_info = get_user_info(event, user_pool_id, user_name)
         if(not auth_manager.isSystemAdmin(user_role) and user_info.tenant_id!=tenant_id):
-            logger.log_with_tenant_context(event, "Request completed as unauthorized. Users in other tenants cannot be accessed")
+            logger.log_with_tenant_context(tenant_id, "Request completed as unauthorized. Users in other tenants cannot be accessed")
             return utils.create_unauthorized_response()
         else:
-            metrics_manager.record_metric(event, "UserDisabled", "Count", 1)
+            metrics_manager.record_metric(tenant_id, "UserDisabled", "Count", 1)
             response = client.admin_disable_user(
                     Username=user_name,
                     UserPoolId=user_pool_id
             )
-            logger.log_with_tenant_context(event, response)
-            logger.log_with_tenant_context(event, "Request completed to disable new user")
+            logger.log_with_tenant_context(tenant_id, response)
+            logger.log_with_tenant_context(tenant_id, "Request completed to disable new user")
             return utils.create_success_response("User disabled")
     else:
-        logger.log_with_tenant_context(event, "Request completed as unauthorized. Only tenant admin or system admin can disable user!")        
+        logger.log_with_tenant_context(tenant_id, "Request completed as unauthorized. Only tenant admin or system admin can disable user!")        
         return utils.create_unauthorized_response()  
 
 @tracer.capture_lambda_handler
@@ -351,12 +351,12 @@ def enable_users_by_tenant(event, context):
         return utils.create_unauthorized_response()
 
 def get_user_info(event, user_pool_id, user_name):
-    metrics_manager.record_metric(event, "UserInfoRequested", "Count", 1)            
+    metrics_manager.record_metric(tenant_id, "UserInfoRequested", "Count", 1)            
     response = client.admin_get_user(
             UserPoolId=user_pool_id,
             Username=user_name
     )
-    logger.log_with_tenant_context(event, response)
+    logger.log_with_tenant_context(tenant_id, response)
 
     user_info =  UserInfo()
     user_info.user_name = response["Username"]
@@ -367,7 +367,7 @@ def get_user_info(event, user_pool_id, user_name):
             user_info.user_role = attr["Value"]    
         if(attr["Name"] == "email"):
             user_info.email = attr["Value"] 
-    logger.log_with_tenant_context(event, user_info)
+    logger.log_with_tenant_context(tenant_id, user_info)
     return user_info
 
 class UserManagement:

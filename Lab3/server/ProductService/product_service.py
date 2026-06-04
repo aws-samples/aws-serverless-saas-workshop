@@ -13,29 +13,29 @@ tracer = Tracer()
 
 @tracer.capture_lambda_handler
 def get_product(event, context):
-    tenantId = event['requestContext']['authorizer']['tenantId']
+    tenantId = context.tenant_id
     tracer.put_annotation(key="TenantId", value=tenantId)
     
-    logger.log_with_tenant_context(event, "Request received to get a product")
+    logger.log_with_tenant_context(tenantId, "Request received to get a product")
     params = event['pathParameters']
-    logger.log_with_tenant_context(event, params)
+    logger.log_with_tenant_context(tenantId, params)
     key = params['id']
-    logger.log_with_tenant_context(event, key)
-    product = product_service_dal.get_product(event, key)
+    logger.log_with_tenant_context(tenantId, key)
+    product = product_service_dal.get_product(event, key, tenantId)
 
-    logger.log_with_tenant_context(event, "Request completed to get a product")
-    metrics_manager.record_metric(event, "SingleProductRequested", "Count", 1)
+    logger.log_with_tenant_context(tenantId, "Request completed to get a product")
+    metrics_manager.record_metric(tenantId, "SingleProductRequested", "Count", 1)
     return utils.generate_response(product)
     
 @tracer.capture_lambda_handler
 def create_product(event, context):    
-    tenantId = event['requestContext']['authorizer']['tenantId']
+    tenantId = context.tenant_id
     tracer.put_annotation(key="TenantId", value=tenantId)
 
-    logger.log_with_tenant_context(event, "Request received to create a product")
+    logger.log_with_tenant_context(tenantId, "Request received to create a product")
     payload = json.loads(event['body'], object_hook=lambda d: SimpleNamespace(**d), parse_float=Decimal)
-    product = product_service_dal.create_product(event, payload)
-    logger.log_with_tenant_context(event, "Request completed to create a product")
+    product = product_service_dal.create_product(event, payload, tenantId)
+    logger.log_with_tenant_context(tenantId, "Request completed to create a product")
     
     #TODO: Capture metrics to denote that one product was created by tenant
 
@@ -43,40 +43,40 @@ def create_product(event, context):
     
 @tracer.capture_lambda_handler
 def update_product(event, context):
-    tenantId = event['requestContext']['authorizer']['tenantId']
+    tenantId = context.tenant_id
     tracer.put_annotation(key="TenantId", value=tenantId)
 
-    logger.log_with_tenant_context(event, "Request received to update a product")
+    logger.log_with_tenant_context(tenantId, "Request received to update a product")
     payload = json.loads(event['body'], object_hook=lambda d: SimpleNamespace(**d), parse_float=Decimal)
     params = event['pathParameters']
     key = params['id']
-    product = product_service_dal.update_product(event, payload, key)
-    logger.log_with_tenant_context(event, "Request completed to update a product") 
-    metrics_manager.record_metric(event, "ProductUpdated", "Count", 1)   
+    product = product_service_dal.update_product(event, payload, key, tenantId)
+    logger.log_with_tenant_context(tenantId, "Request completed to update a product") 
+    metrics_manager.record_metric(tenantId, "ProductUpdated", "Count", 1)   
     return utils.generate_response(product)
 
 @tracer.capture_lambda_handler
 def delete_product(event, context):
-    tenantId = event['requestContext']['authorizer']['tenantId']
+    tenantId = context.tenant_id
     tracer.put_annotation(key="TenantId", value=tenantId)
 
-    logger.log_with_tenant_context(event, "Request received to delete a product")
+    logger.log_with_tenant_context(tenantId, "Request received to delete a product")
     params = event['pathParameters']
     key = params['id']
-    response = product_service_dal.delete_product(event, key)
-    logger.log_with_tenant_context(event, "Request completed to delete a product")
-    metrics_manager.record_metric(event, "ProductDeleted", "Count", 1)
+    response = product_service_dal.delete_product(event, key, tenantId)
+    logger.log_with_tenant_context(tenantId, "Request completed to delete a product")
+    metrics_manager.record_metric(tenantId, "ProductDeleted", "Count", 1)
     return utils.create_success_response("Successfully deleted the product")
 
 @tracer.capture_lambda_handler
 def get_products(event, context):
-    tenantId = event['requestContext']['authorizer']['tenantId']
+    tenantId = context.tenant_id
     tracer.put_annotation(key="TenantId", value=tenantId)
     
-    logger.log_with_tenant_context(event, "Request received to get all products")
+    logger.log_with_tenant_context(tenantId, "Request received to get all products")
     response = product_service_dal.get_products(event, tenantId)
-    metrics_manager.record_metric(event, "ProductsRetrieved", "Count", len(response))
-    logger.log_with_tenant_context(event, "Request completed to get all products")
+    metrics_manager.record_metric(tenantId, "ProductsRetrieved", "Count", len(response))
+    logger.log_with_tenant_context(tenantId, "Request completed to get all products")
     return utils.generate_response(response)
 
   

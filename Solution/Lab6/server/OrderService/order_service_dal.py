@@ -24,19 +24,19 @@ suffix_start = 1
 suffix_end = 10
  
 
-def get_order(event, key):
+def get_order(event, key, tenant_id):
     table = __get_dynamodb_table(event, dynamodb)
 
     try:
         shardId = key.split(":")[0]
         orderId = key.split(":")[1] 
-        logger.log_with_tenant_context(event, shardId)
-        logger.log_with_tenant_context(event, orderId)
+        logger.log_with_tenant_context(tenant_id, shardId)
+        logger.log_with_tenant_context(tenant_id, orderId)
         response = table.get_item(Key={'shardId': shardId, 'orderId': orderId}, ReturnConsumedCapacity='TOTAL')
         item = response['Item']
         order = Order(item['shardId'], item['orderId'], item['orderName'], item['orderProducts'])
 
-        metrics_manager.record_metric(event, "ReadCapacityUnits", "Count", response['ConsumedCapacity']['CapacityUnits'])
+        metrics_manager.record_metric(tenant_id, "ReadCapacityUnits", "Count", response['ConsumedCapacity']['CapacityUnits'])
 
     except ClientError as e:
         logger.error(e.response['Error']['Message'])
@@ -44,7 +44,7 @@ def get_order(event, key):
     else:
         return order
 
-def delete_order(event, key):
+def delete_order(event, key, tenant_id):
     table = __get_dynamodb_table(event, dynamodb)
     
     try:
@@ -52,7 +52,7 @@ def delete_order(event, key):
         orderId = key.split(":")[1] 
         response = table.delete_item(Key={'shardId':shardId, 'orderId': orderId}, ReturnConsumedCapacity='TOTAL')
 
-        metrics_manager.record_metric(event, "WriteCapacityUnits", "Count", response['ConsumedCapacity']['CapacityUnits'])
+        metrics_manager.record_metric(tenant_id, "WriteCapacityUnits", "Count", response['ConsumedCapacity']['CapacityUnits'])
     except ClientError as e:
         logger.error(e.response['Error']['Message'])
         raise Exception('Error deleting a order', e)
@@ -61,8 +61,8 @@ def delete_order(event, key):
         return response
 
 
-def create_order(event, payload):
-    tenantId = event['requestContext']['authorizer']['tenantId']
+def create_order(event, payload, tenant_id):
+    tenantId = tenant_id
     table = __get_dynamodb_table(event, dynamodb)
     suffix = random.randrange(suffix_start, suffix_end)
     shardId = tenantId+"-"+str(suffix)
@@ -77,7 +77,7 @@ def create_order(event, payload):
         'orderProducts': get_order_products_dict(order.orderProducts)
         }, ReturnConsumedCapacity='TOTAL')
 
-        metrics_manager.record_metric(event, "WriteCapacityUnits", "Count", response['ConsumedCapacity']['CapacityUnits'])
+        metrics_manager.record_metric(tenant_id, "WriteCapacityUnits", "Count", response['ConsumedCapacity']['CapacityUnits'])
     except ClientError as e:
         logger.error(e.response['Error']['Message'])
         raise Exception('Error adding a order', e)
@@ -85,14 +85,14 @@ def create_order(event, payload):
         logger.info("PutItem succeeded:")
         return order
 
-def update_order(event, payload, key):
+def update_order(event, payload, key, tenant_id):
     table = __get_dynamodb_table(event, dynamodb)
     
     try:
         shardId = key.split(":")[0]
         orderId = key.split(":")[1] 
-        logger.log_with_tenant_context(event, shardId)
-        logger.log_with_tenant_context(event, orderId)
+        logger.log_with_tenant_context(tenant_id, shardId)
+        logger.log_with_tenant_context(tenant_id, orderId)
         order = Order(shardId, orderId,payload.orderName, payload.orderProducts)
         response = table.update_item(Key={'shardId':order.shardId, 'orderId': order.orderId},
         UpdateExpression="set orderName=:orderName, "
@@ -103,7 +103,7 @@ def update_order(event, payload, key):
         },
         ReturnValues="UPDATED_NEW", ReturnConsumedCapacity='TOTAL')
 
-        metrics_manager.record_metric(event, "WriteCapacityUnits", "Count", response['ConsumedCapacity']['CapacityUnits'])
+        metrics_manager.record_metric(tenant_id, "WriteCapacityUnits", "Count", response['ConsumedCapacity']['CapacityUnits'])
     except ClientError as e:
         logger.error(e.response['Error']['Message'])
         raise Exception('Error updating a order', e)
@@ -148,7 +148,7 @@ def __get_tenant_data(partition_id, get_all_products_response, table, event):
             order = Order(item['shardId'], item['orderId'], item['orderName'], item['orderProducts'])
             get_all_products_response.append(order)
 
-    metrics_manager.record_metric(event, "ReadCapacityUnits", "Count", response['ConsumedCapacity']['CapacityUnits'])        
+    metrics_manager.record_metric(tenant_id, "ReadCapacityUnits", "Count", response['ConsumedCapacity']['CapacityUnits'])        
 
 def __get_dynamodb_table(event, dynamodb):
     """ Determine the table name based upo pooled vs silo model

@@ -18,6 +18,6 @@ def error(log_message):
 
 """Log with tenant context. Extracts tenant context from the lambda events
 """
-def log_with_tenant_context(event, log_message):
-    logger.structure_logs(append=True, tenant_id= event['requestContext']['authorizer']['tenantId'])
+def log_with_tenant_context(tenant_id, log_message):
+    logger.structure_logs(append=True, tenant_id=tenant_id)
     logger.info (log_message)

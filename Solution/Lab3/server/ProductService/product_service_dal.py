@@ -24,17 +24,17 @@ table = dynamodb.Table(table_name)
 suffix_start = 1 
 suffix_end = 10
 
-def get_product(event, key):    
+def get_product(event, key, tenant_id):    
     try:
         shardId = key.split(":")[0]
         productId = key.split(":")[1] 
-        logger.log_with_tenant_context(event, shardId)
-        logger.log_with_tenant_context(event, productId)
+        logger.log_with_tenant_context(tenant_id, shardId)
+        logger.log_with_tenant_context(tenant_id, productId)
         response = table.get_item(Key={'shardId': shardId, 'productId': productId}, ReturnConsumedCapacity='TOTAL')
         item = response['Item']
         product = Product(item['shardId'], item['productId'], item['sku'], item['name'], item['price'], item['category'])
 
-        metrics_manager.record_metric(event, "ReadCapacityUnits", "Count", response['ConsumedCapacity']['CapacityUnits'])
+        metrics_manager.record_metric(tenant_id, "ReadCapacityUnits", "Count", response['ConsumedCapacity']['CapacityUnits'])
     except ClientError as e:
         logger.error(e.response['Error']['Message'])
         raise Exception('Error getting a product', e)
@@ -42,13 +42,13 @@ def get_product(event, key):
         logger.info("GetItem succeeded:"+ str(product))
         return product
 
-def delete_product(event, key):    
+def delete_product(event, key, tenant_id):    
     try:
         shardId = key.split(":")[0]
         productId = key.split(":")[1] 
         response = table.delete_item(Key={'shardId':shardId, 'productId': productId}, ReturnConsumedCapacity='TOTAL')
 
-        metrics_manager.record_metric(event, "WriteCapacityUnits", "Count", response['ConsumedCapacity']['CapacityUnits'])
+        metrics_manager.record_metric(tenant_id, "WriteCapacityUnits", "Count", response['ConsumedCapacity']['CapacityUnits'])
     except ClientError as e:
         logger.error(e.response['Error']['Message'])
         raise Exception('Error deleting a product', e)
@@ -57,8 +57,8 @@ def delete_product(event, key):
         return response
 
 
-def create_product(event, payload):
-    tenantId = event['requestContext']['authorizer']['tenantId']    
+def create_product(event, payload, tenant_id):
+    tenantId = tenant_id    
     
     suffix = random.randrange(suffix_start, suffix_end)
     shardId = tenantId+"-"+str(suffix)
@@ -79,7 +79,7 @@ def create_product(event, payload):
                 ReturnConsumedCapacity='TOTAL'
         )
 
-        metrics_manager.record_metric(event, "WriteCapacityUnits", "Count", response['ConsumedCapacity']['CapacityUnits'])
+        metrics_manager.record_metric(tenant_id, "WriteCapacityUnits", "Count", response['ConsumedCapacity']['CapacityUnits'])
     except ClientError as e:
         logger.error(e.response['Error']['Message'])
         raise Exception('Error adding a product', e)
@@ -87,12 +87,12 @@ def create_product(event, payload):
         logger.info("PutItem succeeded:")
         return product
 
-def update_product(event, payload, key):    
+def update_product(event, payload, key, tenant_id):    
     try:
         shardId = key.split(":")[0]
         productId = key.split(":")[1] 
-        logger.log_with_tenant_context(event, shardId)
-        logger.log_with_tenant_context(event, productId)
+        logger.log_with_tenant_context(tenant_id, shardId)
+        logger.log_with_tenant_context(tenant_id, productId)
 
         product = Product(shardId,productId,payload.sku, payload.name, payload.price, payload.category)
 
@@ -108,7 +108,7 @@ def update_product(event, payload, key):
         ReturnValues="UPDATED_NEW", 
         ReturnConsumedCapacity='TOTAL')
 
-        metrics_manager.record_metric(event, "WriteCapacityUnits", "Count", response['ConsumedCapacity']['CapacityUnits'])
+        metrics_manager.record_metric(tenant_id, "WriteCapacityUnits", "Count", response['ConsumedCapacity']['CapacityUnits'])
     except ClientError as e:
         logger.error(e.response['Error']['Message'])
         raise Exception('Error updating a product', e)
@@ -119,7 +119,7 @@ def update_product(event, payload, key):
 def get_products(event, tenantId):    
     get_all_products_response =[]
     try:
-        __query_all_partitions(tenantId,get_all_products_response, table, event)
+        __query_all_partitions(tenantId,get_all_products_response, table)
     except ClientError as e:
         logger.error(e.response['Error']['Message'])
         raise Exception('Error getting all products', e)
@@ -127,13 +127,13 @@ def get_products(event, tenantId):
         logger.info("Get products succeeded")
         return get_all_products_response
 
-def __query_all_partitions(tenantId,get_all_products_response, table, event):
+def __query_all_partitions(tenantId,get_all_products_response, table):
     threads = []    
     
     for suffix in range(suffix_start, suffix_end):
         partition_id = tenantId+'-'+str(suffix)
         
-        thread = threading.Thread(target=__get_tenant_data, args=[partition_id, get_all_products_response, table, event])
+        thread = threading.Thread(target=__get_tenant_data, args=[partition_id, get_all_products_response, table, tenantId])
         threads.append(thread)
         
     # Start threads
@@ -143,7 +143,7 @@ def __query_all_partitions(tenantId,get_all_products_response, table, event):
     for thread in threads:
         thread.join()
            
-def __get_tenant_data(partition_id, get_all_products_response, table, event):    
+def __get_tenant_data(partition_id, get_all_products_response, table, tenant_id):    
     logger.info(partition_id)
     response = table.query(KeyConditionExpression=Key('shardId').eq(partition_id), ReturnConsumedCapacity='TOTAL')    
     if (len(response['Items']) > 0):
@@ -151,4 +151,4 @@ def __get_tenant_data(partition_id, get_all_products_response, table, event):
             product = Product(item['shardId'], item['productId'], item['sku'], item['name'], item['price'], item['category'])
             get_all_products_response.append(product)
 
-    metrics_manager.record_metric(event, "ReadCapacityUnits", "Count", response['ConsumedCapacity']['CapacityUnits'])        
+    metrics_manager.record_metric(tenant_id, "ReadCapacityUnits", "Count", response['ConsumedCapacity']['CapacityUnits'])        

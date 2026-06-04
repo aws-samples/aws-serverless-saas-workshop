@@ -79,7 +79,7 @@ def update_tenant(event, context):
     
     table_tenant_details = __getTenantManagementTable(event)
     
-    requesting_tenant_id = event['requestContext']['authorizer']['tenantId']    
+    requesting_tenant_id = context.tenant_id    
     user_role = event['requestContext']['authorizer']['userRole']
 
     tenant_details = json.loads(event['body'])
@@ -87,7 +87,7 @@ def update_tenant(event, context):
     
     tracer.put_annotation(key="TenantId", value=tenant_id)
     
-    logger.log_with_tenant_context(event, "Request received to update tenant")
+    logger.log_with_tenant_context(requesting_tenant_id, "Request received to update tenant")
 
     if ((auth_manager.isTenantAdmin(user_role) and tenant_id == requesting_tenant_id) or auth_manager.isSystemAdmin(user_role)):
         exiting_tenant_details = table_tenant_details.get_item(
@@ -118,25 +118,25 @@ def update_tenant(event, context):
             )             
             
         
-        logger.log_with_tenant_context(event, response_update)     
+        logger.log_with_tenant_context(requesting_tenant_id, response_update)     
 
-        logger.log_with_tenant_context(event, "Request completed to update tenant")
+        logger.log_with_tenant_context(requesting_tenant_id, "Request completed to update tenant")
         return utils.create_success_response("Tenant Updated")
     else:
-        logger.log_with_tenant_context(event, "Request completed as unauthorized. Only tenant admin or system admin can update tenant!")        
+        logger.log_with_tenant_context(requesting_tenant_id, "Request completed as unauthorized. Only tenant admin or system admin can update tenant!")        
         return utils.create_unauthorized_response()
 
 @tracer.capture_lambda_handler
 def get_tenant(event, context):
     table_tenant_details = __getTenantManagementTable(event)
     
-    requesting_tenant_id = event['requestContext']['authorizer']['tenantId']    
+    requesting_tenant_id = context.tenant_id    
     user_role = event['requestContext']['authorizer']['userRole']
 
     tenant_id = event['pathParameters']['tenantid']
     tracer.put_annotation(key="TenantId", value=tenant_id)
     
-    logger.log_with_tenant_context(event, "Request received to get tenant details")
+    logger.log_with_tenant_context(requesting_tenant_id, "Request received to get tenant details")
 
     if ((auth_manager.isTenantAdmin(user_role) and tenant_id == requesting_tenant_id) or auth_manager.isSystemAdmin(user_role)):
         tenant_details = table_tenant_details.get_item(
@@ -152,12 +152,12 @@ def get_tenant(event, context):
         )             
         item = tenant_details['Item']
         tenant_info = TenantInfo(item['tenantName'], item['tenantAddress'],item['tenantEmail'], item['tenantPhone'])
-        logger.log_with_tenant_context(event, tenant_info)
+        logger.log_with_tenant_context(requesting_tenant_id, tenant_info)
         
-        logger.log_with_tenant_context(event, "Request completed to get tenant details")
+        logger.log_with_tenant_context(requesting_tenant_id, "Request completed to get tenant details")
         return utils.create_success_response(tenant_info.__dict__)
     else:
-        logger.log_with_tenant_context(event, "Request completed as unauthorized. Only tenant admin or system admin can deactivate tenant!")        
+        logger.log_with_tenant_context(requesting_tenant_id, "Request completed as unauthorized. Only tenant admin or system admin can deactivate tenant!")        
         return utils.create_unauthorized_response()  
 
 @tracer.capture_lambda_handler
@@ -171,14 +171,14 @@ def deactivate_tenant(event, context):
     auth = utils.get_auth(host, region)
     headers = utils.get_headers(event)
 
-    requesting_tenant_id = event['requestContext']['authorizer']['tenantId']    
+    requesting_tenant_id = context.tenant_id    
     user_role = event['requestContext']['authorizer']['userRole']
 
     
     tenant_id = event['pathParameters']['tenantid']
     tracer.put_annotation(key="TenantId", value=tenant_id)
     
-    logger.log_with_tenant_context(event, "Request received to deactivate tenant")
+    logger.log_with_tenant_context(requesting_tenant_id, "Request received to deactivate tenant")
 
     if ((auth_manager.isTenantAdmin(user_role) and tenant_id == requesting_tenant_id) or auth_manager.isSystemAdmin(user_role)):
         response = table_tenant_details.update_item(
@@ -192,7 +192,7 @@ def deactivate_tenant(event, context):
             ReturnValues="ALL_NEW"
             )             
         
-        logger.log_with_tenant_context(event, response)
+        logger.log_with_tenant_context(requesting_tenant_id, response)
 
         if (response["Attributes"]["dedicatedTenancy"].upper() == "TRUE"):
             update_details = {}
@@ -206,12 +206,12 @@ def deactivate_tenant(event, context):
         update_details['requestingTenantId'] = requesting_tenant_id
         update_details['userRole'] = user_role
         update_user_response = __invoke_disable_users(update_details, headers, auth, host, stage_name, url_disable_users)
-        logger.log_with_tenant_context(event, update_user_response)
+        logger.log_with_tenant_context(requesting_tenant_id, update_user_response)
 
-        logger.log_with_tenant_context(event, "Request completed to deactivate tenant")
+        logger.log_with_tenant_context(requesting_tenant_id, "Request completed to deactivate tenant")
         return utils.create_success_response("Tenant Deactivated")
     else:
-        logger.log_with_tenant_context(event, "Request completed as unauthorized. Only tenant admin or system admin can deactivate tenant!")        
+        logger.log_with_tenant_context(requesting_tenant_id, "Request completed as unauthorized. Only tenant admin or system admin can deactivate tenant!")        
         return utils.create_unauthorized_response()    
 
 @tracer.capture_lambda_handler
@@ -225,14 +225,14 @@ def activate_tenant(event, context):
     auth = utils.get_auth(host, region)
     headers = utils.get_headers(event)
 
-    requesting_tenant_id = event['requestContext']['authorizer']['tenantId']    
+    requesting_tenant_id = context.tenant_id    
     user_role = event['requestContext']['authorizer']['userRole']
 
     
     tenant_id = event['pathParameters']['tenantid']
     tracer.put_annotation(key="TenantId", value=tenant_id)
     
-    logger.log_with_tenant_context(event, "Request received to activate tenant")
+    logger.log_with_tenant_context(requesting_tenant_id, "Request received to activate tenant")
 
     if (auth_manager.isSystemAdmin(user_role)):
         response = table_tenant_details.update_item(
@@ -246,13 +246,13 @@ def activate_tenant(event, context):
             ReturnValues="ALL_NEW"
             )             
         
-        logger.log_with_tenant_context(event, response)
+        logger.log_with_tenant_context(requesting_tenant_id, response)
 
         if (response["Attributes"]["dedicatedTenancy"].upper() == "TRUE"):
             update_details = {}
             update_details['tenantId'] = tenant_id            
             provision_response = __invoke_provision_tenant(update_details, headers, auth, host, stage_name, url_provision_tenant)
-            logger.log_with_tenant_context(event, provision_response)
+            logger.log_with_tenant_context(requesting_tenant_id, provision_response)
         
         update_details = {}
         update_details['userPoolId'] = response["Attributes"]['userPoolId']
@@ -260,12 +260,12 @@ def activate_tenant(event, context):
         update_details['requestingTenantId'] = requesting_tenant_id
         update_details['userRole'] = user_role
         update_user_response = __invoke_enable_users(update_details, headers, auth, host, stage_name, url_enable_users)
-        logger.log_with_tenant_context(event, update_user_response)
+        logger.log_with_tenant_context(requesting_tenant_id, update_user_response)
 
-        logger.log_with_tenant_context(event, "Request completed to activate tenant")
+        logger.log_with_tenant_context(requesting_tenant_id, "Request completed to activate tenant")
         return utils.create_success_response("Tenant Activated")
     else:
-        logger.log_with_tenant_context(event, "Request completed as unauthorized. Only system admin can activate tenant!")        
+        logger.log_with_tenant_context(requesting_tenant_id, "Request completed as unauthorized. Only system admin can activate tenant!")        
         return utils.create_unauthorized_response()    
 
 def load_tenant_config(event, context):
