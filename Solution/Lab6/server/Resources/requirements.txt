@@ -1,1 +1,1 @@
-python-jose[cryptography]
+joserfc>=1.6.8

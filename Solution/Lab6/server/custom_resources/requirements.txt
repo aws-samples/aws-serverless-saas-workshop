@@ -1,2 +1,2 @@
-requests
-crhelper
+requests>=2.32.0
+crhelper>=2.0.12

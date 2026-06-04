@@ -1,2 +1,2 @@
-requests
-aws_requests_auth
+requests>=2.32.0
+aws_requests_auth>=0.4.3
