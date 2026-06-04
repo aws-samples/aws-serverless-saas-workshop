@@ -8,8 +8,9 @@ import urllib.request
 import boto3
 import time
 import logger
-from jose import jwk, jwt
-from jose.utils import base64url_decode
+from joserfc import jwt
+from joserfc.jwk import KeySet
+from joserfc import jws
 import auth_manager
 import utils
 
@@ -135,42 +136,20 @@ def isTenantAuthorizedForThisAPI(apigateway_url, current_api_id):
         return True
 
 def validateJWT(token, app_client_id, keys):
-    # get the kid from the headers prior to verification
-    headers = jwt.get_unverified_headers(token)
-    kid = headers['kid']
-    # search for the kid in the downloaded public keys
-    key_index = -1
-    for i in range(len(keys)):
-        if kid == keys[i]['kid']:
-            key_index = i
-            break
-    if key_index == -1:
-        logger.info('Public key not found in jwks.json')
-        return False
-    # construct the public key
-    public_key = jwk.construct(keys[key_index])
-    # get the last two sections of the token,
-    # message and signature (encoded in base64)
-    message, encoded_signature = str(token).rsplit('.', 1)
-    # decode the signature
-    decoded_signature = base64url_decode(encoded_signature.encode('utf-8'))
-    # verify the signature
-    if not public_key.verify(message.encode("utf8"), decoded_signature):
-        logger.info('Signature verification failed')
+    try:
+        key_set = KeySet.import_key_set({"keys": keys})
+        token_obj = jwt.decode(token, key_set)
+        claims = token_obj.claims
+    except Exception as e:
+        logger.info(f'Token validation failed: {e}')
         return False
     logger.info('Signature successfully verified')
-    # since we passed the verification, we can now safely
-    # use the unverified claims
-    claims = jwt.get_unverified_claims(token)
-    # additionally we can verify the token expiration
     if time.time() > claims['exp']:
         logger.info('Token is expired')
         return False
-    # and the Audience  (use claims['client_id'] if verifying an access token)
-    if claims['aud'] != app_client_id:
+    if claims.get('aud') != app_client_id:
         logger.info('Token was not issued for this audience')
         return False
-    # now we can use the claims
     logger.info(claims)
     return claims
 
@@ -192,7 +171,7 @@ class AuthPolicy(object):
     """The principal used for the policy, this should be a unique identifier for the end user."""
     version = "2012-10-17"
     """The policy version used for the evaluation. This should always be '2012-10-17'"""
-    pathRegex = "^[/.a-zA-Z0-9-\*]+$"
+    pathRegex = r"^[/.a-zA-Z0-9-\*]+$"
     """The regular expression used to validate resource paths for the policy"""
 
     """these are the internal lists of allowed and denied methods. These are lists
