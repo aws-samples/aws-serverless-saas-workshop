@@ -24,28 +24,24 @@ while [[ "$#" -gt 0 ]]; do
   shift
 done
 
-# During AWS hosted events using event engine tool
-# we pre-provision cloudfront and s3 buckets which hosts UI code.
-# So that it improves this labs total execution time.
-# Below code checks if cloudfront and s3 buckets are
-# pre-provisioned or not and then concludes if the workshop
-# is running in AWS hosted event through event engine tool or not.
-IS_RUNNING_IN_EVENT_ENGINE=false
-PREPROVISIONED_ADMIN_SITE=$(aws cloudformation list-exports --query "Exports[?Name=='Serverless-SaaS-AdminAppSite'].Value" --output text)
-if [ ! -z "$PREPROVISIONED_ADMIN_SITE" ]; then
-  echo "Workshop is running in WorkshopStudio"
-  IS_RUNNING_IN_EVENT_ENGINE=true
-  ADMIN_SITE_URL=$(aws cloudformation list-exports --query "Exports[?Name=='Serverless-SaaS-AdminAppSite'].Value" --output text)
-  LANDING_APP_SITE_URL=$(aws cloudformation list-exports --query "Exports[?Name=='Serverless-SaaS-LandingApplicationSite'].Value" --output text)
-  ADMIN_SITE_BUCKET=$(aws cloudformation list-exports --query "Exports[?Name=='Serverless-SaaS-AdminSiteBucket'].Value" --output text)
-  LANDING_APP_SITE_BUCKET=$(aws cloudformation list-exports --query "Exports[?Name=='Serverless-SaaS-LandingApplicationSiteBucket'].Value" --output text)
+REGION=$(aws configure get region)
+
+# Get UI resources from shared stack exports
+ADMIN_SITE_URL=$(aws cloudformation list-exports --query "Exports[?Name=='Serverless-SaaS-AdminAppSite'].Value" --output text)
+LANDING_APP_SITE_URL=$(aws cloudformation list-exports --query "Exports[?Name=='Serverless-SaaS-LandingApplicationSite'].Value" --output text)
+ADMIN_SITE_BUCKET=$(aws cloudformation list-exports --query "Exports[?Name=='Serverless-SaaS-AdminSiteBucket'].Value" --output text)
+LANDING_APP_SITE_BUCKET=$(aws cloudformation list-exports --query "Exports[?Name=='Serverless-SaaS-LandingApplicationSiteBucket'].Value" --output text)
+
+if [ -z "$ADMIN_SITE_URL" ]; then
+  echo "ERROR: Shared stack not deployed. Run deploy-shared.sh first."
+  exit 1
 fi
 
 if [[ $server -eq 1 ]]; then
   echo "Server code is getting deployed"
 
   cd ../server || exit # stop execution if cd fails
-  REGION=$(aws configure get region)
+
   DEFAULT_SAM_S3_BUCKET=$(grep s3_bucket samconfig.toml | cut -d'=' -f2 | cut -d \" -f2)
   echo "aws s3 ls s3://$DEFAULT_SAM_S3_BUCKET"
   if ! aws s3 ls "s3://${DEFAULT_SAM_S3_BUCKET}"; then
@@ -82,21 +78,9 @@ if [[ $server -eq 1 ]]; then
   fi
 
   sam build -t template.yaml --use-container
-
-  if [ "$IS_RUNNING_IN_EVENT_ENGINE" = true ]; then
-    sam deploy --config-file samconfig.toml --region="$REGION" --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE AdminUserPoolCallbackURLParameter=$ADMIN_SITE_URL
-  else
-    sam deploy --config-file samconfig.toml --region="$REGION" --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE
-  fi
+  sam deploy --config-file samconfig.toml --region="$REGION"
 
   cd ../scripts || exit # stop execution if cd fails
-fi
-
-if [ "$IS_RUNNING_IN_EVENT_ENGINE" = false ]; then
-  ADMIN_SITE_URL=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='AdminAppSite'].OutputValue" --output text)
-  LANDING_APP_SITE_URL=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='LandingApplicationSite'].OutputValue" --output text)
-  ADMIN_SITE_BUCKET=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='AdminSiteBucket'].OutputValue" --output text)
-  LANDING_APP_SITE_BUCKET=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='LandingApplicationSiteBucket'].OutputValue" --output text)
 fi
 
 if [[ $client -eq 1 ]]; then
@@ -108,9 +92,8 @@ if [[ $client -eq 1 ]]; then
   echo "Client code is getting deployed"
 
   ADMIN_APIGATEWAYURL=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='AdminApi'].OutputValue" --output text)
-  ADMIN_APPCLIENTID=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='CognitoOperationUsersUserPoolClientId'].OutputValue" --output text)
-  ADMIN_USERPOOL_ID=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='CognitoOperationUsersUserPoolId'].OutputValue" --output text)
-  ADMIN_USER_GROUP_NAME=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='CognitoAdminUserGroupName'].OutputValue" --output text)
+  ADMIN_APPCLIENTID=$(aws cloudformation list-exports --query "Exports[?Name=='Serverless-SaaS-CognitoOperationUsersUserPoolClientId'].Value" --output text)
+  ADMIN_USERPOOL_ID=$(aws cloudformation list-exports --query "Exports[?Name=='Serverless-SaaS-CognitoOperationUsersUserPoolId'].Value" --output text)
 
   # Create admin-user in OperationUsers userpool with given input email address
   CREATE_ADMIN_USER=$(aws cognito-idp admin-create-user \
@@ -125,7 +108,7 @@ if [[ $client -eq 1 ]]; then
   ADD_ADMIN_USER_TO_GROUP=$(aws cognito-idp admin-add-user-to-group \
     --user-pool-id "$ADMIN_USERPOOL_ID" \
     --username admin-user \
-    --group-name "$ADMIN_USER_GROUP_NAME")
+    --group-name "SystemAdmins")
 
   echo "$ADD_ADMIN_USER_TO_GROUP"
 

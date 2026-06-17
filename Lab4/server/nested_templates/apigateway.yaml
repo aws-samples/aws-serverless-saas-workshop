@@ -4,7 +4,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 Description: >
-  Template to setup api gateway, apis, api keys and usage plan as part of bootstrap
+  Template to setup api gateway routes on the pre-existing API from shared stack
 Parameters:
   StageName:
     Type: String
@@ -27,7 +27,7 @@ Parameters:
   UpdateTenantFunctionArn:
     Type: String
   GetUsersFunctionArn:
-    Type: String    
+    Type: String
   GetUserFunctionArn:
     Type: String
   UpdateUserFunctionArn:
@@ -44,715 +44,377 @@ Parameters:
     Type: String
   AuthorizerFunctionArn:
     Type: String
-  
-Resources:
-  ApiGatewayCloudWatchLogRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: !Sub apigateway-cloudwatch-publish-role-${AWS::Region}
-      Path: "/"
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - apigateway.amazonaws.com
-            Action:
-              - sts:AssumeRole
-  ApiGatewayAttachCloudwatchLogArn:
-    Type: AWS::ApiGateway::Account
-    Properties:
-      CloudWatchRoleArn: !GetAtt ApiGatewayCloudWatchLogRole.Arn
 
+Resources:
   AdminApiGatewayAccessLogs:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub /aws/api-gateway/access-logs-serverless-saas-admin-api
+      LogGroupName: /aws/api-gateway/access-logs-serverless-saas-admin-api
       RetentionInDays: 30
-  AdminApiGatewayApi:
-    Type: AWS::Serverless::Api
+
+  Authorizer:
+    Type: AWS::ApiGateway::Authorizer
     Properties:
-      MethodSettings:
-        - DataTraceEnabled: False
-          LoggingLevel: INFO
-          MetricsEnabled: True
-          ResourcePath: "/*"
-          HttpMethod: "*"
-      Auth:
-        ResourcePolicy:
-          CustomStatements:
-            - Effect: Allow
-              Principal: "*"
-              Action: "execute-api:Invoke"
-              Resource: ["execute-api:/*/*/*"]
-            - Effect: Deny
-              Principal: "*"
-              Action: "execute-api:Invoke"
-              Resource: 
-                - !Join [
-                   "",
-                   [
-                     "execute-api:/", !Ref StageName, "/POST/tenant"
-                   ]
-                  ] 
-                - !Join [ "", [
-                     "execute-api:/", !Ref StageName, "/POST/user/tenant-admin"
-                   ]
-                 ]                
-              Condition:
-                StringNotEquals:
-                  aws:PrincipalArn:
-                    - !Ref RegisterTenantLambdaExecutionRoleArn 
-                    - !Ref TenantManagementLambdaExecutionRoleArn 
-            - Effect: Deny
-              Principal: "*"
-              Action: "execute-api:Invoke"
-              Resource: 
-                - !Join [ "", [
-                     "execute-api:/", !Ref StageName, "/PUT/users/disable"
-                   ]
-                 ]                
-              Condition:
-                StringNotEquals:
-                  aws:PrincipalArn:
-                    - !Ref TenantManagementLambdaExecutionRoleArn
-            - Effect: Deny
-              Principal: "*"
-              Action: "execute-api:Invoke"
-              Resource: 
-                - !Join [ "", [
-                     "execute-api:/", !Ref StageName, "/PUT/users/enable"
-                   ]
-                 ]                
-              Condition:
-                StringNotEquals:
-                  aws:PrincipalArn:
-                    - !Ref TenantManagementLambdaExecutionRoleArn            
+      Name: SharedServicesAuthorizer
+      Type: TOKEN
+      AuthorizerUri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AuthorizerFunctionArn}/invocations"
+      AuthorizerResultTtlInSeconds: 60
+      IdentitySource: method.request.header.Authorization
+      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+
+  # ==================== API Resources ====================
+  RegistrationResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+      ParentId: !ImportValue Serverless-SaaS-AdminApiGatewayRootResourceId
+      PathPart: registration
+
+  TenantResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+      ParentId: !ImportValue Serverless-SaaS-AdminApiGatewayRootResourceId
+      PathPart: tenant
+
+  TenantIdResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+      ParentId: !Ref TenantResource
+      PathPart: "{tenantid}"
+
+  TenantActivationResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+      ParentId: !Ref TenantResource
+      PathPart: activation
+
+  TenantActivationIdResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+      ParentId: !Ref TenantActivationResource
+      PathPart: "{tenantid}"
+
+  TenantsResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+      ParentId: !ImportValue Serverless-SaaS-AdminApiGatewayRootResourceId
+      PathPart: tenants
+
+  UserResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+      ParentId: !ImportValue Serverless-SaaS-AdminApiGatewayRootResourceId
+      PathPart: user
+
+  UserNameResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+      ParentId: !Ref UserResource
+      PathPart: "{username}"
+
+  UserTenantAdminResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+      ParentId: !Ref UserResource
+      PathPart: tenant-admin
+
+  UsersResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+      ParentId: !ImportValue Serverless-SaaS-AdminApiGatewayRootResourceId
+      PathPart: users
+
+  UsersDisableResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+      ParentId: !Ref UsersResource
+      PathPart: disable
+
+  UsersDisableIdResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+      ParentId: !Ref UsersDisableResource
+      PathPart: "{tenantid}"
+
+  UsersEnableResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+      ParentId: !Ref UsersResource
+      PathPart: enable
+
+  UsersEnableIdResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+      ParentId: !Ref UsersEnableResource
+      PathPart: "{tenantid}"
+
+  # ==================== Methods ====================
+  RegistrationPost:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+      ResourceId: !Ref RegistrationResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RegisterTenantFunctionArn}/invocations"
+
+  TenantActivationPut:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+      ResourceId: !Ref TenantActivationIdResource
+      HttpMethod: PUT
+      AuthorizationType: CUSTOM
+      AuthorizerId: !Ref Authorizer
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ActivateTenantFunctionArn}/invocations"
+
+  TenantsGet:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+      ResourceId: !Ref TenantsResource
+      HttpMethod: GET
+      AuthorizationType: CUSTOM
+      AuthorizerId: !Ref Authorizer
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetTenantsFunctionArn}/invocations"
+
+  TenantPost:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+      ResourceId: !Ref TenantResource
+      HttpMethod: POST
+      AuthorizationType: AWS_IAM
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreateTenantFunctionArn}/invocations"
+
+  TenantIdGet:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+      ResourceId: !Ref TenantIdResource
+      HttpMethod: GET
+      AuthorizationType: CUSTOM
+      AuthorizerId: !Ref Authorizer
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetTenantFunctionArn}/invocations"
+
+  TenantIdDelete:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+      ResourceId: !Ref TenantIdResource
+      HttpMethod: DELETE
+      AuthorizationType: CUSTOM
+      AuthorizerId: !Ref Authorizer
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DeactivateTenantFunctionArn}/invocations"
+
+  TenantIdPut:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+      ResourceId: !Ref TenantIdResource
+      HttpMethod: PUT
+      AuthorizationType: CUSTOM
+      AuthorizerId: !Ref Authorizer
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UpdateTenantFunctionArn}/invocations"
+
+  UserNameGet:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+      ResourceId: !Ref UserNameResource
+      HttpMethod: GET
+      AuthorizationType: CUSTOM
+      AuthorizerId: !Ref Authorizer
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetUserFunctionArn}/invocations"
+
+  UserNamePut:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+      ResourceId: !Ref UserNameResource
+      HttpMethod: PUT
+      AuthorizationType: CUSTOM
+      AuthorizerId: !Ref Authorizer
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UpdateUserFunctionArn}/invocations"
+
+  UserNameDelete:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+      ResourceId: !Ref UserNameResource
+      HttpMethod: DELETE
+      AuthorizationType: CUSTOM
+      AuthorizerId: !Ref Authorizer
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DisableUserFunctionArn}/invocations"
+
+  UserTenantAdminPost:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+      ResourceId: !Ref UserTenantAdminResource
+      HttpMethod: POST
+      AuthorizationType: AWS_IAM
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreateTenantAdminUserFunctionArn}/invocations"
+
+  UserPost:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+      ResourceId: !Ref UserResource
+      HttpMethod: POST
+      AuthorizationType: CUSTOM
+      AuthorizerId: !Ref Authorizer
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreateUserFunctionArn}/invocations"
+
+  UsersGet:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+      ResourceId: !Ref UsersResource
+      HttpMethod: GET
+      AuthorizationType: CUSTOM
+      AuthorizerId: !Ref Authorizer
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetUsersFunctionArn}/invocations"
+
+  UsersDisablePut:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+      ResourceId: !Ref UsersDisableIdResource
+      HttpMethod: PUT
+      AuthorizationType: AWS_IAM
+      Integration:
+        Type: AWS
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DisableUsersByTenantFunctionArn}/invocations"
+        RequestParameters:
+          integration.request.header.X-Amz-Invocation-Type: "'Event'"
+        RequestTemplates:
+          application/json: "{\"tenantid\": \"$input.params('tenantid')\"}"
+        IntegrationResponses:
+          - StatusCode: "200"
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+      MethodResponses:
+        - StatusCode: "200"
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+
+  UsersEnablePut:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+      ResourceId: !Ref UsersEnableIdResource
+      HttpMethod: PUT
+      AuthorizationType: AWS_IAM
+      Integration:
+        Type: AWS
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${EnableUsersByTenantFunctionArn}/invocations"
+        RequestParameters:
+          integration.request.header.X-Amz-Invocation-Type: "'Event'"
+        RequestTemplates:
+          application/json: "{\"tenantid\": \"$input.params('tenantid')\"}"
+        IntegrationResponses:
+          - StatusCode: "200"
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+      MethodResponses:
+        - StatusCode: "200"
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+
+  # ==================== Deployment ====================
+  ApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - RegistrationPost
+      - TenantActivationPut
+      - TenantsGet
+      - TenantPost
+      - TenantIdGet
+      - TenantIdDelete
+      - TenantIdPut
+      - UserNameGet
+      - UserNamePut
+      - UserNameDelete
+      - UserTenantAdminPost
+      - UserPost
+      - UsersGet
+      - UsersDisablePut
+      - UsersEnablePut
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+
+  ApiStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+      DeploymentId: !Ref ApiDeployment
+      StageName: !Ref StageName
       AccessLogSetting:
         DestinationArn: !GetAtt AdminApiGatewayAccessLogs.Arn
-        Format: '{ "requestId":"$context.requestId", "ip": "$context.identity.sourceIp", "caller":"$context.identity.caller", "user":"$context.identity.user","requestTime":"$context.requestTime", "httpMethod":"$context.httpMethod","resourcePath":"$context.resourcePath", "status":"$context.status","protocol":"$context.protocol", "responseLength":"$context.responseLength" }'
-      TracingEnabled: True
-      DefinitionBody:
-        openapi: 3.0.1
-        info:
-          title: !Join ["", ["serverless-saas-admin-api-", !Ref "AWS::Region"]]
-        basePath: !Join ["", ["/", !Ref StageName]]
-        schemes:
-          - https
-        paths:
-          /registration:
-            post:
-              summary: Register a new tenant
-              description: Register a new tenant
-              produces:
-                - application/json
-              responses: {}
-              x-amazon-apigateway-integration:
-                uri: !Join
-                  - ""
-                  - - !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/
-                    - !Ref RegisterTenantFunctionArn
-                    - /invocations
-                httpMethod: POST
-                type: aws_proxy
-            options:
-              consumes:
-                - application/json
-              produces:
-                - application/json
-              responses:
-                "200":
-                  description: 200 response
-                  schema:
-                    $ref: "#/definitions/Empty"
-                  headers:
-                    Access-Control-Allow-Origin:
-                      type: string
-                    Access-Control-Allow-Methods:
-                      type: string
-                    Access-Control-Allow-Headers:
-                      type: string
-              x-amazon-apigateway-integration:
-                responses:
-                  default:
-                    statusCode: 200
-                    responseParameters:
-                      method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
-                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
-                      method.response.header.Access-Control-Allow-Origin: "'*'"
-                passthroughBehavior: when_no_match
-                requestTemplates:
-                  application/json: '{"statusCode": 200}'
-                type: mock                   
-          
-          /tenant/activation/{tenantid}:
-            put:
-              security:
-                - api_key: []
-                - Authorizer: []
-              summary: Activate an existing tenant
-              description: Activate an existing tenant
-              produces:
-                - application/json
-              responses: {}
-              x-amazon-apigateway-integration:
-                uri: !Join
-                  - ""
-                  - - !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/
-                    - !Ref ActivateTenantFunctionArn
-                    - /invocations
-                httpMethod: POST
-                type: aws_proxy
-            options:
-              consumes:
-                - application/json
-              produces:
-                - application/json
-              responses:
-                "200":
-                  description: 200 response
-                  schema:
-                    $ref: "#/definitions/Empty"
-                  headers:
-                    Access-Control-Allow-Origin:
-                      type: string
-                    Access-Control-Allow-Methods:
-                      type: string
-                    Access-Control-Allow-Headers:
-                      type: string
-              x-amazon-apigateway-integration:
-                responses:
-                  default:
-                    statusCode: 200
-                    responseParameters:
-                      method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
-                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
-                      method.response.header.Access-Control-Allow-Origin: "'*'"
-                passthroughBehavior: when_no_match
-                requestTemplates:
-                  application/json: '{"statusCode": 200}'
-                type: mock
-          /tenants:
-            get:
-              summary: Returns all tenants
-              description: Returns all tenants
-              produces:
-                - application/json
-              responses: {}
-              security:
-                - api_key: []
-                - Authorizer: []
-              x-amazon-apigateway-integration:
-                uri: !Join
-                  - ''
-                  - - !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/
-                    -  !Ref GetTenantsFunctionArn
-                    - /invocations
-                httpMethod: POST
-                type: aws_proxy
-            options:
-              consumes:
-                - application/json
-              produces:
-                - application/json
-              responses:
-                "200":
-                  description: 200 response
-                  schema:
-                    $ref: "#/definitions/Empty"
-                  headers:
-                    Access-Control-Allow-Origin:
-                      type: string
-                    Access-Control-Allow-Methods:
-                      type: string
-                    Access-Control-Allow-Headers:
-                      type: string
-              x-amazon-apigateway-integration:
-                responses:
-                  default:
-                    statusCode: 200
-                    responseParameters:
-                      method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
-                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
-                      method.response.header.Access-Control-Allow-Origin: "'*'"
-                passthroughBehavior: when_no_match
-                requestTemplates:
-                  application/json: '{"statusCode": 200}'
-                type: mock                 
-          /tenant:
-            post:
-              summary: Creates a tenant
-              description: Creates a tenant
-              produces:
-                - application/json
-              responses: {}
-              security:
-                - sigv4Reference: []
-              x-amazon-apigateway-integration:
-                uri: !Join
-                  - ''
-                  - - !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/
-                    -  !Ref CreateTenantFunctionArn
-                    - /invocations
-                httpMethod: POST
-                type: aws_proxy                
-            options:
-              consumes:
-                - application/json
-              produces:
-                - application/json
-              responses:
-                '200':
-                  description: 200 response
-                  schema:
-                    $ref: "#/definitions/Empty"
-                  headers:
-                    Access-Control-Allow-Origin:
-                      type: string
-                    Access-Control-Allow-Methods:
-                      type: string
-                    Access-Control-Allow-Headers:
-                      type: string
-              x-amazon-apigateway-integration:
-                responses:
-                  default:
-                    statusCode: 200
-                    responseParameters:
-                      method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
-                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
-                      method.response.header.Access-Control-Allow-Origin:  "'*'"
-                passthroughBehavior: when_no_match
-                requestTemplates:
-                  application/json: "{\"statusCode\": 200}"
-                type: mock 
-          
-          /tenant/{tenantid}:
-            get:
-              summary: Returns a tenant
-              description: Return a tenant by a tenant id
-              produces:
-                - application/json
-              responses: {}
-              security:   
-                - Authorizer: []
-              x-amazon-apigateway-integration:
-                uri: !Join
-                  - ''
-                  - - !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/
-                    -  !Ref GetTenantFunctionArn
-                    - /invocations
-                httpMethod: POST
-                type: aws_proxy        
-            delete:              
-              summary: Disables a tenant
-              description: Disables a tenant by a tenant id
-              produces:
-                - application/json
-              responses: {}
-              security:   
-                - Authorizer: []
-              x-amazon-apigateway-integration:
-                uri: !Join
-                  - ''
-                  - - !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/
-                    -  !Ref DeactivateTenantFunctionArn
-                    - /invocations
-                httpMethod: POST
-                type: aws_proxy
-            put:  
-              summary: Updates a tenant
-              description: Updates a tenant
-              produces:
-                - application/json
-              responses: {}
-              security:        
-                - Authorizer: []
-              x-amazon-apigateway-integration:
-                uri: !Join
-                  - ''
-                  - - !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/
-                    -  !Ref UpdateTenantFunctionArn
-                    - /invocations
-                httpMethod: POST
-                type: aws_proxy            
-            options:
-              consumes:
-                - application/json
-              produces:
-                - application/json
-              responses:
-                '200':
-                  description: 200 response
-                  schema:
-                    $ref: "#/definitions/Empty"
-                  headers:
-                    Access-Control-Allow-Origin:
-                      type: string
-                    Access-Control-Allow-Methods:
-                      type: string
-                    Access-Control-Allow-Headers:
-                      type: string
-              x-amazon-apigateway-integration:
-                responses:
-                  default:
-                    statusCode: 200
-                    responseParameters:
-                      method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
-                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
-                      method.response.header.Access-Control-Allow-Origin:  "'*'"
-                passthroughBehavior: when_no_match
-                requestTemplates:
-                  application/json: "{\"statusCode\": 200}"
-                type: mock     
-            
-          /user/{username}:
-            get:
-              summary: Returns a user
-              description: Return a user by a user id
-              produces:
-                - application/json
-              responses: {}
-              security:     
-                - Authorizer: []
-              x-amazon-apigateway-integration:
-                uri: !Join
-                  - ''
-                  - - !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/
-                    -  !Ref GetUserFunctionArn
-                    - /invocations
-                httpMethod: POST
-                type: aws_proxy    
-            put:              
-              produces:
-                - application/json
-              responses: {}
-              security:                
-                - Authorizer: []
-              x-amazon-apigateway-integration:
-                uri: !Join
-                  - ''
-                  - - !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/
-                    -  !Ref UpdateUserFunctionArn
-                    - /invocations
-                httpMethod: POST
-                type: aws_proxy
-            delete:          
-              summary: Diables a user
-              description: Disable a user by a user id    
-              produces:
-                - application/json
-              responses: {}
-              security: 
-                - Authorizer: []
-              x-amazon-apigateway-integration:
-                uri: !Join
-                  - ''
-                  - - !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/
-                    -  !Ref DisableUserFunctionArn
-                    - /invocations
-                httpMethod: POST
-                type: aws_proxy
-          /user/tenant-admin:
-            post:
-              summary: Creates a tenant admin user
-              description: Creates a tenant admin user
-              produces:
-                - application/json
-              responses: {}
-              security:
-                - sigv4Reference: []
-              x-amazon-apigateway-integration:
-                uri: !Join
-                  - ''
-                  - - !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/
-                    -  !Ref CreateTenantAdminUserFunctionArn
-                    - /invocations
-                httpMethod: POST
-                type: aws_proxy          
-            options:
-              consumes:
-                - application/json
-              produces:
-                - application/json
-              responses:
-                '200':
-                  description: 200 response
-                  schema:
-                    $ref: "#/definitions/Empty"
-                  headers:
-                    Access-Control-Allow-Origin:
-                      type: string
-                    Access-Control-Allow-Methods:
-                      type: string
-                    Access-Control-Allow-Headers:
-                      type: string
-              x-amazon-apigateway-integration:
-                responses:
-                  default:
-                    statusCode: 200
-                    responseParameters:
-                      method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
-                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
-                      method.response.header.Access-Control-Allow-Origin:  "'*'"
-                passthroughBehavior: when_no_match
-                requestTemplates:
-                  application/json: "{\"statusCode\": 200}"
-                type: mock       
-          /user:
-            post:
-              summary: Create a user
-              description: Create a user by a user id
-              produces:
-                - application/json
-              responses: {}
-              security:            
-                - Authorizer: []
-              x-amazon-apigateway-integration:
-                uri: !Join
-                  - ''
-                  - - !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/
-                    -  !Ref CreateUserFunctionArn
-                    - /invocations
-                httpMethod: POST
-                type: aws_proxy
-                        
-            options:
-              consumes:
-                - application/json
-              produces:
-                - application/json
-              responses:
-                '200':
-                  description: 200 response
-                  schema:
-                    $ref: "#/definitions/Empty"
-                  headers:
-                    Access-Control-Allow-Origin:
-                      type: string
-                    Access-Control-Allow-Methods:
-                      type: string
-                    Access-Control-Allow-Headers:
-                      type: string
-              x-amazon-apigateway-integration:
-                responses:
-                  default:
-                    statusCode: 200
-                    responseParameters:
-                      method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
-                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
-                      method.response.header.Access-Control-Allow-Origin:  "'*'"
-                passthroughBehavior: when_no_match
-                requestTemplates:
-                  application/json: "{\"statusCode\": 200}"
-                type: mock 
-          /users:
-            get:
-              summary: Get all users by tenantId
-              description: Get all users by tenantId
-              produces:
-                - application/json
-              responses: {}
-              security:   
-                - Authorizer: []
-              x-amazon-apigateway-integration:
-                uri: !Join
-                  - ''
-                  - - !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/
-                    -  !Ref GetUsersFunctionArn
-                    - /invocations
-                httpMethod: POST
-                type: aws_proxy
-                        
-            options:
-              consumes:
-                - application/json
-              produces:
-                - application/json
-              responses:
-                '200':
-                  description: 200 response
-                  schema:
-                    $ref: "#/definitions/Empty"
-                  headers:
-                    Access-Control-Allow-Origin:
-                      type: string
-                    Access-Control-Allow-Methods:
-                      type: string
-                    Access-Control-Allow-Headers:
-                      type: string
-              x-amazon-apigateway-integration:
-                responses:
-                  default:
-                    statusCode: 200
-                    responseParameters:
-                      method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
-                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
-                      method.response.header.Access-Control-Allow-Origin:  "'*'"
-                passthroughBehavior: when_no_match
-                requestTemplates:
-                  application/json: "{\"statusCode\": 200}"
-                type: mock         
-          /users/disable:
-            put:
-              summary: disable users by tenant id
-              description: disable users by tenant id
-              produces:
-                - application/json
-              responses:
-                '200':
-                  description: 200 response
-                  schema:
-                    $ref: "#/definitions/Empty"
-                  headers:
-                    Access-Control-Allow-Origin:
-                      type: string
-                    Access-Control-Allow-Methods:
-                      type: string
-                    Access-Control-Allow-Headers:
-                      type: string
-              security:     
-                - sigv4Reference: []
-              x-amazon-apigateway-integration:
-                responses:
-                  default:
-                    statusCode: 200
-                    responseParameters:
-                      method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
-                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
-                      method.response.header.Access-Control-Allow-Origin:  "'*'"
-                passthroughBehavior: when_no_match                
-                uri: !Join
-                  - ''
-                  - - !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/
-                    -  !Ref DisableUsersByTenantFunctionArn
-                    - /invocations
-                httpMethod: POST
-                type: AWS
-                requestParameters:
-                  integration.request.header.X-Amz-Invocation-Type: '''Event'''
-            options:
-              consumes:
-                - application/json
-              produces:
-                - application/json
-              responses:
-                '200':
-                  description: 200 response
-                  schema:
-                    $ref: "#/definitions/Empty"
-                  headers:
-                    Access-Control-Allow-Origin:
-                      type: string
-                    Access-Control-Allow-Methods:
-                      type: string
-                    Access-Control-Allow-Headers:
-                      type: string
-              x-amazon-apigateway-integration:
-                responses:
-                  default:
-                    statusCode: 200
-                    responseParameters:
-                      method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
-                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
-                      method.response.header.Access-Control-Allow-Origin:  "'*'"
-                passthroughBehavior: when_no_match
-                requestTemplates:
-                  application/json: "{\"statusCode\": 200}"
-                type: mock  
-          /users/enable:
-            put:
-              summary: enable users by tenant id
-              description: enable users by tenant id
-              produces:
-                - application/json
-              responses:
-                '200':
-                  description: 200 response
-                  schema:
-                    $ref: "#/definitions/Empty"
-                  headers:
-                    Access-Control-Allow-Origin:
-                      type: string
-                    Access-Control-Allow-Methods:
-                      type: string
-                    Access-Control-Allow-Headers:
-                      type: string
-              security:     
-                - sigv4Reference: []
-              x-amazon-apigateway-integration:
-                responses:
-                  default:
-                    statusCode: 200
-                    responseParameters:
-                      method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
-                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
-                      method.response.header.Access-Control-Allow-Origin:  "'*'"
-                passthroughBehavior: when_no_match                
-                uri: !Join
-                  - ''
-                  - - !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/
-                    -  !Ref EnableUsersByTenantFunctionArn
-                    - /invocations
-                httpMethod: POST
-                type: AWS
-                requestParameters:
-                  integration.request.header.X-Amz-Invocation-Type: '''Event'''
-                        
-            options:
-              consumes:
-                - application/json
-              produces:
-                - application/json
-              responses:
-                '200':
-                  description: 200 response
-                  schema:
-                    $ref: "#/definitions/Empty"
-                  headers:
-                    Access-Control-Allow-Origin:
-                      type: string
-                    Access-Control-Allow-Methods:
-                      type: string
-                    Access-Control-Allow-Headers:
-                      type: string
-              x-amazon-apigateway-integration:
-                responses:
-                  default:
-                    statusCode: 200
-                    responseParameters:
-                      method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
-                      method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
-                      method.response.header.Access-Control-Allow-Origin:  "'*'"
-                passthroughBehavior: when_no_match
-                requestTemplates:
-                  application/json: "{\"statusCode\": 200}"
-                type: mock  
-        components:
-          securitySchemes:      
-            sigv4Reference:
-              type: "apiKey"
-              name: "Authorization"
-              in: "header"
-              x-amazon-apigateway-authtype: "awsSigv4"  
-            Authorizer:
-              type: "apiKey"
-              name: "Authorization"
-              in: "header"
-              x-amazon-apigateway-authtype: "custom"
-              x-amazon-apigateway-authorizer:
-                authorizerUri: !Join
-                  - ''
-                  - - !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/
-                    -  !Ref AuthorizerFunctionArn
-                    - /invocations
-                authorizerResultTtlInSeconds: 60
-                type: "token"
-      StageName: prod
-  
-  
-Outputs:  
+        Format: '{"requestId":"$context.requestId","ip":"$context.identity.sourceIp","caller":"$context.identity.caller","user":"$context.identity.user","requestTime":"$context.requestTime","httpMethod":"$context.httpMethod","resourcePath":"$context.resourcePath","status":"$context.status","protocol":"$context.protocol","responseLength":"$context.responseLength"}'
+      MethodSettings:
+        - DataTraceEnabled: false
+          LoggingLevel: INFO
+          MetricsEnabled: true
+          ResourcePath: "/*"
+          HttpMethod: "*"
+      TracingEnabled: true
+
+Outputs:
   AdminApiGatewayApi:
-    Value: !Ref AdminApiGatewayApi
+    Value: !ImportValue Serverless-SaaS-AdminApiGatewayId

@@ -1,0 +1,882 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Pre-deploy shared resources for the Serverless SaaS Workshop.
+  Deploys DynamoDB tables, Cognito pools, IAM roles, Lambda Layer, and API Gateway Account.
+
+Resources:
+  # ==================== DynamoDB Tables ====================
+  TenantDetailsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ServerlessSaaS-TenantDetails
+      AttributeDefinitions:
+        - AttributeName: tenantId
+          AttributeType: S
+        - AttributeName: tenantName
+          AttributeType: S
+      KeySchema:
+        - AttributeName: tenantId
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+      GlobalSecondaryIndexes:
+        - IndexName: ServerlessSaas-TenantConfig
+          KeySchema:
+            - AttributeName: tenantName
+              KeyType: HASH
+          Projection:
+            NonKeyAttributes:
+              - userPoolId
+              - appClientId
+              - apiGatewayUrl
+            ProjectionType: INCLUDE
+
+  TenantUserMappingTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ServerlessSaaS-TenantUserMapping
+      AttributeDefinitions:
+        - AttributeName: tenantId
+          AttributeType: S
+        - AttributeName: userName
+          AttributeType: S
+      KeySchema:
+        - AttributeName: tenantId
+          KeyType: HASH
+        - AttributeName: userName
+          KeyType: RANGE
+      BillingMode: PAY_PER_REQUEST
+      GlobalSecondaryIndexes:
+        - IndexName: UserName
+          KeySchema:
+            - AttributeName: userName
+              KeyType: HASH
+            - AttributeName: tenantId
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+
+  ServerlessSaaSSettingsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ServerlessSaaS-Settings
+      AttributeDefinitions:
+        - AttributeName: settingName
+          AttributeType: S
+      KeySchema:
+        - AttributeName: settingName
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+
+  TenantStackMappingTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ServerlessSaaS-TenantStackMapping
+      AttributeDefinitions:
+        - AttributeName: tenantId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: tenantId
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+
+  # ==================== Cognito ====================
+  CognitoUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: PooledTenant-ServerlessSaaSUserPool
+      AutoVerifiedAttributes:
+        - email
+      AccountRecoverySetting:
+        RecoveryMechanisms:
+          - Name: verified_email
+            Priority: 1
+      Schema:
+        - AttributeDataType: String
+          Name: email
+          Required: true
+          Mutable: true
+        - AttributeDataType: String
+          Name: tenantId
+        - AttributeDataType: String
+          Name: userRole
+          Required: false
+          Mutable: true
+
+  CognitoUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: ServerlessSaaSClient
+      GenerateSecret: false
+      UserPoolId: !Ref CognitoUserPool
+      AllowedOAuthFlowsUserPoolClient: true
+      AllowedOAuthFlows:
+        - code
+        - implicit
+      SupportedIdentityProviders:
+        - COGNITO
+      CallbackURLs:
+        - https://example.com
+      LogoutURLs:
+        - https://example.com
+      AllowedOAuthScopes:
+        - email
+        - openid
+        - profile
+      WriteAttributes:
+        - email
+        - "custom:tenantId"
+        - "custom:userRole"
+
+  CognitoUserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      Domain: !Sub "pooledtenant-serverlesssaas-${AWS::AccountId}"
+      UserPoolId: !Ref CognitoUserPool
+
+  CognitoOperationUsersUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: OperationUsers-ServerlessSaaSUserPool
+      AutoVerifiedAttributes:
+        - email
+      AccountRecoverySetting:
+        RecoveryMechanisms:
+          - Name: verified_email
+            Priority: 1
+      AdminCreateUserConfig:
+        InviteMessageTemplate:
+          EmailMessage: !Sub
+            - "Login into admin UI application at https://${AdminUrl}/ with username {username} and temporary password {####}"
+            - AdminUrl: !GetAtt AdminAppSite.DomainName
+          EmailSubject: "Your temporary password for admin UI application"
+      Schema:
+        - AttributeDataType: String
+          Name: email
+          Required: true
+          Mutable: true
+        - AttributeDataType: String
+          Name: tenantId
+        - AttributeDataType: String
+          Name: userRole
+          Required: false
+          Mutable: true
+
+  CognitoOperationUsersUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: ServerlessSaaSOperationUsersPoolClient
+      GenerateSecret: false
+      UserPoolId: !Ref CognitoOperationUsersUserPool
+      AllowedOAuthFlowsUserPoolClient: true
+      AllowedOAuthFlows:
+        - code
+        - implicit
+      SupportedIdentityProviders:
+        - COGNITO
+      CallbackURLs:
+        - !Sub "https://${AdminAppSite.DomainName}/"
+      LogoutURLs:
+        - !Sub "https://${AdminAppSite.DomainName}/"
+      AllowedOAuthScopes:
+        - email
+        - openid
+        - profile
+      WriteAttributes:
+        - email
+        - "custom:tenantId"
+        - "custom:userRole"
+
+  CognitoOperationUsersUserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      Domain: !Sub "operationsusers-serverlesssaas-${AWS::AccountId}"
+      UserPoolId: !Ref CognitoOperationUsersUserPool
+
+  CognitoAdminUserGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      GroupName: SystemAdmins
+      Description: Admin user group
+      Precedence: 0
+      UserPoolId: !Ref CognitoOperationUsersUserPool
+
+  # ==================== API Gateway Account ====================
+  ApiGatewayCloudWatchPublishRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: "/"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - apigateway.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs
+
+  AttachCloudWatchRoleToApiGateway:
+    Type: AWS::ApiGateway::Account
+    Properties:
+      CloudWatchRoleArn: !GetAtt ApiGatewayCloudWatchPublishRole.Arn
+
+  # ==================== Lambda Layer ====================
+  ServerlessSaaSLayers:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: serverless-saas-dependencies
+      Description: Shared dependencies for Serverless SaaS Workshop
+      ContentUri: layers/
+      CompatibleRuntimes:
+        - python3.14
+      LicenseInfo: MIT
+      RetentionPolicy: Retain
+    Metadata:
+      BuildMethod: python3.14
+
+  # ==================== IAM Roles ====================
+  AuthorizerExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: authorizer-execution-role
+      Path: "/"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/CloudWatchLambdaInsightsExecutionRolePolicy
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
+      Policies:
+        - PolicyName: authorizer-execution-policy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cognito-idp:List*
+                Resource:
+                  - !Sub "arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/*"
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                Resource:
+                  - !GetAtt TenantDetailsTable.Arn
+
+  AuthorizerAccessRole:
+    Type: AWS::IAM::Role
+    DependsOn: AuthorizerExecutionRole
+    Properties:
+      RoleName: authorizer-access-role
+      Path: "/"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS:
+                - !GetAtt AuthorizerExecutionRole.Arn
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: authorizer-access-role-policy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:BatchGetItem
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                Resource:
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/*"
+
+  TenantUserPoolLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "tenant-userpool-lambda-execution-role-${AWS::Region}"
+      Path: "/"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/CloudWatchLambdaInsightsExecutionRolePolicy
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
+      Policies:
+        - PolicyName: !Sub "tenant-userpool-lambda-execution-policy-${AWS::Region}"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cognito-idp:*
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                Resource:
+                  - !GetAtt TenantDetailsTable.Arn
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:Query
+                Resource:
+                  - !GetAtt TenantUserMappingTable.Arn
+
+  CreateUserLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "create-user-lambda-execution-role-${AWS::Region}"
+      Path: "/"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/CloudWatchLambdaInsightsExecutionRolePolicy
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
+      Policies:
+        - PolicyName: !Sub "create-user-lambda-execution-policy-${AWS::Region}"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cognito-idp:*
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                Resource:
+                  - !GetAtt TenantUserMappingTable.Arn
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                Resource:
+                  - !GetAtt TenantDetailsTable.Arn
+
+  TenantManagementLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "tenant-management-lambda-execution-role-${AWS::Region}"
+      Path: "/"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/CloudWatchLambdaInsightsExecutionRolePolicy
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
+      Policies:
+        - PolicyName: !Sub "create-tenant-execution-policy-${AWS::Region}"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                  - dynamodb:GetItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:Scan
+                  - dynamodb:Query
+                Resource:
+                  - !GetAtt TenantDetailsTable.Arn
+                  - !Sub "${TenantDetailsTable.Arn}/index/*"
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                Resource:
+                  - !GetAtt ServerlessSaaSSettingsTable.Arn
+
+  RegisterTenantLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "tenant-registration-lambda-execution-role-${AWS::Region}"
+      Path: "/"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/CloudWatchLambdaInsightsExecutionRolePolicy
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
+
+  ProvisionTenantLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "tenant-provisioning-lambda-execution-role-${AWS::Region}"
+      Path: "/"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/CloudWatchLambdaInsightsExecutionRolePolicy
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
+      Policies:
+        - PolicyName: !Sub "tenant-provisioning-lambda-execution-policy-${AWS::Region}"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                  - dynamodb:DeleteItem
+                Resource:
+                  - !GetAtt TenantStackMappingTable.Arn
+              - Effect: Allow
+                Action:
+                  - codepipeline:StartPipelineExecution
+                Resource:
+                  - !Sub "arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:serverless-saas-pipeline"
+              - Effect: Allow
+                Action:
+                  - cloudformation:DeleteStack
+                Resource: "*"
+
+  DeProvisionTenantLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "tenant-deprovisioning-lambda-execution-role-${AWS::Region}"
+      Path: "/"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/CloudWatchLambdaInsightsExecutionRolePolicy
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
+      Policies:
+        - PolicyName: !Sub "tenant-deprovisioning-lambda-execution-policy-${AWS::Region}"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: "*"
+                Resource: "*"
+
+  UpdateSettingsTableLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "update-settingstable-lambda-execution-role-${AWS::Region}"
+      Path: "/"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/CloudWatchLambdaInsightsExecutionRolePolicy
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
+      Policies:
+        - PolicyName: !Sub "update-settingstable-lambda-execution-policy-${AWS::Region}"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                Resource: !GetAtt ServerlessSaaSSettingsTable.Arn
+
+  UpdateTenantStackMapTableLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "update-tenantstackmap-lambda-execution-role-${AWS::Region}"
+      Path: "/"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/CloudWatchLambdaInsightsExecutionRolePolicy
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
+      Policies:
+        - PolicyName: !Sub "update-tenantstackmap-lambda-execution-policy-${AWS::Region}"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                Resource: !GetAtt TenantStackMappingTable.Arn
+
+  # ==================== UI (CloudFront + S3) ====================
+  CloudFrontOriginAccessIdentity:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: "Origin Access Identity for CloudFront Distributions"
+
+  AdminAppBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  AdminAppSiteReadPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref AdminAppBucket
+      PolicyDocument:
+        Statement:
+          - Action: s3:GetObject
+            Effect: Allow
+            Resource: !Sub "arn:aws:s3:::${AdminAppBucket}/*"
+            Principal:
+              CanonicalUser: !GetAtt CloudFrontOriginAccessIdentity.S3CanonicalUserId
+
+  AdminAppSite:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        CustomErrorResponses:
+          - ErrorCode: 403
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+          - ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+        DefaultCacheBehavior:
+          AllowedMethods: [GET, HEAD, OPTIONS]
+          CachedMethods: [GET, HEAD, OPTIONS]
+          Compress: true
+          DefaultTTL: 3600
+          ForwardedValues:
+            Cookies:
+              Forward: none
+            QueryString: false
+          MaxTTL: 86400
+          MinTTL: 60
+          TargetOriginId: adminapp-s3origin
+          ViewerProtocolPolicy: allow-all
+        DefaultRootObject: index.html
+        Enabled: true
+        HttpVersion: http2
+        Origins:
+          - DomainName: !GetAtt AdminAppBucket.RegionalDomainName
+            Id: adminapp-s3origin
+            S3OriginConfig:
+              OriginAccessIdentity: !Sub "origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}"
+        PriceClass: PriceClass_All
+
+  LandingAppBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  LandingAppSiteReadPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref LandingAppBucket
+      PolicyDocument:
+        Statement:
+          - Action: s3:GetObject
+            Effect: Allow
+            Resource: !Sub "arn:aws:s3:::${LandingAppBucket}/*"
+            Principal:
+              CanonicalUser: !GetAtt CloudFrontOriginAccessIdentity.S3CanonicalUserId
+
+  LandingApplicationSite:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        CustomErrorResponses:
+          - ErrorCode: 403
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+          - ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+        DefaultCacheBehavior:
+          AllowedMethods: [DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT]
+          Compress: true
+          DefaultTTL: 3600
+          ForwardedValues:
+            Cookies:
+              Forward: none
+            QueryString: false
+          MaxTTL: 86400
+          MinTTL: 60
+          TargetOriginId: landingapp-s3origin
+          ViewerProtocolPolicy: allow-all
+        DefaultRootObject: index.html
+        Enabled: true
+        HttpVersion: http2
+        Origins:
+          - DomainName: !GetAtt LandingAppBucket.RegionalDomainName
+            Id: landingapp-s3origin
+            S3OriginConfig:
+              OriginAccessIdentity: !Sub "origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}"
+        PriceClass: PriceClass_All
+
+  AppBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  AppSiteReadPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref AppBucket
+      PolicyDocument:
+        Statement:
+          - Action: s3:GetObject
+            Effect: Allow
+            Resource: !Sub "arn:aws:s3:::${AppBucket}/*"
+            Principal:
+              CanonicalUser: !GetAtt CloudFrontOriginAccessIdentity.S3CanonicalUserId
+
+  ApplicationSite:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        CustomErrorResponses:
+          - ErrorCode: 403
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+          - ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+        DefaultCacheBehavior:
+          AllowedMethods: [DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT]
+          Compress: true
+          DefaultTTL: 3600
+          ForwardedValues:
+            Cookies:
+              Forward: none
+            QueryString: false
+          MaxTTL: 86400
+          MinTTL: 60
+          TargetOriginId: tenantapp-s3origin
+          ViewerProtocolPolicy: allow-all
+        DefaultRootObject: index.html
+        Enabled: true
+        HttpVersion: http2
+        Origins:
+          - DomainName: !GetAtt AppBucket.RegionalDomainName
+            Id: tenantapp-s3origin
+            S3OriginConfig:
+              OriginAccessIdentity: !Sub "origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}"
+        PriceClass: PriceClass_All
+
+  # ==================== API Gateway ====================
+  AdminApiGateway:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Sub "serverless-saas-admin-api-${AWS::Region}"
+
+Outputs:
+  TenantDetailsTableArn:
+    Value: !GetAtt TenantDetailsTable.Arn
+    Export:
+      Name: Serverless-SaaS-TenantDetailsTableArn
+  TenantDetailsTableName:
+    Value: !Ref TenantDetailsTable
+    Export:
+      Name: Serverless-SaaS-TenantDetailsTableName
+  TenantUserMappingTableArn:
+    Value: !GetAtt TenantUserMappingTable.Arn
+    Export:
+      Name: Serverless-SaaS-TenantUserMappingTableArn
+  TenantUserMappingTableName:
+    Value: !Ref TenantUserMappingTable
+    Export:
+      Name: Serverless-SaaS-TenantUserMappingTableName
+  ServerlessSaaSSettingsTableArn:
+    Value: !GetAtt ServerlessSaaSSettingsTable.Arn
+    Export:
+      Name: Serverless-SaaS-SettingsTableArn
+  ServerlessSaaSSettingsTableName:
+    Value: !Ref ServerlessSaaSSettingsTable
+    Export:
+      Name: Serverless-SaaS-SettingsTableName
+  TenantStackMappingTableArn:
+    Value: !GetAtt TenantStackMappingTable.Arn
+    Export:
+      Name: Serverless-SaaS-TenantStackMappingTableArn
+  TenantStackMappingTableName:
+    Value: !Ref TenantStackMappingTable
+    Export:
+      Name: Serverless-SaaS-TenantStackMappingTableName
+  CognitoUserPoolId:
+    Value: !Ref CognitoUserPool
+    Export:
+      Name: Serverless-SaaS-CognitoUserPoolId
+  CognitoUserPoolClientId:
+    Value: !Ref CognitoUserPoolClient
+    Export:
+      Name: Serverless-SaaS-CognitoUserPoolClientId
+  CognitoOperationUsersUserPoolId:
+    Value: !Ref CognitoOperationUsersUserPool
+    Export:
+      Name: Serverless-SaaS-CognitoOperationUsersUserPoolId
+  CognitoOperationUsersUserPoolClientId:
+    Value: !Ref CognitoOperationUsersUserPoolClient
+    Export:
+      Name: Serverless-SaaS-CognitoOperationUsersUserPoolClientId
+  AuthorizerExecutionRoleArn:
+    Value: !GetAtt AuthorizerExecutionRole.Arn
+    Export:
+      Name: Serverless-SaaS-AuthorizerExecutionRoleArn
+  AuthorizerAccessRoleArn:
+    Value: !GetAtt AuthorizerAccessRole.Arn
+    Export:
+      Name: Serverless-SaaS-AuthorizerAccessRoleArn
+  TenantUserPoolLambdaExecutionRoleArn:
+    Value: !GetAtt TenantUserPoolLambdaExecutionRole.Arn
+    Export:
+      Name: Serverless-SaaS-TenantUserPoolLambdaExecutionRoleArn
+  CreateUserLambdaExecutionRoleArn:
+    Value: !GetAtt CreateUserLambdaExecutionRole.Arn
+    Export:
+      Name: Serverless-SaaS-CreateUserLambdaExecutionRoleArn
+  TenantManagementLambdaExecutionRoleArn:
+    Value: !GetAtt TenantManagementLambdaExecutionRole.Arn
+    Export:
+      Name: Serverless-SaaS-TenantManagementLambdaExecutionRoleArn
+  RegisterTenantLambdaExecutionRoleArn:
+    Value: !GetAtt RegisterTenantLambdaExecutionRole.Arn
+    Export:
+      Name: Serverless-SaaS-RegisterTenantLambdaExecutionRoleArn
+  ProvisionTenantLambdaExecutionRoleArn:
+    Value: !GetAtt ProvisionTenantLambdaExecutionRole.Arn
+    Export:
+      Name: Serverless-SaaS-ProvisionTenantLambdaExecutionRoleArn
+  DeProvisionTenantLambdaExecutionRoleArn:
+    Value: !GetAtt DeProvisionTenantLambdaExecutionRole.Arn
+    Export:
+      Name: Serverless-SaaS-DeProvisionTenantLambdaExecutionRoleArn
+  UpdateSettingsTableLambdaExecutionRoleArn:
+    Value: !GetAtt UpdateSettingsTableLambdaExecutionRole.Arn
+    Export:
+      Name: Serverless-SaaS-UpdateSettingsTableLambdaExecutionRoleArn
+  UpdateTenantStackMapTableLambdaExecutionRoleArn:
+    Value: !GetAtt UpdateTenantStackMapTableLambdaExecutionRole.Arn
+    Export:
+      Name: Serverless-SaaS-UpdateTenantStackMapTableLambdaExecutionRoleArn
+  LayerArn:
+    Value: !Ref ServerlessSaaSLayers
+    Export:
+      Name: Serverless-SaaS-LayerArn
+  AdminSiteBucket:
+    Value: !Ref AdminAppBucket
+    Export:
+      Name: Serverless-SaaS-AdminSiteBucket
+  AdminAppSiteUrl:
+    Value: !GetAtt AdminAppSite.DomainName
+    Export:
+      Name: Serverless-SaaS-AdminAppSite
+  LandingApplicationSiteBucket:
+    Value: !Ref LandingAppBucket
+    Export:
+      Name: Serverless-SaaS-LandingApplicationSiteBucket
+  LandingApplicationSiteUrl:
+    Value: !GetAtt LandingApplicationSite.DomainName
+    Export:
+      Name: Serverless-SaaS-LandingApplicationSite
+  ApplicationSiteBucket:
+    Value: !Ref AppBucket
+    Export:
+      Name: Serverless-SaaS-ApplicationSiteBucket
+  ApplicationSiteUrl:
+    Value: !GetAtt ApplicationSite.DomainName
+    Export:
+      Name: Serverless-SaaS-ApplicationSite
+  AdminApiGatewayId:
+    Value: !Ref AdminApiGateway
+    Export:
+      Name: Serverless-SaaS-AdminApiGatewayId
+  AdminApiGatewayRootResourceId:
+    Value: !GetAtt AdminApiGateway.RootResourceId
+    Export:
+      Name: Serverless-SaaS-AdminApiGatewayRootResourceId
