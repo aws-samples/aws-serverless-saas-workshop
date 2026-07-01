@@ -581,6 +581,11 @@ Resources:
                   - dynamodb:PutItem
                 Resource: !GetAtt TenantStackMappingTable.Arn
 
+  AdminApiGateway:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Sub "serverless-saas-admin-api-${AWS::Region}"
+
 Outputs:
   TenantDetailsTableArn:
     Value: !GetAtt TenantDetailsTable.Arn
@@ -674,3 +679,11 @@ Outputs:
     Value: !Ref ServerlessSaaSLayers
     Export:
       Name: Serverless-SaaS-LayerArn
+  AdminApiGatewayId:
+    Value: !Ref AdminApiGateway
+    Export:
+      Name: Serverless-SaaS-AdminApiGatewayId
+  AdminApiGatewayRootResourceId:
+    Value: !GetAtt AdminApiGateway.RootResourceId
+    Export:
+      Name: Serverless-SaaS-AdminApiGatewayRootResourceId

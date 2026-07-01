@@ -26,27 +26,6 @@ Globals:
         LOG_LEVEL: DEBUG
   
 Resources:
-  ApiGatewayCloudWatchPublishRole:
-    Type: AWS::IAM::Role     
-    Properties:
-      Path: '/'
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - apigateway.amazonaws.com
-            Action:
-              - sts:AssumeRole
-      ManagedPolicyArns: 
-        - arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs        
-  
-  AttachCloudWatchRoleToApiGateway:
-    Type: AWS::ApiGateway::Account
-    Properties: 
-      CloudWatchRoleArn: !GetAtt ApiGatewayCloudWatchPublishRole.Arn
-
   ServerlessSaaSLayers:
     Type: AWS::Serverless::LayerVersion
     Properties:
@@ -54,7 +33,7 @@ Resources:
       Description: Utilities for project
       ContentUri: 
         Bucket: !Ref EEAssetsBucket
-        Key: !Sub ${EEAssetsKeyPrefix}1b6d1796b5948e393749602691c77e44
+        Key: !Sub ${EEAssetsKeyPrefix}4539eb3536d75d5d2d2ed9e96c00b5ae
       CompatibleRuntimes:
       - python3.14
       LicenseInfo: MIT
@@ -124,7 +103,7 @@ Resources:
     Properties:
       CodeUri: 
         Bucket: !Ref EEAssetsBucket
-        Key: !Sub ${EEAssetsKeyPrefix}3f9284a8b1fb9547d59e56cc8560b94c
+        Key: !Sub ${EEAssetsKeyPrefix}6a65eb76030e9869ee87cfb4eb61547e
       Handler: product_service.get_product
       Runtime: python3.14
       Tracing: Active
@@ -145,7 +124,7 @@ Resources:
     Properties:
       CodeUri: 
         Bucket: !Ref EEAssetsBucket
-        Key: !Sub ${EEAssetsKeyPrefix}3f9284a8b1fb9547d59e56cc8560b94c
+        Key: !Sub ${EEAssetsKeyPrefix}6a65eb76030e9869ee87cfb4eb61547e
       Handler: product_service.get_products
       Runtime: python3.14
       Tracing: Active
@@ -166,7 +145,7 @@ Resources:
     Properties:
       CodeUri: 
         Bucket: !Ref EEAssetsBucket
-        Key: !Sub ${EEAssetsKeyPrefix}3f9284a8b1fb9547d59e56cc8560b94c
+        Key: !Sub ${EEAssetsKeyPrefix}6a65eb76030e9869ee87cfb4eb61547e
       Handler: product_service.create_product
       Runtime: python3.14
       Tracing: Active
@@ -187,7 +166,7 @@ Resources:
     Properties:
       CodeUri: 
         Bucket: !Ref EEAssetsBucket
-        Key: !Sub ${EEAssetsKeyPrefix}3f9284a8b1fb9547d59e56cc8560b94c
+        Key: !Sub ${EEAssetsKeyPrefix}6a65eb76030e9869ee87cfb4eb61547e
       Handler: product_service.update_product
       Runtime: python3.14
       Tracing: Active
@@ -208,7 +187,7 @@ Resources:
     Properties:
       CodeUri: 
         Bucket: !Ref EEAssetsBucket
-        Key: !Sub ${EEAssetsKeyPrefix}3f9284a8b1fb9547d59e56cc8560b94c
+        Key: !Sub ${EEAssetsKeyPrefix}6a65eb76030e9869ee87cfb4eb61547e
       Handler: product_service.delete_product
       Runtime: python3.14
       Tracing: Active
@@ -264,7 +243,7 @@ Resources:
     Properties:
       CodeUri: 
         Bucket: !Ref EEAssetsBucket
-        Key: !Sub ${EEAssetsKeyPrefix}ac28465dbac64f71e4739d551119c420
+        Key: !Sub ${EEAssetsKeyPrefix}a7e51f14fc1d5d1adeb3f8279cfc6704
       Handler: order_service.get_orders
       Runtime: python3.14
       Tracing: Active
@@ -285,7 +264,7 @@ Resources:
     Properties:
       CodeUri: 
         Bucket: !Ref EEAssetsBucket
-        Key: !Sub ${EEAssetsKeyPrefix}ac28465dbac64f71e4739d551119c420
+        Key: !Sub ${EEAssetsKeyPrefix}a7e51f14fc1d5d1adeb3f8279cfc6704
       Handler: order_service.get_order
       Runtime: python3.14
       Tracing: Active
@@ -306,7 +285,7 @@ Resources:
     Properties:
       CodeUri: 
         Bucket: !Ref EEAssetsBucket
-        Key: !Sub ${EEAssetsKeyPrefix}ac28465dbac64f71e4739d551119c420
+        Key: !Sub ${EEAssetsKeyPrefix}a7e51f14fc1d5d1adeb3f8279cfc6704
       Handler: order_service.create_order
       Runtime: python3.14
       Tracing: Active
@@ -327,7 +306,7 @@ Resources:
     Properties:
       CodeUri: 
         Bucket: !Ref EEAssetsBucket
-        Key: !Sub ${EEAssetsKeyPrefix}ac28465dbac64f71e4739d551119c420
+        Key: !Sub ${EEAssetsKeyPrefix}a7e51f14fc1d5d1adeb3f8279cfc6704
       Handler: order_service.update_order
       Runtime: python3.14
       Tracing: Active
@@ -348,7 +327,7 @@ Resources:
     Properties:
       CodeUri: 
         Bucket: !Ref EEAssetsBucket
-        Key: !Sub ${EEAssetsKeyPrefix}ac28465dbac64f71e4739d551119c420
+        Key: !Sub ${EEAssetsKeyPrefix}a7e51f14fc1d5d1adeb3f8279cfc6704
       Handler: order_service.delete_order
       Runtime: python3.14
       Tracing: Active
