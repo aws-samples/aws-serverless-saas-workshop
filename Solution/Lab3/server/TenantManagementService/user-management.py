@@ -157,7 +157,7 @@ def get_user(event, context):
         return utils.create_unauthorized_response()
     else:
         metrics_manager.record_metric(tenant_id, "UserInfoRequested", "Count", 1)            
-        user_info = get_user_info(event, user_pool_id, user_name)
+        user_info = get_user_info(event, user_pool_id, user_name, tenant_id)
         logger.log_with_tenant_context(tenant_id, "Request completed to get new user ")
         return utils.create_success_response(user_info.__dict__)
 
@@ -283,7 +283,7 @@ def enable_users_by_tenant(event, context):
         logger.info("Request completed as unauthorized. Only tenant admin or system admin can update!")        
         return utils.create_unauthorized_response()
 
-def get_user_info(event, user_pool_id, user_name):
+def get_user_info(event, user_pool_id, user_name, tenant_id):
     metrics_manager.record_metric(tenant_id, "UserInfoRequested", "Count", 1)            
     response = client.admin_get_user(
             UserPoolId=user_pool_id,

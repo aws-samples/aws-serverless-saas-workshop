@@ -49,6 +49,8 @@ Resources:
       Runtime: python3.14
       Role: !ImportValue Serverless-SaaS-CreateUserLambdaExecutionRoleArn
       Tracing: Active
+      TenancyConfig:
+        TenantIsolationMode: PER_TENANT
       Layers:
         - !ImportValue Serverless-SaaS-LayerArn
       Environment:
@@ -65,6 +67,8 @@ Resources:
       Runtime: python3.14
       Role: !ImportValue Serverless-SaaS-CreateUserLambdaExecutionRoleArn
       Tracing: Active
+      TenancyConfig:
+        TenantIsolationMode: PER_TENANT
       Layers:
         - !ImportValue Serverless-SaaS-LayerArn
       Environment:
@@ -80,6 +84,8 @@ Resources:
       Runtime: python3.14
       Role: !ImportValue Serverless-SaaS-TenantUserPoolLambdaExecutionRoleArn
       Tracing: Active
+      TenancyConfig:
+        TenantIsolationMode: PER_TENANT
       Layers:
         - !ImportValue Serverless-SaaS-LayerArn
       Environment:
@@ -95,6 +101,8 @@ Resources:
       Runtime: python3.14
       Role: !ImportValue Serverless-SaaS-TenantUserPoolLambdaExecutionRoleArn
       Tracing: Active
+      TenancyConfig:
+        TenantIsolationMode: PER_TENANT
       Layers:
         - !ImportValue Serverless-SaaS-LayerArn
       Environment:
@@ -110,6 +118,8 @@ Resources:
       Runtime: python3.14
       Role: !ImportValue Serverless-SaaS-TenantUserPoolLambdaExecutionRoleArn
       Tracing: Active
+      TenancyConfig:
+        TenantIsolationMode: PER_TENANT
       Layers:
         - !ImportValue Serverless-SaaS-LayerArn
       Environment:
@@ -125,6 +135,8 @@ Resources:
       Runtime: python3.14
       Role: !ImportValue Serverless-SaaS-TenantUserPoolLambdaExecutionRoleArn
       Tracing: Active
+      TenancyConfig:
+        TenantIsolationMode: PER_TENANT
       Layers:
         - !ImportValue Serverless-SaaS-LayerArn
       Environment:
@@ -140,6 +152,8 @@ Resources:
       Runtime: python3.14
       Role: !ImportValue Serverless-SaaS-TenantUserPoolLambdaExecutionRoleArn
       Tracing: Active
+      TenancyConfig:
+        TenantIsolationMode: PER_TENANT
       Layers:
         - !ImportValue Serverless-SaaS-LayerArn
       Environment:
@@ -155,6 +169,8 @@ Resources:
       Runtime: python3.14
       Role: !ImportValue Serverless-SaaS-TenantUserPoolLambdaExecutionRoleArn
       Tracing: Active
+      TenancyConfig:
+        TenantIsolationMode: PER_TENANT
       Layers:
         - !ImportValue Serverless-SaaS-LayerArn
       Environment:
@@ -170,6 +186,8 @@ Resources:
       Runtime: python3.14
       Role: !ImportValue Serverless-SaaS-TenantManagementLambdaExecutionRoleArn
       Tracing: Active
+      TenancyConfig:
+        TenantIsolationMode: PER_TENANT
       Layers:
         - !ImportValue Serverless-SaaS-LayerArn
       Environment:
@@ -184,6 +202,8 @@ Resources:
       Runtime: python3.14
       Role: !ImportValue Serverless-SaaS-TenantManagementLambdaExecutionRoleArn
       Tracing: Active
+      TenancyConfig:
+        TenantIsolationMode: PER_TENANT
       Layers:
         - !ImportValue Serverless-SaaS-LayerArn
       Environment:
@@ -200,6 +220,8 @@ Resources:
       Runtime: python3.14
       Role: !ImportValue Serverless-SaaS-TenantManagementLambdaExecutionRoleArn
       Tracing: Active
+      TenancyConfig:
+        TenantIsolationMode: PER_TENANT
       Layers:
         - !ImportValue Serverless-SaaS-LayerArn
       Environment:
@@ -214,6 +236,8 @@ Resources:
       Runtime: python3.14
       Role: !ImportValue Serverless-SaaS-TenantManagementLambdaExecutionRoleArn
       Tracing: Active
+      TenancyConfig:
+        TenantIsolationMode: PER_TENANT
       Layers:
         - !ImportValue Serverless-SaaS-LayerArn
       Environment:
@@ -230,6 +254,8 @@ Resources:
       Runtime: python3.14
       Role: !ImportValue Serverless-SaaS-TenantManagementLambdaExecutionRoleArn
       Tracing: Active
+      TenancyConfig:
+        TenantIsolationMode: PER_TENANT
       Layers:
         - !ImportValue Serverless-SaaS-LayerArn
       Environment:
@@ -244,6 +270,8 @@ Resources:
       Runtime: python3.14
       Role: !ImportValue Serverless-SaaS-TenantManagementLambdaExecutionRoleArn
       Tracing: Active
+      TenancyConfig:
+        TenantIsolationMode: PER_TENANT
       Layers:
         - !ImportValue Serverless-SaaS-LayerArn
 

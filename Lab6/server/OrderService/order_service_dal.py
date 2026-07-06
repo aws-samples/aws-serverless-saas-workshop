@@ -131,7 +131,7 @@ def __query_all_partitions(tenantId,get_all_products_response, table, event):
     for suffix in range(suffix_start, suffix_end):
         partition_id = tenantId+'-'+str(suffix)
         
-        thread = threading.Thread(target=__get_tenant_data, args=[partition_id, get_all_products_response, table, event])
+        thread = threading.Thread(target=__get_tenant_data, args=[partition_id, get_all_products_response, table, event, tenantId])
         threads.append(thread)
         
     # Start threads
@@ -141,7 +141,7 @@ def __query_all_partitions(tenantId,get_all_products_response, table, event):
     for thread in threads:
         thread.join()
            
-def __get_tenant_data(partition_id, get_all_products_response, table, event):    
+def __get_tenant_data(partition_id, get_all_products_response, table, event, tenant_id):    
     logger.info(partition_id)
     response = table.query(KeyConditionExpression=Key('shardId').eq(partition_id), ReturnConsumedCapacity='TOTAL')    
     if (len(response['Items']) > 0):

@@ -195,7 +195,7 @@ def get_user(event, context):
         logger.log_with_tenant_context(tenant_id, "Request completed as unauthorized. User can only get its information.")        
         return utils.create_unauthorized_response()
     else:
-        user_info = get_user_info(event, user_pool_id, user_name)
+        user_info = get_user_info(event, user_pool_id, user_name, tenant_id)
         if(not auth_manager.isSystemAdmin(user_role) and user_info.tenant_id!=tenant_id):
             logger.log_with_tenant_context(tenant_id, "Request completed as unauthorized. Users in other tenants cannot be accessed")
             return utils.create_unauthorized_response()
@@ -232,7 +232,7 @@ def update_user(event, context):
         logger.log_with_tenant_context(tenant_id, "Request completed as unauthorized. Only tenant admin or system admin can update user!")         
         return utils.create_unauthorized_response()
     else:
-        user_info = get_user_info(event, user_pool_id, user_name)
+        user_info = get_user_info(event, user_pool_id, user_name, tenant_id)
         if(not auth_manager.isSystemAdmin(user_role) and user_info.tenant_id!=tenant_id):
             logger.log_with_tenant_context(tenant_id, "Request completed as unauthorized. Users in other tenants cannot be accessed")
             return utils.create_unauthorized_response()
@@ -278,7 +278,7 @@ def disable_user(event, context):
         user_pool_id = tenant_details['Item']['userPoolId']        
     
     if (auth_manager.isTenantAdmin(user_role) or auth_manager.isSystemAdmin(user_role)):
-        user_info = get_user_info(event, user_pool_id, user_name)
+        user_info = get_user_info(event, user_pool_id, user_name, tenant_id)
         if(not auth_manager.isSystemAdmin(user_role) and user_info.tenant_id!=tenant_id):
             logger.log_with_tenant_context(tenant_id, "Request completed as unauthorized. Users in other tenants cannot be accessed")
             return utils.create_unauthorized_response()
@@ -359,7 +359,7 @@ def enable_users_by_tenant(event, context):
         logger.info("Request completed as unauthorized. Only tenant admin or system admin can update!")        
         return utils.create_unauthorized_response()
 
-def get_user_info(event, user_pool_id, user_name):
+def get_user_info(event, user_pool_id, user_name, tenant_id):
     metrics_manager.record_metric(tenant_id, "UserInfoRequested", "Count", 1)            
     response = client.admin_get_user(
             UserPoolId=user_pool_id,

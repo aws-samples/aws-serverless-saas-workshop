@@ -135,6 +135,8 @@ Resources:
       Handler: product_service.get_product
       Runtime: python3.14  
       Tracing: Active
+      TenancyConfig:
+        TenantIsolationMode: PER_TENANT
       Role: !GetAtt ProductFunctionExecutionRole.Arn
       ReservedConcurrentExecutions: !If [IsPooledDeploy, !Ref "AWS::NoValue" , !Ref LambdaReserveConcurrency]
       Layers: 
@@ -155,6 +157,8 @@ Resources:
       Handler: product_service.get_products
       Runtime: python3.14  
       Tracing: Active
+      TenancyConfig:
+        TenantIsolationMode: PER_TENANT
       Role: !GetAtt ProductFunctionExecutionRole.Arn
       ReservedConcurrentExecutions: !If [IsPooledDeploy, !Ref "AWS::NoValue" , !Ref LambdaReserveConcurrency]
       Layers: 
@@ -175,6 +179,8 @@ Resources:
       Handler: product_service.create_product
       Runtime: python3.14  
       Tracing: Active 
+      TenancyConfig:
+        TenantIsolationMode: PER_TENANT
       Role: !GetAtt ProductFunctionExecutionRole.Arn 
       Layers: 
         - !Ref ServerlessSaaSLayers
@@ -194,6 +200,8 @@ Resources:
       Handler: product_service.update_product
       Runtime: python3.14 
       Tracing: Active
+      TenancyConfig:
+        TenantIsolationMode: PER_TENANT
       Role: !GetAtt ProductFunctionExecutionRole.Arn 
       Layers: 
         - !Ref ServerlessSaaSLayers
@@ -213,6 +221,8 @@ Resources:
       Handler: product_service.delete_product
       Runtime: python3.14 
       Tracing: Active
+      TenancyConfig:
+        TenantIsolationMode: PER_TENANT
       Role: !GetAtt ProductFunctionExecutionRole.Arn 
       Layers: 
         - !Ref ServerlessSaaSLayers
@@ -271,6 +281,8 @@ Resources:
       Handler: order_service.get_orders
       Runtime: python3.14  
       Tracing: Active
+      TenancyConfig:
+        TenantIsolationMode: PER_TENANT
       Role: !GetAtt OrderFunctionExecutionRole.Arn
       ReservedConcurrentExecutions: !If [IsPooledDeploy, !Ref "AWS::NoValue" , !Ref LambdaReserveConcurrency]
       Layers: 
@@ -291,6 +303,8 @@ Resources:
       Handler: order_service.get_order
       Runtime: python3.14  
       Tracing: Active
+      TenancyConfig:
+        TenantIsolationMode: PER_TENANT
       Role: !GetAtt OrderFunctionExecutionRole.Arn
       ReservedConcurrentExecutions: !If [IsPooledDeploy, !Ref "AWS::NoValue" , !Ref LambdaReserveConcurrency]
       Layers: 
@@ -311,6 +325,8 @@ Resources:
       Handler: order_service.create_order
       Runtime: python3.14  
       Tracing: Active 
+      TenancyConfig:
+        TenantIsolationMode: PER_TENANT
       Role: !GetAtt OrderFunctionExecutionRole.Arn 
       Layers: 
         - !Ref ServerlessSaaSLayers
@@ -330,6 +346,8 @@ Resources:
       Handler: order_service.update_order
       Runtime: python3.14 
       Tracing: Active
+      TenancyConfig:
+        TenantIsolationMode: PER_TENANT
       Role: !GetAtt OrderFunctionExecutionRole.Arn 
       Layers: 
         - !Ref ServerlessSaaSLayers
@@ -349,6 +367,8 @@ Resources:
       Handler: order_service.delete_order
       Runtime: python3.14 
       Tracing: Active
+      TenancyConfig:
+        TenantIsolationMode: PER_TENANT
       Role: !GetAtt OrderFunctionExecutionRole.Arn 
       Layers: 
         - !Ref ServerlessSaaSLayers
@@ -369,6 +389,8 @@ Resources:
       Role: !ImportValue Serverless-SaaS-AuthorizerExecutionRoleArn
       MemorySize: 256
       Tracing: Active
+      TenancyConfig:
+        TenantIsolationMode: PER_TENANT
       Layers: 
         - !Ref ServerlessSaaSLayers
       Environment:
@@ -449,6 +471,8 @@ Resources:
                     - /invocations
                 httpMethod: POST
                 type: aws_proxy 
+                requestParameters:
+                  integration.request.header.X-Amz-Tenant-Id: context.authorizer.tenantId
             put:              
               produces:
                 - application/json
@@ -464,6 +488,8 @@ Resources:
                     - /invocations
                 httpMethod: POST
                 type: aws_proxy     
+                requestParameters:
+                  integration.request.header.X-Amz-Tenant-Id: context.authorizer.tenantId
             delete:
               summary: Deletes a order
               description: Deletes a order by a order id.
@@ -486,6 +512,8 @@ Resources:
                     - /invocations
                 httpMethod: POST
                 type: aws_proxy
+                requestParameters:
+                  integration.request.header.X-Amz-Tenant-Id: context.authorizer.tenantId
             options:
               consumes:
                 - application/json
@@ -533,6 +561,8 @@ Resources:
                     - /invocations
                 httpMethod: POST
                 type: aws_proxy
+                requestParameters:
+                  integration.request.header.X-Amz-Tenant-Id: context.authorizer.tenantId
             options:
               consumes:
                 - application/json
@@ -578,6 +608,8 @@ Resources:
                     - /invocations
                 httpMethod: POST
                 type: aws_proxy
+                requestParameters:
+                  integration.request.header.X-Amz-Tenant-Id: context.authorizer.tenantId
             options:
               consumes:
                 - application/json
@@ -630,6 +662,8 @@ Resources:
                     - /invocations
                 httpMethod: POST
                 type: aws_proxy 
+                requestParameters:
+                  integration.request.header.X-Amz-Tenant-Id: context.authorizer.tenantId
             put:              
               produces:
                 - application/json
@@ -645,6 +679,8 @@ Resources:
                     - /invocations
                 httpMethod: POST
                 type: aws_proxy     
+                requestParameters:
+                  integration.request.header.X-Amz-Tenant-Id: context.authorizer.tenantId
             delete:
               summary: Deletes a product
               description: Deletes a product by a product id.
@@ -667,6 +703,8 @@ Resources:
                     - /invocations
                 httpMethod: POST
                 type: aws_proxy 
+                requestParameters:
+                  integration.request.header.X-Amz-Tenant-Id: context.authorizer.tenantId
             options:
               consumes:
                 - application/json
@@ -714,6 +752,8 @@ Resources:
                     - /invocations
                 httpMethod: POST
                 type: aws_proxy  
+                requestParameters:
+                  integration.request.header.X-Amz-Tenant-Id: context.authorizer.tenantId
             options:
               consumes:
                 - application/json
@@ -759,6 +799,8 @@ Resources:
                     - /invocations
                 httpMethod: POST
                 type: aws_proxy   
+                requestParameters:
+                  integration.request.header.X-Amz-Tenant-Id: context.authorizer.tenantId
             options:
               consumes:
                 - application/json

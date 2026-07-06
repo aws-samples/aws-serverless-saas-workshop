@@ -186,6 +186,8 @@ Resources:
         Type: AWS_PROXY
         IntegrationHttpMethod: POST
         Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ActivateTenantFunctionArn}/invocations"
+        RequestParameters:
+          integration.request.header.X-Amz-Tenant-Id: context.authorizer.tenantId
 
   TenantsGet:
     Type: AWS::ApiGateway::Method
@@ -199,6 +201,8 @@ Resources:
         Type: AWS_PROXY
         IntegrationHttpMethod: POST
         Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetTenantsFunctionArn}/invocations"
+        RequestParameters:
+          integration.request.header.X-Amz-Tenant-Id: context.authorizer.tenantId
 
   TenantPost:
     Type: AWS::ApiGateway::Method
@@ -224,6 +228,8 @@ Resources:
         Type: AWS_PROXY
         IntegrationHttpMethod: POST
         Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetTenantFunctionArn}/invocations"
+        RequestParameters:
+          integration.request.header.X-Amz-Tenant-Id: context.authorizer.tenantId
 
   TenantIdDelete:
     Type: AWS::ApiGateway::Method
@@ -237,6 +243,8 @@ Resources:
         Type: AWS_PROXY
         IntegrationHttpMethod: POST
         Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DeactivateTenantFunctionArn}/invocations"
+        RequestParameters:
+          integration.request.header.X-Amz-Tenant-Id: context.authorizer.tenantId
 
   TenantIdPut:
     Type: AWS::ApiGateway::Method
@@ -250,6 +258,8 @@ Resources:
         Type: AWS_PROXY
         IntegrationHttpMethod: POST
         Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UpdateTenantFunctionArn}/invocations"
+        RequestParameters:
+          integration.request.header.X-Amz-Tenant-Id: context.authorizer.tenantId
 
   UserNameGet:
     Type: AWS::ApiGateway::Method
@@ -263,6 +273,8 @@ Resources:
         Type: AWS_PROXY
         IntegrationHttpMethod: POST
         Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetUserFunctionArn}/invocations"
+        RequestParameters:
+          integration.request.header.X-Amz-Tenant-Id: context.authorizer.tenantId
 
   UserNamePut:
     Type: AWS::ApiGateway::Method
@@ -276,6 +288,8 @@ Resources:
         Type: AWS_PROXY
         IntegrationHttpMethod: POST
         Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UpdateUserFunctionArn}/invocations"
+        RequestParameters:
+          integration.request.header.X-Amz-Tenant-Id: context.authorizer.tenantId
 
   UserNameDelete:
     Type: AWS::ApiGateway::Method
@@ -289,6 +303,8 @@ Resources:
         Type: AWS_PROXY
         IntegrationHttpMethod: POST
         Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DisableUserFunctionArn}/invocations"
+        RequestParameters:
+          integration.request.header.X-Amz-Tenant-Id: context.authorizer.tenantId
 
   UserTenantAdminPost:
     Type: AWS::ApiGateway::Method
@@ -314,6 +330,8 @@ Resources:
         Type: AWS_PROXY
         IntegrationHttpMethod: POST
         Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreateUserFunctionArn}/invocations"
+        RequestParameters:
+          integration.request.header.X-Amz-Tenant-Id: context.authorizer.tenantId
 
   UsersGet:
     Type: AWS::ApiGateway::Method
@@ -327,6 +345,8 @@ Resources:
         Type: AWS_PROXY
         IntegrationHttpMethod: POST
         Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetUsersFunctionArn}/invocations"
+        RequestParameters:
+          integration.request.header.X-Amz-Tenant-Id: context.authorizer.tenantId
 
   UsersDisablePut:
     Type: AWS::ApiGateway::Method
