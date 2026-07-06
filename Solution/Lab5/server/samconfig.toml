@@ -3,7 +3,7 @@ version = 0.1
 [default.deploy]
 [default.deploy.parameters]
 stack_name = "serverless-saas"
-s3_bucket = "aws-saas-sam-cli-ujwbuket"
+resolve_s3 = true
 s3_prefix = "serverless-saas"
 region = "us-west-2"
 confirm_changeset = false

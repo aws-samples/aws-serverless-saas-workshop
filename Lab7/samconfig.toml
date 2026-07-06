@@ -3,7 +3,7 @@ version = 0.1
 [default.deploy]
 [default.deploy.parameters]
 stack_name = "serverless-saas-cost-per-tenant-lab7"
-s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-1p6m7gm2vwaaz"
+resolve_s3 = true
 s3_prefix = "serverless-saas-lab7"
 region = "us-west-2"
 confirm_changeset = false
