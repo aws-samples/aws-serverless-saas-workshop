@@ -2,9 +2,9 @@
 
 if [[ "$#" -eq 0 ]]; then
   echo "Invalid parameters"
-  echo "Command to deploy client code: deployment.sh -c --stack-name <CloudFormation stack name>"
-  echo "Command to deploy server code: deployment.sh -s --stack-name <CloudFormation stack name>"
-  echo "Command to deploy server & client code: deployment.sh -s -c --stack-name <CloudFormation stack name>"
+  echo "Command to deploy client code: deployment.sh -c"
+  echo "Command to deploy server code: deployment.sh -s"
+  echo "Command to deploy server & client code: deployment.sh -s -c"
   exit 1
 fi
 
@@ -12,10 +12,6 @@ while [[ "$#" -gt 0 ]]; do
   case $1 in
   -s) server=1 ;;
   -c) client=1 ;;
-  --stack-name)
-    stackname=$2
-    shift
-    ;;
   *)
     echo "Unknown parameter passed: $1"
     exit 1
@@ -24,35 +20,36 @@ while [[ "$#" -gt 0 ]]; do
   shift
 done
 
-if [[ -z "$stackname" ]]; then
-  echo "Please provide CloudFormation stack name as parameter"
-  echo "Note: Invoke script without parameters to know the list of script parameters"
-  exit 1
+REGION=$(aws configure get region)
+
+IS_RUNNING_IN_EVENT_ENGINE=false
+PREPROVISIONED_ADMIN_SITE=$(aws cloudformation list-exports --query "Exports[?Name=='Serverless-SaaS-AdminAppSite'].Value" --output text)
+if [ ! -z "$PREPROVISIONED_ADMIN_SITE" ]; then
+  echo "Workshop is running in WorkshopStudio"
+  IS_RUNNING_IN_EVENT_ENGINE=true
+  APP_SITE_BUCKET=$(aws cloudformation list-exports --query "Exports[?Name=='Serverless-SaaS-ApplicationSiteBucket'].Value" --output text)
+  APP_SITE_URL=$(aws cloudformation list-exports --query "Exports[?Name=='Serverless-SaaS-ApplicationSite'].Value" --output text)
 fi
 
 if [[ $server -eq 1 ]]; then
   echo "Server code is getting deployed"
-  cd ../server || exit # stop execution if cd fails
-  REGION=$(aws configure get region)
+  cd ../server || exit
 
-  DEFAULT_SAM_S3_BUCKET=$(grep s3_bucket samconfig.toml | cut -d'=' -f2 | cut -d \" -f2)
-  echo "aws s3 ls s3://$DEFAULT_SAM_S3_BUCKET"
+  if [ "$IS_RUNNING_IN_EVENT_ENGINE" = false ]; then
+    echo "Deploying shared infrastructure (IDE, S3, CloudFront, DynamoDB, Cognito)..."
+    sam build -t shared-template.yaml --use-container
+    sam deploy --config-file shared-samconfig.toml --region="$REGION"
 
-  if ! aws s3 ls "s3://${DEFAULT_SAM_S3_BUCKET}"; then
-    echo "S3 Bucket: $DEFAULT_SAM_S3_BUCKET specified in samconfig.toml is not readable.
-      So creating a new S3 bucket and will update samconfig.toml with new bucket name."
-
-    UUID=$(uuidgen | awk '{print tolower($0)}')
-    SAM_S3_BUCKET=sam-bootstrap-bucket-$UUID
-    aws s3 mb "s3://${SAM_S3_BUCKET}" --region "$REGION"
-    aws s3api put-bucket-encryption \
-      --bucket "$SAM_S3_BUCKET" \
-      --server-side-encryption-configuration '{"Rules": [{"ApplyServerSideEncryptionByDefault": {"SSEAlgorithm": "AES256"}}]}'
-    if [[ $? -ne 0 ]]; then
-      exit 1
-    fi
-    # Updating samconfig.toml with new bucket name
-    ex -sc '%s/s3_bucket = .*/s3_bucket = \"'$SAM_S3_BUCKET'\"/|x' samconfig.toml
+    IDE_URL=$(aws cloudformation describe-stacks --stack-name serverless-saas-shared --query "Stacks[0].Outputs[?OutputKey=='IdeUrl'].OutputValue" --output text)
+    IDE_PASSWORD=$(aws cloudformation describe-stacks --stack-name serverless-saas-shared --query "Stacks[0].Outputs[?OutputKey=='IdePassword'].OutputValue" --output text)
+    echo ""
+    echo "============================================"
+    echo "VS Code IDE URL: ${IDE_URL}"
+    echo "VS Code IDE Password: ${IDE_PASSWORD}"
+    echo "============================================"
+    echo ""
+    echo "You can now open the IDE in your browser and run the remaining commands from there."
+    echo ""
   fi
 
   echo "Validating server code using pylint"
@@ -63,17 +60,19 @@ if [[ $server -eq 1 ]]; then
   fi
 
   sam build -t template.yaml --use-container
-  sam deploy --config-file samconfig.toml --region="$REGION" --stack-name="$stackname"
-  cd ../scripts || exit # stop execution if cd fails
+  sam deploy --config-file samconfig.toml --region="$REGION"
+  cd ../scripts || exit
 fi
+
+if [ "$IS_RUNNING_IN_EVENT_ENGINE" = false ]; then
+  APP_SITE_BUCKET=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='AppBucket'].OutputValue" --output text)
+  APP_SITE_URL=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='ApplicationSite'].OutputValue" --output text)
+fi
+
+APP_APIGATEWAYURL=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='APIGatewayURL'].OutputValue" --output text)
 
 if [[ $client -eq 1 ]]; then
   echo "Client code is getting deployed"
-  APP_SITE_BUCKET=$(aws cloudformation describe-stacks --stack-name "$stackname" --query "Stacks[0].Outputs[?OutputKey=='AppBucket'].OutputValue" --output text)
-  APP_SITE_URL=$(aws cloudformation describe-stacks --stack-name "$stackname" --query "Stacks[0].Outputs[?OutputKey=='ApplicationSite'].OutputValue" --output text)
-  APP_APIGATEWAYURL=$(aws cloudformation describe-stacks --stack-name "$stackname" --query "Stacks[0].Outputs[?OutputKey=='APIGatewayURL'].OutputValue" --output text)
-
-  # Configuring application UI
 
   echo "aws s3 ls s3://${APP_SITE_BUCKET}"
   if ! aws s3 ls "s3://${APP_SITE_BUCKET}"; then
@@ -81,7 +80,7 @@ if [[ $client -eq 1 ]]; then
     exit 1
   fi
 
-  cd ../client/Application || exit # stop execution if cd fails
+  cd ../client/Application || exit
 
   echo "Configuring environment for App Client"
 
@@ -107,6 +106,6 @@ EoF
   fi
 
   echo "Completed configuring environment for App Client"
-
-  echo "Application site URL: https://${APP_SITE_URL}"
 fi
+
+echo "Application site URL: https://${APP_SITE_URL}"

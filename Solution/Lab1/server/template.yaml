@@ -809,82 +809,11 @@ Resources:
           !Ref ApiGatewayApi, "/*/*/*"
           ]
         ]            
-  CloudFrontOriginAccessIdentity:
-    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
-    Properties:
-      CloudFrontOriginAccessIdentityConfig:
-        Comment: "Origin Access Identity for CloudFront Distribution"
-  AppBucket:
-    Type: AWS::S3::Bucket
-    DeletionPolicy : Retain
-    Properties:
-      BucketEncryption:
-        ServerSideEncryptionConfiguration:
-          - ServerSideEncryptionByDefault:
-              SSEAlgorithm: 'AES256'
-      PublicAccessBlockConfiguration: 
-        BlockPublicAcls: True
-        BlockPublicPolicy: True
-        IgnorePublicAcls: True
-        RestrictPublicBuckets: True
-  AppSiteReadPolicy:
-    Type: AWS::S3::BucketPolicy
-    Properties:
-      Bucket: !Ref AppBucket
-      PolicyDocument:
-        Statement:
-        - Action: 's3:GetObject'
-          Effect: Allow
-          Resource: !Sub 'arn:aws:s3:::${AppBucket}/*'
-          Principal:
-            CanonicalUser: !GetAtt CloudFrontOriginAccessIdentity.S3CanonicalUserId
-  ApplicationSite:
-    Type: AWS::CloudFront::Distribution
-    Properties:
-      DistributionConfig:
-        CustomErrorResponses:
-        # Needed to support angular routing
-        - ErrorCode: 403 
-          ResponseCode: 200
-          ResponsePagePath: '/index.html'
-        - ErrorCode: 404
-          ResponseCode: 200
-          ResponsePagePath: '/index.html'
-        DefaultCacheBehavior:
-          AllowedMethods:
-            - DELETE
-            - GET
-            - HEAD
-            - OPTIONS
-            - PATCH
-            - POST
-            - PUT
-          Compress: true
-          DefaultTTL: 3600 # in seconds
-          ForwardedValues:
-            Cookies:
-              Forward: none
-            QueryString: false
-          MaxTTL: 86400 # in seconds
-          MinTTL: 60 # in seconds
-          TargetOriginId: lab1-tenantapp-s3origin
-          ViewerProtocolPolicy: 'allow-all'
-        DefaultRootObject: 'index.html'
-        Enabled: true
-        HttpVersion: http2
-        Origins:
-        - DomainName: !GetAtt 'AppBucket.RegionalDomainName'
-          Id: lab1-tenantapp-s3origin
-          S3OriginConfig:
-            OriginAccessIdentity: !Join ["", ["origin-access-identity/cloudfront/", !Ref CloudFrontOriginAccessIdentity]] 
-        PriceClass: 'PriceClass_All'         
 Outputs:
   APIGatewayURL:
     Description: "API Gateway endpoint URL for API"
     Value: !Join ['', [!Sub "https://${ApiGatewayApi}.execute-api.${AWS::Region}.amazonaws.com/", !Ref StageName]]
   ApplicationSite:
-    Description: The name of the CloudFront url for Tenant Management site
-    Value: !GetAtt ApplicationSite.DomainName  
+    Value: !ImportValue Serverless-SaaS-ApplicationSite
   AppBucket:
-    Description: The name of the bucket for uploading the Tenant Management site to
-    Value: !Ref AppBucket  
+    Value: !ImportValue Serverless-SaaS-ApplicationSiteBucket  

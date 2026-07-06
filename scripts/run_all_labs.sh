@@ -11,15 +11,16 @@ cd ../Cloud9Setup/
 cd ../scripts/
 echo "################ Done running pre-req script... ################"
 
-# echo "################ Running labs... ################"
+echo "################ Running lab1... ################"
 
-# #### Note that deploying lab1 is not a requirement ####
-# # echo "################ Running lab1... ################"
-# # cd ../Solution/Lab1/scripts
-# # ./deployment.sh -s -c --stack-name serverless-saas-workshop-lab1
-# # cd ../../../scripts/
-# # echo "################ Done running lab1. ################"
-# #######################################################
+cd ../Solution/Lab1/scripts
+./deployment.sh -s -c
+cd ../../../scripts/
+
+echo "################ Done running lab1. ################"
+
+echo "################ Sleeping for a minute before moving to next lab... ################"
+sleep 60
 
 echo "################ Running lab2... ################"
 

@@ -86,7 +86,6 @@ else
     echo "skip_flag disabled. Script will pause for confirmation before deleting resources."
 fi
 
-delete_stack_after_confirming "serverless-saas-workshop-lab1"
 delete_stack_after_confirming "stack-pooled"
 delete_stack_after_confirming "serverless-saas-cost-per-tenant-lab7"
 
@@ -120,6 +119,7 @@ while true; do
 done
 
 delete_stack_after_confirming "serverless-saas"
+delete_stack_after_confirming "serverless-saas-shared"
 delete_stack_after_confirming "serverless-saas-pipeline"
 
 # delete_codecommit_repo_after_confirming "aws-saas-factory-ref-serverless-saas"

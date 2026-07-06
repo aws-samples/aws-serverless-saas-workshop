@@ -586,6 +586,12 @@ Resources:
     Properties:
       Name: !Sub "serverless-saas-admin-api-${AWS::Region}"
 
+  # ==================== VS Code IDE ====================
+  IdeStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "https://${AssetsBucket}.s3.amazonaws.com/${AssetsKeyPrefix}ide-template.yaml"
+
 Outputs:
   TenantDetailsTableArn:
     Value: !GetAtt TenantDetailsTable.Arn
@@ -687,3 +693,7 @@ Outputs:
     Value: !GetAtt AdminApiGateway.RootResourceId
     Export:
       Name: Serverless-SaaS-AdminApiGatewayRootResourceId
+  IdeUrl:
+    Value: !GetAtt IdeStack.Outputs.IdeUrl
+  IdePassword:
+    Value: !GetAtt IdeStack.Outputs.IdePassword

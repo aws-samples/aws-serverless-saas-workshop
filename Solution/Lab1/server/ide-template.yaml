@@ -1,0 +1,359 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: VS Code Server IDE on EC2 with CloudFront access.
+
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: "serverless-saas"
+  InstanceType:
+    Type: String
+    Default: t3.large
+    AllowedValues:
+      - t3.medium
+      - t3.large
+      - t3.xlarge
+  LatestAmiId:
+    Type: "AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>"
+    Default: "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
+
+Resources:
+  EC2Role:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: serverless-saas-ide-role
+      Tags:
+        - Key: Environment
+          Value: !Sub ${EnvironmentName}
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+                - ssm.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AdministratorAccess
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Path: "/"
+
+  OutputBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: "10.0.0.0/16"
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-vscode-vpc
+
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: "10.0.1.0/24"
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-vscode-subnet
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-vscode-igw
+
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-vscode-rt
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: AttachGateway
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet
+      RouteTableId: !Ref PublicRouteTable
+
+  SSMDocument:
+    Type: AWS::SSM::Document
+    Properties:
+      Tags:
+        - Key: Environment
+          Value: !Sub ${EnvironmentName}
+      DocumentType: Command
+      Content:
+        schemaVersion: "2.2"
+        description: Bootstrap VS Code Instance
+        mainSteps:
+          - action: aws:runShellScript
+            name: VSCodebootstrap
+            inputs:
+              runCommand:
+                - "#!/bin/bash"
+                - "mkdir -p /home/ec2-user/environment"
+                - "chown -R ec2-user:ec2-user /home/ec2-user/environment"
+                - "curl -fsSL https://code-server.dev/install.sh | sudo -u ec2-user sh"
+                - IDE_PASSWORD=$(aws secretsmanager get-secret-value --secret-id IdePassword --query 'SecretString' --output text | cut -d '"' -f4)
+                - "mkdir -p /home/ec2-user/.config/code-server/"
+                - "echo 'bind-addr: 0.0.0.0:8080' > /home/ec2-user/.config/code-server/config.yaml"
+                - "echo 'auth: password' >> /home/ec2-user/.config/code-server/config.yaml"
+                - "echo password: $IDE_PASSWORD >> /home/ec2-user/.config/code-server/config.yaml"
+                - "chown -R ec2-user:ec2-user /home/ec2-user/.config/"
+                - "yum update -y; sleep 10"
+                - "yum install -y git git-lfs perl-Digest-SHA tree docker libatomic; sleep 10"
+                - "systemctl start docker && systemctl enable docker"
+                - "wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq && sudo chmod +x /usr/bin/yq"
+                - "wget https://github.com/aws/aws-sam-cli/releases/download/v1.154.0/aws-sam-cli-linux-x86_64.zip && unzip aws-sam-cli-linux-x86_64.zip -d sam-installation && sudo ./sam-installation/install && rm -rf aws-sam-cli-linux-x86_64.zip sam-installation"
+                - "curl -O --output-dir /tmp https://bootstrap.pypa.io/get-pip.py && python3 /tmp/get-pip.py --user && python3 -m pip install git-remote-codecommit==1.15.1"
+                - "sudo -u ec2-user bash -c 'python3 /tmp/get-pip.py --user && python3 -m pip install git-remote-codecommit==1.15.1'"
+                - "curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | sudo -u ec2-user bash"
+                - sudo -u ec2-user bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && nvm install node && npm install -g aws-cdk'
+                - "python3 -m pip install pylint boto3"
+                - "sudo -u ec2-user bash -c 'python3 -m pip install pylint boto3'"
+                - export TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds:60")
+                - export AWS_REGION=$(curl -H "X-aws-ec2-metadata-token:${TOKEN}" -s http://169.254.169.254/latest/meta-data/placement/availability-zone | sed 's/\(.*\)[a-z]/\1/') && echo "export AWS_REGION=${AWS_REGION}" >> /home/ec2-user/.bashrc
+                - "git clone -b dev https://github.com/aws-samples/aws-serverless-saas-workshop.git /home/ec2-user/environment/aws-serverless-saas-workshop"
+                - "chown -R ec2-user:ec2-user /home/ec2-user/environment"
+                - "sudo -u ec2-user nohup /usr/bin/code-server /home/ec2-user/environment/ --port 8080 --host 0.0.0.0 > /dev/null 2>&1 &"
+
+  SSMBootstrapAssociation:
+    Type: AWS::SSM::Association
+    Properties:
+      Name: !Ref SSMDocument
+      OutputLocation:
+        S3Location:
+          OutputS3BucketName: !Ref OutputBucket
+          OutputS3KeyPrefix: bootstrapoutput
+      Targets:
+        - Key: tag:SSMBootstrapAWSSaaSServerless
+          Values:
+            - Active
+
+  EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: "/"
+      Roles:
+        - !Ref EC2Role
+
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref LatestAmiId
+      InstanceType: !Ref InstanceType
+      SubnetId: !Ref PublicSubnet
+      IamInstanceProfile: !Ref EC2InstanceProfile
+      SecurityGroupIds:
+        - !Ref EC2SecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-IDE
+        - Key: SSMBootstrapAWSSaaSServerless
+          Value: Active
+        - Key: Environment
+          Value: !Sub ${EnvironmentName}
+
+  EC2SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !Ref VPC
+      GroupDescription: VSCode Server Security Group
+      SecurityGroupEgress:
+        - IpProtocol: '-1'
+          CidrIp: 0.0.0.0/0
+          Description: Allow all outbound traffic
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName}-vscode-sg
+
+  CloudFrontPrefixListLookup:
+    Type: Custom::PrefixListLookup
+    Properties:
+      ServiceToken: !GetAtt PrefixListLookupFunction.Arn
+
+  PrefixListLookupFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Runtime: python3.14
+      Handler: index.handler
+      Role: !GetAtt PrefixListLookupRole.Arn
+      Timeout: 30
+      Code:
+        ZipFile: |
+          import boto3
+          import cfnresponse
+
+          def handler(event, context):
+              if event['RequestType'] == 'Delete':
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
+                  return
+              try:
+                  ec2 = boto3.client('ec2')
+                  response = ec2.describe_managed_prefix_lists(
+                      Filters=[{'Name': 'prefix-list-name', 'Values': ['com.amazonaws.global.cloudfront.origin-facing']}]
+                  )
+                  prefix_list_id = response['PrefixLists'][0]['PrefixListId']
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, {'PrefixListId': prefix_list_id})
+              except Exception as e:
+                  cfnresponse.send(event, context, cfnresponse.FAILED, {'Error': str(e)})
+
+  PrefixListLookupRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DescribePrefixLists
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: ec2:DescribeManagedPrefixLists
+                Resource: "*"
+
+  IngressFromCloudFront:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: HTTP from CloudFront only
+      IpProtocol: tcp
+      FromPort: 8080
+      ToPort: 8080
+      GroupId: !GetAtt EC2SecurityGroup.GroupId
+      SourcePrefixListId: !GetAtt CloudFrontPrefixListLookup.PrefixListId
+
+  IdeDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        DefaultCacheBehavior:
+          AllowedMethods: [GET, HEAD, OPTIONS, PUT, PATCH, POST, DELETE]
+          CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+          Compress: true
+          OriginRequestPolicyId: 216adef6-5c7f-47e4-b989-5492eafa07d3
+          TargetOriginId: IdeDistributionOrigin
+          ViewerProtocolPolicy: allow-all
+        Enabled: true
+        HttpVersion: http2
+        IPV6Enabled: true
+        Origins:
+          - CustomOriginConfig:
+              HTTPPort: 8080
+              OriginProtocolPolicy: http-only
+              OriginSSLProtocols: [TLSv1.2]
+            DomainName: !GetAtt EC2Instance.PublicDnsName
+            Id: IdeDistributionOrigin
+
+  IdePasswordSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: IdePassword
+      GenerateSecretString:
+        ExcludeCharacters: '"@/\'
+        ExcludePunctuation: true
+        GenerateStringKey: password
+        IncludeSpace: false
+        PasswordLength: 32
+        SecretStringTemplate: '{"password":""}'
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+
+  IdePasswordRetrievalFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Runtime: python3.14
+      Handler: index.handler
+      Role: !GetAtt IdePasswordRetrievalRole.Arn
+      Code:
+        ZipFile: |
+          import json
+          import boto3
+          import cfnresponse
+
+          def handler(event, context):
+              if event['RequestType'] == 'Delete':
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
+                  return
+              try:
+                  client = boto3.client('secretsmanager')
+                  secret_arn = event['ResourceProperties']['SecretArn']
+                  response = client.get_secret_value(SecretId=secret_arn)
+                  secret_dict = json.loads(response['SecretString'])
+                  password = secret_dict['password']
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, {'Password': password})
+              except Exception as e:
+                  cfnresponse.send(event, context, cfnresponse.FAILED, {'Error': str(e)})
+
+  IdePasswordRetrievalRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: SecretsManagerRead
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: secretsmanager:GetSecretValue
+                Resource: !Ref IdePasswordSecret
+
+  RetrieveIdePassword:
+    Type: Custom::RetrievePassword
+    Properties:
+      ServiceToken: !GetAtt IdePasswordRetrievalFunction.Arn
+      SecretArn: !Ref IdePasswordSecret
+
+Outputs:
+  IdeUrl:
+    Value: !Sub "https://${IdeDistribution.DomainName}"
+  IdePassword:
+    Value: !GetAtt RetrieveIdePassword.Password

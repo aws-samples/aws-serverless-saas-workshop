@@ -8,7 +8,7 @@ python3 -m pylint -E -d E0401 $(find . -iname "*.py" -not -path "./.aws-sam/*")
   fi
 #Deploying shared services changes
 echo "Deploying shared services changes"  
-echo Y | sam sync --stack-name serverless-saas -t shared-template.yaml --code --resource-id LambdaFunctions/ServerlessSaaSLayers --resource-id LambdaFunctions/SharedServicesAuthorizerFunction -u
+echo Y | sam sync --stack-name serverless-saas -t template.yaml --code --resource-id LambdaFunctions/ServerlessSaaSLayers --resource-id LambdaFunctions/SharedServicesAuthorizerFunction -u
 
 #Deploying tenant services changes
 echo "Deploying tenant services changes"

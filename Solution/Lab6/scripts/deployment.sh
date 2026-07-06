@@ -26,12 +26,12 @@ if [[ $? -ne 0 ]]; then
   exit 1
 fi
 
-sam build -t shared-template.yaml --use-container
+sam build -t template.yaml --use-container
 
 if [ "$IS_RUNNING_IN_EVENT_ENGINE" = true ]; then
-  sam deploy --config-file shared-samconfig.toml --region=$REGION --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE AdminUserPoolCallbackURLParameter=$ADMIN_SITE_URL TenantUserPoolCallbackURLParameter=$APP_SITE_URL
+  sam deploy --config-file samconfig.toml --region=$REGION --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE AdminUserPoolCallbackURLParameter=$ADMIN_SITE_URL TenantUserPoolCallbackURLParameter=$APP_SITE_URL
 else
-  sam deploy --config-file shared-samconfig.toml --region=$REGION --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE
+  sam deploy --config-file samconfig.toml --region=$REGION --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE
 fi
     
 

@@ -12,14 +12,6 @@ Parameters:
     Description: S3 key prefix for workshop assets
 
 Resources:
-  IDEStack:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: !Sub "https://${AssetsBucket}.s3.amazonaws.com/${AssetsKeyPrefix}initialize-module-sam-template.yaml"
-      Parameters:
-        AssetsBucket: !Ref AssetsBucket
-        AssetsKeyPrefix: !Ref AssetsKeyPrefix
-
   UIStack:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -27,6 +19,7 @@ Resources:
 
   Lab1Stack:
     Type: AWS::CloudFormation::Stack
+    DependsOn: UIStack
     Properties:
       TemplateURL: !Sub "https://${AssetsBucket}.s3.amazonaws.com/${AssetsKeyPrefix}lab1-module-sam-template.yaml"
       Parameters:
@@ -45,9 +38,9 @@ Resources:
 
 Outputs:
   IdeUrl:
-    Value: !GetAtt IDEStack.Outputs.IdeUrl
+    Value: !GetAtt SharedStack.Outputs.IdeUrl
   IdePassword:
-    Value: !GetAtt IDEStack.Outputs.IdePassword
+    Value: !GetAtt SharedStack.Outputs.IdePassword
   AdminAppSite:
     Value: !GetAtt UIStack.Outputs.AdminAppSite
   LandingApplicationSite:
@@ -62,7 +55,3 @@ Outputs:
     Value: !GetAtt UIStack.Outputs.AppBucket
   APIGatewayURL:
     Value: !GetAtt Lab1Stack.Outputs.APIGatewayURL
-  Lab1ApplicationSite:
-    Value: !GetAtt Lab1Stack.Outputs.ApplicationSite
-  Lab1AppBucket:
-    Value: !GetAtt Lab1Stack.Outputs.AppBucket
