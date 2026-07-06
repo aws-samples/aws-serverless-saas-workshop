@@ -754,6 +754,34 @@ Resources:
     Type: AWS::ApiGateway::RestApi
     Properties:
       Name: !Sub "serverless-saas-admin-api-${AWS::Region}"
+      Policy:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: "*"
+            Action: "execute-api:Invoke"
+            Resource: "execute-api:/*/*/*"
+          - Effect: Deny
+            Principal: "*"
+            Action: "execute-api:Invoke"
+            Resource:
+              - "execute-api:/prod/POST/tenant"
+              - "execute-api:/prod/POST/user/tenant-admin"
+            Condition:
+              StringNotEquals:
+                aws:PrincipalArn:
+                  - !GetAtt RegisterTenantLambdaExecutionRole.Arn
+                  - !GetAtt TenantManagementLambdaExecutionRole.Arn
+          - Effect: Deny
+            Principal: "*"
+            Action: "execute-api:Invoke"
+            Resource:
+              - "execute-api:/prod/PUT/users/disable"
+              - "execute-api:/prod/PUT/users/enable"
+            Condition:
+              StringNotEquals:
+                aws:PrincipalArn:
+                  - !GetAtt TenantManagementLambdaExecutionRole.Arn
 
   # ==================== VS Code IDE ====================
   IdeStack:
