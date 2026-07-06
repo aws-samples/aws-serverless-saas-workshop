@@ -1,8 +1,5 @@
 <amplify-authenticator [hideSignUp]="true">
-  <ng-template
-    amplifySlot="authenticated"
-    let-user="user"
-  >
+  <ng-template amplifySlot="authenticated" let-user="user">
     <mat-sidenav-container fullscreen>
       <mat-sidenav
         [mode]="'side'"
@@ -19,10 +16,14 @@
         <mat-divider></mat-divider>
         <mat-nav-list>
           <mat-list-item *ngFor="let navItem of navItems">
-            <mat-icon mat-list-icon class="nav-icon material-symbols-outlined">{{
-              navItem.icon
-            }}</mat-icon>
-            <a mat-list-item routerLink="{{ navItem.url }}">{{ navItem.name }}</a>
+            <mat-icon
+              mat-list-icon
+              class="nav-icon material-symbols-outlined"
+              >{{ navItem.icon }}</mat-icon
+            >
+            <a mat-list-item routerLink="{{ navItem.url }}">{{
+              navItem.name
+            }}</a>
           </mat-list-item>
         </mat-nav-list>
       </mat-sidenav>
@@ -53,7 +54,9 @@
             <span>Login</span>
           </button>
         </ng-template>
-        <span style="margin: 8px">{{ (username$ | async) || user.username}}</span>
+        <span style="margin: 8px">{{
+          (username$ | async) || user.username
+        }}</span>
         <mat-divider></mat-divider>
         <button mat-menu-item>
           <mat-icon class="material-symbols-outlined">face</mat-icon>
@@ -74,7 +77,7 @@
 
       <div class="footer" #footer>
         <div class="footer-text">
-          <span>Serverless SaaS Workshop &copy; 2022 AWS</span>
+          <span>Serverless SaaS Workshop &copy; 2026 AWS</span>
           <span class="spacer"></span>
           <span>
             Powered by <a href="https://aws.amazon.com">SaaS Factory</a>
