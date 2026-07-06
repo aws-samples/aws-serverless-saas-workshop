@@ -179,6 +179,11 @@ Resources:
       IamInstanceProfile: !Ref EC2InstanceProfile
       SecurityGroupIds:
         - !Ref EC2SecurityGroup
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 30
+            VolumeType: gp3
       Tags:
         - Key: Name
           Value: !Sub ${EnvironmentName}-IDE
