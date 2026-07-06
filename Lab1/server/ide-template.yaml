@@ -147,6 +147,7 @@ Resources:
                 - sudo -u ec2-user bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && nvm install 18 && nvm alias default 18 && npm install -g aws-cdk'
                 - export TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds:60")
                 - export AWS_REGION=$(curl -H "X-aws-ec2-metadata-token:${TOKEN}" -s http://169.254.169.254/latest/meta-data/placement/availability-zone | sed 's/\(.*\)[a-z]/\1/') && echo "export AWS_REGION=${AWS_REGION}" >> /etc/profile.d/aws-region.sh && echo "export AWS_DEFAULT_REGION=${AWS_REGION}" >> /etc/profile.d/aws-region.sh
+                - sudo -u ec2-user mkdir -p /home/ec2-user/.aws && printf "[default]\nregion = ${AWS_REGION}\noutput = json\n" > /home/ec2-user/.aws/config && chown -R ec2-user:ec2-user /home/ec2-user/.aws
                 - "git clone -b dev https://github.com/aws-samples/aws-serverless-saas-workshop.git /home/ec2-user/environment/aws-serverless-saas-workshop"
                 - "chown -R ec2-user:ec2-user /home/ec2-user/environment"
                 - "sudo -u ec2-user nohup /usr/bin/code-server /home/ec2-user/environment/ --port 8080 --host 0.0.0.0 > /dev/null 2>&1 &"
