@@ -22,6 +22,7 @@ def register_tenant(event, context):
         tenant_details = json.loads(event['body'])
 
         tenant_details['tenantId'] = tenant_id
+        tenant_details['dedicatedTenancy'] = 'true' if tenant_details.get('tenantTier', '').upper() == 'PLATINUM' else 'false'
 
         logger.info(tenant_details)
 
