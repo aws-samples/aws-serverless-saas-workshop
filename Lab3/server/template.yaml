@@ -46,6 +46,17 @@ Resources:
         DisableUsersByTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.DisableUsersByTenantFunctionArn
         EnableUsersByTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.EnableUsersByTenantFunctionArn
         AuthorizerFunctionArn: !GetAtt LambdaFunctions.Outputs.SharedServicesAuthorizerFunctionArn
+        BusinessServicesAuthorizerFunctionArn: !GetAtt LambdaFunctions.Outputs.BusinessServicesAuthorizerFunctionArn
+        GetProductFunctionArn: !GetAtt LambdaFunctions.Outputs.GetProductFunctionArn
+        GetProductsFunctionArn: !GetAtt LambdaFunctions.Outputs.GetProductsFunctionArn
+        CreateProductFunctionArn: !GetAtt LambdaFunctions.Outputs.CreateProductFunctionArn
+        UpdateProductFunctionArn: !GetAtt LambdaFunctions.Outputs.UpdateProductFunctionArn
+        DeleteProductFunctionArn: !GetAtt LambdaFunctions.Outputs.DeleteProductFunctionArn
+        GetOrdersFunctionArn: !GetAtt LambdaFunctions.Outputs.GetOrdersFunctionArn
+        GetOrderFunctionArn: !GetAtt LambdaFunctions.Outputs.GetOrderFunctionArn
+        CreateOrderFunctionArn: !GetAtt LambdaFunctions.Outputs.CreateOrderFunctionArn
+        UpdateOrderFunctionArn: !GetAtt LambdaFunctions.Outputs.UpdateOrderFunctionArn
+        DeleteOrderFunctionArn: !GetAtt LambdaFunctions.Outputs.DeleteOrderFunctionArn
 
   APIGatewayLambdaPermissions:
     Type: AWS::Serverless::Application
@@ -72,11 +83,26 @@ Resources:
         EnableUsersByTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.EnableUsersByTenantFunctionArn
         AuthorizerFunctionArn: !GetAtt LambdaFunctions.Outputs.SharedServicesAuthorizerFunctionArn
         AdminApiGatewayApi: !GetAtt APIs.Outputs.AdminApiGatewayApi
+        BusinessServicesAuthorizerFunctionArn: !GetAtt LambdaFunctions.Outputs.BusinessServicesAuthorizerFunctionArn
+        GetProductFunctionArn: !GetAtt LambdaFunctions.Outputs.GetProductFunctionArn
+        GetProductsFunctionArn: !GetAtt LambdaFunctions.Outputs.GetProductsFunctionArn
+        CreateProductFunctionArn: !GetAtt LambdaFunctions.Outputs.CreateProductFunctionArn
+        UpdateProductFunctionArn: !GetAtt LambdaFunctions.Outputs.UpdateProductFunctionArn
+        DeleteProductFunctionArn: !GetAtt LambdaFunctions.Outputs.DeleteProductFunctionArn
+        GetOrdersFunctionArn: !GetAtt LambdaFunctions.Outputs.GetOrdersFunctionArn
+        GetOrderFunctionArn: !GetAtt LambdaFunctions.Outputs.GetOrderFunctionArn
+        CreateOrderFunctionArn: !GetAtt LambdaFunctions.Outputs.CreateOrderFunctionArn
+        UpdateOrderFunctionArn: !GetAtt LambdaFunctions.Outputs.UpdateOrderFunctionArn
+        DeleteOrderFunctionArn: !GetAtt LambdaFunctions.Outputs.DeleteOrderFunctionArn
+        ApplicationApiGatewayApi: !GetAtt APIs.Outputs.ApplicationApiGatewayApi
 
 Outputs:
   AdminApi:
     Description: "API Gateway endpoint URL for Admin API"
     Value: !Join ["", ["https://", !GetAtt APIs.Outputs.AdminApiGatewayApi, ".execute-api.", !Ref "AWS::Region", ".amazonaws.com/", !Ref StageName]]
+  APIGatewayURL:
+    Description: "API Gateway endpoint URL for Application API"
+    Value: !Join ["", ["https://", !GetAtt APIs.Outputs.ApplicationApiGatewayApi, ".execute-api.", !Ref "AWS::Region", ".amazonaws.com/", !Ref StageName]]
   AdminSiteBucket:
     Value: !ImportValue Serverless-SaaS-AdminSiteBucket
   AdminAppSite:
