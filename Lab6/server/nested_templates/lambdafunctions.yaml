@@ -443,8 +443,8 @@ Resources:
         - !ImportValue Serverless-SaaS-LayerArn
       Environment:
         Variables:
-          TENANT_USER_POOL: !ImportValue Serverless-SaaS-CognitoTenantUserPoolId
-          TENANT_APP_CLIENT: !ImportValue Serverless-SaaS-CognitoTenantAppClientId
+          TENANT_USER_POOL: !ImportValue Serverless-SaaS-CognitoUserPoolId
+          TENANT_APP_CLIENT: !ImportValue Serverless-SaaS-CognitoUserPoolClientId
 
   GetProductFunction:
     Type: AWS::Serverless::Function

@@ -119,11 +119,3 @@ Outputs:
     Value: !ImportValue Serverless-SaaS-ApplicationSite
   CognitoOperationUsersUserPoolClientId:
     Value: !ImportValue Serverless-SaaS-CognitoOperationUsersUserPoolClientId
-  CognitoTenantUserPoolId:
-    Value: !ImportValue Serverless-SaaS-CognitoUserPoolId
-    Export:
-      Name: "Serverless-SaaS-CognitoTenantUserPoolId"
-  CognitoTenantAppClientId:
-    Value: !ImportValue Serverless-SaaS-CognitoUserPoolClientId
-    Export:
-      Name: "Serverless-SaaS-CognitoTenantAppClientId"
