@@ -29,6 +29,7 @@ def register_tenant(event, context):
         host = event['headers']['Host']
         auth = utils.get_auth(host, region)
         headers = utils.get_headers(event)
+        headers['x-tenant-id'] = tenant_id
         create_user_response = __create_tenant_admin_user(tenant_details, headers, auth, host, stage_name)
         
         logger.info (create_user_response)

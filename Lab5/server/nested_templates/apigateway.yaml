@@ -14,15 +14,9 @@ Parameters:
     Type: String
   RegisterTenantFunctionArn:
     Type: String
-  ProvisionTenantFunctionArn:
-    Type: String
-  DeProvisionTenantFunctionArn:
-    Type: String
   ActivateTenantFunctionArn:
     Type: String
   GetTenantsFunctionArn:
-    Type: String
-  GetTenantConfigFunctionArn:
     Type: String
   CreateTenantFunctionArn:
     Type: String
@@ -76,20 +70,6 @@ Resources:
       ParentId: !ImportValue Serverless-SaaS-AdminApiGatewayRootResourceId
       PathPart: registration
 
-  ProvisioningResource:
-    Type: AWS::ApiGateway::Resource
-    Properties:
-      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
-      ParentId: !ImportValue Serverless-SaaS-AdminApiGatewayRootResourceId
-      PathPart: provisioning
-
-  ProvisioningIdResource:
-    Type: AWS::ApiGateway::Resource
-    Properties:
-      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
-      ParentId: !Ref ProvisioningResource
-      PathPart: "{tenantid}"
-
   TenantResource:
     Type: AWS::ApiGateway::Resource
     Properties:
@@ -117,20 +97,6 @@ Resources:
       RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
       ParentId: !Ref TenantActivationResource
       PathPart: "{tenantid}"
-
-  TenantInitResource:
-    Type: AWS::ApiGateway::Resource
-    Properties:
-      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
-      ParentId: !Ref TenantResource
-      PathPart: init
-
-  TenantInitNameResource:
-    Type: AWS::ApiGateway::Resource
-    Properties:
-      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
-      ParentId: !Ref TenantInitResource
-      PathPart: "{tenantname}"
 
   TenantsResource:
     Type: AWS::ApiGateway::Resource
@@ -174,12 +140,26 @@ Resources:
       ParentId: !Ref UsersResource
       PathPart: disable
 
+  UsersDisableIdResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+      ParentId: !Ref UsersDisableResource
+      PathPart: "{tenantid}"
+
   UsersEnableResource:
     Type: AWS::ApiGateway::Resource
     Properties:
       RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
       ParentId: !Ref UsersResource
       PathPart: enable
+
+  UsersEnableIdResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+      ParentId: !Ref UsersEnableResource
+      PathPart: "{tenantid}"
 
   # ==================== Methods ====================
   RegistrationPost:
@@ -193,30 +173,6 @@ Resources:
         Type: AWS_PROXY
         IntegrationHttpMethod: POST
         Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RegisterTenantFunctionArn}/invocations"
-
-  ProvisioningPost:
-    Type: AWS::ApiGateway::Method
-    Properties:
-      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
-      ResourceId: !Ref ProvisioningResource
-      HttpMethod: POST
-      AuthorizationType: AWS_IAM
-      Integration:
-        Type: AWS_PROXY
-        IntegrationHttpMethod: POST
-        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ProvisionTenantFunctionArn}/invocations"
-
-  ProvisioningDelete:
-    Type: AWS::ApiGateway::Method
-    Properties:
-      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
-      ResourceId: !Ref ProvisioningIdResource
-      HttpMethod: DELETE
-      AuthorizationType: AWS_IAM
-      Integration:
-        Type: AWS_PROXY
-        IntegrationHttpMethod: POST
-        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DeProvisionTenantFunctionArn}/invocations"
 
   TenantActivationPut:
     Type: AWS::ApiGateway::Method
@@ -255,22 +211,14 @@ Resources:
       ResourceId: !Ref TenantResource
       HttpMethod: POST
       AuthorizationType: AWS_IAM
+      RequestParameters:
+        method.request.header.x-tenant-id: true
       Integration:
         Type: AWS_PROXY
         IntegrationHttpMethod: POST
         Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreateTenantFunctionArn}/invocations"
-
-  TenantInitGet:
-    Type: AWS::ApiGateway::Method
-    Properties:
-      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
-      ResourceId: !Ref TenantInitNameResource
-      HttpMethod: GET
-      AuthorizationType: NONE
-      Integration:
-        Type: AWS_PROXY
-        IntegrationHttpMethod: POST
-        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetTenantConfigFunctionArn}/invocations"
+        RequestParameters:
+          integration.request.header.X-Amz-Tenant-Id: method.request.header.x-tenant-id
 
   TenantIdGet:
     Type: AWS::ApiGateway::Method
@@ -369,10 +317,14 @@ Resources:
       ResourceId: !Ref UserTenantAdminResource
       HttpMethod: POST
       AuthorizationType: AWS_IAM
+      RequestParameters:
+        method.request.header.x-tenant-id: true
       Integration:
         Type: AWS_PROXY
         IntegrationHttpMethod: POST
         Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreateTenantAdminUserFunctionArn}/invocations"
+        RequestParameters:
+          integration.request.header.X-Amz-Tenant-Id: method.request.header.x-tenant-id
 
   UserPost:
     Type: AWS::ApiGateway::Method
@@ -408,15 +360,20 @@ Resources:
     Type: AWS::ApiGateway::Method
     Properties:
       RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
-      ResourceId: !Ref UsersDisableResource
+      ResourceId: !Ref UsersDisableIdResource
       HttpMethod: PUT
       AuthorizationType: AWS_IAM
+      RequestParameters:
+        method.request.path.tenantid: true
       Integration:
         Type: AWS
         IntegrationHttpMethod: POST
         Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DisableUsersByTenantFunctionArn}/invocations"
         RequestParameters:
           integration.request.header.X-Amz-Invocation-Type: "'Event'"
+          integration.request.header.X-Amz-Tenant-Id: method.request.path.tenantid
+        RequestTemplates:
+          application/json: "{\"tenantid\": \"$input.params('tenantid')\"}"
         IntegrationResponses:
           - StatusCode: "200"
             ResponseParameters:
@@ -430,15 +387,20 @@ Resources:
     Type: AWS::ApiGateway::Method
     Properties:
       RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
-      ResourceId: !Ref UsersEnableResource
+      ResourceId: !Ref UsersEnableIdResource
       HttpMethod: PUT
       AuthorizationType: AWS_IAM
+      RequestParameters:
+        method.request.path.tenantid: true
       Integration:
         Type: AWS
         IntegrationHttpMethod: POST
         Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${EnableUsersByTenantFunctionArn}/invocations"
         RequestParameters:
           integration.request.header.X-Amz-Invocation-Type: "'Event'"
+          integration.request.header.X-Amz-Tenant-Id: method.request.path.tenantid
+        RequestTemplates:
+          application/json: "{\"tenantid\": \"$input.params('tenantid')\"}"
         IntegrationResponses:
           - StatusCode: "200"
             ResponseParameters:
@@ -718,23 +680,31 @@ Resources:
     Type: AWS::ApiGateway::Deployment
     DependsOn:
       - RegistrationPost
-      - ProvisioningPost
-      - ProvisioningDelete
+      - RegistrationOptions
       - TenantActivationPut
+      - TenantActivationIdOptions
       - TenantsGet
+      - TenantsOptions
       - TenantPost
-      - TenantInitGet
+      - TenantOptions
       - TenantIdGet
       - TenantIdDelete
       - TenantIdPut
+      - TenantIdOptions
       - UserNameGet
       - UserNamePut
       - UserNameDelete
+      - UserNameOptions
       - UserTenantAdminPost
+      - UserTenantAdminOptions
       - UserPost
+      - UserOptions
       - UsersGet
+      - UsersOptions
       - UsersDisablePut
+      - UsersDisableIdOptions
       - UsersEnablePut
+      - UsersEnableIdOptions
     Properties:
       RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
 

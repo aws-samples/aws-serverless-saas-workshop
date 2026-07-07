@@ -211,10 +211,14 @@ Resources:
       ResourceId: !Ref TenantResource
       HttpMethod: POST
       AuthorizationType: AWS_IAM
+      RequestParameters:
+        method.request.header.x-tenant-id: true
       Integration:
         Type: AWS_PROXY
         IntegrationHttpMethod: POST
         Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreateTenantFunctionArn}/invocations"
+        RequestParameters:
+          integration.request.header.X-Amz-Tenant-Id: method.request.header.x-tenant-id
 
   TenantIdGet:
     Type: AWS::ApiGateway::Method
@@ -313,10 +317,14 @@ Resources:
       ResourceId: !Ref UserTenantAdminResource
       HttpMethod: POST
       AuthorizationType: AWS_IAM
+      RequestParameters:
+        method.request.header.x-tenant-id: true
       Integration:
         Type: AWS_PROXY
         IntegrationHttpMethod: POST
         Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreateTenantAdminUserFunctionArn}/invocations"
+        RequestParameters:
+          integration.request.header.X-Amz-Tenant-Id: method.request.header.x-tenant-id
 
   UserPost:
     Type: AWS::ApiGateway::Method
@@ -355,12 +363,15 @@ Resources:
       ResourceId: !Ref UsersDisableIdResource
       HttpMethod: PUT
       AuthorizationType: AWS_IAM
+      RequestParameters:
+        method.request.path.tenantid: true
       Integration:
         Type: AWS
         IntegrationHttpMethod: POST
         Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DisableUsersByTenantFunctionArn}/invocations"
         RequestParameters:
           integration.request.header.X-Amz-Invocation-Type: "'Event'"
+          integration.request.header.X-Amz-Tenant-Id: method.request.path.tenantid
         RequestTemplates:
           application/json: "{\"tenantid\": \"$input.params('tenantid')\"}"
         IntegrationResponses:
@@ -379,12 +390,15 @@ Resources:
       ResourceId: !Ref UsersEnableIdResource
       HttpMethod: PUT
       AuthorizationType: AWS_IAM
+      RequestParameters:
+        method.request.path.tenantid: true
       Integration:
         Type: AWS
         IntegrationHttpMethod: POST
         Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${EnableUsersByTenantFunctionArn}/invocations"
         RequestParameters:
           integration.request.header.X-Amz-Invocation-Type: "'Event'"
+          integration.request.header.X-Amz-Tenant-Id: method.request.path.tenantid
         RequestTemplates:
           application/json: "{\"tenantid\": \"$input.params('tenantid')\"}"
         IntegrationResponses:

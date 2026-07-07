@@ -14,15 +14,9 @@ Parameters:
     Type: String
   RegisterTenantFunctionArn:
     Type: String
-  ProvisionTenantFunctionArn:
-    Type: String
-  DeProvisionTenantFunctionArn:
-    Type: String
   ActivateTenantFunctionArn:
     Type: String
   GetTenantsFunctionArn:
-    Type: String
-  GetTenantConfigFunctionArn:
     Type: String
   CreateTenantFunctionArn:
     Type: String
@@ -50,16 +44,6 @@ Parameters:
     Type: String
   AuthorizerFunctionArn:
     Type: String
-  ApiKeyOperationUsersParameter:
-    Type: String
-  ApiKeyPlatinumTierParameter:
-    Type: String
-  ApiKeyPremiumTierParameter:
-    Type: String
-  ApiKeyStandardTierParameter:
-    Type: String
-  ApiKeyBasicTierParameter:
-    Type: String
 
 Resources:
   AdminApiGatewayAccessLogs:
@@ -85,20 +69,6 @@ Resources:
       RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
       ParentId: !ImportValue Serverless-SaaS-AdminApiGatewayRootResourceId
       PathPart: registration
-
-  ProvisioningResource:
-    Type: AWS::ApiGateway::Resource
-    Properties:
-      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
-      ParentId: !ImportValue Serverless-SaaS-AdminApiGatewayRootResourceId
-      PathPart: provisioning
-
-  ProvisioningIdResource:
-    Type: AWS::ApiGateway::Resource
-    Properties:
-      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
-      ParentId: !Ref ProvisioningResource
-      PathPart: "{tenantid}"
 
   TenantResource:
     Type: AWS::ApiGateway::Resource
@@ -127,20 +97,6 @@ Resources:
       RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
       ParentId: !Ref TenantActivationResource
       PathPart: "{tenantid}"
-
-  TenantInitResource:
-    Type: AWS::ApiGateway::Resource
-    Properties:
-      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
-      ParentId: !Ref TenantResource
-      PathPart: init
-
-  TenantInitNameResource:
-    Type: AWS::ApiGateway::Resource
-    Properties:
-      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
-      ParentId: !Ref TenantInitResource
-      PathPart: "{tenantname}"
 
   TenantsResource:
     Type: AWS::ApiGateway::Resource
@@ -184,12 +140,26 @@ Resources:
       ParentId: !Ref UsersResource
       PathPart: disable
 
+  UsersDisableIdResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+      ParentId: !Ref UsersDisableResource
+      PathPart: "{tenantid}"
+
   UsersEnableResource:
     Type: AWS::ApiGateway::Resource
     Properties:
       RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
       ParentId: !Ref UsersResource
       PathPart: enable
+
+  UsersEnableIdResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+      ParentId: !Ref UsersEnableResource
+      PathPart: "{tenantid}"
 
   # ==================== Methods ====================
   RegistrationPost:
@@ -203,30 +173,6 @@ Resources:
         Type: AWS_PROXY
         IntegrationHttpMethod: POST
         Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RegisterTenantFunctionArn}/invocations"
-
-  ProvisioningPost:
-    Type: AWS::ApiGateway::Method
-    Properties:
-      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
-      ResourceId: !Ref ProvisioningResource
-      HttpMethod: POST
-      AuthorizationType: AWS_IAM
-      Integration:
-        Type: AWS_PROXY
-        IntegrationHttpMethod: POST
-        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ProvisionTenantFunctionArn}/invocations"
-
-  ProvisioningDelete:
-    Type: AWS::ApiGateway::Method
-    Properties:
-      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
-      ResourceId: !Ref ProvisioningIdResource
-      HttpMethod: DELETE
-      AuthorizationType: AWS_IAM
-      Integration:
-        Type: AWS_PROXY
-        IntegrationHttpMethod: POST
-        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DeProvisionTenantFunctionArn}/invocations"
 
   TenantActivationPut:
     Type: AWS::ApiGateway::Method
@@ -265,22 +211,14 @@ Resources:
       ResourceId: !Ref TenantResource
       HttpMethod: POST
       AuthorizationType: AWS_IAM
+      RequestParameters:
+        method.request.header.x-tenant-id: true
       Integration:
         Type: AWS_PROXY
         IntegrationHttpMethod: POST
         Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreateTenantFunctionArn}/invocations"
-
-  TenantInitGet:
-    Type: AWS::ApiGateway::Method
-    Properties:
-      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
-      ResourceId: !Ref TenantInitNameResource
-      HttpMethod: GET
-      AuthorizationType: NONE
-      Integration:
-        Type: AWS_PROXY
-        IntegrationHttpMethod: POST
-        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetTenantConfigFunctionArn}/invocations"
+        RequestParameters:
+          integration.request.header.X-Amz-Tenant-Id: method.request.header.x-tenant-id
 
   TenantIdGet:
     Type: AWS::ApiGateway::Method
@@ -379,10 +317,14 @@ Resources:
       ResourceId: !Ref UserTenantAdminResource
       HttpMethod: POST
       AuthorizationType: AWS_IAM
+      RequestParameters:
+        method.request.header.x-tenant-id: true
       Integration:
         Type: AWS_PROXY
         IntegrationHttpMethod: POST
         Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreateTenantAdminUserFunctionArn}/invocations"
+        RequestParameters:
+          integration.request.header.X-Amz-Tenant-Id: method.request.header.x-tenant-id
 
   UserPost:
     Type: AWS::ApiGateway::Method
@@ -418,15 +360,20 @@ Resources:
     Type: AWS::ApiGateway::Method
     Properties:
       RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
-      ResourceId: !Ref UsersDisableResource
+      ResourceId: !Ref UsersDisableIdResource
       HttpMethod: PUT
       AuthorizationType: AWS_IAM
+      RequestParameters:
+        method.request.path.tenantid: true
       Integration:
         Type: AWS
         IntegrationHttpMethod: POST
         Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DisableUsersByTenantFunctionArn}/invocations"
         RequestParameters:
           integration.request.header.X-Amz-Invocation-Type: "'Event'"
+          integration.request.header.X-Amz-Tenant-Id: method.request.path.tenantid
+        RequestTemplates:
+          application/json: "{\"tenantid\": \"$input.params('tenantid')\"}"
         IntegrationResponses:
           - StatusCode: "200"
             ResponseParameters:
@@ -440,15 +387,20 @@ Resources:
     Type: AWS::ApiGateway::Method
     Properties:
       RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
-      ResourceId: !Ref UsersEnableResource
+      ResourceId: !Ref UsersEnableIdResource
       HttpMethod: PUT
       AuthorizationType: AWS_IAM
+      RequestParameters:
+        method.request.path.tenantid: true
       Integration:
         Type: AWS
         IntegrationHttpMethod: POST
         Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${EnableUsersByTenantFunctionArn}/invocations"
         RequestParameters:
           integration.request.header.X-Amz-Invocation-Type: "'Event'"
+          integration.request.header.X-Amz-Tenant-Id: method.request.path.tenantid
+        RequestTemplates:
+          application/json: "{\"tenantid\": \"$input.params('tenantid')\"}"
         IntegrationResponses:
           - StatusCode: "200"
             ResponseParameters:
@@ -728,23 +680,31 @@ Resources:
     Type: AWS::ApiGateway::Deployment
     DependsOn:
       - RegistrationPost
-      - ProvisioningPost
-      - ProvisioningDelete
+      - RegistrationOptions
       - TenantActivationPut
+      - TenantActivationIdOptions
       - TenantsGet
+      - TenantsOptions
       - TenantPost
-      - TenantInitGet
+      - TenantOptions
       - TenantIdGet
       - TenantIdDelete
       - TenantIdPut
+      - TenantIdOptions
       - UserNameGet
       - UserNamePut
       - UserNameDelete
+      - UserNameOptions
       - UserTenantAdminPost
+      - UserTenantAdminOptions
       - UserPost
+      - UserOptions
       - UsersGet
+      - UsersOptions
       - UsersDisablePut
+      - UsersDisableIdOptions
       - UsersEnablePut
+      - UsersEnableIdOptions
     Properties:
       RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
 
@@ -765,172 +725,6 @@ Resources:
           HttpMethod: "*"
       TracingEnabled: true
 
-  # ==================== API Keys ====================
-  APIGatewayApiKeySystemAdmin:
-    Type: AWS::ApiGateway::ApiKey
-    Properties:
-      Description: "API key for system admin"
-      Enabled: true
-      Name: Serverless-SaaS-SysAdmin-ApiKey
-      Value: !Ref ApiKeyOperationUsersParameter
-
-  APIGatewayApiKeyPlatinumTier:
-    Type: AWS::ApiGateway::ApiKey
-    Properties:
-      Description: "API key for platinum tier tenants"
-      Enabled: true
-      Name: Serverless-SaaS-PlatinumTier-ApiKey
-      Value: !Ref ApiKeyPlatinumTierParameter
-
-  APIGatewayApiKeyPremiumTier:
-    Type: AWS::ApiGateway::ApiKey
-    Properties:
-      Description: "API key for premium tier tenants"
-      Enabled: true
-      Name: Serverless-SaaS-PremiumTier-ApiKey
-      Value: !Ref ApiKeyPremiumTierParameter
-
-  APIGatewayApiKeyStandardTier:
-    Type: AWS::ApiGateway::ApiKey
-    Properties:
-      Description: "API key for standard tier tenants"
-      Enabled: true
-      Name: Serverless-SaaS-StandardTier-ApiKey
-      Value: !Ref ApiKeyStandardTierParameter
-
-  APIGatewayApiKeyBasicTier:
-    Type: AWS::ApiGateway::ApiKey
-    Properties:
-      Description: "API key for basic tier tenants"
-      Enabled: true
-      Name: Serverless-SaaS-BasicTier-ApiKey
-      Value: !Ref ApiKeyBasicTierParameter
-
-  # ==================== Usage Plans ====================
-  UsagePlanPlatinumTier:
-    Type: AWS::ApiGateway::UsagePlan
-    DependsOn: ApiStage
-    Properties:
-      ApiStages:
-        - ApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
-          Stage: !Ref StageName
-      Description: Usage plan for platinum tier tenants
-      Quota:
-        Limit: 10000
-        Period: DAY
-      Throttle:
-        BurstLimit: 300
-        RateLimit: 300
-      UsagePlanName: Plan_Platinum_Tier
-
-  UsagePlanPremiumTier:
-    Type: AWS::ApiGateway::UsagePlan
-    DependsOn: ApiStage
-    Properties:
-      ApiStages:
-        - ApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
-          Stage: !Ref StageName
-      Description: Usage plan for premium tier tenants
-      Quota:
-        Limit: 5000
-        Period: DAY
-      Throttle:
-        BurstLimit: 200
-        RateLimit: 100
-      UsagePlanName: Plan_Premium_Tier
-
-  UsagePlanStandardTier:
-    Type: AWS::ApiGateway::UsagePlan
-    DependsOn: ApiStage
-    Properties:
-      ApiStages:
-        - ApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
-          Stage: !Ref StageName
-      Description: Usage plan for standard tier tenants
-      Quota:
-        Limit: 3000
-        Period: DAY
-      Throttle:
-        BurstLimit: 100
-        RateLimit: 75
-      UsagePlanName: Plan_Standard_Tier
-
-  UsagePlanBasicTier:
-    Type: AWS::ApiGateway::UsagePlan
-    DependsOn: ApiStage
-    Properties:
-      ApiStages:
-        - ApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
-          Stage: !Ref StageName
-      Description: Usage plan for basic tier tenants
-      Quota:
-        Limit: 500
-        Period: DAY
-      Throttle:
-        BurstLimit: 50
-        RateLimit: 50
-      UsagePlanName: Plan_Basic_Tier
-
-  UsagePlanSystemAdmin:
-    Type: AWS::ApiGateway::UsagePlan
-    DependsOn: ApiStage
-    Properties:
-      ApiStages:
-        - ApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
-          Stage: !Ref StageName
-      Description: Usage plan for system admin
-      Quota:
-        Limit: 10000
-        Period: DAY
-      Throttle:
-        BurstLimit: 5000
-        RateLimit: 500
-      UsagePlanName: System_Admin_Usage_Plan
-
-  # ==================== Usage Plan Key Associations ====================
-  AssociateAPIKeyToUsagePlan:
-    Type: AWS::ApiGateway::UsagePlanKey
-    Properties:
-      KeyId: !Ref APIGatewayApiKeySystemAdmin
-      KeyType: API_KEY
-      UsagePlanId: !Ref UsagePlanSystemAdmin
-
-  AssociatePlatinumAPIKeyToUsagePlan:
-    Type: AWS::ApiGateway::UsagePlanKey
-    Properties:
-      KeyId: !Ref APIGatewayApiKeyPlatinumTier
-      KeyType: API_KEY
-      UsagePlanId: !Ref UsagePlanPlatinumTier
-
-  AssociatePremiumAPIKeyToUsagePlan:
-    Type: AWS::ApiGateway::UsagePlanKey
-    Properties:
-      KeyId: !Ref APIGatewayApiKeyPremiumTier
-      KeyType: API_KEY
-      UsagePlanId: !Ref UsagePlanPremiumTier
-
-  AssociateStandardAPIKeyToUsagePlan:
-    Type: AWS::ApiGateway::UsagePlanKey
-    Properties:
-      KeyId: !Ref APIGatewayApiKeyStandardTier
-      KeyType: API_KEY
-      UsagePlanId: !Ref UsagePlanStandardTier
-
-  AssociateBasicAPIKeyToUsagePlan:
-    Type: AWS::ApiGateway::UsagePlanKey
-    Properties:
-      KeyId: !Ref APIGatewayApiKeyBasicTier
-      KeyType: API_KEY
-      UsagePlanId: !Ref UsagePlanBasicTier
-
 Outputs:
   AdminApiGatewayApi:
     Value: !ImportValue Serverless-SaaS-AdminApiGatewayId
-  UsagePlanBasicTier:
-    Value: !Ref UsagePlanBasicTier
-  UsagePlanStandardTier:
-    Value: !Ref UsagePlanStandardTier
-  UsagePlanPremiumTier:
-    Value: !Ref UsagePlanPremiumTier
-  UsagePlanPlatinumTier:
-    Value: !Ref UsagePlanPlatinumTier
