@@ -60,7 +60,7 @@ if [[ $server -eq 1 ]] || [[ $pipeline -eq 1 ]]; then
 
   #Deploying CI/CD pipeline
   cd ../server/TenantPipeline/
-  npm install && npm run build 
+  npm install --loglevel=error && npm run build 
   cdk bootstrap  
   cdk deploy --require-approval never
 
@@ -135,7 +135,7 @@ EoF
   };
 EoF
 
-  npm install --legacy-peer-deps && npm run build
+  npm install --legacy-peer-deps --loglevel=error && npm run build
 
   echo "aws s3 sync --delete --cache-control no-store dist s3://$APP_SITE_BUCKET"
   aws s3 sync --delete --cache-control no-store dist s3://$APP_SITE_BUCKET 
