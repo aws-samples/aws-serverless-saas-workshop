@@ -698,7 +698,7 @@ Resources:
             method.response.header.Access-Control-Allow-Origin: true
 
   # ==================== Deployment ====================
-  ApiDeployment:
+  AdminApiDeployment:
     Type: AWS::ApiGateway::Deployment
     DependsOn:
       - RegistrationPost
@@ -730,11 +730,11 @@ Resources:
     Properties:
       RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
 
-  ApiStage:
+  AdminApiStage:
     Type: AWS::ApiGateway::Stage
     Properties:
       RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
-      DeploymentId: !Ref ApiDeployment
+      DeploymentId: !Ref AdminApiDeployment
       StageName: !Ref StageName
       AccessLogSetting:
         DestinationArn: !GetAtt AdminApiGatewayAccessLogs.Arn
