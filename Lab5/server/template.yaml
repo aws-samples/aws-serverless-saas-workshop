@@ -4,7 +4,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 Description: >
-  Lab5 - Lambda functions, API Gateway, and Custom Resources
+  Lab3 - Lambda functions and API Gateway
 Parameters:
   StageName:
     Type: String
@@ -48,6 +48,17 @@ Resources:
         DisableUsersByTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.DisableUsersByTenantFunctionArn
         EnableUsersByTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.EnableUsersByTenantFunctionArn
         AuthorizerFunctionArn: !GetAtt LambdaFunctions.Outputs.SharedServicesAuthorizerFunctionArn
+        BusinessServicesAuthorizerFunctionArn: !GetAtt LambdaFunctions.Outputs.BusinessServicesAuthorizerFunctionArn
+        GetProductFunctionArn: !GetAtt LambdaFunctions.Outputs.GetProductFunctionArn
+        GetProductsFunctionArn: !GetAtt LambdaFunctions.Outputs.GetProductsFunctionArn
+        CreateProductFunctionArn: !GetAtt LambdaFunctions.Outputs.CreateProductFunctionArn
+        UpdateProductFunctionArn: !GetAtt LambdaFunctions.Outputs.UpdateProductFunctionArn
+        DeleteProductFunctionArn: !GetAtt LambdaFunctions.Outputs.DeleteProductFunctionArn
+        GetOrdersFunctionArn: !GetAtt LambdaFunctions.Outputs.GetOrdersFunctionArn
+        GetOrderFunctionArn: !GetAtt LambdaFunctions.Outputs.GetOrderFunctionArn
+        CreateOrderFunctionArn: !GetAtt LambdaFunctions.Outputs.CreateOrderFunctionArn
+        UpdateOrderFunctionArn: !GetAtt LambdaFunctions.Outputs.UpdateOrderFunctionArn
+        DeleteOrderFunctionArn: !GetAtt LambdaFunctions.Outputs.DeleteOrderFunctionArn
 
   APIGatewayLambdaPermissions:
     Type: AWS::Serverless::Application
@@ -58,10 +69,7 @@ Resources:
         RegisterTenantLambdaExecutionRoleArn: !GetAtt LambdaFunctions.Outputs.RegisterTenantLambdaExecutionRoleArn
         TenantManagementLambdaExecutionRoleArn: !GetAtt LambdaFunctions.Outputs.TenantManagementLambdaExecutionRoleArn
         RegisterTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.RegisterTenantFunctionArn
-        ProvisionTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.ProvisionTenantFunctionArn
-        DeProvisionTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.DeProvisionTenantFunctionArn
         ActivateTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.ActivateTenantFunctionArn
-        GetTenantConfigFunctionArn: !GetAtt LambdaFunctions.Outputs.GetTenantConfigFunctionArn
         GetTenantsFunctionArn: !GetAtt LambdaFunctions.Outputs.GetTenantsFunctionArn
         CreateTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.CreateTenantFunctionArn
         GetTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.GetTenantFunctionArn
@@ -77,26 +85,26 @@ Resources:
         EnableUsersByTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.EnableUsersByTenantFunctionArn
         AuthorizerFunctionArn: !GetAtt LambdaFunctions.Outputs.SharedServicesAuthorizerFunctionArn
         AdminApiGatewayApi: !GetAtt APIs.Outputs.AdminApiGatewayApi
-
-  CustomResources:
-    Type: AWS::Serverless::Application
-    DependsOn: APIs
-    Properties:
-      Location: nested_templates/custom_resources.yaml
-      Parameters:
-        ServerlessSaaSSettingsTableArn: !ImportValue Serverless-SaaS-SettingsTableArn
-        ServerlessSaaSSettingsTableName: !ImportValue Serverless-SaaS-SettingsTableName
-        TenantStackMappingTableArn: !ImportValue Serverless-SaaS-TenantStackMappingTableArn
-        TenantStackMappingTableName: !ImportValue Serverless-SaaS-TenantStackMappingTableName
-        UpdateSettingsTableFunctionArn: !GetAtt LambdaFunctions.Outputs.UpdateSettingsTableFunctionArn
-        UpdateTenantStackMapTableFunctionArn: !GetAtt LambdaFunctions.Outputs.UpdateTenantStackMapTableFunctionArn
-        CognitoUserPoolId: !ImportValue Serverless-SaaS-CognitoUserPoolId
-        CognitoUserPoolClientId: !ImportValue Serverless-SaaS-CognitoUserPoolClientId
+        BusinessServicesAuthorizerFunctionArn: !GetAtt LambdaFunctions.Outputs.BusinessServicesAuthorizerFunctionArn
+        GetProductFunctionArn: !GetAtt LambdaFunctions.Outputs.GetProductFunctionArn
+        GetProductsFunctionArn: !GetAtt LambdaFunctions.Outputs.GetProductsFunctionArn
+        CreateProductFunctionArn: !GetAtt LambdaFunctions.Outputs.CreateProductFunctionArn
+        UpdateProductFunctionArn: !GetAtt LambdaFunctions.Outputs.UpdateProductFunctionArn
+        DeleteProductFunctionArn: !GetAtt LambdaFunctions.Outputs.DeleteProductFunctionArn
+        GetOrdersFunctionArn: !GetAtt LambdaFunctions.Outputs.GetOrdersFunctionArn
+        GetOrderFunctionArn: !GetAtt LambdaFunctions.Outputs.GetOrderFunctionArn
+        CreateOrderFunctionArn: !GetAtt LambdaFunctions.Outputs.CreateOrderFunctionArn
+        UpdateOrderFunctionArn: !GetAtt LambdaFunctions.Outputs.UpdateOrderFunctionArn
+        DeleteOrderFunctionArn: !GetAtt LambdaFunctions.Outputs.DeleteOrderFunctionArn
+        ApplicationApiGatewayApi: !GetAtt APIs.Outputs.ApplicationApiGatewayApi
 
 Outputs:
   AdminApi:
     Description: "API Gateway endpoint URL for Admin API"
     Value: !Join ["", ["https://", !GetAtt APIs.Outputs.AdminApiGatewayApi, ".execute-api.", !Ref "AWS::Region", ".amazonaws.com/", !Ref StageName]]
+  APIGatewayURL:
+    Description: "API Gateway endpoint URL for Application API"
+    Value: !Join ["", ["https://", !GetAtt APIs.Outputs.ApplicationApiGatewayApi, ".execute-api.", !Ref "AWS::Region", ".amazonaws.com/", !Ref StageName]]
   AdminSiteBucket:
     Value: !ImportValue Serverless-SaaS-AdminSiteBucket
   AdminAppSite:
@@ -109,8 +117,6 @@ Outputs:
     Value: !ImportValue Serverless-SaaS-ApplicationSiteBucket
   ApplicationSite:
     Value: !ImportValue Serverless-SaaS-ApplicationSite
-  CognitoOperationUsersUserPoolId:
-    Value: !ImportValue Serverless-SaaS-CognitoOperationUsersUserPoolId
   CognitoOperationUsersUserPoolClientId:
     Value: !ImportValue Serverless-SaaS-CognitoOperationUsersUserPoolClientId
   CognitoTenantUserPoolId:
@@ -121,5 +127,3 @@ Outputs:
     Value: !ImportValue Serverless-SaaS-CognitoUserPoolClientId
     Export:
       Name: "Serverless-SaaS-CognitoTenantAppClientId"
-  AuthorizerExecutionRoleArn:
-    Value: !ImportValue Serverless-SaaS-AuthorizerExecutionRoleArn

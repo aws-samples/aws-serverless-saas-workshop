@@ -44,6 +44,30 @@ Parameters:
     Type: String
   AdminApiGatewayApi:
     Type: String
+  BusinessServicesAuthorizerFunctionArn:
+    Type: String
+  GetProductFunctionArn:
+    Type: String
+  GetProductsFunctionArn:
+    Type: String
+  CreateProductFunctionArn:
+    Type: String
+  UpdateProductFunctionArn:
+    Type: String
+  DeleteProductFunctionArn:
+    Type: String
+  GetOrdersFunctionArn:
+    Type: String
+  GetOrderFunctionArn:
+    Type: String
+  CreateOrderFunctionArn:
+    Type: String
+  UpdateOrderFunctionArn:
+    Type: String
+  DeleteOrderFunctionArn:
+    Type: String
+  ApplicationApiGatewayApi:
+    Type: String
 Resources:
   RegisterTenantLambdaApiGatewayExecutionPermission:
     Type: AWS::Lambda::Permission
@@ -157,3 +181,81 @@ Resources:
       FunctionName: !Ref AuthorizerFunctionArn
       Principal: apigateway.amazonaws.com
       SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AdminApiGatewayApi}/*/*/*"
+  # ==================== Application API Permissions ====================
+  BusinessServicesAuthorizerLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref BusinessServicesAuthorizerFunctionArn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApplicationApiGatewayApi}/*/*/*"
+  GetProductLambdaApiGatewayExecutionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref GetProductFunctionArn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApplicationApiGatewayApi}/*/*/*"
+  GetProductsLambdaApiGatewayExecutionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref GetProductsFunctionArn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApplicationApiGatewayApi}/*/*/*"
+  CreateProductLambdaApiGatewayExecutionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref CreateProductFunctionArn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApplicationApiGatewayApi}/*/*/*"
+  UpdateProductLambdaApiGatewayExecutionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref UpdateProductFunctionArn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApplicationApiGatewayApi}/*/*/*"
+  DeleteProductLambdaApiGatewayExecutionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref DeleteProductFunctionArn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApplicationApiGatewayApi}/*/*/*"
+  GetOrdersLambdaApiGatewayExecutionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref GetOrdersFunctionArn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApplicationApiGatewayApi}/*/*/*"
+  GetOrderLambdaApiGatewayExecutionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref GetOrderFunctionArn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApplicationApiGatewayApi}/*/*/*"
+  CreateOrderLambdaApiGatewayExecutionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref CreateOrderFunctionArn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApplicationApiGatewayApi}/*/*/*"
+  UpdateOrderLambdaApiGatewayExecutionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref UpdateOrderFunctionArn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApplicationApiGatewayApi}/*/*/*"
+  DeleteOrderLambdaApiGatewayExecutionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref DeleteOrderFunctionArn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApplicationApiGatewayApi}/*/*/*"

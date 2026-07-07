@@ -4,8 +4,8 @@ if [[ "$#" -eq 0 ]]; then
   echo "Invalid parameters"
   echo "Command to deploy client code: deployment.sh -c"
   echo "Command to deploy bootstrap server code: deployment.sh -b"
-  echo "Command to deploy CI/CD pipeline code: deployment.sh -p"
-  echo "Command to deploy CI/CD pipeline, bootstrap & tenant server code: deployment.sh -s" 
+  echo "Command to deploy tenant server code: deployment.sh -t"
+  echo "Command to deploy bootstrap & tenant server code: deployment.sh -s" 
   echo "Command to deploy server & client code: deployment.sh -s -c"
   exit 1      
 fi
@@ -13,8 +13,8 @@ fi
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         -s) server=1 ;;
-        -b) bootstrap=1 ;;        
-        -p) pipeline=1 ;;
+        -b) bootstrap=1 ;;
+        -t) tenant=1 ;;
         -c) client=1 ;;
         *) echo "Unknown parameter passed: $1"; exit 1 ;;
     esac
@@ -39,58 +39,33 @@ if [ ! -z "$PREPROVISIONED_ADMIN_SITE" ]; then
 fi
 
 
-
-if [[ $server -eq 1 ]] || [[ $pipeline -eq 1 ]]; then
-  echo "CI/CD pipeline code is getting deployed"
-  #Create CodeCommit repo
-  REGION=$(aws configure get region)
-  REPO=$(aws codecommit get-repository --repository-name aws-serverless-saas-workshop)
+if [[ $server -eq 1 ]] || [[ $bootstrap -eq 1 ]] || [[ $tenant -eq 1 ]]; then
+  echo "Validating server code using pylint"
+  cd ../server
+  python3 -m pylint -E -d E0401,E1111 $(find . -iname "*.py" -not -path "./.aws-sam/*")
   if [[ $? -ne 0 ]]; then
-      echo "aws-serverless-saas-workshop codecommit repo is not present, will create one now"
-      CREATE_REPO=$(aws codecommit create-repository --repository-name aws-serverless-saas-workshop --repository-description "Serverless SaaS workshop repository")
-      echo $CREATE_REPO
-      REPO_URL="codecommit::${REGION}://aws-serverless-saas-workshop"
-      git remote add cc $REPO_URL
-      if [[ $? -ne 0 ]]; then
-           echo "Setting url to remote cc"
-           git remote set-url cc $REPO_URL
-      fi
-      git push --set-upstream cc main
+    echo "****ERROR: Please fix above code errors and then rerun script!!****"
+    exit 1
   fi
-
-  #Deploying CI/CD pipeline
-  cd ../server/TenantPipeline/
-  npm install --loglevel=error && npm run build 
-  cdk bootstrap  
-  cdk deploy --require-approval never
-
-  cd ../../scripts
-
+  cd ../scripts
 fi
 
 if [[ $server -eq 1 ]] || [[ $bootstrap -eq 1 ]]; then
   echo "Bootstrap server code is getting deployed"
   cd ../server
   REGION=$(aws configure get region)
-  echo "Validating server code using pylint"
-  python3 -m pylint -E -d E0401,E0606 $(find . -iname "*.py" -not -path "./.aws-sam/*" -not -path "./TenantPipeline/node_modules/*")
-  if [[ $? -ne 0 ]]; then
-    echo "****ERROR: Please fix above code errors and then rerun script!!****"
-    exit 1
-  fi
-
-  sam build -t template.yaml --use-container
+  sam build -t template.yaml
   
   if [ "$IS_RUNNING_IN_EVENT_ENGINE" = true ]; then
     sam deploy --config-file samconfig.toml --region=$REGION --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE AdminUserPoolCallbackURLParameter=$ADMIN_SITE_URL TenantUserPoolCallbackURLParameter=$APP_SITE_URL
   else
     sam deploy --config-file samconfig.toml --region=$REGION --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE
   fi
-    
-
   cd ../scripts
+fi  
 
-fi
+
+
 
 if [ "$IS_RUNNING_IN_EVENT_ENGINE" = false ]; then
   ADMIN_SITE_URL=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='AdminAppSite'].OutputValue" --output text)
@@ -99,16 +74,16 @@ if [ "$IS_RUNNING_IN_EVENT_ENGINE" = false ]; then
   APP_SITE_URL=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='ApplicationSite'].OutputValue" --output text)
 fi
 
-
-
 if [[ $client -eq 1 ]]; then
   echo "Client code is getting deployed"
-  
   ADMIN_APIGATEWAYURL=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='AdminApi'].OutputValue" --output text)
-  
+  APP_APIGATEWAYURL=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='APIGatewayURL'].OutputValue" --output text)
+  APP_APPCLIENTID=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='CognitoTenantAppClientId'].OutputValue" --output text)
+  APP_USERPOOLID=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='CognitoTenantUserPoolId'].OutputValue" --output text)
+
+
   # Admin UI and Landing UI are configured in Lab2 
-  echo "Admin UI and Landing UI are configured in Lab2. Only App UI will be reconfigured in this Lab5."
-  
+  echo "Admin UI and Landing UI are configured in Lab2. Only App UI will be configured in this Lab3."
   # Configuring app UI 
 
   echo "aws s3 ls s3://$APP_SITE_BUCKET"
@@ -125,13 +100,19 @@ if [[ $client -eq 1 ]]; then
   cat << EoF > ./src/environments/environment.prod.ts
   export const environment = {
     production: true,
-    regApiGatewayUrl: '$ADMIN_APIGATEWAYURL'
+    regApiGatewayUrl: '$ADMIN_APIGATEWAYURL',
+    apiGatewayUrl: '$APP_APIGATEWAYURL',
+    userPoolId: '$APP_USERPOOLID',
+    appClientId: '$APP_APPCLIENTID',
   };
 EoF
   cat << EoF > ./src/environments/environment.ts
   export const environment = {
     production: true,
-    regApiGatewayUrl: '$ADMIN_APIGATEWAYURL'
+    regApiGatewayUrl: '$ADMIN_APIGATEWAYURL',
+    apiGatewayUrl: '$APP_APIGATEWAYURL',
+    userPoolId: '$APP_USERPOOLID',
+    appClientId: '$APP_APPCLIENTID',
   };
 EoF
 
@@ -145,11 +126,9 @@ EoF
   fi
 
   echo "Completed configuring environment for App Client"
-  echo "Successfully completed redeploying Application UI"
-
-fi
+  echo "Successfully completed deploying Application UI"
+fi  
 
 echo "Admin site URL: https://$ADMIN_SITE_URL"
 echo "Landing site URL: https://$LANDING_APP_SITE_URL"
 echo "App site URL: https://$APP_SITE_URL"
-  
