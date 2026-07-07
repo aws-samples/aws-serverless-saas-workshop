@@ -44,6 +44,26 @@ Parameters:
     Type: String
   AuthorizerFunctionArn:
     Type: String
+  GetProductFunctionArn:
+    Type: String
+  GetProductsFunctionArn:
+    Type: String
+  CreateProductFunctionArn:
+    Type: String
+  UpdateProductFunctionArn:
+    Type: String
+  DeleteProductFunctionArn:
+    Type: String
+  GetOrdersFunctionArn:
+    Type: String
+  GetOrderFunctionArn:
+    Type: String
+  CreateOrderFunctionArn:
+    Type: String
+  UpdateOrderFunctionArn:
+    Type: String
+  DeleteOrderFunctionArn:
+    Type: String
 
 Resources:
   AdminApiGatewayAccessLogs:
@@ -376,33 +396,624 @@ Resources:
           ResponseParameters:
             method.response.header.Access-Control-Allow-Origin: true
 
-  # ==================== Deployment ====================
-  ApiDeployment:
+  # ==================== Admin CORS OPTIONS Methods ====================
+  RegistrationOptions:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+      ResourceId: !Ref RegistrationResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+        IntegrationResponses:
+          - StatusCode: "200"
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+      MethodResponses:
+        - StatusCode: "200"
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+
+  TenantActivationIdOptions:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+      ResourceId: !Ref TenantActivationIdResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+        IntegrationResponses:
+          - StatusCode: "200"
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+      MethodResponses:
+        - StatusCode: "200"
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+
+  TenantsOptions:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+      ResourceId: !Ref TenantsResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+        IntegrationResponses:
+          - StatusCode: "200"
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+      MethodResponses:
+        - StatusCode: "200"
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+
+  TenantOptions:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+      ResourceId: !Ref TenantResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+        IntegrationResponses:
+          - StatusCode: "200"
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+      MethodResponses:
+        - StatusCode: "200"
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+
+  TenantIdOptions:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+      ResourceId: !Ref TenantIdResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+        IntegrationResponses:
+          - StatusCode: "200"
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+      MethodResponses:
+        - StatusCode: "200"
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+
+  UserNameOptions:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+      ResourceId: !Ref UserNameResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+        IntegrationResponses:
+          - StatusCode: "200"
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+      MethodResponses:
+        - StatusCode: "200"
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+
+  UserTenantAdminOptions:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+      ResourceId: !Ref UserTenantAdminResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+        IntegrationResponses:
+          - StatusCode: "200"
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+      MethodResponses:
+        - StatusCode: "200"
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+
+  UserOptions:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+      ResourceId: !Ref UserResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+        IntegrationResponses:
+          - StatusCode: "200"
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+      MethodResponses:
+        - StatusCode: "200"
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+
+  UsersOptions:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+      ResourceId: !Ref UsersResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+        IntegrationResponses:
+          - StatusCode: "200"
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+      MethodResponses:
+        - StatusCode: "200"
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+
+  UsersDisableIdOptions:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+      ResourceId: !Ref UsersDisableIdResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+        IntegrationResponses:
+          - StatusCode: "200"
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+      MethodResponses:
+        - StatusCode: "200"
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+
+  UsersEnableIdOptions:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+      ResourceId: !Ref UsersEnableIdResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+        IntegrationResponses:
+          - StatusCode: "200"
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+      MethodResponses:
+        - StatusCode: "200"
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+
+  # ==================== Application API Resources ====================
+  ApplicationApiGatewayAccessLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/api-gateway/access-logs-serverless-saas-app-api
+      RetentionInDays: 30
+
+  ProductResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-ApplicationApiGatewayId
+      ParentId: !ImportValue Serverless-SaaS-ApplicationApiGatewayRootResourceId
+      PathPart: product
+
+  ProductIdResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-ApplicationApiGatewayId
+      ParentId: !Ref ProductResource
+      PathPart: "{id}"
+
+  ProductsResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-ApplicationApiGatewayId
+      ParentId: !ImportValue Serverless-SaaS-ApplicationApiGatewayRootResourceId
+      PathPart: products
+
+  OrderResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-ApplicationApiGatewayId
+      ParentId: !ImportValue Serverless-SaaS-ApplicationApiGatewayRootResourceId
+      PathPart: order
+
+  OrderIdResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-ApplicationApiGatewayId
+      ParentId: !Ref OrderResource
+      PathPart: "{id}"
+
+  OrdersResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-ApplicationApiGatewayId
+      ParentId: !ImportValue Serverless-SaaS-ApplicationApiGatewayRootResourceId
+      PathPart: orders
+
+  # ==================== Application API Methods ====================
+  ProductPost:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-ApplicationApiGatewayId
+      ResourceId: !Ref ProductResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreateProductFunctionArn}/invocations"
+
+  ProductIdGet:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-ApplicationApiGatewayId
+      ResourceId: !Ref ProductIdResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetProductFunctionArn}/invocations"
+
+  ProductIdPut:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-ApplicationApiGatewayId
+      ResourceId: !Ref ProductIdResource
+      HttpMethod: PUT
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UpdateProductFunctionArn}/invocations"
+
+  ProductIdDelete:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-ApplicationApiGatewayId
+      ResourceId: !Ref ProductIdResource
+      HttpMethod: DELETE
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DeleteProductFunctionArn}/invocations"
+
+  ProductsGet:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-ApplicationApiGatewayId
+      ResourceId: !Ref ProductsResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetProductsFunctionArn}/invocations"
+
+  OrderPost:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-ApplicationApiGatewayId
+      ResourceId: !Ref OrderResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreateOrderFunctionArn}/invocations"
+
+  OrderIdGet:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-ApplicationApiGatewayId
+      ResourceId: !Ref OrderIdResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetOrderFunctionArn}/invocations"
+
+  OrderIdPut:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-ApplicationApiGatewayId
+      ResourceId: !Ref OrderIdResource
+      HttpMethod: PUT
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UpdateOrderFunctionArn}/invocations"
+
+  OrderIdDelete:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-ApplicationApiGatewayId
+      ResourceId: !Ref OrderIdResource
+      HttpMethod: DELETE
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DeleteOrderFunctionArn}/invocations"
+
+  OrdersGet:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-ApplicationApiGatewayId
+      ResourceId: !Ref OrdersResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetOrdersFunctionArn}/invocations"
+
+  # ==================== Application API CORS OPTIONS ====================
+  ProductOptions:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-ApplicationApiGatewayId
+      ResourceId: !Ref ProductResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+        IntegrationResponses:
+          - StatusCode: "200"
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+      MethodResponses:
+        - StatusCode: "200"
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+
+  ProductIdOptions:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-ApplicationApiGatewayId
+      ResourceId: !Ref ProductIdResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+        IntegrationResponses:
+          - StatusCode: "200"
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+      MethodResponses:
+        - StatusCode: "200"
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+
+  ProductsOptions:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-ApplicationApiGatewayId
+      ResourceId: !Ref ProductsResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+        IntegrationResponses:
+          - StatusCode: "200"
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+      MethodResponses:
+        - StatusCode: "200"
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+
+  OrderOptions:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-ApplicationApiGatewayId
+      ResourceId: !Ref OrderResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+        IntegrationResponses:
+          - StatusCode: "200"
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+      MethodResponses:
+        - StatusCode: "200"
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+
+  OrderIdOptions:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-ApplicationApiGatewayId
+      ResourceId: !Ref OrderIdResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+        IntegrationResponses:
+          - StatusCode: "200"
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+      MethodResponses:
+        - StatusCode: "200"
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+
+  OrdersOptions:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-ApplicationApiGatewayId
+      ResourceId: !Ref OrdersResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+        IntegrationResponses:
+          - StatusCode: "200"
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+      MethodResponses:
+        - StatusCode: "200"
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+
+  # ==================== Admin API Deployment ====================
+  AdminApiDeployment:
     Type: AWS::ApiGateway::Deployment
     DependsOn:
       - RegistrationPost
+      - RegistrationOptions
       - TenantActivationPut
+      - TenantActivationIdOptions
       - TenantsGet
+      - TenantsOptions
       - TenantPost
+      - TenantOptions
       - TenantIdGet
       - TenantIdDelete
       - TenantIdPut
+      - TenantIdOptions
       - UserNameGet
       - UserNamePut
       - UserNameDelete
+      - UserNameOptions
       - UserTenantAdminPost
+      - UserTenantAdminOptions
       - UserPost
+      - UserOptions
       - UsersGet
+      - UsersOptions
       - UsersDisablePut
+      - UsersDisableIdOptions
       - UsersEnablePut
+      - UsersEnableIdOptions
     Properties:
       RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
 
-  ApiStage:
+  AdminApiStage:
     Type: AWS::ApiGateway::Stage
     Properties:
       RestApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
-      DeploymentId: !Ref ApiDeployment
+      DeploymentId: !Ref AdminApiDeployment
       StageName: !Ref StageName
       AccessLogSetting:
         DestinationArn: !GetAtt AdminApiGatewayAccessLogs.Arn
@@ -415,6 +1026,48 @@ Resources:
           HttpMethod: "*"
       TracingEnabled: true
 
+  # ==================== Application API Deployment ====================
+  AppApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - ProductPost
+      - ProductOptions
+      - ProductIdGet
+      - ProductIdPut
+      - ProductIdDelete
+      - ProductIdOptions
+      - ProductsGet
+      - ProductsOptions
+      - OrderPost
+      - OrderOptions
+      - OrderIdGet
+      - OrderIdPut
+      - OrderIdDelete
+      - OrderIdOptions
+      - OrdersGet
+      - OrdersOptions
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-ApplicationApiGatewayId
+
+  AppApiStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      RestApiId: !ImportValue Serverless-SaaS-ApplicationApiGatewayId
+      DeploymentId: !Ref AppApiDeployment
+      StageName: !Ref StageName
+      AccessLogSetting:
+        DestinationArn: !GetAtt ApplicationApiGatewayAccessLogs.Arn
+        Format: '{"requestId":"$context.requestId","ip":"$context.identity.sourceIp","caller":"$context.identity.caller","user":"$context.identity.user","requestTime":"$context.requestTime","httpMethod":"$context.httpMethod","resourcePath":"$context.resourcePath","status":"$context.status","protocol":"$context.protocol","responseLength":"$context.responseLength"}'
+      MethodSettings:
+        - DataTraceEnabled: false
+          LoggingLevel: INFO
+          MetricsEnabled: true
+          ResourcePath: "/*"
+          HttpMethod: "*"
+      TracingEnabled: true
+
 Outputs:
   AdminApiGatewayApi:
     Value: !ImportValue Serverless-SaaS-AdminApiGatewayId
+  ApplicationApiGatewayApi:
+    Value: !ImportValue Serverless-SaaS-ApplicationApiGatewayId

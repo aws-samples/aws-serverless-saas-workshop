@@ -783,6 +783,11 @@ Resources:
                 aws:PrincipalArn:
                   - !GetAtt TenantManagementLambdaExecutionRole.Arn
 
+  ApplicationApiGateway:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Sub "serverless-saas-app-api-${AWS::Region}"
+
   # ==================== VS Code IDE ====================
   IdeStack:
     Type: AWS::Serverless::Application
@@ -914,6 +919,14 @@ Outputs:
     Value: !GetAtt AdminApiGateway.RootResourceId
     Export:
       Name: Serverless-SaaS-AdminApiGatewayRootResourceId
+  ApplicationApiGatewayId:
+    Value: !Ref ApplicationApiGateway
+    Export:
+      Name: Serverless-SaaS-ApplicationApiGatewayId
+  ApplicationApiGatewayRootResourceId:
+    Value: !GetAtt ApplicationApiGateway.RootResourceId
+    Export:
+      Name: Serverless-SaaS-ApplicationApiGatewayRootResourceId
   IdeUrl:
     Value: !GetAtt IdeStack.Outputs.IdeUrl
   IdePassword:

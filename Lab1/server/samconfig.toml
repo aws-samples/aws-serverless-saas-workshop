@@ -7,6 +7,6 @@ resolve_s3 = true
 s3_prefix = "serverless-saas-lab1"
 region = "us-west-2"
 confirm_changeset = false
-capabilities = "CAPABILITY_NAMED_IAM"
+capabilities = "CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND"
 cached="true"
 parallel="true"

@@ -264,6 +264,259 @@ Resources:
           PROVISION_TENANT_RESOURCE_PATH: "/provisioning"
           POWERTOOLS_SERVICE_NAME: "TenantRegistration.RegisterTenant"
 
+  # ==================== Product/Order Resources ====================
+  ProductTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: productId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: productId
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+      TableName: Product
+
+  OrderTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: orderId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: orderId
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+      TableName: Order
+
+  ProductFunctionExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: product-function-execution-role
+      Path: '/'
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/CloudWatchLambdaInsightsExecutionRolePolicy
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
+      Policies:
+        - PolicyName: product-function-policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:PutItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                Resource:
+                  - !GetAtt ProductTable.Arn
+
+  OrderFunctionExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: order-function-execution-role
+      Path: '/'
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/CloudWatchLambdaInsightsExecutionRolePolicy
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
+      Policies:
+        - PolicyName: order-function-policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:PutItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                Resource:
+                  - !GetAtt OrderTable.Arn
+
+  GetProductFunction:
+    Type: AWS::Serverless::Function
+    DependsOn: ProductFunctionExecutionRole
+    Properties:
+      CodeUri: ../ProductService/
+      Handler: product_service.get_product
+      Runtime: python3.14
+      Tracing: Active
+      Role: !GetAtt ProductFunctionExecutionRole.Arn
+      Layers:
+        - !ImportValue Serverless-SaaS-LayerArn
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: "ProductService"
+          PRODUCT_TABLE_NAME: !Ref ProductTable
+
+  GetProductsFunction:
+    Type: AWS::Serverless::Function
+    DependsOn: ProductFunctionExecutionRole
+    Properties:
+      CodeUri: ../ProductService/
+      Handler: product_service.get_products
+      Runtime: python3.14
+      Tracing: Active
+      Role: !GetAtt ProductFunctionExecutionRole.Arn
+      Layers:
+        - !ImportValue Serverless-SaaS-LayerArn
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: "ProductService"
+          PRODUCT_TABLE_NAME: !Ref ProductTable
+
+  CreateProductFunction:
+    Type: AWS::Serverless::Function
+    DependsOn: ProductFunctionExecutionRole
+    Properties:
+      CodeUri: ../ProductService/
+      Handler: product_service.create_product
+      Runtime: python3.14
+      Tracing: Active
+      Role: !GetAtt ProductFunctionExecutionRole.Arn
+      Layers:
+        - !ImportValue Serverless-SaaS-LayerArn
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: "ProductService"
+          PRODUCT_TABLE_NAME: !Ref ProductTable
+
+  UpdateProductFunction:
+    Type: AWS::Serverless::Function
+    DependsOn: ProductFunctionExecutionRole
+    Properties:
+      CodeUri: ../ProductService/
+      Handler: product_service.update_product
+      Runtime: python3.14
+      Tracing: Active
+      Role: !GetAtt ProductFunctionExecutionRole.Arn
+      Layers:
+        - !ImportValue Serverless-SaaS-LayerArn
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: "ProductService"
+          PRODUCT_TABLE_NAME: !Ref ProductTable
+
+  DeleteProductFunction:
+    Type: AWS::Serverless::Function
+    DependsOn: ProductFunctionExecutionRole
+    Properties:
+      CodeUri: ../ProductService/
+      Handler: product_service.delete_product
+      Runtime: python3.14
+      Tracing: Active
+      Role: !GetAtt ProductFunctionExecutionRole.Arn
+      Layers:
+        - !ImportValue Serverless-SaaS-LayerArn
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: "ProductService"
+          PRODUCT_TABLE_NAME: !Ref ProductTable
+
+  GetOrdersFunction:
+    Type: AWS::Serverless::Function
+    DependsOn: OrderFunctionExecutionRole
+    Properties:
+      CodeUri: ../OrderService/
+      Handler: order_service.get_orders
+      Runtime: python3.14
+      Tracing: Active
+      Role: !GetAtt OrderFunctionExecutionRole.Arn
+      Layers:
+        - !ImportValue Serverless-SaaS-LayerArn
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: "OrderService"
+          ORDER_TABLE_NAME: !Ref OrderTable
+
+  GetOrderFunction:
+    Type: AWS::Serverless::Function
+    DependsOn: OrderFunctionExecutionRole
+    Properties:
+      CodeUri: ../OrderService/
+      Handler: order_service.get_order
+      Runtime: python3.14
+      Tracing: Active
+      Role: !GetAtt OrderFunctionExecutionRole.Arn
+      Layers:
+        - !ImportValue Serverless-SaaS-LayerArn
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: "OrderService"
+          ORDER_TABLE_NAME: !Ref OrderTable
+
+  CreateOrderFunction:
+    Type: AWS::Serverless::Function
+    DependsOn: OrderFunctionExecutionRole
+    Properties:
+      CodeUri: ../OrderService/
+      Handler: order_service.create_order
+      Runtime: python3.14
+      Tracing: Active
+      Role: !GetAtt OrderFunctionExecutionRole.Arn
+      Layers:
+        - !ImportValue Serverless-SaaS-LayerArn
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: "OrderService"
+          ORDER_TABLE_NAME: !Ref OrderTable
+
+  UpdateOrderFunction:
+    Type: AWS::Serverless::Function
+    DependsOn: OrderFunctionExecutionRole
+    Properties:
+      CodeUri: ../OrderService/
+      Handler: order_service.update_order
+      Runtime: python3.14
+      Tracing: Active
+      Role: !GetAtt OrderFunctionExecutionRole.Arn
+      Layers:
+        - !ImportValue Serverless-SaaS-LayerArn
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: "OrderService"
+          ORDER_TABLE_NAME: !Ref OrderTable
+
+  DeleteOrderFunction:
+    Type: AWS::Serverless::Function
+    DependsOn: OrderFunctionExecutionRole
+    Properties:
+      CodeUri: ../OrderService/
+      Handler: order_service.delete_order
+      Runtime: python3.14
+      Tracing: Active
+      Role: !GetAtt OrderFunctionExecutionRole.Arn
+      Layers:
+        - !ImportValue Serverless-SaaS-LayerArn
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: "OrderService"
+          ORDER_TABLE_NAME: !Ref OrderTable
+
 Outputs:
   RegisterTenantLambdaExecutionRoleArn:
     Value: !ImportValue Serverless-SaaS-RegisterTenantLambdaExecutionRoleArn
@@ -301,3 +554,23 @@ Outputs:
     Value: !GetAtt EnableUsersByTenantFunction.Arn
   SharedServicesAuthorizerFunctionArn:
     Value: !GetAtt SharedServicesAuthorizerFunction.Arn
+  GetProductFunctionArn:
+    Value: !GetAtt GetProductFunction.Arn
+  GetProductsFunctionArn:
+    Value: !GetAtt GetProductsFunction.Arn
+  CreateProductFunctionArn:
+    Value: !GetAtt CreateProductFunction.Arn
+  UpdateProductFunctionArn:
+    Value: !GetAtt UpdateProductFunction.Arn
+  DeleteProductFunctionArn:
+    Value: !GetAtt DeleteProductFunction.Arn
+  GetOrdersFunctionArn:
+    Value: !GetAtt GetOrdersFunction.Arn
+  GetOrderFunctionArn:
+    Value: !GetAtt GetOrderFunction.Arn
+  CreateOrderFunctionArn:
+    Value: !GetAtt CreateOrderFunction.Arn
+  UpdateOrderFunctionArn:
+    Value: !GetAtt UpdateOrderFunction.Arn
+  DeleteOrderFunctionArn:
+    Value: !GetAtt DeleteOrderFunction.Arn
