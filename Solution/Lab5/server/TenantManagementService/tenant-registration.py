@@ -35,6 +35,8 @@ def register_tenant(event, context):
         
         logger.info (create_user_response)
         tenant_details['tenantAdminUserName'] = create_user_response['message']['tenantAdminUserName']
+        tenant_details['userPoolId'] = create_user_response['message']['userPoolId']
+        tenant_details['appClientId'] = create_user_response['message']['appClientId']
 
         create_tenant_response = __create_tenant(tenant_details, headers, auth, host, stage_name)
         logger.info (create_tenant_response)
