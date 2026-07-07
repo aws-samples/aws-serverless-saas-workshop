@@ -21,6 +21,7 @@ Resources:
         CognitoOperationUsersUserPoolId: !ImportValue Serverless-SaaS-CognitoOperationUsersUserPoolId
         CognitoOperationUsersUserPoolClientId: !ImportValue Serverless-SaaS-CognitoOperationUsersUserPoolClientId
         TenantStackMappingTableName: !ImportValue Serverless-SaaS-TenantStackMappingTableName
+        TenantUserPoolCallbackURLParameter: !ImportValue Serverless-SaaS-ApplicationSite
 
   APIs:
     Type: AWS::Serverless::Application

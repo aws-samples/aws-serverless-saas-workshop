@@ -16,6 +16,8 @@ Parameters:
     Type: String
   TenantStackMappingTableName:
     Type: String
+  TenantUserPoolCallbackURLParameter:
+    Type: String
 Globals:
   Function:
     Timeout: 29
@@ -59,6 +61,7 @@ Resources:
         Variables:
           TENANT_USER_POOL_ID: !Ref CognitoUserPoolId
           TENANT_APP_CLIENT_ID: !Ref CognitoUserPoolClientId
+          TENANT_USER_POOL_CALLBACK_URL: !Join ["",["https://",!Ref TenantUserPoolCallbackURLParameter, "/"]]
           POWERTOOLS_SERVICE_NAME: "UserManagement.CreateTenantAdmin"
 
   CreateUserFunction:
