@@ -140,9 +140,7 @@ Resources:
                 - "systemctl start docker && systemctl enable docker"
                 - "wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq && sudo chmod +x /usr/bin/yq"
                 - "wget https://github.com/aws/aws-sam-cli/releases/download/v1.154.0/aws-sam-cli-linux-x86_64.zip && unzip aws-sam-cli-linux-x86_64.zip -d sam-installation && sudo ./sam-installation/install && rm -rf aws-sam-cli-linux-x86_64.zip sam-installation"
-                - "dnf install -y python3-pip python3.14"
-                - "python3.14 -m ensurepip"
-                - "pip3 install pylint boto3 git-remote-codecommit==1.15.1"
+                - "dnf install -y python3-pip python3.14 python3.14-pip"
                 - "sudo -u ec2-user pip3 install pylint boto3 git-remote-codecommit==1.15.1"
                 - "curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | sudo -u ec2-user bash"
                 - sudo -u ec2-user bash -c 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && nvm install 18 && nvm alias default 18 && npm install -g aws-cdk'
