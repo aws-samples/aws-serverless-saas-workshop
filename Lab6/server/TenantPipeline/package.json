@@ -12,10 +12,9 @@
     "cdk": "cdk"
   },
   "devDependencies": {
-    "@aws-cdk/assert": "1.64.1",
     "@types/jest": "^26.0.10",
     "@types/node": "10.17.27",
-    "aws-cdk-lib": "^2.0.0",
+    "aws-cdk-lib": "^2.236.0",
     "constructs": "^10.0.0",
     "jest": "^26.4.2",
     "node-notifier": "^8.0.1",
@@ -25,7 +24,7 @@
     "@types/prettier": "2.6.0"
   },
   "dependencies": {
-    "aws-cdk-lib": "^2.0.0",
+    "aws-cdk-lib": "^2.236.0",
     "constructs": "^10.0.0",
     "source-map-support": "^0.5.19"
   }
