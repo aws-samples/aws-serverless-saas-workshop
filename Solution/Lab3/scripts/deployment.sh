@@ -54,7 +54,7 @@ if [[ $server -eq 1 ]] || [[ $bootstrap -eq 1 ]]; then
   echo "Bootstrap server code is getting deployed"
   cd ../server
   REGION=$(aws configure get region)
-  sam build -t template.yaml --use-container
+  sam build -t template.yaml
   
   if [ "$IS_RUNNING_IN_EVENT_ENGINE" = true ]; then
     sam deploy --config-file samconfig.toml --region=$REGION --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE AdminUserPoolCallbackURLParameter=$ADMIN_SITE_URL TenantUserPoolCallbackURLParameter=$APP_SITE_URL
@@ -68,7 +68,7 @@ if [[ $server -eq 1 ]] || [[ $tenant -eq 1 ]]; then
   echo "Tenant server code is getting deployed"
   cd ../server
   REGION=$(aws configure get region)
-  sam build -t tenant-template.yaml --use-container
+  sam build -t tenant-template.yaml
   sam deploy --config-file tenant-samconfig.toml --region=$REGION
   cd ../scripts
 fi

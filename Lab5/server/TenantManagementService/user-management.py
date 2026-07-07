@@ -29,14 +29,8 @@ def create_tenant_admin_user(event, context):
     user_mgmt = UserManagement()
 
     if (tenant_details['dedicatedTenancy'] == 'true'):
-        user_pool_response = user_mgmt.create_user_pool(tenant_id)
-        user_pool_id = user_pool_response['UserPool']['Id']
-        logger.info(user_pool_id)
-        app_client_response = user_mgmt.create_user_pool_client(user_pool_id)
-        app_client_id = app_client_response['UserPoolClient']['ClientId']
-        logger.info(app_client_id)
-        user_pool_domain_response = user_mgmt.create_user_pool_domain(user_pool_id, tenant_id)
-        logger.info(user_pool_domain_response)
+        #TODO: add code to provision new user pool
+        pass
     else:
         user_pool_id = tenant_user_pool_id
         app_client_id = tenant_app_client_id

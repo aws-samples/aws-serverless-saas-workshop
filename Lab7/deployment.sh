@@ -1,5 +1,5 @@
 REGION=$(aws configure get region)
-sam build -t template.yaml --use-container
+sam build -t template.yaml
 sam deploy --config-file samconfig.toml --region=$REGION
   
 

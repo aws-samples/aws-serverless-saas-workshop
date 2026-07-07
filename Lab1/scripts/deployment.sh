@@ -37,7 +37,7 @@ if [[ $server -eq 1 ]]; then
 
   if [ "$IS_RUNNING_IN_EVENT_ENGINE" = false ]; then
     echo "Deploying shared infrastructure (IDE, S3, CloudFront, DynamoDB, Cognito)..."
-    sam build -t shared-template.yaml --use-container
+    sam build -t shared-template.yaml
     sam deploy --config-file shared-samconfig.toml --region="$REGION"
 
     IDE_URL=$(aws cloudformation describe-stacks --stack-name serverless-saas-shared --query "Stacks[0].Outputs[?OutputKey=='IdeUrl'].OutputValue" --output text)
@@ -59,7 +59,7 @@ if [[ $server -eq 1 ]]; then
     exit 1
   fi
 
-  sam build -t template.yaml --use-container
+  sam build -t template.yaml
   sam deploy --config-file samconfig.toml --region="$REGION"
   cd ../scripts || exit
 fi

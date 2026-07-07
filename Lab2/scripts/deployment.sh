@@ -35,7 +35,7 @@ LANDING_APP_SITE_BUCKET=$(aws cloudformation list-exports --query "Exports[?Name
 if [ -z "$ADMIN_SITE_URL" ]; then
   echo "Shared infrastructure not found. Deploying from Lab1..."
   cd ../../Lab1/server || exit
-  sam build -t shared-template.yaml --use-container
+  sam build -t shared-template.yaml
   sam deploy --config-file shared-samconfig.toml --region="$REGION"
   cd ../../Lab2/scripts || exit
   # Re-read exports
@@ -85,7 +85,7 @@ if [[ $server -eq 1 ]]; then
     exit 1
   fi
 
-  sam build -t template.yaml --use-container
+  sam build -t template.yaml
   sam deploy --config-file samconfig.toml --region="$REGION"
 
   cd ../scripts || exit # stop execution if cd fails
