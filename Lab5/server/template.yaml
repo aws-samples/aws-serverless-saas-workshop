@@ -32,11 +32,8 @@ Resources:
         RegisterTenantLambdaExecutionRoleArn: !GetAtt LambdaFunctions.Outputs.RegisterTenantLambdaExecutionRoleArn
         TenantManagementLambdaExecutionRoleArn: !GetAtt LambdaFunctions.Outputs.TenantManagementLambdaExecutionRoleArn
         RegisterTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.RegisterTenantFunctionArn
-        ProvisionTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.ProvisionTenantFunctionArn
-        DeProvisionTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.DeProvisionTenantFunctionArn
         ActivateTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.ActivateTenantFunctionArn
         GetTenantsFunctionArn: !GetAtt LambdaFunctions.Outputs.GetTenantsFunctionArn
-        GetTenantConfigFunctionArn: !GetAtt LambdaFunctions.Outputs.GetTenantConfigFunctionArn
         CreateTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.CreateTenantFunctionArn
         GetTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.GetTenantFunctionArn
         DeactivateTenantFunctionArn: !GetAtt LambdaFunctions.Outputs.DeactivateTenantFunctionArn
