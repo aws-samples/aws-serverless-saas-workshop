@@ -30,6 +30,10 @@ PREPROVISIONED_ADMIN_SITE=$(aws cloudformation list-exports --query "Exports[?Na
 if [ ! -z "$PREPROVISIONED_ADMIN_SITE" ]; then
   echo "Workshop is running in WorkshopStudio"
   IS_RUNNING_IN_EVENT_ENGINE=true
+  WS_PREBUILT=$(aws cloudformation list-exports --query "Exports[?Name=='Serverless-SaaS-PrebuiltUIBucket'].Value" --output text)
+  if [ ! -z "$WS_PREBUILT" ]; then
+    PREBUILT_BUCKET="$WS_PREBUILT"
+  fi
   APP_SITE_BUCKET=$(aws cloudformation list-exports --query "Exports[?Name=='Serverless-SaaS-ApplicationSiteBucket'].Value" --output text)
   APP_SITE_URL=$(aws cloudformation list-exports --query "Exports[?Name=='Serverless-SaaS-ApplicationSite'].Value" --output text)
 fi

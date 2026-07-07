@@ -26,6 +26,10 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 PREBUILT_BUCKET="serverless-saas-workshop-prebuilt-ui"
+WS_PREBUILT=$(aws cloudformation list-exports --query "Exports[?Name=='Serverless-SaaS-PrebuiltUIBucket'].Value" --output text 2>/dev/null)
+if [ ! -z "$WS_PREBUILT" ]; then
+  PREBUILT_BUCKET="$WS_PREBUILT"
+fi
 
 REGION=$(aws configure get region)
 
