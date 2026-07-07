@@ -12,6 +12,7 @@ while [[ "$#" -gt 0 ]]; do
   case $1 in
   -s) server=1 ;;
   -c) client=1 ;;
+  -p) prebuilt=1 ;;
   *)
     echo "Unknown parameter passed: $1"
     exit 1
@@ -19,6 +20,8 @@ while [[ "$#" -gt 0 ]]; do
   esac
   shift
 done
+
+PREBUILT_BUCKET="serverless-saas-workshop-prebuilt-ui"
 
 REGION=$(aws configure get region)
 
@@ -80,29 +83,39 @@ if [[ $client -eq 1 ]]; then
     exit 1
   fi
 
-  cd ../client/Application || exit
+  if [[ $prebuilt -eq 1 ]]; then
+    echo "Using prebuilt UI..."
+    TMPDIR=$(mktemp -d)
+    aws s3 cp "s3://${PREBUILT_BUCKET}/lab1-application.zip" "$TMPDIR/app.zip"
+    unzip -q "$TMPDIR/app.zip" -d "$TMPDIR/dist"
+    find "$TMPDIR/dist" -name "*.js" -exec sed -i "s|__APP_API_GATEWAY_URL__|${APP_APIGATEWAYURL}|g" {} +
+    aws s3 sync --delete --cache-control no-store "$TMPDIR/dist" "s3://${APP_SITE_BUCKET}"
+    rm -rf "$TMPDIR"
+  else
+    cd ../client/Application || exit
 
-  echo "Configuring environment for App Client"
+    echo "Configuring environment for App Client"
 
-  cat <<EoF >./src/environments/environment.prod.ts
+    cat <<EoF >./src/environments/environment.prod.ts
 export const environment = {
   production: true,
   apiGatewayUrl: '$APP_APIGATEWAYURL'
 };
 EoF
 
-  cat <<EoF >./src/environments/environment.ts
+    cat <<EoF >./src/environments/environment.ts
 export const environment = {
   production: true,
   apiGatewayUrl: '$APP_APIGATEWAYURL'
 };
 EoF
 
-  npm install --loglevel=error && npm run build
+    npm install --loglevel=error && npm run build
 
-  echo "aws s3 sync --delete --cache-control no-store dist s3://${APP_SITE_BUCKET}"
-  if ! aws s3 sync --delete --cache-control no-store dist "s3://${APP_SITE_BUCKET}"; then
-    exit 1
+    echo "aws s3 sync --delete --cache-control no-store dist s3://${APP_SITE_BUCKET}"
+    if ! aws s3 sync --delete --cache-control no-store dist "s3://${APP_SITE_BUCKET}"; then
+      exit 1
+    fi
   fi
 
   echo "Completed configuring environment for App Client"

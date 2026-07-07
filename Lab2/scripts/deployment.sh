@@ -12,6 +12,7 @@ while [[ "$#" -gt 0 ]]; do
   case $1 in
   -s) server=1 ;;
   -c) client=1 ;;
+  -p) prebuilt=1 ;;
   --email)
     email=$2
     shift
@@ -23,6 +24,8 @@ while [[ "$#" -gt 0 ]]; do
   esac
   shift
 done
+
+PREBUILT_BUCKET="serverless-saas-workshop-prebuilt-ui"
 
 REGION=$(aws configure get region)
 
@@ -122,30 +125,53 @@ if [[ $client -eq 1 ]]; then
 
   # Configuring admin UI
 
-  echo "aws s3 ls s3://$ADMIN_SITE_BUCKET"
-  if ! aws s3 ls "s3://${ADMIN_SITE_BUCKET}"; then
-    echo "Error! S3 Bucket: $ADMIN_SITE_BUCKET not readable"
-    exit 1
-  fi
+  if [[ $prebuilt -eq 1 ]]; then
+    echo "Using prebuilt Admin UI..."
+    TMPDIR=$(mktemp -d)
+    aws s3 cp "s3://${PREBUILT_BUCKET}/lab2-admin.zip" "$TMPDIR/app.zip"
+    unzip -q "$TMPDIR/app.zip" -d "$TMPDIR/dist"
+    find "$TMPDIR/dist" -name "*.js" -exec sed -i \
+      -e "s|__ADMIN_API_GATEWAY_URL__|${ADMIN_APIGATEWAYURL}|g" \
+      -e "s|__AWS_REGION__|${REGION}|g" \
+      -e "s|__ADMIN_USERPOOL_ID__|${ADMIN_USERPOOL_ID}|g" \
+      -e "s|__ADMIN_APPCLIENTID__|${ADMIN_APPCLIENTID}|g" {} +
+    aws s3 sync --delete --cache-control no-store "$TMPDIR/dist" "s3://${ADMIN_SITE_BUCKET}"
+    rm -rf "$TMPDIR"
+    echo "Completed configuring environment for Admin Client"
 
-  cd ../client/Admin || exit # stop execution if cd fails
+    echo "Using prebuilt Landing UI..."
+    TMPDIR=$(mktemp -d)
+    aws s3 cp "s3://${PREBUILT_BUCKET}/lab2-landing.zip" "$TMPDIR/app.zip"
+    unzip -q "$TMPDIR/app.zip" -d "$TMPDIR/dist"
+    find "$TMPDIR/dist" -name "*.js" -exec sed -i "s|__ADMIN_API_GATEWAY_URL__|${ADMIN_APIGATEWAYURL}|g" {} +
+    aws s3 sync --delete --cache-control no-store "$TMPDIR/dist" "s3://${LANDING_APP_SITE_BUCKET}"
+    rm -rf "$TMPDIR"
+    echo "Completed configuring environment for Landing Client"
+  else
+    echo "aws s3 ls s3://$ADMIN_SITE_BUCKET"
+    if ! aws s3 ls "s3://${ADMIN_SITE_BUCKET}"; then
+      echo "Error! S3 Bucket: $ADMIN_SITE_BUCKET not readable"
+      exit 1
+    fi
 
-  echo "Configuring environment for Admin Client"
-  cat <<EoF >./src/environments/environment.prod.ts
+    cd ../client/Admin || exit
+
+    echo "Configuring environment for Admin Client"
+    cat <<EoF >./src/environments/environment.prod.ts
 export const environment = {
   production: true,
   apiUrl: '$ADMIN_APIGATEWAYURL',
 };
 EoF
 
-  cat <<EoF >./src/environments/environment.ts
+    cat <<EoF >./src/environments/environment.ts
 export const environment = {
   production: false,
   apiUrl: '$ADMIN_APIGATEWAYURL',
 };
 EoF
 
-  cat <<EoF >./src/aws-exports.ts
+    cat <<EoF >./src/aws-exports.ts
 const awsmobile = {
     "aws_project_region": "$REGION",
     "aws_cognito_region": "$REGION",
@@ -156,54 +182,55 @@ const awsmobile = {
 export default awsmobile;
 EoF
 
-  npm install --loglevel=error && npm run build
+    npm install --loglevel=error && npm run build
 
-  echo "aws s3 sync --delete --cache-control no-store dist s3://${ADMIN_SITE_BUCKET}"
-  aws s3 sync --delete --cache-control no-store dist "s3://${ADMIN_SITE_BUCKET}"
+    echo "aws s3 sync --delete --cache-control no-store dist s3://${ADMIN_SITE_BUCKET}"
+    aws s3 sync --delete --cache-control no-store dist "s3://${ADMIN_SITE_BUCKET}"
 
-  if [[ $? -ne 0 ]]; then
-    exit 1
-  fi
+    if [[ $? -ne 0 ]]; then
+      exit 1
+    fi
 
-  echo "Completed configuring environment for Admin Client"
+    echo "Completed configuring environment for Admin Client"
 
-  # Configuring landing UI
+    # Configuring landing UI
 
-  echo "aws s3 ls s3://${LANDING_APP_SITE_BUCKET}"
-  if ! aws s3 ls "s3://${LANDING_APP_SITE_BUCKET}"; then
-    echo "Error! S3 Bucket: $LANDING_APP_SITE_BUCKET not readable"
-    exit 1
-  fi
+    echo "aws s3 ls s3://${LANDING_APP_SITE_BUCKET}"
+    if ! aws s3 ls "s3://${LANDING_APP_SITE_BUCKET}"; then
+      echo "Error! S3 Bucket: $LANDING_APP_SITE_BUCKET not readable"
+      exit 1
+    fi
 
-  cd ../
+    cd ../
 
-  cd Landing || exit # stop execution if cd fails
+    cd Landing || exit
 
-  echo "Configuring environment for Landing Client"
+    echo "Configuring environment for Landing Client"
 
-  cat <<EoF >./src/environments/environment.prod.ts
+    cat <<EoF >./src/environments/environment.prod.ts
 export const environment = {
   production: true,
   apiGatewayUrl: '$ADMIN_APIGATEWAYURL'
 };
 EoF
-  cat <<EoF >./src/environments/environment.ts
+    cat <<EoF >./src/environments/environment.ts
 export const environment = {
   production: false,
   apiGatewayUrl: '$ADMIN_APIGATEWAYURL'
 };
 EoF
 
-  npm install --loglevel=error && npm run build
+    npm install --loglevel=error && npm run build
 
-  echo "aws s3 sync --delete --cache-control no-store dist s3://${LANDING_APP_SITE_BUCKET}"
-  aws s3 sync --delete --cache-control no-store dist "s3://${LANDING_APP_SITE_BUCKET}"
+    echo "aws s3 sync --delete --cache-control no-store dist s3://${LANDING_APP_SITE_BUCKET}"
+    aws s3 sync --delete --cache-control no-store dist "s3://${LANDING_APP_SITE_BUCKET}"
 
-  if [[ $? -ne 0 ]]; then
-    exit 1
+    if [[ $? -ne 0 ]]; then
+      exit 1
+    fi
+
+    echo "Completed configuring environment for Landing Client"
   fi
-
-  echo "Completed configuring environment for Landing Client"
   echo "Successfully completed deploying Admin UI and Landing UI"
 fi
 echo "Admin site URL: https://$ADMIN_SITE_URL"

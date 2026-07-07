@@ -16,6 +16,7 @@ while [[ "$#" -gt 0 ]]; do
         -b) bootstrap=1 ;;
         -t) tenant=1 ;;
         -c) client=1 ;;
+        -p) prebuilt=1 ;;
         *) echo "Unknown parameter passed: $1"; exit 1 ;;
     esac
     shift
@@ -27,7 +28,8 @@ done
 # Below code checks if cloudfront and s3 buckets are 
 # pre-provisioned or not and then concludes if the workshop 
 # is running in AWS hosted event through event engine tool or not.
-IS_RUNNING_IN_EVENT_ENGINE=false 
+PREBUILT_BUCKET="serverless-saas-workshop-prebuilt-ui"
+IS_RUNNING_IN_EVENT_ENGINE=false
 PREPROVISIONED_ADMIN_SITE=$(aws cloudformation list-exports --query "Exports[?Name=='Serverless-SaaS-AdminAppSite'].Value" --output text)
 if [ ! -z "$PREPROVISIONED_ADMIN_SITE" ]; then
   echo "Workshop is running in WorkshopStudio"
@@ -81,23 +83,33 @@ if [[ $client -eq 1 ]]; then
   APP_APPCLIENTID=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='CognitoTenantAppClientId'].OutputValue" --output text)
   APP_USERPOOLID=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='CognitoTenantUserPoolId'].OutputValue" --output text)
 
-
-  # Admin UI and Landing UI are configured in Lab2 
-  echo "Admin UI and Landing UI are configured in Lab2. Only App UI will be configured in this Lab3."
-  # Configuring app UI 
+  echo "Admin UI and Landing UI are configured in Lab2. Only App UI will be configured in this Lab."
 
   echo "aws s3 ls s3://$APP_SITE_BUCKET"
-  aws s3 ls s3://$APP_SITE_BUCKET 
+  aws s3 ls s3://$APP_SITE_BUCKET
   if [ $? -ne 0 ]; then
       echo "Error! S3 Bucket: $APP_SITE_BUCKET not readable"
       exit 1
   fi
 
-  cd ../client/Application
+  if [[ $prebuilt -eq 1 ]]; then
+    echo "Using prebuilt Application UI..."
+    TMPDIR=$(mktemp -d)
+    aws s3 cp "s3://${PREBUILT_BUCKET}/lab3-application.zip" "$TMPDIR/app.zip"
+    unzip -q "$TMPDIR/app.zip" -d "$TMPDIR/dist"
+    find "$TMPDIR/dist" -name "*.js" -exec sed -i \
+      -e "s|__ADMIN_API_GATEWAY_URL__|${ADMIN_APIGATEWAYURL}|g" \
+      -e "s|__APP_API_GATEWAY_URL__|${APP_APIGATEWAYURL}|g" \
+      -e "s|__APP_USERPOOL_ID__|${APP_USERPOOLID}|g" \
+      -e "s|__APP_APPCLIENTID__|${APP_APPCLIENTID}|g" {} +
+    aws s3 sync --delete --cache-control no-store "$TMPDIR/dist" "s3://${APP_SITE_BUCKET}"
+    rm -rf "$TMPDIR"
+  else
+    cd ../client/Application
 
-  echo "Configuring environment for App Client"
+    echo "Configuring environment for App Client"
 
-  cat << EoF > ./src/environments/environment.prod.ts
+    cat << EoF > ./src/environments/environment.prod.ts
   export const environment = {
     production: true,
     regApiGatewayUrl: '$ADMIN_APIGATEWAYURL',
@@ -106,7 +118,7 @@ if [[ $client -eq 1 ]]; then
     appClientId: '$APP_APPCLIENTID',
   };
 EoF
-  cat << EoF > ./src/environments/environment.ts
+    cat << EoF > ./src/environments/environment.ts
   export const environment = {
     production: true,
     regApiGatewayUrl: '$ADMIN_APIGATEWAYURL',
@@ -116,18 +128,19 @@ EoF
   };
 EoF
 
-  npm install --legacy-peer-deps --loglevel=error && npm run build
+    npm install --legacy-peer-deps --loglevel=error && npm run build
 
-  echo "aws s3 sync --delete --cache-control no-store dist s3://$APP_SITE_BUCKET"
-  aws s3 sync --delete --cache-control no-store dist s3://$APP_SITE_BUCKET 
+    echo "aws s3 sync --delete --cache-control no-store dist s3://$APP_SITE_BUCKET"
+    aws s3 sync --delete --cache-control no-store dist s3://$APP_SITE_BUCKET
 
-  if [[ $? -ne 0 ]]; then
-      exit 1
+    if [[ $? -ne 0 ]]; then
+        exit 1
+    fi
   fi
 
   echo "Completed configuring environment for App Client"
   echo "Successfully completed deploying Application UI"
-fi  
+fi
 
 echo "Admin site URL: https://$ADMIN_SITE_URL"
 echo "Landing site URL: https://$LANDING_APP_SITE_URL"
