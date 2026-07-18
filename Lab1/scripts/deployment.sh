@@ -12,7 +12,6 @@ while [[ "$#" -gt 0 ]]; do
   case $1 in
   -s) server=1 ;;
   -c) client=1 ;;
-  -p) prebuilt=1 ;;
   *)
     echo "Unknown parameter passed: $1"
     exit 1
@@ -21,7 +20,8 @@ while [[ "$#" -gt 0 ]]; do
   shift
 done
 
-PREBUILT_BUCKET="serverless-saas-workshop-prebuilt-ui"
+SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
+STATIC_DIR="$SCRIPT_DIR/../../static"
 
 REGION=$(aws configure get region)
 
@@ -30,10 +30,6 @@ PREPROVISIONED_ADMIN_SITE=$(aws cloudformation list-exports --query "Exports[?Na
 if [ ! -z "$PREPROVISIONED_ADMIN_SITE" ]; then
   echo "Workshop is running in WorkshopStudio"
   IS_RUNNING_IN_EVENT_ENGINE=true
-  WS_PREBUILT=$(aws cloudformation list-exports --query "Exports[?Name=='Serverless-SaaS-PrebuiltUIBucket'].Value" --output text)
-  if [ ! -z "$WS_PREBUILT" ]; then
-    PREBUILT_BUCKET="$WS_PREBUILT"
-  fi
   APP_SITE_BUCKET=$(aws cloudformation list-exports --query "Exports[?Name=='Serverless-SaaS-ApplicationSiteBucket'].Value" --output text)
   APP_SITE_URL=$(aws cloudformation list-exports --query "Exports[?Name=='Serverless-SaaS-ApplicationSite'].Value" --output text)
 fi
@@ -81,48 +77,18 @@ APP_APIGATEWAYURL=$(aws cloudformation describe-stacks --stack-name serverless-s
 if [[ $client -eq 1 ]]; then
   echo "Client code is getting deployed"
 
-  echo "aws s3 ls s3://${APP_SITE_BUCKET}"
-  if ! aws s3 ls "s3://${APP_SITE_BUCKET}"; then
+  if ! aws s3 ls "s3://${APP_SITE_BUCKET}" >/dev/null 2>&1; then
     echo "Error! S3 Bucket: $APP_SITE_BUCKET not readable"
     exit 1
   fi
 
-  if [[ $prebuilt -eq 1 ]]; then
-    echo "Using prebuilt UI..."
-    TMPDIR=$(mktemp -d)
-    aws s3 cp "s3://${PREBUILT_BUCKET}/lab1-application.zip" "$TMPDIR/app.zip"
-    unzip -q "$TMPDIR/app.zip" -d "$TMPDIR/dist"
-    find "$TMPDIR/dist" -name "*.js" -exec sed -i "s|__APP_API_GATEWAY_URL__|${APP_APIGATEWAYURL}|g" {} +
-    aws s3 sync --delete --cache-control no-store "$TMPDIR/dist" "s3://${APP_SITE_BUCKET}"
-    rm -rf "$TMPDIR"
-  else
-    cd ../client/Application || exit
+  TMPDIR=$(mktemp -d)
+  unzip -q "$STATIC_DIR/lab1-application.zip" -d "$TMPDIR"
+  find "$TMPDIR" -name "*.js" -exec sed -i "s|__APP_API_GATEWAY_URL__|${APP_APIGATEWAYURL}|g" {} +
+  aws s3 sync --delete --cache-control no-store "$TMPDIR" "s3://${APP_SITE_BUCKET}"
+  rm -rf "$TMPDIR"
 
-    echo "Configuring environment for App Client"
-
-    cat <<EoF >./src/environments/environment.prod.ts
-export const environment = {
-  production: true,
-  apiGatewayUrl: '$APP_APIGATEWAYURL'
-};
-EoF
-
-    cat <<EoF >./src/environments/environment.ts
-export const environment = {
-  production: true,
-  apiGatewayUrl: '$APP_APIGATEWAYURL'
-};
-EoF
-
-    npm install --loglevel=error && npm run build
-
-    echo "aws s3 sync --delete --cache-control no-store dist s3://${APP_SITE_BUCKET}"
-    if ! aws s3 sync --delete --cache-control no-store dist "s3://${APP_SITE_BUCKET}"; then
-      exit 1
-    fi
-  fi
-
-  echo "Completed configuring environment for App Client"
+  echo "Completed deploying App Client"
 fi
 
 echo "Application site URL: https://${APP_SITE_URL}"

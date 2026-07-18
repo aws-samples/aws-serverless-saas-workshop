@@ -1,13 +1,33 @@
 #!/bin/bash
 set -e
 
-PREBUILT_BUCKET="serverless-saas-workshop-prebuilt-ui"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"
-TMPDIR=$(mktemp -d)
+STATIC_DIR="$REPO_ROOT/static"
+
+mkdir -p "$STATIC_DIR"
+
+zip_dir() {
+  local src_dir="$1"
+  local dest_zip="$2"
+  rm -f "$dest_zip"
+  if command -v zip &>/dev/null; then
+    (cd "$src_dir" && zip -qr "$dest_zip" .)
+  else
+    python3 -c "
+import zipfile, os, sys
+src, dst = sys.argv[1], sys.argv[2]
+with zipfile.ZipFile(dst, 'w', zipfile.ZIP_DEFLATED) as zf:
+    for root, dirs, files in os.walk(src):
+        for f in files:
+            abs_p = os.path.join(root, f)
+            zf.write(abs_p, os.path.relpath(abs_p, src).replace(chr(92), '/'))
+" "$src_dir" "$dest_zip"
+  fi
+}
 
 echo "Building prebuilt UI zips..."
-echo "Temp dir: $TMPDIR"
+echo "Output dir: $STATIC_DIR"
 
 # --- Lab1 Application ---
 echo ""
@@ -23,7 +43,7 @@ EOF
 cp ./src/environments/environment.prod.ts ./src/environments/environment.ts
 
 npm install --loglevel=error && npm run build
-cd dist && zip -qr "$TMPDIR/lab1-application.zip" . && cd ..
+zip_dir dist "$STATIC_DIR/lab1-application.zip"
 echo "Created lab1-application.zip"
 
 # --- Lab2 Admin ---
@@ -55,7 +75,7 @@ export default awsmobile;
 EOF
 
 npm install --loglevel=error && npm run build
-cd dist && zip -qr "$TMPDIR/lab2-admin.zip" . && cd ..
+zip_dir dist "$STATIC_DIR/lab2-admin.zip"
 echo "Created lab2-admin.zip"
 
 # --- Lab2 Landing ---
@@ -77,7 +97,7 @@ export const environment = {
 EOF
 
 npm install --loglevel=error && npm run build
-cd dist && zip -qr "$TMPDIR/lab2-landing.zip" . && cd ..
+zip_dir dist "$STATIC_DIR/lab2-landing.zip"
 echo "Created lab2-landing.zip"
 
 # --- Lab3 Application (also used by Lab4, Lab5) ---
@@ -105,17 +125,9 @@ export const environment = {
 EOF
 
 npm install --legacy-peer-deps --loglevel=error && npm run build
-cd dist && zip -qr "$TMPDIR/lab3-application.zip" . && cd ..
+zip_dir dist "$STATIC_DIR/lab3-application.zip"
 echo "Created lab3-application.zip"
 
-# --- Upload to S3 ---
 echo ""
-echo "=== Uploading to s3://$PREBUILT_BUCKET ==="
-aws s3 cp "$TMPDIR/lab1-application.zip" "s3://$PREBUILT_BUCKET/lab1-application.zip"
-aws s3 cp "$TMPDIR/lab2-admin.zip" "s3://$PREBUILT_BUCKET/lab2-admin.zip"
-aws s3 cp "$TMPDIR/lab2-landing.zip" "s3://$PREBUILT_BUCKET/lab2-landing.zip"
-aws s3 cp "$TMPDIR/lab3-application.zip" "s3://$PREBUILT_BUCKET/lab3-application.zip"
-
-rm -rf "$TMPDIR"
-echo ""
-echo "Done! All prebuilt UI zips uploaded to s3://$PREBUILT_BUCKET"
+echo "Done! All prebuilt UI zips saved to $STATIC_DIR"
+ls -lh "$STATIC_DIR"/*.zip

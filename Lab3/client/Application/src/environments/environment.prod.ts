@@ -1,5 +1,7 @@
 export const environment = {
-  production: false,
-  regApiGatewayUrl:
-    'https://ulp15c9bv2.execute-api.us-west-2.amazonaws.com/prod/',
+  production: true,
+  regApiGatewayUrl: '__ADMIN_API_GATEWAY_URL__',
+  apiGatewayUrl: '__APP_API_GATEWAY_URL__',
+  userPoolId: '__APP_USERPOOL_ID__',
+  appClientId: '__APP_APPCLIENTID__',
 };
