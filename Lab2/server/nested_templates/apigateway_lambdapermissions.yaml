@@ -178,7 +178,7 @@ Resources:
       Action: lambda:InvokeFunction
       FunctionName: !Ref AuthorizerFunctionArn
       Principal: apigateway.amazonaws.com
-      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AdminApiGatewayApi}/*/*/*"
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AdminApiGatewayApi}/*/*"
   # ==================== Application API Permissions ====================
   GetProductLambdaApiGatewayExecutionPermission:
     Type: AWS::Lambda::Permission
