@@ -30,7 +30,8 @@ def lambda_handler(event, context):
     logger.info("Method ARN: " + event['methodArn'])
     
     #only to get tenant id to get user pool info
-    unauthorized_claims = jwt.get_unverified_claims(jwt_bearer_token)
+    extracted = jws.extract_compact(jwt_bearer_token.encode())
+    unauthorized_claims = json.loads(extracted.payload)
     logger.info(unauthorized_claims)
 
     #get keys for tenant user pool to validate
