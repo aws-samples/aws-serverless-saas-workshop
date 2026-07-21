@@ -13,7 +13,7 @@ echo Y | sam sync --stack-name serverless-saas -t template.yaml --code --resourc
 #Deploying tenant services changes
 echo "Deploying tenant services changes"
 rm -rf .aws-sam/
-echo Y | sam sync --stack-name stack-pooled -t tenant-template.yaml --code --resource-id ServerlessSaaSLayers --resource-id BusinessServicesAuthorizerFunction --resource-id CreateProductFunction -u
+echo Y | sam sync --stack-name serverless-saas -t template.yaml --code --resource-id LambdaFunctions/BusinessServicesAuthorizerFunction --resource-id LambdaFunctions/CreateProductFunction -u
 
 cd ../scripts || exit
 ./geturl.sh
