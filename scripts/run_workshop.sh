@@ -5,13 +5,6 @@
 ## https://catalog.us-east-1.prod.workshops.aws/workshops/b0c6ad36-0a4b-45d8-856b-8a64f0ac76bb/en-US
 ##
 
-echo "################ Running pre-req script... ################"
-cd ../Cloud9Setup/
-./increase-disk-size.sh
-# ./pre-requisites.sh
-cd ../scripts/
-echo "################ Done running pre-req script... ################"
-
 # #### Note that deploying lab1 is not a requirement ####
 # #######################################################
 

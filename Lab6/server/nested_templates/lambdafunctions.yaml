@@ -47,6 +47,8 @@ Resources:
 
   CreateTenantAdminUserFunction:
     Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: user-management.create_tenant_admin_user
@@ -66,6 +68,8 @@ Resources:
 
   CreateUserFunction:
     Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: user-management.create_user
@@ -81,6 +85,8 @@ Resources:
 
   UpdateUserFunction:
     Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: user-management.update_user
@@ -98,6 +104,8 @@ Resources:
 
   DisableUserFunction:
     Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: user-management.disable_user
@@ -115,6 +123,8 @@ Resources:
 
   DisableUsersByTenantFunction:
     Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: user-management.disable_users_by_tenant
@@ -132,6 +142,8 @@ Resources:
 
   EnableUsersByTenantFunction:
     Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: user-management.enable_users_by_tenant
@@ -149,6 +161,8 @@ Resources:
 
   GetUserFunction:
     Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: user-management.get_user
@@ -166,6 +180,8 @@ Resources:
 
   GetUsersFunction:
     Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: user-management.get_users
@@ -183,6 +199,8 @@ Resources:
 
   CreateTenantFunction:
     Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: tenant-management.create_tenant
@@ -199,6 +217,8 @@ Resources:
 
   ActivateTenantFunction:
     Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: tenant-management.activate_tenant
@@ -217,6 +237,8 @@ Resources:
 
   GetTenantFunction:
     Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: tenant-management.get_tenant
@@ -233,6 +255,8 @@ Resources:
 
   DeactivateTenantFunction:
     Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: tenant-management.deactivate_tenant
@@ -251,6 +275,8 @@ Resources:
 
   UpdateTenantFunction:
     Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: tenant-management.update_tenant
@@ -267,6 +293,8 @@ Resources:
 
   GetTenantsFunction:
     Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: tenant-management.get_tenants
@@ -280,6 +308,8 @@ Resources:
 
   RegisterTenantFunction:
     Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: tenant-registration.register_tenant
@@ -447,6 +477,8 @@ Resources:
   GetProductFunction:
     Type: AWS::Serverless::Function
     DependsOn: ProductFunctionExecutionRole
+    Metadata:
+      BuildMethod: makefile
     Properties:
       CodeUri: ../ProductService/
       Handler: product_service.get_product
@@ -465,6 +497,8 @@ Resources:
   GetProductsFunction:
     Type: AWS::Serverless::Function
     DependsOn: ProductFunctionExecutionRole
+    Metadata:
+      BuildMethod: makefile
     Properties:
       CodeUri: ../ProductService/
       Handler: product_service.get_products
@@ -483,6 +517,8 @@ Resources:
   CreateProductFunction:
     Type: AWS::Serverless::Function
     DependsOn: ProductFunctionExecutionRole
+    Metadata:
+      BuildMethod: makefile
     Properties:
       CodeUri: ../ProductService/
       Handler: product_service.create_product
@@ -501,6 +537,8 @@ Resources:
   UpdateProductFunction:
     Type: AWS::Serverless::Function
     DependsOn: ProductFunctionExecutionRole
+    Metadata:
+      BuildMethod: makefile
     Properties:
       CodeUri: ../ProductService/
       Handler: product_service.update_product
@@ -519,6 +557,8 @@ Resources:
   DeleteProductFunction:
     Type: AWS::Serverless::Function
     DependsOn: ProductFunctionExecutionRole
+    Metadata:
+      BuildMethod: makefile
     Properties:
       CodeUri: ../ProductService/
       Handler: product_service.delete_product
@@ -537,6 +577,8 @@ Resources:
   GetOrdersFunction:
     Type: AWS::Serverless::Function
     DependsOn: OrderFunctionExecutionRole
+    Metadata:
+      BuildMethod: makefile
     Properties:
       CodeUri: ../OrderService/
       Handler: order_service.get_orders
@@ -555,6 +597,8 @@ Resources:
   GetOrderFunction:
     Type: AWS::Serverless::Function
     DependsOn: OrderFunctionExecutionRole
+    Metadata:
+      BuildMethod: makefile
     Properties:
       CodeUri: ../OrderService/
       Handler: order_service.get_order
@@ -573,6 +617,8 @@ Resources:
   CreateOrderFunction:
     Type: AWS::Serverless::Function
     DependsOn: OrderFunctionExecutionRole
+    Metadata:
+      BuildMethod: makefile
     Properties:
       CodeUri: ../OrderService/
       Handler: order_service.create_order
@@ -591,6 +637,8 @@ Resources:
   UpdateOrderFunction:
     Type: AWS::Serverless::Function
     DependsOn: OrderFunctionExecutionRole
+    Metadata:
+      BuildMethod: makefile
     Properties:
       CodeUri: ../OrderService/
       Handler: order_service.update_order
@@ -609,6 +657,8 @@ Resources:
   DeleteOrderFunction:
     Type: AWS::Serverless::Function
     DependsOn: OrderFunctionExecutionRole
+    Metadata:
+      BuildMethod: makefile
     Properties:
       CodeUri: ../OrderService/
       Handler: order_service.delete_order
@@ -627,6 +677,8 @@ Resources:
   # ==================== Provisioning Functions (Lab5) ====================
   ProvisionTenantFunction:
     Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: tenant-provisioning.provision_tenant
@@ -641,6 +693,8 @@ Resources:
 
   DeProvisionTenantFunction:
     Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: tenant-provisioning.deprovision_tenant

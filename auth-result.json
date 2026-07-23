@@ -1,0 +1,1 @@
+{"principalId": "84584438-4071-707b-7a9c-ffaf1abb632b", "policyDocument": {"Version": "2012-10-17", "Statement": [{"Action": "execute-api:Invoke", "Effect": "Allow", "Resource": ["arn:aws:execute-api:us-east-1:933638383002:de2xmuxsbd/prod/*/*"]}]}, "context": {"userName": "admin-user", "userPoolId": "us-east-1_yFUz7IVAj"}}

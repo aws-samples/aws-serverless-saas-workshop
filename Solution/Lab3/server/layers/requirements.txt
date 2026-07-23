@@ -1,5 +1,0 @@
-aws-lambda-powertools[Tracer,Logger,Metrics]>=3.29.0
-simplejson>=4.1.1
-jsonpickle>=4.1.2
-aws_requests_auth>=0.4.3
-joserfc>=1.6.8

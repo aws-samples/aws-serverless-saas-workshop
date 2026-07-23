@@ -43,6 +43,8 @@ Resources:
 
   CreateTenantAdminUserFunction:
     Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: user-management.create_tenant_admin_user
@@ -61,6 +63,8 @@ Resources:
 
   CreateUserFunction:
     Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: user-management.create_user
@@ -78,6 +82,8 @@ Resources:
 
   UpdateUserFunction:
     Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: user-management.update_user
@@ -95,6 +101,8 @@ Resources:
 
   DisableUserFunction:
     Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: user-management.disable_user
@@ -112,6 +120,8 @@ Resources:
 
   DisableUsersByTenantFunction:
     Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: user-management.disable_users_by_tenant
@@ -129,6 +139,8 @@ Resources:
 
   EnableUsersByTenantFunction:
     Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: user-management.enable_users_by_tenant
@@ -146,6 +158,8 @@ Resources:
 
   GetUserFunction:
     Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: user-management.get_user
@@ -163,6 +177,8 @@ Resources:
 
   GetUsersFunction:
     Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: user-management.get_users
@@ -180,6 +196,8 @@ Resources:
 
   CreateTenantFunction:
     Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: tenant-management.create_tenant
@@ -196,6 +214,8 @@ Resources:
 
   ActivateTenantFunction:
     Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: tenant-management.activate_tenant
@@ -214,6 +234,8 @@ Resources:
 
   GetTenantFunction:
     Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: tenant-management.get_tenant
@@ -230,6 +252,8 @@ Resources:
 
   DeactivateTenantFunction:
     Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: tenant-management.deactivate_tenant
@@ -248,6 +272,8 @@ Resources:
 
   UpdateTenantFunction:
     Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: tenant-management.update_tenant
@@ -264,6 +290,8 @@ Resources:
 
   GetTenantsFunction:
     Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: tenant-management.get_tenants
@@ -277,6 +305,8 @@ Resources:
 
   RegisterTenantFunction:
     Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: tenant-registration.register_tenant

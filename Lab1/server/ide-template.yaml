@@ -7,8 +7,9 @@ Parameters:
     Default: "serverless-saas"
   InstanceType:
     Type: String
-    Default: t3.large
+    Default: t3.small
     AllowedValues:
+      - t3.small
       - t3.medium
       - t3.large
       - t3.xlarge

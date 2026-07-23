@@ -4,13 +4,6 @@
 ## using the completed labs found in the Solutions folder.
 ##
 
-echo "################ Running pre-req script... ################"
-cd ../Cloud9Setup/
-./increase-disk-size.sh
-# ./pre-requisites.sh
-cd ../scripts/
-echo "################ Done running pre-req script... ################"
-
 echo "################ Running lab1... ################"
 
 cd ../Solution/Lab1/scripts
