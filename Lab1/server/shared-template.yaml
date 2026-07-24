@@ -788,11 +788,6 @@ Resources:
     Properties:
       Name: !Sub "serverless-saas-app-api-${AWS::Region}"
 
-  # ==================== VS Code IDE ====================
-  IdeStack:
-    Type: AWS::Serverless::Application
-    Properties:
-      Location: ide-template.yaml
 
 Outputs:
   TenantDetailsTableArn:
@@ -927,7 +922,3 @@ Outputs:
     Value: !GetAtt ApplicationApiGateway.RootResourceId
     Export:
       Name: Serverless-SaaS-ApplicationApiGatewayRootResourceId
-  IdeUrl:
-    Value: !GetAtt IdeStack.Outputs.IdeUrl
-  IdePassword:
-    Value: !GetAtt IdeStack.Outputs.IdePassword
