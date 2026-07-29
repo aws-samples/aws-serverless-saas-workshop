@@ -29,6 +29,21 @@ Globals:
         POWERTOOLS_METRICS_NAMESPACE: "ServerlessSaaS"
 
 Resources:
+
+  # ==================== Lambda Layer ====================
+  ServerlessSaaSLayers:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: serverless-saas-dependencies
+      Description: Shared dependencies for Serverless SaaS Workshop
+      ContentUri: ../layers/
+      CompatibleRuntimes:
+        - python3.14
+      LicenseInfo: MIT
+      RetentionPolicy: Retain
+    Metadata:
+      BuildMethod: python3.14
+
   SharedServicesAuthorizerFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -39,7 +54,7 @@ Resources:
       MemorySize: 256
       Tracing: Active
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           OPERATION_USERS_USER_POOL: !Ref CognitoOperationUsersUserPoolId
@@ -47,8 +62,6 @@ Resources:
 
   CreateTenantAdminUserFunction:
     Type: AWS::Serverless::Function
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: user-management.create_tenant_admin_user
@@ -58,7 +71,7 @@ Resources:
       TenancyConfig:
         TenantIsolationMode: PER_TENANT
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           TENANT_USER_POOL_ID: !Ref CognitoUserPoolId
@@ -68,8 +81,6 @@ Resources:
 
   CreateUserFunction:
     Type: AWS::Serverless::Function
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: user-management.create_user
@@ -79,7 +90,7 @@ Resources:
       TenancyConfig:
         TenantIsolationMode: PER_TENANT
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           TENANT_USER_POOL_ID: !Ref CognitoUserPoolId
@@ -87,8 +98,6 @@ Resources:
 
   UpdateUserFunction:
     Type: AWS::Serverless::Function
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: user-management.update_user
@@ -98,7 +107,7 @@ Resources:
       TenancyConfig:
         TenantIsolationMode: PER_TENANT
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           TENANT_USER_POOL_ID: !Ref CognitoUserPoolId
@@ -106,8 +115,6 @@ Resources:
 
   DisableUserFunction:
     Type: AWS::Serverless::Function
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: user-management.disable_user
@@ -117,7 +124,7 @@ Resources:
       TenancyConfig:
         TenantIsolationMode: PER_TENANT
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           TENANT_USER_POOL_ID: !Ref CognitoUserPoolId
@@ -125,8 +132,6 @@ Resources:
 
   DisableUsersByTenantFunction:
     Type: AWS::Serverless::Function
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: user-management.disable_users_by_tenant
@@ -136,7 +141,7 @@ Resources:
       TenancyConfig:
         TenantIsolationMode: PER_TENANT
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           TENANT_USER_POOL_ID: !Ref CognitoUserPoolId
@@ -144,8 +149,6 @@ Resources:
 
   EnableUsersByTenantFunction:
     Type: AWS::Serverless::Function
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: user-management.enable_users_by_tenant
@@ -155,7 +158,7 @@ Resources:
       TenancyConfig:
         TenantIsolationMode: PER_TENANT
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           TENANT_USER_POOL_ID: !Ref CognitoUserPoolId
@@ -163,8 +166,6 @@ Resources:
 
   GetUserFunction:
     Type: AWS::Serverless::Function
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: user-management.get_user
@@ -174,7 +175,7 @@ Resources:
       TenancyConfig:
         TenantIsolationMode: PER_TENANT
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           TENANT_USER_POOL_ID: !Ref CognitoUserPoolId
@@ -182,8 +183,6 @@ Resources:
 
   GetUsersFunction:
     Type: AWS::Serverless::Function
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: user-management.get_users
@@ -193,7 +192,7 @@ Resources:
       TenancyConfig:
         TenantIsolationMode: PER_TENANT
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           TENANT_USER_POOL_ID: !Ref CognitoUserPoolId
@@ -201,8 +200,6 @@ Resources:
 
   CreateTenantFunction:
     Type: AWS::Serverless::Function
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: tenant-management.create_tenant
@@ -212,15 +209,13 @@ Resources:
       TenancyConfig:
         TenantIsolationMode: PER_TENANT
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "TenantManagement.CreateTenant"
 
   ActivateTenantFunction:
     Type: AWS::Serverless::Function
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: tenant-management.activate_tenant
@@ -230,7 +225,7 @@ Resources:
       TenancyConfig:
         TenantIsolationMode: PER_TENANT
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "TenantManagement.ActivateTenant"
@@ -239,8 +234,6 @@ Resources:
 
   GetTenantFunction:
     Type: AWS::Serverless::Function
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: tenant-management.get_tenant
@@ -250,15 +243,13 @@ Resources:
       TenancyConfig:
         TenantIsolationMode: PER_TENANT
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "TenantManagement.GetTenant"
 
   DeactivateTenantFunction:
     Type: AWS::Serverless::Function
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: tenant-management.deactivate_tenant
@@ -268,7 +259,7 @@ Resources:
       TenancyConfig:
         TenantIsolationMode: PER_TENANT
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "TenantManagement.DeactivateTenant"
@@ -277,8 +268,6 @@ Resources:
 
   UpdateTenantFunction:
     Type: AWS::Serverless::Function
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: tenant-management.update_tenant
@@ -288,15 +277,13 @@ Resources:
       TenancyConfig:
         TenantIsolationMode: PER_TENANT
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "TenantManagement.UpdateTenant"
 
   GetTenantsFunction:
     Type: AWS::Serverless::Function
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: tenant-management.get_tenants
@@ -306,12 +293,10 @@ Resources:
       TenancyConfig:
         TenantIsolationMode: PER_TENANT
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
 
   GetTenantConfigFunction:
     Type: AWS::Serverless::Function
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: tenant-management.load_tenant_config
@@ -321,12 +306,10 @@ Resources:
       TenancyConfig:
         TenantIsolationMode: PER_TENANT
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
 
   RegisterTenantFunction:
     Type: AWS::Serverless::Function
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: tenant-registration.register_tenant
@@ -334,7 +317,7 @@ Resources:
       Role: !ImportValue Serverless-SaaS-RegisterTenantLambdaExecutionRoleArn
       Tracing: Active
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           CREATE_TENANT_ADMIN_USER_RESOURCE_PATH: "/user/tenant-admin"
@@ -344,8 +327,6 @@ Resources:
 
   ProvisionTenantFunction:
     Type: AWS::Serverless::Function
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: tenant-provisioning.provision_tenant
@@ -353,15 +334,13 @@ Resources:
       Role: !ImportValue Serverless-SaaS-ProvisionTenantLambdaExecutionRoleArn
       Tracing: Active
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           TENANT_STACK_MAPPING_TABLE_NAME: !Ref TenantStackMappingTableName
 
   DeProvisionTenantFunction:
     Type: AWS::Serverless::Function
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: tenant-provisioning.deprovision_tenant
@@ -369,7 +348,7 @@ Resources:
       Role: !ImportValue Serverless-SaaS-DeProvisionTenantLambdaExecutionRoleArn
       Tracing: Active
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           TENANT_STACK_MAPPING_TABLE_NAME: !Ref TenantStackMappingTableName
@@ -382,7 +361,7 @@ Resources:
       Runtime: python3.14
       Role: !ImportValue Serverless-SaaS-UpdateSettingsTableLambdaExecutionRoleArn
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
 
   UpdateTenantStackMapTableFunction:
     Type: AWS::Serverless::Function
@@ -392,7 +371,7 @@ Resources:
       Runtime: python3.14
       Role: !ImportValue Serverless-SaaS-UpdateTenantStackMapTableLambdaExecutionRoleArn
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
 
 Outputs:
   RegisterTenantLambdaExecutionRoleArn:

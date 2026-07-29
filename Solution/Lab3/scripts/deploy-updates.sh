@@ -16,4 +16,17 @@ rm -rf .aws-sam/
 echo Y | sam sync --stack-name stack-pooled -t tenant-template.yaml --code --resource-id ServerlessSaaSLayers --resource-id BusinessServicesAuthorizerFunction --resource-id CreateProductFunction -u
 
 cd ../scripts || exit
+
+#sam sync --code publishes new layer versions without rewiring the functions that use them
+../../../scripts/update_lambda_layer.sh serverless-saas serverless-saas-dependencies
+if [[ $? -ne 0 ]]; then
+  echo "****ERROR: Failed to update Lambda layer version!!****"
+  exit 1
+fi
+../../../scripts/update_lambda_layer.sh stack-pooled serverless-saas-dependencies-pooled
+if [[ $? -ne 0 ]]; then
+  echo "****ERROR: Failed to update pooled Lambda layer version!!****"
+  exit 1
+fi
+
 ./geturl.sh

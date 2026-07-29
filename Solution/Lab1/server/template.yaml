@@ -96,8 +96,6 @@ Resources:
   GetProductFunction:
     Type: AWS::Serverless::Function 
     DependsOn: ProductFunctionExecutionRole 
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ProductService/
       Handler: product_service.get_product
@@ -115,8 +113,6 @@ Resources:
   GetProductsFunction:
     Type: AWS::Serverless::Function 
     DependsOn: ProductFunctionExecutionRole 
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ProductService/
       Handler: product_service.get_products
@@ -133,8 +129,6 @@ Resources:
   CreateProductFunction:
     Type: AWS::Serverless::Function
     DependsOn: ProductFunctionExecutionRole 
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ProductService/
       Handler: product_service.create_product
@@ -151,8 +145,6 @@ Resources:
   UpdateProductFunction:
     Type: AWS::Serverless::Function
     DependsOn: ProductFunctionExecutionRole 
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ProductService/
       Handler: product_service.update_product
@@ -169,8 +161,6 @@ Resources:
   DeleteProductFunction:
     Type: AWS::Serverless::Function
     DependsOn: ProductFunctionExecutionRole 
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ProductService/
       Handler: product_service.delete_product
@@ -221,8 +211,6 @@ Resources:
   GetOrdersFunction:
     Type: AWS::Serverless::Function 
     DependsOn: OrderFunctionExecutionRole 
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: OrderService/
       Handler: order_service.get_orders
@@ -239,8 +227,6 @@ Resources:
   GetOrderFunction:
     Type: AWS::Serverless::Function 
     DependsOn: OrderFunctionExecutionRole 
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: OrderService/
       Handler: order_service.get_order
@@ -257,8 +243,6 @@ Resources:
   CreateOrderFunction:
     Type: AWS::Serverless::Function
     DependsOn: OrderFunctionExecutionRole 
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: OrderService/
       Handler: order_service.create_order
@@ -275,8 +259,6 @@ Resources:
   UpdateOrderFunction:
     Type: AWS::Serverless::Function
     DependsOn: OrderFunctionExecutionRole 
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: OrderService/
       Handler: order_service.update_order
@@ -293,8 +275,6 @@ Resources:
   DeleteOrderFunction:
     Type: AWS::Serverless::Function
     DependsOn: OrderFunctionExecutionRole 
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: OrderService/
       Handler: order_service.delete_order

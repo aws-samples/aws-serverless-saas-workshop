@@ -25,6 +25,21 @@ Globals:
         POWERTOOLS_METRICS_NAMESPACE: "ServerlessSaaS"
 
 Resources:
+
+  # ==================== Lambda Layer ====================
+  ServerlessSaaSLayers:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: serverless-saas-dependencies
+      Description: Shared dependencies for Serverless SaaS Workshop
+      ContentUri: ../layers/
+      CompatibleRuntimes:
+        - python3.14
+      LicenseInfo: MIT
+      RetentionPolicy: Retain
+    Metadata:
+      BuildMethod: python3.14
+
   SharedServicesAuthorizerFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -35,7 +50,7 @@ Resources:
       MemorySize: 256
       Tracing: Active
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           OPERATION_USERS_USER_POOL: !Ref CognitoOperationUsersUserPoolId
@@ -43,8 +58,6 @@ Resources:
 
   CreateTenantAdminUserFunction:
     Type: AWS::Serverless::Function
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: user-management.create_tenant_admin_user
@@ -54,7 +67,7 @@ Resources:
       TenancyConfig:
         TenantIsolationMode: PER_TENANT
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           TENANT_USER_POOL_ID: !Ref CognitoUserPoolId
@@ -63,8 +76,6 @@ Resources:
 
   CreateUserFunction:
     Type: AWS::Serverless::Function
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: user-management.create_user
@@ -74,7 +85,7 @@ Resources:
       TenancyConfig:
         TenantIsolationMode: PER_TENANT
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           TENANT_USER_POOL_ID: !Ref CognitoUserPoolId
@@ -82,8 +93,6 @@ Resources:
 
   UpdateUserFunction:
     Type: AWS::Serverless::Function
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: user-management.update_user
@@ -93,7 +102,7 @@ Resources:
       TenancyConfig:
         TenantIsolationMode: PER_TENANT
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           TENANT_USER_POOL_ID: !Ref CognitoUserPoolId
@@ -101,8 +110,6 @@ Resources:
 
   DisableUserFunction:
     Type: AWS::Serverless::Function
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: user-management.disable_user
@@ -112,7 +119,7 @@ Resources:
       TenancyConfig:
         TenantIsolationMode: PER_TENANT
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           TENANT_USER_POOL_ID: !Ref CognitoUserPoolId
@@ -120,8 +127,6 @@ Resources:
 
   DisableUsersByTenantFunction:
     Type: AWS::Serverless::Function
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: user-management.disable_users_by_tenant
@@ -131,7 +136,7 @@ Resources:
       TenancyConfig:
         TenantIsolationMode: PER_TENANT
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           TENANT_USER_POOL_ID: !Ref CognitoUserPoolId
@@ -139,8 +144,6 @@ Resources:
 
   EnableUsersByTenantFunction:
     Type: AWS::Serverless::Function
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: user-management.enable_users_by_tenant
@@ -150,7 +153,7 @@ Resources:
       TenancyConfig:
         TenantIsolationMode: PER_TENANT
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           TENANT_USER_POOL_ID: !Ref CognitoUserPoolId
@@ -158,8 +161,6 @@ Resources:
 
   GetUserFunction:
     Type: AWS::Serverless::Function
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: user-management.get_user
@@ -169,7 +170,7 @@ Resources:
       TenancyConfig:
         TenantIsolationMode: PER_TENANT
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           TENANT_USER_POOL_ID: !Ref CognitoUserPoolId
@@ -177,8 +178,6 @@ Resources:
 
   GetUsersFunction:
     Type: AWS::Serverless::Function
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: user-management.get_users
@@ -188,7 +187,7 @@ Resources:
       TenancyConfig:
         TenantIsolationMode: PER_TENANT
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           TENANT_USER_POOL_ID: !Ref CognitoUserPoolId
@@ -196,8 +195,6 @@ Resources:
 
   CreateTenantFunction:
     Type: AWS::Serverless::Function
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: tenant-management.create_tenant
@@ -207,15 +204,13 @@ Resources:
       TenancyConfig:
         TenantIsolationMode: PER_TENANT
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "TenantManagement.CreateTenant"
 
   ActivateTenantFunction:
     Type: AWS::Serverless::Function
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: tenant-management.activate_tenant
@@ -225,7 +220,7 @@ Resources:
       TenancyConfig:
         TenantIsolationMode: PER_TENANT
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "TenantManagement.ActivateTenant"
@@ -234,8 +229,6 @@ Resources:
 
   GetTenantFunction:
     Type: AWS::Serverless::Function
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: tenant-management.get_tenant
@@ -245,15 +238,13 @@ Resources:
       TenancyConfig:
         TenantIsolationMode: PER_TENANT
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "TenantManagement.GetTenant"
 
   DeactivateTenantFunction:
     Type: AWS::Serverless::Function
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: tenant-management.deactivate_tenant
@@ -263,7 +254,7 @@ Resources:
       TenancyConfig:
         TenantIsolationMode: PER_TENANT
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "TenantManagement.DeactivateTenant"
@@ -272,8 +263,6 @@ Resources:
 
   UpdateTenantFunction:
     Type: AWS::Serverless::Function
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: tenant-management.update_tenant
@@ -283,15 +272,13 @@ Resources:
       TenancyConfig:
         TenantIsolationMode: PER_TENANT
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "TenantManagement.UpdateTenant"
 
   GetTenantsFunction:
     Type: AWS::Serverless::Function
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: tenant-management.get_tenants
@@ -301,12 +288,10 @@ Resources:
       TenancyConfig:
         TenantIsolationMode: PER_TENANT
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
 
   RegisterTenantFunction:
     Type: AWS::Serverless::Function
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../TenantManagementService/
       Handler: tenant-registration.register_tenant
@@ -314,7 +299,7 @@ Resources:
       Role: !ImportValue Serverless-SaaS-RegisterTenantLambdaExecutionRoleArn
       Tracing: Active
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           CREATE_TENANT_ADMIN_USER_RESOURCE_PATH: "/user/tenant-admin"
@@ -465,7 +450,7 @@ Resources:
       MemorySize: 256
       Tracing: Active
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           TENANT_USER_POOL: !ImportValue Serverless-SaaS-CognitoUserPoolId
@@ -474,8 +459,6 @@ Resources:
   GetProductFunction:
     Type: AWS::Serverless::Function
     DependsOn: ProductFunctionExecutionRole
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../ProductService/
       Handler: product_service.get_product
@@ -485,7 +468,7 @@ Resources:
         TenantIsolationMode: PER_TENANT
       Role: !GetAtt ProductFunctionExecutionRole.Arn
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "ProductService"
@@ -494,8 +477,6 @@ Resources:
   GetProductsFunction:
     Type: AWS::Serverless::Function
     DependsOn: ProductFunctionExecutionRole
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../ProductService/
       Handler: product_service.get_products
@@ -505,7 +486,7 @@ Resources:
         TenantIsolationMode: PER_TENANT
       Role: !GetAtt ProductFunctionExecutionRole.Arn
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "ProductService"
@@ -514,8 +495,6 @@ Resources:
   CreateProductFunction:
     Type: AWS::Serverless::Function
     DependsOn: ProductFunctionExecutionRole
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../ProductService/
       Handler: product_service.create_product
@@ -525,7 +504,7 @@ Resources:
         TenantIsolationMode: PER_TENANT
       Role: !GetAtt ProductFunctionExecutionRole.Arn
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "ProductService"
@@ -534,8 +513,6 @@ Resources:
   UpdateProductFunction:
     Type: AWS::Serverless::Function
     DependsOn: ProductFunctionExecutionRole
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../ProductService/
       Handler: product_service.update_product
@@ -545,7 +522,7 @@ Resources:
         TenantIsolationMode: PER_TENANT
       Role: !GetAtt ProductFunctionExecutionRole.Arn
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "ProductService"
@@ -554,8 +531,6 @@ Resources:
   DeleteProductFunction:
     Type: AWS::Serverless::Function
     DependsOn: ProductFunctionExecutionRole
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../ProductService/
       Handler: product_service.delete_product
@@ -565,7 +540,7 @@ Resources:
         TenantIsolationMode: PER_TENANT
       Role: !GetAtt ProductFunctionExecutionRole.Arn
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "ProductService"
@@ -574,8 +549,6 @@ Resources:
   GetOrdersFunction:
     Type: AWS::Serverless::Function
     DependsOn: OrderFunctionExecutionRole
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../OrderService/
       Handler: order_service.get_orders
@@ -585,7 +558,7 @@ Resources:
         TenantIsolationMode: PER_TENANT
       Role: !GetAtt OrderFunctionExecutionRole.Arn
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "OrderService"
@@ -594,8 +567,6 @@ Resources:
   GetOrderFunction:
     Type: AWS::Serverless::Function
     DependsOn: OrderFunctionExecutionRole
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../OrderService/
       Handler: order_service.get_order
@@ -605,7 +576,7 @@ Resources:
         TenantIsolationMode: PER_TENANT
       Role: !GetAtt OrderFunctionExecutionRole.Arn
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "OrderService"
@@ -614,8 +585,6 @@ Resources:
   CreateOrderFunction:
     Type: AWS::Serverless::Function
     DependsOn: OrderFunctionExecutionRole
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../OrderService/
       Handler: order_service.create_order
@@ -625,7 +594,7 @@ Resources:
         TenantIsolationMode: PER_TENANT
       Role: !GetAtt OrderFunctionExecutionRole.Arn
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "OrderService"
@@ -634,8 +603,6 @@ Resources:
   UpdateOrderFunction:
     Type: AWS::Serverless::Function
     DependsOn: OrderFunctionExecutionRole
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../OrderService/
       Handler: order_service.update_order
@@ -645,7 +612,7 @@ Resources:
         TenantIsolationMode: PER_TENANT
       Role: !GetAtt OrderFunctionExecutionRole.Arn
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "OrderService"
@@ -654,8 +621,6 @@ Resources:
   DeleteOrderFunction:
     Type: AWS::Serverless::Function
     DependsOn: OrderFunctionExecutionRole
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../OrderService/
       Handler: order_service.delete_order
@@ -665,7 +630,7 @@ Resources:
         TenantIsolationMode: PER_TENANT
       Role: !GetAtt OrderFunctionExecutionRole.Arn
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "OrderService"

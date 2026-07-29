@@ -226,20 +226,6 @@ Resources:
     Properties:
       CloudWatchRoleArn: !GetAtt ApiGatewayCloudWatchPublishRole.Arn
 
-  # ==================== Lambda Layer ====================
-  ServerlessSaaSLayers:
-    Type: AWS::Serverless::LayerVersion
-    Properties:
-      LayerName: serverless-saas-dependencies
-      Description: Shared dependencies for Serverless SaaS Workshop
-      ContentUri: layers/
-      CompatibleRuntimes:
-        - python3.14
-      LicenseInfo: MIT
-      RetentionPolicy: Retain
-    Metadata:
-      BuildMethod: python3.14
-
   # ==================== IAM Roles ====================
   AuthorizerExecutionRole:
     Type: AWS::IAM::Role
@@ -883,10 +869,6 @@ Outputs:
     Value: !GetAtt UpdateTenantStackMapTableLambdaExecutionRole.Arn
     Export:
       Name: Serverless-SaaS-UpdateTenantStackMapTableLambdaExecutionRoleArn
-  LayerArn:
-    Value: !Ref ServerlessSaaSLayers
-    Export:
-      Name: Serverless-SaaS-LayerArn
   AdminSiteBucket:
     Value: !Ref AdminAppBucket
     Export:

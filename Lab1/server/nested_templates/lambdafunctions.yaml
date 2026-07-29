@@ -29,6 +29,21 @@ Globals:
         POWERTOOLS_METRICS_NAMESPACE: "ServerlessSaaS"
 
 Resources:
+
+  # ==================== Lambda Layer ====================
+  ServerlessSaaSLayers:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: serverless-saas-dependencies
+      Description: Shared dependencies for Serverless SaaS Workshop
+      ContentUri: ../layers/
+      CompatibleRuntimes:
+        - python3.14
+      LicenseInfo: MIT
+      RetentionPolicy: Retain
+    Metadata:
+      BuildMethod: python3.14
+
   ProductTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -124,8 +139,6 @@ Resources:
   GetProductFunction:
     Type: AWS::Serverless::Function
     DependsOn: ProductFunctionExecutionRole
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../ProductService/
       Handler: product_service.get_product
@@ -133,7 +146,7 @@ Resources:
       Tracing: Active
       Role: !GetAtt ProductFunctionExecutionRole.Arn
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "ProductService"
@@ -142,8 +155,6 @@ Resources:
   GetProductsFunction:
     Type: AWS::Serverless::Function
     DependsOn: ProductFunctionExecutionRole
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../ProductService/
       Handler: product_service.get_products
@@ -151,7 +162,7 @@ Resources:
       Tracing: Active
       Role: !GetAtt ProductFunctionExecutionRole.Arn
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "ProductService"
@@ -160,8 +171,6 @@ Resources:
   CreateProductFunction:
     Type: AWS::Serverless::Function
     DependsOn: ProductFunctionExecutionRole
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../ProductService/
       Handler: product_service.create_product
@@ -169,7 +178,7 @@ Resources:
       Tracing: Active
       Role: !GetAtt ProductFunctionExecutionRole.Arn
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "ProductService"
@@ -178,8 +187,6 @@ Resources:
   UpdateProductFunction:
     Type: AWS::Serverless::Function
     DependsOn: ProductFunctionExecutionRole
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../ProductService/
       Handler: product_service.update_product
@@ -187,7 +194,7 @@ Resources:
       Tracing: Active
       Role: !GetAtt ProductFunctionExecutionRole.Arn
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "ProductService"
@@ -196,8 +203,6 @@ Resources:
   DeleteProductFunction:
     Type: AWS::Serverless::Function
     DependsOn: ProductFunctionExecutionRole
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../ProductService/
       Handler: product_service.delete_product
@@ -205,7 +210,7 @@ Resources:
       Tracing: Active
       Role: !GetAtt ProductFunctionExecutionRole.Arn
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "ProductService"
@@ -214,8 +219,6 @@ Resources:
   GetOrdersFunction:
     Type: AWS::Serverless::Function
     DependsOn: OrderFunctionExecutionRole
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../OrderService/
       Handler: order_service.get_orders
@@ -223,7 +226,7 @@ Resources:
       Tracing: Active
       Role: !GetAtt OrderFunctionExecutionRole.Arn
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "OrderService"
@@ -232,8 +235,6 @@ Resources:
   GetOrderFunction:
     Type: AWS::Serverless::Function
     DependsOn: OrderFunctionExecutionRole
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../OrderService/
       Handler: order_service.get_order
@@ -241,7 +242,7 @@ Resources:
       Tracing: Active
       Role: !GetAtt OrderFunctionExecutionRole.Arn
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "OrderService"
@@ -250,8 +251,6 @@ Resources:
   CreateOrderFunction:
     Type: AWS::Serverless::Function
     DependsOn: OrderFunctionExecutionRole
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../OrderService/
       Handler: order_service.create_order
@@ -259,7 +258,7 @@ Resources:
       Tracing: Active
       Role: !GetAtt OrderFunctionExecutionRole.Arn
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "OrderService"
@@ -268,8 +267,6 @@ Resources:
   UpdateOrderFunction:
     Type: AWS::Serverless::Function
     DependsOn: OrderFunctionExecutionRole
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../OrderService/
       Handler: order_service.update_order
@@ -277,7 +274,7 @@ Resources:
       Tracing: Active
       Role: !GetAtt OrderFunctionExecutionRole.Arn
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "OrderService"
@@ -286,8 +283,6 @@ Resources:
   DeleteOrderFunction:
     Type: AWS::Serverless::Function
     DependsOn: OrderFunctionExecutionRole
-    Metadata:
-      BuildMethod: makefile
     Properties:
       CodeUri: ../OrderService/
       Handler: order_service.delete_order
@@ -295,7 +290,7 @@ Resources:
       Tracing: Active
       Role: !GetAtt OrderFunctionExecutionRole.Arn
       Layers:
-        - !ImportValue Serverless-SaaS-LayerArn
+        - !Ref ServerlessSaaSLayers
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "OrderService"

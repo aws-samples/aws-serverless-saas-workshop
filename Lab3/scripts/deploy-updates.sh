@@ -8,7 +8,7 @@ if [[ $? -ne 0 ]]; then
 fi
 #Deploying shared services changes
 echo "Deploying shared services changes"
-echo Y | sam sync --stack-name serverless-saas -t template.yaml --code --resource-id LambdaFunctions/SharedServicesAuthorizerFunction -u
+echo Y | sam sync --stack-name serverless-saas -t template.yaml --code --resource-id LambdaFunctions/ServerlessSaaSLayers --resource-id LambdaFunctions/SharedServicesAuthorizerFunction -u
 
 #Deploying tenant services changes
 echo "Deploying tenant services changes"
@@ -16,4 +16,12 @@ rm -rf .aws-sam/
 echo Y | sam sync --stack-name serverless-saas -t template.yaml --code --resource-id LambdaFunctions/BusinessServicesAuthorizerFunction --resource-id LambdaFunctions/CreateProductFunction -u
 
 cd ../scripts || exit
+
+#sam sync --code publishes a new layer version without rewiring the functions that use it
+../../scripts/update_lambda_layer.sh serverless-saas serverless-saas-dependencies
+if [[ $? -ne 0 ]]; then
+  echo "****ERROR: Failed to update Lambda layer version!!****"
+  exit 1
+fi
+
 ./geturl.sh
