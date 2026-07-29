@@ -39,33 +39,20 @@ if [[ $server -eq 1 ]]; then
   cd ../server || exit
 
   if [ "$IS_RUNNING_IN_EVENT_ENGINE" = false ]; then
-    # Phase 1: Deploy IDE if not already deployed
-    IDE_STACK_STATUS=$(aws cloudformation describe-stacks --stack-name serverless-saas-ide \
-      --query "Stacks[0].StackStatus" --output text --region "$REGION" 2>/dev/null)
-    if [ -z "$IDE_STACK_STATUS" ] || [ "$IDE_STACK_STATUS" = "None" ]; then
-      echo "Deploying VS Code IDE..."
-      aws cloudformation deploy \
-        --template-file ide-template.yaml \
-        --stack-name serverless-saas-ide \
-        --capabilities CAPABILITY_NAMED_IAM \
-        --region "$REGION"
-    fi
+    echo "Deploying shared infrastructure (IDE, S3, CloudFront, DynamoDB, Cognito)..."
+    sam build -t shared-template.yaml
+    sam deploy --config-file shared-samconfig.toml --region="$REGION"
 
-    IDE_URL=$(aws cloudformation describe-stacks --stack-name serverless-saas-ide \
-      --query "Stacks[0].Outputs[?OutputKey=='IdeUrl'].OutputValue" --output text --region "$REGION")
-    IDE_PASSWORD=$(aws cloudformation describe-stacks --stack-name serverless-saas-ide \
-      --query "Stacks[0].Outputs[?OutputKey=='IdePassword'].OutputValue" --output text --region "$REGION")
+    IDE_URL=$(aws cloudformation describe-stacks --stack-name serverless-saas-shared --query "Stacks[0].Outputs[?OutputKey=='IdeUrl'].OutputValue" --output text)
+    IDE_PASSWORD=$(aws cloudformation describe-stacks --stack-name serverless-saas-shared --query "Stacks[0].Outputs[?OutputKey=='IdePassword'].OutputValue" --output text)
     echo ""
     echo "============================================"
     echo "VS Code IDE URL: ${IDE_URL}"
     echo "VS Code IDE Password: ${IDE_PASSWORD}"
     echo "============================================"
     echo ""
-
-    # Phase 2: Deploy shared infrastructure (Layer, Cognito, DDB, S3, CloudFront)
-    echo "Deploying shared infrastructure..."
-    sam build -t shared-template.yaml
-    sam deploy --config-file shared-samconfig.toml --region="$REGION"
+    echo "You can now open the IDE in your browser and run the remaining commands from there."
+    echo ""
   fi
 
   echo "Validating server code using pylint"
