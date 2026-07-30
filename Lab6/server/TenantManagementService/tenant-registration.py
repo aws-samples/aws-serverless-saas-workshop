@@ -15,16 +15,22 @@ create_tenant_admin_user_resource_path = os.environ['CREATE_TENANT_ADMIN_USER_RE
 create_tenant_resource_path = os.environ['CREATE_TENANT_RESOURCE_PATH']
 provision_tenant_resource_path = os.environ['PROVISION_TENANT_RESOURCE_PATH']
 
+platinum_tier_api_key = os.environ['PLATINUM_TIER_API_KEY']
+premium_tier_api_key = os.environ['PREMIUM_TIER_API_KEY']
+standard_tier_api_key = os.environ['STANDARD_TIER_API_KEY']
+basic_tier_api_key = os.environ['BASIC_TIER_API_KEY']
 
 lambda_client = boto3.client('lambda')
 
 
 def register_tenant(event, context):
     try:
+        api_key=''
         tenant_id = uuid.uuid1().hex
         tenant_details = json.loads(event['body'])
         tenant_details['dedicatedTenancy'] = 'false'
 
+        #TODO: Pass relevant apikey to tenant_details object based upon tenant tier
         if (tenant_details['tenantTier'].upper() == utils.TenantTier.PLATINUM.value.upper()):
             tenant_details['dedicatedTenancy'] = 'true'
         

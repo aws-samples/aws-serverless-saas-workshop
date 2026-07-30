@@ -44,6 +44,16 @@ Parameters:
     Type: String
   AuthorizerFunctionArn:
     Type: String
+  ApiKeyOperationUsersParameter:
+    Type: String
+  ApiKeyPlatinumTierParameter:
+    Type: String
+  ApiKeyPremiumTierParameter:
+    Type: String
+  ApiKeyStandardTierParameter:
+    Type: String
+  ApiKeyBasicTierParameter:
+    Type: String
 
 Resources:
   AdminApiGatewayAccessLogs:
@@ -725,6 +735,158 @@ Resources:
           HttpMethod: "*"
       TracingEnabled: true
 
+  # ==================== API Keys and Usage Plans ====================
+  APIGatewayApiKeySystemAdmin:
+    Type: AWS::ApiGateway::ApiKey
+    Properties:
+      Description: "This is the api key to be used by system admin"
+      Enabled: True
+      Name: Serverless-SaaS-SysAdmin-ApiKey
+      Value: !Ref ApiKeyOperationUsersParameter
+  APIGatewayApiKeyPlatinumTier:
+    Type: AWS::ApiGateway::ApiKey
+    Properties:
+      Description: 'This is the api key to be used by platinum tier tenants'
+      Enabled: True
+      Name: Serverless-SaaS-PlatinumTier-ApiKey
+      Value: !Ref ApiKeyPlatinumTierParameter
+  APIGatewayApiKeyPremiumTier:
+    Type: AWS::ApiGateway::ApiKey
+    Properties:
+      Description: 'This is the api key to be used by premium tier tenants'
+      Enabled: True
+      Name: Serverless-SaaS-PremiumTier-ApiKey
+      Value: !Ref ApiKeyPremiumTierParameter
+  APIGatewayApiKeyStandardTier:
+    Type: AWS::ApiGateway::ApiKey
+    Properties:
+      Description: 'This is the api key to be used by standard tier tenants'
+      Enabled: True
+      Name: Serverless-SaaS-StandardTier-ApiKey
+      Value: !Ref ApiKeyStandardTierParameter
+  APIGatewayApiKeyBasicTier:
+    Type: AWS::ApiGateway::ApiKey
+    Properties:
+      Description: 'This is the api key to be used by basic tier tenants'
+      Enabled: True
+      Name: Serverless-SaaS-BasicTier-ApiKey
+      Value: !Ref ApiKeyBasicTierParameter
+
+  UsagePlanPlatinumTier:
+    Type: AWS::ApiGateway::UsagePlan
+    DependsOn: ApiStage
+    Properties:
+      ApiStages:
+        - ApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+          Stage: !Ref StageName
+      Description: Usage plan for platinum tier tenants
+      Quota:
+        Limit: 10000
+        Period: DAY
+      Throttle:
+        BurstLimit: 300
+        RateLimit: 300
+      UsagePlanName: Plan_Platinum_Tier
+  UsagePlanPremiumTier:
+    Type: AWS::ApiGateway::UsagePlan
+    DependsOn: ApiStage
+    Properties:
+      ApiStages:
+        - ApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+          Stage: !Ref StageName
+      Description: Usage plan for premium tier tenants
+      Quota:
+        Limit: 5000
+        Period: DAY
+      Throttle:
+        BurstLimit: 200
+        RateLimit: 100
+      UsagePlanName: Plan_Premium_Tier
+  UsagePlanStandardTier:
+    Type: AWS::ApiGateway::UsagePlan
+    DependsOn: ApiStage
+    Properties:
+      ApiStages:
+        - ApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+          Stage: !Ref StageName
+      Description: Usage plan for standard tier tenants
+      Quota:
+        Limit: 3000
+        Period: DAY
+      Throttle:
+        BurstLimit: 100
+        RateLimit: 75
+      UsagePlanName: Plan_Standard_Tier
+  UsagePlanBasicTier:
+    Type: AWS::ApiGateway::UsagePlan
+    DependsOn: ApiStage
+    Properties:
+      ApiStages:
+        - ApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+          Stage: !Ref StageName
+      Description: Usage plan for basic tier tenants
+      Quota:
+        Limit: 500
+        Period: DAY
+      Throttle:
+        BurstLimit: 50
+        RateLimit: 50
+      UsagePlanName: Plan_Basic_Tier
+  UsagePlanSystemAdmin:
+    Type: AWS::ApiGateway::UsagePlan
+    DependsOn: ApiStage
+    Properties:
+      ApiStages:
+        - ApiId: !ImportValue Serverless-SaaS-AdminApiGatewayId
+          Stage: !Ref StageName
+      Description: Usage plan for system admin
+      Quota:
+        Limit: 10000
+        Period: DAY
+      Throttle:
+        BurstLimit: 5000
+        RateLimit: 500
+      UsagePlanName: System_Admin_Usage_Plan
+
+  AssociateAPIKeyToUsagePlan:
+    Type: AWS::ApiGateway::UsagePlanKey
+    Properties:
+      KeyId: !Ref APIGatewayApiKeySystemAdmin
+      KeyType: API_KEY
+      UsagePlanId: !Ref UsagePlanSystemAdmin
+  AssociatePlatinumAPIKeyToUsagePlan:
+    Type: AWS::ApiGateway::UsagePlanKey
+    Properties:
+      KeyId: !Ref APIGatewayApiKeyPlatinumTier
+      KeyType: API_KEY
+      UsagePlanId: !Ref UsagePlanPlatinumTier
+  AssociatePremiumAPIKeyToUsagePlan:
+    Type: AWS::ApiGateway::UsagePlanKey
+    Properties:
+      KeyId: !Ref APIGatewayApiKeyPremiumTier
+      KeyType: API_KEY
+      UsagePlanId: !Ref UsagePlanPremiumTier
+  AssociateStandardAPIKeyToUsagePlan:
+    Type: AWS::ApiGateway::UsagePlanKey
+    Properties:
+      KeyId: !Ref APIGatewayApiKeyStandardTier
+      KeyType: API_KEY
+      UsagePlanId: !Ref UsagePlanStandardTier
+  AssociateBasicAPIKeyToUsagePlan:
+    Type: AWS::ApiGateway::UsagePlanKey
+    Properties:
+      KeyId: !Ref APIGatewayApiKeyBasicTier
+      KeyType: API_KEY
+      UsagePlanId: !Ref UsagePlanBasicTier
+
 Outputs:
   AdminApiGatewayApi:
     Value: !ImportValue Serverless-SaaS-AdminApiGatewayId
+  UsagePlanBasicTier:
+    Value: !Ref UsagePlanBasicTier
+  UsagePlanStandardTier:
+    Value: !Ref UsagePlanStandardTier
+  UsagePlanPremiumTier:
+    Value: !Ref UsagePlanPremiumTier
+  UsagePlanPlatinumTier:
+    Value: !Ref UsagePlanPlatinumTier

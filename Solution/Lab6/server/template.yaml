@@ -37,6 +37,10 @@ Resources:
         CognitoOperationUsersUserPoolClientId: !ImportValue Serverless-SaaS-CognitoOperationUsersUserPoolClientId
         TenantStackMappingTableName: !ImportValue Serverless-SaaS-TenantStackMappingTableName
         TenantUserPoolCallbackURLParameter: !ImportValue Serverless-SaaS-ApplicationSite
+        ApiKeyPlatinumTierParameter: !Ref ApiKeyPlatinumTierParameter
+        ApiKeyPremiumTierParameter: !Ref ApiKeyPremiumTierParameter
+        ApiKeyStandardTierParameter: !Ref ApiKeyStandardTierParameter
+        ApiKeyBasicTierParameter: !Ref ApiKeyBasicTierParameter
 
   APIs:
     Type: AWS::Serverless::Application
@@ -147,3 +151,19 @@ Outputs:
     Value: !Ref ApiKeyOperationUsersParameter
     Export:
       Name: "Serverless-SaaS-ApiKeyOperationUsers"
+  UsagePlanBasicTier:
+    Value: !GetAtt APIs.Outputs.UsagePlanBasicTier
+    Export:
+      Name: "Serverless-SaaS-UsagePlanBasicTier"
+  UsagePlanStandardTier:
+    Value: !GetAtt APIs.Outputs.UsagePlanStandardTier
+    Export:
+      Name: "Serverless-SaaS-UsagePlanStandardTier"
+  UsagePlanPremiumTier:
+    Value: !GetAtt APIs.Outputs.UsagePlanPremiumTier
+    Export:
+      Name: "Serverless-SaaS-UsagePlanPremiumTier"
+  UsagePlanPlatinumTier:
+    Value: !GetAtt APIs.Outputs.UsagePlanPlatinumTier
+    Export:
+      Name: "Serverless-SaaS-UsagePlanPlatinumTier"

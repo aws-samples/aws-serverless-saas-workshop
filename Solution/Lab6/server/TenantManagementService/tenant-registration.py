@@ -13,16 +13,32 @@ import re
 region = os.environ['AWS_REGION']
 create_tenant_admin_user_resource_path = os.environ['CREATE_TENANT_ADMIN_USER_RESOURCE_PATH']
 create_tenant_resource_path = os.environ['CREATE_TENANT_RESOURCE_PATH']
+platinum_tier_api_key = os.environ['PLATINUM_TIER_API_KEY']
+premium_tier_api_key = os.environ['PREMIUM_TIER_API_KEY']
+standard_tier_api_key = os.environ['STANDARD_TIER_API_KEY']
+basic_tier_api_key = os.environ['BASIC_TIER_API_KEY']
 
 lambda_client = boto3.client('lambda')
 
 def register_tenant(event, context):
     try:
+        api_key = ''
         tenant_id = uuid.uuid1().hex
         tenant_details = json.loads(event['body'])
 
         tenant_details['tenantId'] = tenant_id
         tenant_details['dedicatedTenancy'] = 'true' if tenant_details.get('tenantTier', '').upper() == 'PLATINUM' else 'false'
+
+        if (tenant_details['tenantTier'].upper() == utils.TenantTier.PLATINUM.value.upper()):
+            api_key = platinum_tier_api_key
+        elif (tenant_details['tenantTier'].upper() == utils.TenantTier.PREMIUM.value.upper()):
+            api_key = premium_tier_api_key
+        elif (tenant_details['tenantTier'].upper() == utils.TenantTier.STANDARD.value.upper()):
+            api_key = standard_tier_api_key
+        elif (tenant_details['tenantTier'].upper() == utils.TenantTier.BASIC.value.upper()):
+            api_key = basic_tier_api_key
+
+        tenant_details['apiKey'] = api_key
 
         logger.info(tenant_details)
 

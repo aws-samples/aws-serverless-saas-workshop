@@ -18,6 +18,14 @@ Parameters:
     Type: String
   TenantUserPoolCallbackURLParameter:
     Type: String
+  ApiKeyPlatinumTierParameter:
+    Type: String
+  ApiKeyPremiumTierParameter:
+    Type: String
+  ApiKeyStandardTierParameter:
+    Type: String
+  ApiKeyBasicTierParameter:
+    Type: String
 Globals:
   Function:
     Timeout: 29
@@ -281,6 +289,10 @@ Resources:
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: "TenantManagement.UpdateTenant"
+          PLATINUM_TIER_API_KEY: !Ref ApiKeyPlatinumTierParameter
+          PREMIUM_TIER_API_KEY: !Ref ApiKeyPremiumTierParameter
+          STANDARD_TIER_API_KEY: !Ref ApiKeyStandardTierParameter
+          BASIC_TIER_API_KEY: !Ref ApiKeyBasicTierParameter
 
   GetTenantsFunction:
     Type: AWS::Serverless::Function
@@ -324,6 +336,10 @@ Resources:
           CREATE_TENANT_RESOURCE_PATH: "/tenant"
           PROVISION_TENANT_RESOURCE_PATH: "/provisioning"
           POWERTOOLS_SERVICE_NAME: "TenantRegistration.RegisterTenant"
+          PLATINUM_TIER_API_KEY: !Ref ApiKeyPlatinumTierParameter
+          PREMIUM_TIER_API_KEY: !Ref ApiKeyPremiumTierParameter
+          STANDARD_TIER_API_KEY: !Ref ApiKeyStandardTierParameter
+          BASIC_TIER_API_KEY: !Ref ApiKeyBasicTierParameter
 
   ProvisionTenantFunction:
     Type: AWS::Serverless::Function
