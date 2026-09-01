@@ -35,14 +35,14 @@
 
             <mat-form-field appearance="outline">
               <mat-label>User Role</mat-label>
-              <input
-                matInput
-                id="userrole"
-                name="userrole"
-                formControlName="userRole"
-                placeholder="User Role"
-                required
-              />
+              <!-- The API rejects any role outside this list, so offer exactly the
+                   roles this caller is allowed to assign. -->
+              <select matNativeControl id="userrole" name="userrole"
+                      formControlName="userRole" required>
+                <option value="SystemAdmin">SystemAdmin</option>
+                <option value="TenantAdmin">TenantAdmin</option>
+                <option value="TenantUser">TenantUser</option>
+              </select>
               <mat-icon matSuffix>vpn_key</mat-icon>
             </mat-form-field>
             <br />
