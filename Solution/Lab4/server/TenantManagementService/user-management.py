@@ -50,6 +50,12 @@ def create_user(event, context):
     user_role = event['requestContext']['authorizer']['userRole']
 
     user_details = json.loads(event['body'])
+    # The role being assigned comes from the request body, so it has to be
+    # checked against the caller's own role from the authorizer context.
+    if (not auth_manager.canAssignRole(user_role, user_details.get('userRole'))):
+        logger.log_with_tenant_context(event, "Request completed as unauthorized. "
+                                              "Caller may not assign that user role!")
+        return utils.create_unauthorized_response()
 
     tracer.put_annotation(key="TenantId", value=tenant_id)
     
@@ -171,6 +177,12 @@ def update_user(event, context):
     user_role = event['requestContext']['authorizer']['userRole']    
     
     user_details = json.loads(event['body'])
+    # The role being assigned comes from the request body, so it has to be
+    # checked against the caller's own role from the authorizer context.
+    if (not auth_manager.canAssignRole(user_role, user_details.get('userRole'))):
+        logger.log_with_tenant_context(event, "Request completed as unauthorized. "
+                                              "Caller may not assign that user role!")
+        return utils.create_unauthorized_response()
 
     user_name = event['pathParameters']['username']    
 

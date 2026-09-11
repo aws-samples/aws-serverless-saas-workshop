@@ -35,6 +35,25 @@ def isTenantUser(user_role):
     else:
         return False
 
+
+# Which roles a caller is allowed to assign to a user. A caller may never grant a
+# role more privileged than their own, so a tenant admin cannot mint a
+# provider-level SystemAdmin and hand it cross-tenant access. CustomerSupport is
+# absent deliberately: getPolicyForUser has no policy for it, so such an account
+# could not authenticate.
+ASSIGNABLE_ROLES = {
+    UserRoles.SYSTEM_ADMIN: [UserRoles.SYSTEM_ADMIN, UserRoles.TENANT_ADMIN, UserRoles.TENANT_USER],
+    UserRoles.TENANT_ADMIN: [UserRoles.TENANT_ADMIN, UserRoles.TENANT_USER],
+}
+
+
+def canAssignRole(actor_role, role_to_assign):
+    """ Whether actor_role may assign role_to_assign to a user.
+
+    actor_role must come from the authorizer context, never the request body.
+    """
+    return role_to_assign in ASSIGNABLE_ROLES.get(actor_role, [])
+
 def getPolicyForUser(user_role, service_identifier, tenant_id, region, aws_account_id):
     """ This method is being used by Authorizer to get appropriate policy by user role
     Args:
@@ -45,14 +64,17 @@ def getPolicyForUser(user_role, service_identifier, tenant_id, region, aws_accou
     Returns:
         string: policy that tenant needs to assume
     """
-    iam_policy = ""
-    
     if (isSystemAdmin(user_role)):
         iam_policy = __getPolicyForSystemAdmin(region, aws_account_id)
     elif (isTenantAdmin(user_role)):
         iam_policy = __getPolicyForTenantAdmin(tenant_id, service_identifier, region, aws_account_id)
     elif (isTenantUser(user_role)):
         iam_policy = __getPolicyForTenantUser(tenant_id, region, aws_account_id)
+    else:
+        # Fail closed. Returning an empty policy here would leave the
+        # caller's access to whatever the assumed role already permits.
+        raise PermissionError(
+            "Unauthorized: no policy is defined for role '{0}'".format(user_role))
     
     return iam_policy
 

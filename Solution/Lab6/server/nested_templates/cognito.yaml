@@ -72,10 +72,13 @@ Resources:
         - email
         - openid
         - profile
+      # Only email is writable by the signed-in user. Any attribute listed
+      # here can be changed by the user themselves through Cognito's
+      # UpdateUserAttributes API, bypassing API Gateway entirely, so no
+      # attribute that drives an authorization decision belongs here.
+      # tenantId and userRole are set only via the admin-side APIs.
       WriteAttributes:
         - "email"
-        - "custom:tenantId"
-        - "custom:userRole"        
   CognitoUserPoolDomain:
     Type: AWS::Cognito::UserPoolDomain
     Properties:
@@ -135,10 +138,13 @@ Resources:
         - email
         - openid
         - profile
+      # Only email is writable by the signed-in user. Any attribute listed
+      # here can be changed by the user themselves through Cognito's
+      # UpdateUserAttributes API, bypassing API Gateway entirely, so no
+      # attribute that drives an authorization decision belongs here.
+      # tenantId and userRole are set only via the admin-side APIs.
       WriteAttributes:
         - "email"
-        - "custom:tenantId"
-        - "custom:userRole"        
   CognitoOperationUsersUserPoolDomain:
     Type: AWS::Cognito::UserPoolDomain
     Properties:

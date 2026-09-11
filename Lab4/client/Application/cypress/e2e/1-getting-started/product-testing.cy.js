@@ -35,7 +35,7 @@ describe('check that product, order and user functionality works as expected', (
     const myUser = {
       name: "myUser-"+Date.now(),
       email: email_username + random_suffix + '@' + email_domain,
-      role: 'userRole'+Date.now().toString().slice(-5)
+      role: 'TenantUser'
     }
     cy.get("a").contains("Users").click()
 
@@ -51,7 +51,7 @@ describe('check that product, order and user functionality works as expected', (
     cy.get('form').within(() => {
       cy.get('input[formcontrolname="userName"]').type(myUser.name)
       cy.get('input[formcontrolname="userEmail"]').type(myUser.email)
-      cy.get('input[formcontrolname="userRole"]').type(myUser.role)
+      cy.get('select[formcontrolname="userRole"]').select(myUser.role)
     })
 
     cy.intercept({
