@@ -459,8 +459,7 @@ class UserManagement:
                 'profile'
             ],
             WriteAttributes=[
-                'email',
-                'custom:tenantId'
+                'email'
             ]
         )
         return response
