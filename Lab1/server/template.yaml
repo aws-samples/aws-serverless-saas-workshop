@@ -10,7 +10,7 @@ Globals:
   Function:
     Timeout: 29
     Layers:
-      - !Sub "arn:aws:lambda:${AWS::Region}:580247275435:layer:LambdaInsightsExtension:14"
+      - !Sub "arn:aws:lambda:${AWS::Region}:580247275435:layer:LambdaInsightsExtension-Arm64:1"
     Environment:
         Variables:
           LOG_LEVEL: DEBUG                   
@@ -25,6 +25,8 @@ Resources:
   ServerlessSaaSLayers:
     Type: AWS::Serverless::LayerVersion
     Properties:
+      CompatibleArchitectures:
+        - arm64
       LayerName: serverless-saas-workshoplab1
       Description: Utilities for project
       ContentUri: layers/
@@ -97,6 +99,8 @@ Resources:
     Type: AWS::Serverless::Function 
     DependsOn: ProductFunctionExecutionRole 
     Properties:
+      Architectures:
+        - arm64
       CodeUri: ProductService/
       Handler: product_service.get_product
       Runtime: python3.9  
@@ -114,6 +118,8 @@ Resources:
     Type: AWS::Serverless::Function 
     DependsOn: ProductFunctionExecutionRole 
     Properties:
+      Architectures:
+        - arm64
       CodeUri: ProductService/
       Handler: product_service.get_products
       Runtime: python3.9  
@@ -130,6 +136,8 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: ProductFunctionExecutionRole 
     Properties:
+      Architectures:
+        - arm64
       CodeUri: ProductService/
       Handler: product_service.create_product
       Runtime: python3.9  
@@ -146,6 +154,8 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: ProductFunctionExecutionRole 
     Properties:
+      Architectures:
+        - arm64
       CodeUri: ProductService/
       Handler: product_service.update_product
       Runtime: python3.9 
@@ -162,6 +172,8 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: ProductFunctionExecutionRole 
     Properties:
+      Architectures:
+        - arm64
       CodeUri: ProductService/
       Handler: product_service.delete_product
       Runtime: python3.9 
@@ -212,6 +224,8 @@ Resources:
     Type: AWS::Serverless::Function 
     DependsOn: OrderFunctionExecutionRole 
     Properties:
+      Architectures:
+        - arm64
       CodeUri: OrderService/
       Handler: order_service.get_orders
       Runtime: python3.9  
@@ -228,6 +242,8 @@ Resources:
     Type: AWS::Serverless::Function 
     DependsOn: OrderFunctionExecutionRole 
     Properties:
+      Architectures:
+        - arm64
       CodeUri: OrderService/
       Handler: order_service.get_order
       Runtime: python3.9  
@@ -244,6 +260,8 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: OrderFunctionExecutionRole 
     Properties:
+      Architectures:
+        - arm64
       CodeUri: OrderService/
       Handler: order_service.create_order
       Runtime: python3.9  
@@ -260,6 +278,8 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: OrderFunctionExecutionRole 
     Properties:
+      Architectures:
+        - arm64
       CodeUri: OrderService/
       Handler: order_service.update_order
       Runtime: python3.9 
@@ -276,6 +296,8 @@ Resources:
     Type: AWS::Serverless::Function
     DependsOn: OrderFunctionExecutionRole 
     Properties:
+      Architectures:
+        - arm64
       CodeUri: OrderService/
       Handler: order_service.delete_order
       Runtime: python3.9 
