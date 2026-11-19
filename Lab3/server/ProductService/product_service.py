@@ -9,7 +9,10 @@ import product_service_dal
 from decimal import Decimal
 from aws_lambda_powertools import Tracer
 from types import SimpleNamespace
+
 tracer = Tracer()
+# Patch AWS SDK calls for X-Ray tracing
+tracer.patch(['boto3'])
 
 @tracer.capture_lambda_handler
 def get_product(event, context):

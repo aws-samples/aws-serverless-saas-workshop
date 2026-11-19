@@ -10,6 +10,10 @@ Parameters:
     Type: String
     Default: "test@test.com"
     Description: "Enter system admin email address"
+  TenantAdminEmailParameter:
+    Type: String
+    Default: "tenant-admin@test.com"
+    Description: "Enter tenant admin email address"
   SystemAdminRoleNameParameter:
     Type: String
     Default: "SystemAdmin"
@@ -53,6 +57,7 @@ Resources:
       Location: nested_templates/cognito.yaml
       Parameters:
         AdminEmailParameter: !Ref AdminEmailParameter
+        TenantAdminEmailParameter: !Ref TenantAdminEmailParameter
         SystemAdminRoleNameParameter: !Ref SystemAdminRoleNameParameter
         AdminUserPoolCallbackURLParameter: !If [IsNotRunningInEventEngine, !GetAtt UserInterface.Outputs.AdminAppSite, !Ref AdminUserPoolCallbackURLParameter]
         TenantUserPoolCallbackURLParameter: !If [IsNotRunningInEventEngine, !GetAtt UserInterface.Outputs.ApplicationSite, !Ref TenantUserPoolCallbackURLParameter]

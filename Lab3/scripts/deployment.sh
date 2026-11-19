@@ -7,8 +7,13 @@ if [[ "$#" -eq 0 ]]; then
   echo "Command to deploy tenant server code: deployment.sh -t"
   echo "Command to deploy bootstrap & tenant server code: deployment.sh -s" 
   echo "Command to deploy server & client code: deployment.sh -s -c"
+  echo "Command to specify admin email: deployment.sh -s -e admin@example.com"
+  echo "Command to specify tenant admin email: deployment.sh -s -te tenant-admin@example.com"
   exit 1      
 fi
+
+ADMIN_EMAIL=""
+TENANT_ADMIN_EMAIL=""
 
 while [[ "$#" -gt 0 ]]; do
     case $1 in
@@ -16,6 +21,8 @@ while [[ "$#" -gt 0 ]]; do
         -b) bootstrap=1 ;;
         -t) tenant=1 ;;
         -c) client=1 ;;
+        -e) ADMIN_EMAIL="$2"; shift ;;
+        -te) TENANT_ADMIN_EMAIL="$2"; shift ;;
         *) echo "Unknown parameter passed: $1"; exit 1 ;;
     esac
     shift
@@ -42,7 +49,15 @@ fi
 if [[ $server -eq 1 ]] || [[ $bootstrap -eq 1 ]] || [[ $tenant -eq 1 ]]; then
   echo "Validating server code using pylint"
   cd ../server
-  python3 -m pylint -E -d E0401,E1111 $(find . -iname "*.py" -not -path "./.aws-sam/*")
+  
+  # Use virtual environment Python if available
+  if [ -f "../../.venv_py313/bin/python" ]; then
+    PYTHON_CMD="../../.venv_py313/bin/python"
+  else
+    PYTHON_CMD="python3"
+  fi
+  
+  $PYTHON_CMD -m pylint -E -d E0401,E1111 $(find . -iname "*.py" -not -path "./.aws-sam/*")
   if [[ $? -ne 0 ]]; then
     echo "****ERROR: Please fix above code errors and then rerun script!!****"
     exit 1
@@ -54,12 +69,23 @@ if [[ $server -eq 1 ]] || [[ $bootstrap -eq 1 ]]; then
   echo "Bootstrap server code is getting deployed"
   cd ../server
   REGION=$(aws configure get region)
-  sam build -t shared-template.yaml --use-container
+  sam build -t shared-template.yaml
+  
+  # Build parameter overrides
+  PARAM_OVERRIDES="EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE"
+  if [ ! -z "$ADMIN_EMAIL" ]; then
+    PARAM_OVERRIDES="$PARAM_OVERRIDES AdminEmailParameter=$ADMIN_EMAIL"
+    echo "Using admin email: $ADMIN_EMAIL"
+  fi
+  if [ ! -z "$TENANT_ADMIN_EMAIL" ]; then
+    PARAM_OVERRIDES="$PARAM_OVERRIDES TenantAdminEmailParameter=$TENANT_ADMIN_EMAIL"
+    echo "Using tenant admin email: $TENANT_ADMIN_EMAIL"
+  fi
   
   if [ "$IS_RUNNING_IN_EVENT_ENGINE" = true ]; then
-    sam deploy --config-file shared-samconfig.toml --region=$REGION --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE AdminUserPoolCallbackURLParameter=$ADMIN_SITE_URL TenantUserPoolCallbackURLParameter=$APP_SITE_URL
+    sam deploy --config-file shared-samconfig.toml --region=$REGION --parameter-overrides $PARAM_OVERRIDES AdminUserPoolCallbackURLParameter=$ADMIN_SITE_URL TenantUserPoolCallbackURLParameter=$APP_SITE_URL
   else
-    sam deploy --config-file shared-samconfig.toml --region=$REGION --parameter-overrides EventEngineParameter=$IS_RUNNING_IN_EVENT_ENGINE
+    sam deploy --config-file shared-samconfig.toml --region=$REGION --parameter-overrides $PARAM_OVERRIDES
   fi
   cd ../scripts
 fi  
@@ -68,7 +94,7 @@ if [[ $server -eq 1 ]] || [[ $tenant -eq 1 ]]; then
   echo "Tenant server code is getting deployed"
   cd ../server
   REGION=$(aws configure get region)
-  sam build -t tenant-template.yaml --use-container
+  sam build -t tenant-template.yaml
   sam deploy --config-file tenant-samconfig.toml --region=$REGION
   cd ../scripts
 fi
@@ -76,18 +102,18 @@ fi
 
 
 if [ "$IS_RUNNING_IN_EVENT_ENGINE" = false ]; then
-  ADMIN_SITE_URL=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='AdminAppSite'].OutputValue" --output text)
-  LANDING_APP_SITE_URL=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='LandingApplicationSite'].OutputValue" --output text)
-  APP_SITE_BUCKET=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='ApplicationSiteBucket'].OutputValue" --output text)
-  APP_SITE_URL=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='ApplicationSite'].OutputValue" --output text)
+  ADMIN_SITE_URL=$(aws cloudformation describe-stacks --stack-name serverless-saas-workshop-shared-lab3 --query "Stacks[0].Outputs[?OutputKey=='AdminAppSite'].OutputValue" --output text)
+  LANDING_APP_SITE_URL=$(aws cloudformation describe-stacks --stack-name serverless-saas-workshop-shared-lab3 --query "Stacks[0].Outputs[?OutputKey=='LandingApplicationSite'].OutputValue" --output text)
+  APP_SITE_BUCKET=$(aws cloudformation describe-stacks --stack-name serverless-saas-workshop-shared-lab3 --query "Stacks[0].Outputs[?OutputKey=='ApplicationSiteBucket'].OutputValue" --output text)
+  APP_SITE_URL=$(aws cloudformation describe-stacks --stack-name serverless-saas-workshop-shared-lab3 --query "Stacks[0].Outputs[?OutputKey=='ApplicationSite'].OutputValue" --output text)
 fi
 
 if [[ $client -eq 1 ]]; then
   echo "Client code is getting deployed"
-  ADMIN_APIGATEWAYURL=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='AdminApi'].OutputValue" --output text)
-  APP_APIGATEWAYURL=$(aws cloudformation describe-stacks --stack-name stack-pooled --query "Stacks[0].Outputs[?OutputKey=='TenantAPI'].OutputValue" --output text)
-  APP_APPCLIENTID=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='CognitoTenantAppClientId'].OutputValue" --output text)
-  APP_USERPOOLID=$(aws cloudformation describe-stacks --stack-name serverless-saas --query "Stacks[0].Outputs[?OutputKey=='CognitoTenantUserPoolId'].OutputValue" --output text)
+  ADMIN_APIGATEWAYURL=$(aws cloudformation describe-stacks --stack-name serverless-saas-workshop-lab2 --query "Stacks[0].Outputs[?OutputKey=='AdminApi'].OutputValue" --output text)
+  APP_APIGATEWAYURL=$(aws cloudformation describe-stacks --stack-name serverless-saas-workshop-tenant-lab3 --query "Stacks[0].Outputs[?OutputKey=='TenantAPI'].OutputValue" --output text)
+  APP_APPCLIENTID=$(aws cloudformation describe-stacks --stack-name serverless-saas-workshop-shared-lab3 --query "Stacks[0].Outputs[?OutputKey=='CognitoTenantAppClientId'].OutputValue" --output text)
+  APP_USERPOOLID=$(aws cloudformation describe-stacks --stack-name serverless-saas-workshop-shared-lab3 --query "Stacks[0].Outputs[?OutputKey=='CognitoTenantUserPoolId'].OutputValue" --output text)
 
 
   # Admin UI and Landing UI are configured in Lab2 
